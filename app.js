@@ -296,10 +296,17 @@ let state = {
   inventory: [],
   sales: [],
   suppliers: [],
+  recycleBin: {
+    inventory: [],
+    sales: []
+  },
   activePeriod: "all", // "all", "month", "week"
   inventoryLayout: "list", // "list", "grid", "gallery"
   supplierDisplayMode: "name", // "name", "logo"
-  theme: "dark", // "dark", "light"
+  inventoryPageSize: 25,
+  inventoryCurrentPage: 1,
+  themeMode: "dark", // "dark", "light"
+  themeColor: "classic", // "classic", "ocean", "cyberpunk", "emerald", "amber", "nordic"
   customLogo: null, // Base64 string or image URL
   currency: "EUR",
   dateFormat: "YYYY-MM-DD",
@@ -311,7 +318,17 @@ let state = {
     cost: true,
     revenue: true,
     roi: true,
-    stock: true
+    stock: true,
+    velocity: true,
+    str: true,
+    unitProfit: true
+  },
+  visibleFigures: {
+    salesProfit: true,
+    platformSplit: true,
+    costRevenue: true,
+    supplierSplit: true,
+    topBestsellers: true
   },
   metricOrder: [],
   fontSize: 16,
@@ -323,6 +340,7 @@ let state = {
     suppliers: "fa-truck-ramp-box",
     entries: "fa-tags",
     calculator: "fa-calculator",
+    recycle: "fa-trash-can",
     settings: "fa-gear"
   },
   menuTitles: {
@@ -333,6 +351,7 @@ let state = {
     suppliers: "Suppliers",
     entries: "Entries",
     calculator: "Fee Calculator",
+    recycle: "Recycle Bin",
     settings: "Settings"
   }
 };
@@ -341,6 +360,9 @@ let state = {
 let salesProfitChartInstance = null;
 let platformSplitChartInstance = null;
 let financeMonthlyChartInstance = null;
+let costRevenueChartInstance = null;
+let supplierSplitChartInstance = null;
+let topBestsellersChartInstance = null;
 
 // ==========================================================================
 // APP INITIALIZATION
@@ -351,7 +373,7 @@ document.addEventListener("DOMContentLoaded", () => {
     loadStateFromStorage();
     
     // Apply theme
-    applyTheme(state.theme);
+    applyTheme(state.themeMode, state.themeColor);
 
     // Apply font size
     applyFontSize(state.fontSize);
@@ -429,7 +451,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Set initial logo and active theme cards highlight
     applyLogo(state.customLogo);
-    updateThemeSelectionCards(state.theme);
+    updateThemeSelectionCards(state.themeMode, state.themeColor);
     updateCurrencySymbols();
     updateCurrencySelectionCards(state.currency);
     applyDateFormat(state.dateFormat);
@@ -437,6 +459,7 @@ document.addEventListener("DOMContentLoaded", () => {
     applyFeeCalculatorVisibility(state.showFeeCalculator);
     applySalesLedgerVisibility(state.showSalesLedger);
     applyMetricsVisibility();
+    applyFiguresVisibility();
     applyMetricOrder();
     initDragAndDrop();
     applyMenuIcons();
@@ -484,7 +507,30 @@ function loadStateFromStorage() {
   try {
     state.inventoryLayout = localStorage.getItem("gv_inv_layout") || "list";
     state.supplierDisplayMode = localStorage.getItem("gv_supplier_display_mode") || "name";
-    state.theme = localStorage.getItem("gv_theme") || "dark";
+    state.inventoryPageSize = parseInt(localStorage.getItem("gv_inv_page_size")) || 25;
+    state.inventoryCurrentPage = 1;
+    // Load and migrate theme settings
+    const legacyTheme = localStorage.getItem("gv_theme");
+    state.themeMode = localStorage.getItem("gv_theme_mode");
+    state.themeColor = localStorage.getItem("gv_theme_color");
+    
+    if (!state.themeMode && !state.themeColor) {
+      if (legacyTheme) {
+        if (legacyTheme === "light") {
+          state.themeMode = "light";
+          state.themeColor = "classic";
+        } else {
+          state.themeMode = "dark";
+          state.themeColor = legacyTheme === "dark" ? "classic" : legacyTheme;
+        }
+      } else {
+        state.themeMode = "dark";
+        state.themeColor = "classic";
+      }
+    } else {
+      state.themeMode = state.themeMode || "dark";
+      state.themeColor = state.themeColor || "classic";
+    }
     state.currency = localStorage.getItem("gv_currency") || "EUR";
     state.dateFormat = localStorage.getItem("gv_date_format") || "YYYY-MM-DD";
     state.sidebarCollapsed = localStorage.getItem("gv_sidebar_collapsed") === "true";
@@ -497,10 +543,46 @@ function loadStateFromStorage() {
     const storedVisibleMetrics = localStorage.getItem("gv_visible_metrics");
     if (storedVisibleMetrics) {
       try {
-        state.visibleMetrics = JSON.parse(storedVisibleMetrics);
+        const parsed = JSON.parse(storedVisibleMetrics);
+        state.visibleMetrics = {
+          profit: true,
+          cost: true,
+          revenue: true,
+          roi: true,
+          stock: true,
+          velocity: true,
+          str: true,
+          unitProfit: true,
+          ...parsed
+        };
       } catch (e) {
         console.error("Error parsing visible metrics state, using defaults:", e);
       }
+    }
+
+    const storedVisibleFigures = localStorage.getItem("gv_visible_figures");
+    if (storedVisibleFigures) {
+      try {
+        const parsed = JSON.parse(storedVisibleFigures);
+        state.visibleFigures = {
+          salesProfit: true,
+          platformSplit: true,
+          costRevenue: true,
+          supplierSplit: true,
+          topBestsellers: true,
+          ...parsed
+        };
+      } catch (e) {
+        console.error("Error parsing visible figures state, using defaults:", e);
+      }
+    } else {
+      state.visibleFigures = {
+        salesProfit: true,
+        platformSplit: true,
+        costRevenue: true,
+        supplierSplit: true,
+        topBestsellers: true
+      };
     }
 
     const storedMetricOrder = localStorage.getItem("gv_metric_order");
@@ -634,6 +716,16 @@ function loadStateFromStorage() {
       }
     }
 
+    try {
+      const storedRecycle = localStorage.getItem("gv_recycle_bin");
+      state.recycleBin = storedRecycle ? JSON.parse(storedRecycle) : { inventory: [], sales: [] };
+      if (!state.recycleBin.inventory) state.recycleBin.inventory = [];
+      if (!state.recycleBin.sales) state.recycleBin.sales = [];
+    } catch (e) {
+      console.error("Error parsing recycle bin, using defaults:", e);
+      state.recycleBin = { inventory: [], sales: [] };
+    }
+
     if (!storedInventory || !storedSales || !storedSuppliers) {
       saveStateToStorage();
     }
@@ -653,15 +745,21 @@ function saveStateToStorage() {
   localStorage.setItem("gv_sales", JSON.stringify(state.sales));
   localStorage.setItem("gv_suppliers", JSON.stringify(state.suppliers));
   localStorage.setItem("gv_platforms", JSON.stringify(state.platforms));
+  localStorage.setItem("gv_recycle_bin", JSON.stringify(state.recycleBin));
   localStorage.setItem("gv_inv_layout", state.inventoryLayout);
   localStorage.setItem("gv_supplier_display_mode", state.supplierDisplayMode);
-  localStorage.setItem("gv_theme", state.theme);
+  localStorage.setItem("gv_inv_page_size", state.inventoryPageSize);
+  localStorage.setItem("gv_theme_mode", state.themeMode);
+  localStorage.setItem("gv_theme_color", state.themeColor);
+  // Keep legacy gv_theme synced
+  localStorage.setItem("gv_theme", state.themeMode === "light" ? "light" : state.themeColor);
   localStorage.setItem("gv_currency", state.currency);
   localStorage.setItem("gv_date_format", state.dateFormat);
   localStorage.setItem("gv_sidebar_collapsed", state.sidebarCollapsed);
   localStorage.setItem("gv_show_fee_calculator", state.showFeeCalculator);
   localStorage.setItem("gv_show_sales_ledger", state.showSalesLedger);
   localStorage.setItem("gv_visible_metrics", JSON.stringify(state.visibleMetrics));
+  localStorage.setItem("gv_visible_figures", JSON.stringify(state.visibleFigures));
   localStorage.setItem("gv_metric_order", JSON.stringify(state.metricOrder));
   localStorage.setItem("gv_font_size", state.fontSize);
   localStorage.setItem("gv_low_stock_threshold", state.lowStockThreshold);
@@ -907,27 +1005,23 @@ window.handleLogout = function() {
 };
 
 // Apply Theme to DOM
-function applyTheme(theme) {
+// Apply Theme to DOM
+function applyTheme(mode, color) {
+  console.log("applyTheme executing with mode:", mode, "color:", color);
   const root = document.documentElement;
+  
+  root.setAttribute("data-theme-mode", mode || "dark");
+  root.setAttribute("data-theme-color", color || "classic");
+  
+  // Keep legacy toggle elements safe if they exist
   const toggleIcon = document.getElementById("theme-toggle-icon");
   const btnToggle = document.getElementById("btn-theme-toggle");
-  
-  if (theme === "light") {
-    root.setAttribute("data-theme", "light");
-    if (toggleIcon) {
-      toggleIcon.className = "fa-solid fa-moon";
-    }
-    if (btnToggle) {
-      btnToggle.setAttribute("title", "Toggle Dark Mode");
-    }
+  if (mode === "light") {
+    if (toggleIcon) toggleIcon.className = "fa-solid fa-moon";
+    if (btnToggle) btnToggle.setAttribute("title", "Toggle Dark Mode");
   } else {
-    root.removeAttribute("data-theme");
-    if (toggleIcon) {
-      toggleIcon.className = "fa-solid fa-sun";
-    }
-    if (btnToggle) {
-      btnToggle.setAttribute("title", "Toggle Light Mode");
-    }
+    if (toggleIcon) toggleIcon.className = "fa-solid fa-sun";
+    if (btnToggle) btnToggle.setAttribute("title", "Toggle Light Mode");
   }
 }
 
@@ -978,7 +1072,7 @@ function formatDate(dateStr) {
 
 // Apply Sidebar Icons dynamically
 function applyMenuIcons() {
-  const menus = ["dashboard", "inventory", "sales", "finance", "suppliers", "entries", "calculator", "settings"];
+  const menus = ["dashboard", "inventory", "sales", "finance", "suppliers", "entries", "calculator", "recycle", "settings"];
   menus.forEach(m => {
     const sidebarIcon = document.getElementById(`sidebar-icon-${m}`);
     if (sidebarIcon && state.menuIcons[m]) {
@@ -989,7 +1083,7 @@ function applyMenuIcons() {
 
 // Apply Sidebar Titles dynamically
 function applyMenuTitles() {
-  const menus = ["dashboard", "inventory", "sales", "finance", "suppliers", "entries", "calculator", "settings"];
+  const menus = ["dashboard", "inventory", "sales", "finance", "suppliers", "entries", "calculator", "recycle", "settings"];
   menus.forEach(m => {
     const sidebarText = document.getElementById(`sidebar-text-${m}`);
     if (sidebarText && state.menuTitles[m]) {
@@ -1013,6 +1107,7 @@ function renderSidebarCustomizationSettings() {
     { key: "suppliers", label: "Suppliers" },
     { key: "entries", label: "Entries" },
     { key: "calculator", label: "Fee Calculator" },
+    { key: "recycle", label: "Recycle Bin" },
     { key: "settings", label: "Settings" }
   ];
 
@@ -1186,7 +1281,6 @@ function startClock() {
 function initEventHandlers() {
   // Modal opening buttons
   document.getElementById("btn-add-game-modal").addEventListener("click", () => openModal("add-game-modal"));
-  document.getElementById("btn-add-game-inventory").addEventListener("click", () => openModal("add-game-modal"));
 
   // Modal closing buttons (via data attribute)
   document.querySelectorAll("[data-close-modal]").forEach(btn => {
@@ -1219,7 +1313,13 @@ function initEventHandlers() {
       }
       keyParts.push(part);
     }
-    document.getElementById("game-key").value = keyParts.join("-");
+    const generated = keyParts.join("-");
+    const gameKeyEl = document.getElementById("game-key");
+    if (gameKeyEl.value.trim() === "") {
+      gameKeyEl.value = generated;
+    } else {
+      gameKeyEl.value = gameKeyEl.value.trim() + "\n" + generated;
+    }
     showToast("Dummy key generated!", "info");
   });
 
@@ -1328,9 +1428,14 @@ function initEventHandlers() {
   document.getElementById("calc-custom-fee").addEventListener("input", runFeeCalculator);
 
   // Filters Event Listeners for Inventory
-  document.getElementById("inv-filter-platform").addEventListener("change", updateUI);
-  document.getElementById("inv-filter-status").addEventListener("change", updateUI);
-  document.getElementById("inv-filter-supplier").addEventListener("change", updateUI);
+  const handleInventoryFilterChange = () => {
+    state.inventoryCurrentPage = 1;
+    updateUI();
+  };
+
+  document.getElementById("inv-filter-platform").addEventListener("change", handleInventoryFilterChange);
+  document.getElementById("inv-filter-status").addEventListener("change", handleInventoryFilterChange);
+  document.getElementById("inv-filter-supplier").addEventListener("change", handleInventoryFilterChange);
   const supplierDisplayInput = document.getElementById("inv-supplier-display");
   if (supplierDisplayInput) {
     supplierDisplayInput.addEventListener("change", (e) => {
@@ -1341,15 +1446,34 @@ function initEventHandlers() {
       } else if (state.syncMode === "manual") {
         setUnsyncedChanges(true);
       }
+      handleInventoryFilterChange();
+    });
+  }
+  document.getElementById("inv-search-input").addEventListener("input", handleInventoryFilterChange);
+
+  // Page Size Selector
+  const invPageSizeSelect = document.getElementById("inv-page-size");
+  if (invPageSizeSelect) {
+    invPageSizeSelect.value = state.inventoryPageSize.toString();
+    invPageSizeSelect.addEventListener("change", (e) => {
+      state.inventoryPageSize = parseInt(e.target.value) || 25;
+      state.inventoryCurrentPage = 1;
+      saveStateToStorage();
+      if (window.supabaseClient && state.syncMode === "realtime") {
+        dbSaveSettings("inventoryPageSize", state.inventoryPageSize);
+      } else if (state.syncMode === "manual") {
+        setUnsyncedChanges(true);
+      }
       updateUI();
     });
   }
-  document.getElementById("inv-search-input").addEventListener("input", updateUI);
+
   document.getElementById("btn-reset-inventory-filters").addEventListener("click", () => {
     document.getElementById("inv-filter-platform").value = "all";
     document.getElementById("inv-filter-status").value = "all";
     document.getElementById("inv-filter-supplier").value = "all";
     document.getElementById("inv-search-input").value = "";
+    state.inventoryCurrentPage = 1;
     updateUI();
     showToast("Inventory filters reset.", "info");
   });
@@ -1436,41 +1560,59 @@ function initEventHandlers() {
     btnGallery.addEventListener("click", () => setInvLayout("gallery"));
   }
 
-  // Settings Page - Theme Option Click Listeners
-  const optDark = document.getElementById("theme-opt-dark");
-  const optLight = document.getElementById("theme-opt-light");
-  
-  if (optDark) {
-    optDark.addEventListener("click", () => {
-      if (state.theme !== "dark") {
-        state.theme = "dark";
-        saveStateToStorage();
-        applyTheme(state.theme);
-        updateThemeSelectionCards(state.theme);
-        if (window.supabaseClient) {
-          dbSaveSettings("theme", state.theme);
+  // Settings Page - Appearance Mode Click Listeners
+  const modes = [
+    { key: "dark", name: "Dark Mode" },
+    { key: "light", name: "Light Mode" }
+  ];
+  modes.forEach(m => {
+    const el = document.getElementById(`mode-opt-${m.key}`);
+    if (el) {
+      el.addEventListener("click", () => {
+        console.log(`${m.name} clicked. Current state.themeMode:`, state.themeMode);
+        if (state.themeMode !== m.key) {
+          state.themeMode = m.key;
+          saveStateToStorage();
+          applyTheme(state.themeMode, state.themeColor);
+          updateThemeSelectionCards(state.themeMode, state.themeColor);
+          if (window.supabaseClient) {
+            dbSaveSettings("themeMode", state.themeMode);
+          }
+          updateUI();
+          showToast(`Switched to ${m.name}`, "info");
         }
-        updateUI();
-        showToast("Switched to Dark Mode", "info");
-      }
-    });
-  }
+      });
+    }
+  });
 
-  if (optLight) {
-    optLight.addEventListener("click", () => {
-      if (state.theme !== "light") {
-        state.theme = "light";
-        saveStateToStorage();
-        applyTheme(state.theme);
-        updateThemeSelectionCards(state.theme);
-        if (window.supabaseClient) {
-          dbSaveSettings("theme", state.theme);
+  // Settings Page - Color Palette Click Listeners
+  const colors = [
+    { key: "classic", name: "Classic Palette" },
+    { key: "ocean", name: "Midnight Ocean Palette" },
+    { key: "cyberpunk", name: "Cyberpunk Neon Palette" },
+    { key: "emerald", name: "Forest Emerald Palette" },
+    { key: "amber", name: "Amber Gold Palette" },
+    { key: "nordic", name: "Nordic Frost Palette" }
+  ];
+  colors.forEach(c => {
+    const el = document.getElementById(`color-opt-${c.key}`);
+    if (el) {
+      el.addEventListener("click", () => {
+        console.log(`${c.name} clicked. Current state.themeColor:`, state.themeColor);
+        if (state.themeColor !== c.key) {
+          state.themeColor = c.key;
+          saveStateToStorage();
+          applyTheme(state.themeMode, state.themeColor);
+          updateThemeSelectionCards(state.themeMode, state.themeColor);
+          if (window.supabaseClient) {
+            dbSaveSettings("themeColor", state.themeColor);
+          }
+          updateUI();
+          showToast(`Switched to ${c.name}`, "info");
         }
-        updateUI();
-        showToast("Switched to Light Mode", "info");
-      }
-    });
-  }
+      });
+    }
+  });
 
   // Settings Page - Currency Option Click Listeners
   const currEur = document.getElementById("curr-opt-eur");
@@ -1668,6 +1810,13 @@ function initEventHandlers() {
   }
 
   document.getElementById("btn-export-inventory").addEventListener("click", exportInventoryToCSV);
+  const btnGoToRecycle = document.getElementById("btn-go-to-recycle");
+  if (btnGoToRecycle) {
+    btnGoToRecycle.addEventListener("click", () => {
+      const navRecycle = document.getElementById("nav-recycle");
+      if (navRecycle) navRecycle.click();
+    });
+  }
   document.getElementById("btn-export-sales").addEventListener("click", exportSalesToCSV);
   const btnExportFinance = document.getElementById("btn-export-finance");
   if (btnExportFinance) {
@@ -1867,20 +2016,20 @@ function initEventHandlers() {
   const metricsPanel = document.getElementById("metrics-customize-panel");
   
   if (btnToggleMetrics && metricsPanel) {
-    btnToggleMetrics.addEventListener("click", (e) => {
-      e.stopPropagation();
+    btnToggleMetrics.addEventListener("click", () => {
       metricsPanel.classList.toggle("active");
     });
     
     // Close panel on clicking outside
     document.addEventListener("click", (e) => {
-      if (!metricsPanel.contains(e.target) && e.target !== btnToggleMetrics) {
+      const container = document.getElementById("metrics-customize-dropdown");
+      if (container && !container.contains(e.target)) {
         metricsPanel.classList.remove("active");
       }
     });
     
     // Bind metric checkboxes
-    const metricKeys = ["profit", "cost", "revenue", "roi", "stock"];
+    const metricKeys = ["profit", "cost", "revenue", "roi", "stock", "velocity", "str", "unitProfit"];
     metricKeys.forEach(key => {
       const checkbox = document.getElementById(`toggle-metric-${key}`);
       if (checkbox) {
@@ -1894,6 +2043,229 @@ function initEventHandlers() {
         });
       }
     });
+  }
+
+  // Figures Customizer Event Listeners
+  const btnToggleFigures = document.getElementById("btn-toggle-figures-panel");
+  const figuresPanel = document.getElementById("figures-customize-panel");
+  
+  if (btnToggleFigures && figuresPanel) {
+    btnToggleFigures.addEventListener("click", () => {
+      figuresPanel.classList.toggle("active");
+    });
+    
+    // Close panel on clicking outside
+    document.addEventListener("click", (e) => {
+      const container = document.getElementById("figures-customize-dropdown");
+      if (container && !container.contains(e.target)) {
+        figuresPanel.classList.remove("active");
+      }
+    });
+    
+    // Bind figure checkboxes
+    const figureKeys = ["salesProfit", "platformSplit", "costRevenue", "supplierSplit", "topBestsellers"];
+    figureKeys.forEach(key => {
+      const checkbox = document.getElementById(`toggle-figure-${key}`);
+      if (checkbox) {
+        checkbox.addEventListener("change", (e) => {
+          state.visibleFigures[key] = e.target.checked;
+          saveStateToStorage();
+          updateUI(); // Re-render charts and apply layout resizing safely
+          if (window.supabaseClient) {
+            dbSaveSettings("visibleFigures", state.visibleFigures);
+          }
+        });
+      }
+    });
+  }
+
+  // Event delegation for inventory checkbox selections
+  document.addEventListener("change", (e) => {
+    if (e.target.classList.contains("inv-row-select")) {
+      updateBulkActionsBar();
+    }
+    if (e.target.id === "inv-select-all") {
+      const checked = e.target.checked;
+      document.querySelectorAll(".inv-row-select").forEach(cb => {
+        cb.checked = checked;
+      });
+      updateBulkActionsBar();
+    }
+  });
+
+  // Bulk delete action button listener
+  const btnBulkDelete = document.getElementById("btn-bulk-delete");
+  if (btnBulkDelete) {
+    btnBulkDelete.addEventListener("click", () => {
+      const selectedCheckboxes = document.querySelectorAll(".inv-row-select:checked");
+      const selectedIds = Array.from(selectedCheckboxes).map(el => el.getAttribute("data-id"));
+      if (selectedIds.length === 0) return;
+
+      const confirmMsg = `Are you sure you want to move the ${selectedIds.length} selected key(s) to the Recycle Bin?`;
+      if (confirm(confirmMsg)) {
+        // Backup the items we are about to delete
+        const deletedInventory = state.inventory.filter(item => selectedIds.includes(item.id));
+        const deletedSales = state.sales.filter(sale => selectedIds.includes(sale.inventoryId));
+
+        // Move to recycle bin
+        state.recycleBin.inventory.push(...deletedInventory);
+        state.recycleBin.sales.push(...deletedSales);
+
+        // Perform deletion from active state
+        state.inventory = state.inventory.filter(item => !selectedIds.includes(item.id));
+        state.sales = state.sales.filter(sale => !selectedIds.includes(sale.inventoryId));
+
+        // Save changes
+        saveStateToStorage();
+        
+        // Supabase sync
+        if (window.supabaseClient) {
+          deletedInventory.forEach(item => {
+            dbDeleteInventory(item.id);
+          });
+          deletedSales.forEach(sale => {
+            dbDeleteSale(sale.id);
+          });
+        } else if (state.syncMode === "manual") {
+          setUnsyncedChanges(true);
+        }
+
+        // Refresh UI
+        updateUI();
+
+        showToast(`Moved ${selectedIds.length} key(s) to the Recycle Bin.`, "info");
+      }
+    });
+  }
+
+  // Recycle bin select all listener
+  const recycleSelectAll = document.getElementById("recycle-select-all");
+  if (recycleSelectAll) {
+    recycleSelectAll.addEventListener("change", (e) => {
+      const checked = e.target.checked;
+      document.querySelectorAll(".recycle-row-select").forEach(cb => {
+        cb.checked = checked;
+      });
+      updateRecycleBulkActionsBar();
+    });
+  }
+
+  // Recycle bulk actions - Restore Selected
+  const btnRecycleRestore = document.getElementById("btn-recycle-bulk-restore");
+  if (btnRecycleRestore) {
+    btnRecycleRestore.addEventListener("click", async () => {
+      const checkedBoxes = document.querySelectorAll(".recycle-row-select:checked");
+      const ids = Array.from(checkedBoxes).map(cb => cb.getAttribute("data-id"));
+      if (ids.length === 0) return;
+
+      if (confirm(`Are you sure you want to restore the ${ids.length} selected item(s) back to active inventory?`)) {
+        const restoredGames = [];
+        const restoredSales = [];
+
+        ids.forEach(id => {
+          const gameIndex = state.recycleBin.inventory.findIndex(item => item.id === id);
+          if (gameIndex !== -1) {
+            const game = state.recycleBin.inventory[gameIndex];
+            state.recycleBin.inventory.splice(gameIndex, 1);
+            state.inventory.push(game);
+            restoredGames.push(game);
+
+            // Restore associated sale if any
+            const saleIndex = state.recycleBin.sales.findIndex(s => s.inventoryId === id);
+            if (saleIndex !== -1) {
+              const sale = state.recycleBin.sales[saleIndex];
+              state.recycleBin.sales.splice(saleIndex, 1);
+              state.sales.push(sale);
+              restoredSales.push(sale);
+            }
+          }
+        });
+
+        saveStateToStorage();
+
+        // Supabase sync
+        if (window.supabaseClient) {
+          if (state.syncMode === "manual") {
+            setUnsyncedChanges(true);
+          } else {
+            try {
+              await Promise.all([
+                ...restoredGames.map(game => dbSaveInventory(game)),
+                ...restoredSales.map(sale => dbSaveSale(sale))
+              ]);
+            } catch (err) {
+              console.error("Error syncing restored items to Supabase:", err);
+            }
+          }
+        } else if (state.syncMode === "manual") {
+          setUnsyncedChanges(true);
+        }
+
+        updateUI();
+        showToast(`Successfully restored ${ids.length} item(s).`, "success");
+      }
+    });
+  }
+
+  // Recycle bulk actions - Delete Permanently Selected
+  const btnRecyclePurge = document.getElementById("btn-recycle-bulk-purge");
+  if (btnRecyclePurge) {
+    btnRecyclePurge.addEventListener("click", () => {
+      const checkedBoxes = document.querySelectorAll(".recycle-row-select:checked");
+      const ids = Array.from(checkedBoxes).map(cb => cb.getAttribute("data-id"));
+      if (ids.length === 0) return;
+
+      if (confirm(`Are you sure you want to permanently delete the ${ids.length} selected item(s)? This action cannot be undone.`)) {
+        state.recycleBin.inventory = state.recycleBin.inventory.filter(item => !ids.includes(item.id));
+        state.recycleBin.sales = state.recycleBin.sales.filter(sale => !ids.includes(sale.inventoryId));
+
+        saveStateToStorage();
+        updateUI();
+        showToast(`Permanently deleted ${ids.length} item(s).`, "success");
+      }
+    });
+  }
+
+  // Empty Recycle Bin
+  const btnEmptyRecycle = document.getElementById("btn-empty-recycle");
+  if (btnEmptyRecycle) {
+    btnEmptyRecycle.addEventListener("click", () => {
+      if (state.recycleBin.inventory.length === 0) {
+        showToast("Recycle Bin is already empty.", "info");
+        return;
+      }
+      if (confirm("Are you sure you want to permanently empty the Recycle Bin? All items will be permanently deleted and cannot be restored.")) {
+        state.recycleBin.inventory = [];
+        state.recycleBin.sales = [];
+
+        saveStateToStorage();
+        updateUI();
+        showToast("Recycle Bin successfully emptied.", "success");
+      }
+    });
+  }
+}
+
+// Update the floating bulk actions bar visibility and selection counters
+function updateBulkActionsBar() {
+  const selectedCheckboxes = document.querySelectorAll(".inv-row-select:checked");
+  const count = selectedCheckboxes.length;
+  const bar = document.getElementById("bulk-actions-bar");
+  const countText = document.getElementById("bulk-select-count");
+  
+  if (bar && countText) {
+    if (count > 0) {
+      countText.textContent = `${count} key${count === 1 ? '' : 's'} selected`;
+      bar.classList.remove("hidden");
+    } else {
+      bar.classList.add("hidden");
+    }
+  }
+
+  const selectAllCheckbox = document.getElementById("inv-select-all");
+  if (selectAllCheckbox) {
+    const allCheckboxes = document.querySelectorAll(".inv-row-select");
+    selectAllCheckbox.checked = allCheckboxes.length > 0 && Array.from(allCheckboxes).every(cb => cb.checked);
   }
 }
 
@@ -1915,10 +2287,13 @@ function closeModal(id) {
 }
 
 // Toast Notifications helper
-function showToast(message, type = "success") {
+function showToast(message, type = "success", actionCallback = null) {
   const container = document.getElementById("toast-container");
   const toast = document.createElement("div");
   toast.className = `toast toast-${type}`;
+  if (actionCallback) {
+    toast.classList.add("toast-actionable");
+  }
   
   let iconClass = "fa-circle-check";
   if (type === "error") iconClass = "fa-circle-xmark";
@@ -1928,12 +2303,28 @@ function showToast(message, type = "success") {
     <i class="fa-solid ${iconClass}"></i>
     <span>${message}</span>
   `;
+
+  if (actionCallback) {
+    const actionBtn = document.createElement("button");
+    actionBtn.className = "toast-action-btn";
+    actionBtn.textContent = "Undo";
+    actionBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      actionCallback();
+      toast.remove();
+    });
+    toast.appendChild(actionBtn);
+  }
+
   container.appendChild(toast);
   
-  // Remove toast after animation completes (3 seconds total)
+  // Remove toast after animation completes (8 seconds if actionable, 3 seconds otherwise)
+  const duration = actionCallback ? 8000 : 3000;
   setTimeout(() => {
-    toast.remove();
-  }, 3000);
+    if (toast.parentNode) {
+      toast.remove();
+    }
+  }, duration);
 }
 
 // ==========================================================================
@@ -1954,10 +2345,17 @@ async function handleAddGameSubmit(e) {
   const title = document.getElementById("game-title").value.trim();
   const platform = document.getElementById("game-platform").value;
   const cost = parseFloat(document.getElementById("game-cost").value) || 0;
-  const key = document.getElementById("game-key").value.trim();
+  const keyInput = document.getElementById("game-key").value.trim();
   const source = document.getElementById("game-source").value.trim() || "Direct";
   const purchaseDate = document.getElementById("game-purchase-date").value;
   const notes = document.getElementById("game-notes").value.trim();
+
+  // Split and filter keys
+  const keys = keyInput.split(/[\n,;]+/).map(k => k.trim()).filter(k => k.length > 0);
+  if (keys.length === 0) {
+    showToast("Please enter at least one digital game key.", "error");
+    return;
+  }
 
   // Artwork Cover Image Handling
   let imageUrl = document.getElementById("game-image-url").value.trim();
@@ -1978,24 +2376,44 @@ async function handleAddGameSubmit(e) {
     }
   }
 
-  const newGame = {
-    id: "inv_" + Date.now(),
-    title,
-    platform,
-    key,
-    cost,
-    source,
-    purchaseDate,
-    status: "Available",
-    notes,
-    imageUrl
-  };
+  const baseTime = Date.now();
+  const addedGames = [];
 
-  state.inventory.push(newGame);
+  keys.forEach((key, index) => {
+    const uniqueId = "inv_" + (baseTime + index) + "_" + Math.random().toString(36).substr(2, 5);
+    const newGame = {
+      id: uniqueId,
+      title,
+      platform,
+      key,
+      cost,
+      source,
+      purchaseDate,
+      status: "Available",
+      notes,
+      imageUrl
+    };
+    state.inventory.push(newGame);
+    addedGames.push(newGame);
+  });
+
   saveStateToStorage();
+
+  // Supabase sync
   if (window.supabaseClient) {
-    await dbSaveInventory(newGame);
+    if (state.syncMode === "manual") {
+      setUnsyncedChanges(true);
+    } else {
+      try {
+        await Promise.all(addedGames.map(item => dbSaveInventory(item)));
+      } catch (err) {
+        console.error("Error syncing new keys to Supabase:", err);
+      }
+    }
+  } else if (state.syncMode === "manual") {
+    setUnsyncedChanges(true);
   }
+
   updateUI();
   closeModal("add-game-modal");
   
@@ -2003,7 +2421,11 @@ async function handleAddGameSubmit(e) {
   document.getElementById("add-game-form").reset();
   document.getElementById("game-purchase-date").valueAsDate = new Date();
   
-  showToast(`Successfully added game key: ${title}`, "success");
+  if (keys.length === 1) {
+    showToast(`Successfully added game key: ${title}`, "success");
+  } else {
+    showToast(`Successfully added ${keys.length} game keys for: ${title}`, "success");
+  }
 }
 
 async function handleSellGameSubmit(e) {
@@ -2150,19 +2572,31 @@ window.triggerDeleteGame = async function(gameId) {
   const game = state.inventory.find(item => item.id === gameId);
   if (!game) return;
 
-  if (confirm(`Are you sure you want to permanently delete "${game.title}" and its registration key from the inventory?`)) {
-    // If it was sold, we should also clean up its sale from ledger (to balance accounts)
-    if (game.status === "Sold") {
-      state.sales = state.sales.filter(sale => sale.inventoryId !== gameId);
-    }
+  if (confirm(`Are you sure you want to move "${game.title}" to the Recycle Bin?`)) {
+    // Move game
     state.inventory = state.inventory.filter(item => item.id !== gameId);
-    
+    state.recycleBin.inventory.push(game);
+
+    // If it was sold, we should also move its sale from ledger (to balance accounts)
+    const associatedSaleIndex = state.sales.findIndex(sale => sale.inventoryId === gameId);
+    let sale = null;
+    if (associatedSaleIndex !== -1) {
+      sale = state.sales[associatedSaleIndex];
+      state.sales.splice(associatedSaleIndex, 1);
+      state.recycleBin.sales.push(sale);
+    }
+
     saveStateToStorage();
     if (window.supabaseClient) {
       await dbDeleteInventory(gameId);
+      if (sale) {
+        await dbDeleteSale(sale.id);
+      }
+    } else if (state.syncMode === "manual") {
+      setUnsyncedChanges(true);
     }
     updateUI();
-    showToast(`Deleted "${game.title}" from records.`, "info");
+    showToast(`Moved "${game.title}" to the Recycle Bin.`, "info");
   }
 };
 
@@ -2507,9 +2941,15 @@ function updateUI() {
   // 2. Render Metrics Cards based on filtered period and supplier
   calculateMetrics(dbFilteredSales, dbFilteredInventory);
 
+  // 2b. Apply figures visibility first so that shown canvases have layout dimensions
+  applyFiguresVisibility();
+
   // 3. Render Charts
   renderSalesTrendChart(dbFilteredSales);
   renderPlatformSplitChart(dbFilteredSales);
+  renderCostRevenueChart(dbFilteredSales);
+  renderSupplierSplitChart(dbFilteredInventory);
+  renderTopBestsellersChart(dbFilteredSales);
 
   // 4. Render Tables
   renderInventoryTable(filteredInventory);
@@ -2532,6 +2972,26 @@ function updateUI() {
 
   // 9. Render Finance view data
   renderFinanceView();
+
+  // 9b. Render Recycle Bin data
+  renderRecycleBin();
+
+  // 10. Reset bulk actions bar and select-all checkbox
+  const selectAllCheckbox = document.getElementById("inv-select-all");
+  if (selectAllCheckbox) selectAllCheckbox.checked = false;
+  
+  const bulkBar = document.getElementById("bulk-actions-bar");
+  if (bulkBar) bulkBar.classList.add("hidden");
+
+  // 10b. Reset Recycle Bin select-all and actions bar
+  const recycleSelectAll = document.getElementById("recycle-select-all");
+  if (recycleSelectAll) recycleSelectAll.checked = false;
+  
+  const recycleBulkBar = document.getElementById("recycle-bulk-actions");
+  if (recycleBulkBar) recycleBulkBar.classList.add("hidden");
+  
+  const recycleInfoText = document.getElementById("recycle-info-text");
+  if (recycleInfoText) recycleInfoText.classList.remove("hidden");
 }
 
 function renderSuppliers() {
@@ -3249,12 +3709,27 @@ function calculateMetrics(filteredSalesList, filteredInventoryList) {
   let totalCostOfSales = 0;
   let totalFees = 0;
   let totalNetProfit = 0;
+  let totalSellDays = 0;
+  let soldWithDurationCount = 0;
 
   filteredSalesList.forEach(sale => {
     totalRevenue += sale.sellPrice;
     totalCostOfSales += sale.cost;
     totalFees += sale.fees;
     totalNetProfit += sale.profit;
+
+    // Retrieve corresponding inventory purchaseDate
+    const invItem = state.inventory.find(i => i.id === sale.inventoryId);
+    if (invItem && invItem.purchaseDate && sale.saleDate) {
+      const start = new Date(invItem.purchaseDate);
+      const end = new Date(sale.saleDate);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(0, 0, 0, 0);
+      const diffTime = Math.max(0, end - start);
+      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+      totalSellDays += diffDays;
+      soldWithDurationCount++;
+    }
   });
 
   // Inventory value (cost of unsold stock)
@@ -3267,9 +3742,13 @@ function calculateMetrics(filteredSalesList, filteredInventoryList) {
     }
   });
 
-  // Calculate percentages
+  // Calculate percentages and metrics
   const marginPercentage = totalRevenue > 0 ? (totalNetProfit / totalRevenue) * 100 : 0;
   const roiPercentage = totalCostOfSales > 0 ? (totalNetProfit / totalCostOfSales) * 100 : 0;
+  const avgDaysToSell = soldWithDurationCount > 0 ? (totalSellDays / soldWithDurationCount) : 0;
+  const totalKeysInSubset = filteredSalesList.length + totalUnsoldCount;
+  const sellThroughRate = totalKeysInSubset > 0 ? (filteredSalesList.length / totalKeysInSubset) * 100 : 0;
+  const avgProfitPerKey = filteredSalesList.length > 0 ? (totalNetProfit / filteredSalesList.length) : 0;
 
   // Render values to DOM
   document.getElementById("metric-profit").textContent = formatCurrency(totalNetProfit);
@@ -3291,6 +3770,34 @@ function calculateMetrics(filteredSalesList, filteredInventoryList) {
   const metricStockCountEl = document.getElementById("metric-stock-keys-count");
   if (metricStockCountEl) {
     metricStockCountEl.textContent = `${totalUnsoldCount} keys`;
+  }
+
+  // Render new metrics
+  const metricVelocityEl = document.getElementById("metric-sales-velocity");
+  if (metricVelocityEl) {
+    metricVelocityEl.textContent = `${avgDaysToSell.toFixed(1)} days`;
+  }
+  const metricVelocitySubEl = document.getElementById("metric-velocity-subtext");
+  if (metricVelocitySubEl) {
+    metricVelocitySubEl.textContent = `${soldWithDurationCount} sales tracked`;
+  }
+
+  const metricStrEl = document.getElementById("metric-sell-through");
+  if (metricStrEl) {
+    metricStrEl.textContent = `${sellThroughRate.toFixed(1)}%`;
+  }
+  const metricStrSubEl = document.getElementById("metric-str-subtext");
+  if (metricStrSubEl) {
+    metricStrSubEl.textContent = `${filteredSalesList.length} sold / ${totalKeysInSubset} total`;
+  }
+
+  const metricAvgProfitKeyEl = document.getElementById("metric-avg-profit-key");
+  if (metricAvgProfitKeyEl) {
+    metricAvgProfitKeyEl.textContent = formatCurrency(avgProfitPerKey);
+  }
+  const metricAvgProfitSubEl = document.getElementById("metric-avg-profit-subtext");
+  if (metricAvgProfitSubEl) {
+    metricAvgProfitSubEl.textContent = `Based on ${filteredSalesList.length} sales`;
   }
 }
 
@@ -3316,19 +3823,111 @@ function renderInventoryTable(itemsList) {
     btnGallery.classList.toggle("active", state.inventoryLayout === "gallery");
   }
 
+  // Pagination Logic
+  const totalPages = Math.ceil(itemsList.length / state.inventoryPageSize) || 1;
+  if (state.inventoryCurrentPage > totalPages) {
+    state.inventoryCurrentPage = totalPages;
+  }
+  if (state.inventoryCurrentPage < 1) {
+    state.inventoryCurrentPage = 1;
+  }
+
+  const startIndex = (state.inventoryCurrentPage - 1) * state.inventoryPageSize;
+  const endIndex = startIndex + state.inventoryPageSize;
+  const paginatedItemsList = itemsList.slice(startIndex, endIndex);
+
   if (state.inventoryLayout === "list") {
     if (tableContainer) tableContainer.style.display = "block";
-    renderInventoryListLayout(itemsList);
+    renderInventoryListLayout(paginatedItemsList);
   } else if (state.inventoryLayout === "grid") {
     if (gridContainer) gridContainer.style.display = "grid";
-    renderInventoryGridLayout(itemsList);
+    renderInventoryGridLayout(paginatedItemsList);
   } else if (state.inventoryLayout === "gallery") {
     if (galleryContainer) galleryContainer.style.display = "grid";
-    renderInventoryGalleryLayout(itemsList);
+    renderInventoryGalleryLayout(paginatedItemsList);
   }
   
   // Update footer text count
-  document.getElementById("inventory-count-text").textContent = `Showing ${itemsList.length} of ${state.inventory.length} total inventory keys`;
+  const showingStart = itemsList.length === 0 ? 0 : startIndex + 1;
+  const showingEnd = Math.min(endIndex, itemsList.length);
+  document.getElementById("inventory-count-text").textContent = `Showing ${showingStart}-${showingEnd} of ${itemsList.length} total inventory keys`;
+
+  // Render pagination controls
+  renderInventoryPagination(itemsList.length);
+}
+
+// Render dynamic pagination controls for the inventory
+function renderInventoryPagination(totalItems) {
+  const container = document.getElementById("inventory-pagination");
+  if (!container) return;
+  container.innerHTML = "";
+
+  const totalPages = Math.ceil(totalItems / state.inventoryPageSize) || 1;
+  if (totalPages <= 1) {
+    container.style.display = "none";
+    return;
+  }
+  container.style.display = "flex";
+
+  // Helper to create page buttons
+  const createBtn = (label, targetPage, disabled = false, isActive = false) => {
+    const btn = document.createElement("button");
+    btn.className = "pagination-btn";
+    if (isActive) btn.classList.add("active");
+    btn.disabled = disabled;
+    btn.innerHTML = label;
+    if (!disabled && !isActive) {
+      btn.addEventListener("click", () => {
+        state.inventoryCurrentPage = targetPage;
+        updateUI();
+        const invView = document.getElementById("inventory-view");
+        if (invView) {
+          invView.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
+    }
+    return btn;
+  };
+
+  // Prev Button
+  container.appendChild(createBtn('<i class="fa-solid fa-angle-left"></i>', state.inventoryCurrentPage - 1, state.inventoryCurrentPage === 1));
+
+  // Page Numbers with sliding window
+  const maxButtons = 5;
+  let startPage = Math.max(1, state.inventoryCurrentPage - Math.floor(maxButtons / 2));
+  let endPage = startPage + maxButtons - 1;
+
+  if (endPage > totalPages) {
+    endPage = totalPages;
+    startPage = Math.max(1, endPage - maxButtons + 1);
+  }
+
+  if (startPage > 1) {
+    container.appendChild(createBtn("1", 1));
+    if (startPage > 2) {
+      const dots = document.createElement("span");
+      dots.className = "pagination-dots";
+      dots.textContent = "...";
+      container.appendChild(dots);
+    }
+  }
+
+  for (let i = startPage; i <= endPage; i++) {
+    container.appendChild(createBtn(i.toString(), i, false, i === state.inventoryCurrentPage));
+  }
+
+  if (endPage < totalPages) {
+    if (endPage < totalPages - 1) {
+      const dots = document.createElement("span");
+      dots.className = "pagination-dots";
+      dots.textContent = "...";
+      container.appendChild(dots);
+    }
+    container.appendChild(createBtn(totalPages.toString(), totalPages));
+  }
+
+  // Next Button
+  container.appendChild(createBtn('<i class="fa-solid fa-angle-right"></i>', state.inventoryCurrentPage + 1, state.inventoryCurrentPage === totalPages));
 }
 
 // Render layout format A: List (Table)
@@ -3338,7 +3937,7 @@ function renderInventoryListLayout(itemsList) {
   tbody.innerHTML = "";
 
   if (itemsList.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="10" class="text-center" style="text-align: center; padding: 30px; color: var(--text-muted);">No matching inventory keys in stock.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11" class="text-center" style="text-align: center; padding: 30px; color: var(--text-muted);">No matching inventory keys in stock.</td></tr>`;
     return;
   }
 
@@ -3419,6 +4018,9 @@ function renderInventoryListLayout(itemsList) {
     }
 
     tr.innerHTML = `
+      <td style="text-align: center; vertical-align: middle;">
+        <input type="checkbox" class="inv-row-select" data-id="${item.id}" style="cursor: pointer;">
+      </td>
       <td>${titleCell}</td>
       <td><span class="platform-indicator"><i class="fa-solid fa-gamepad" style="font-size: 0.8rem; margin-right: 6px;"></i> ${item.platform}</span></td>
       <td><div class="secured-key"><code>${maskedKey}</code></div></td>
@@ -3993,8 +4595,8 @@ function renderSalesTrendChart(filteredSalesList) {
         },
         tooltip: {
           backgroundColor: tooltipBg,
-          titleColor: state.theme === "dark" ? "#fff" : "#000",
-          bodyColor: state.theme === "dark" ? "#fff" : "#000",
+          titleColor: state.theme !== "light" ? "#fff" : "#000",
+          bodyColor: state.theme !== "light" ? "#fff" : "#000",
           borderColor: borderColor,
           borderWidth: 1
         }
@@ -4090,8 +4692,284 @@ function renderPlatformSplitChart(filteredSalesList) {
         },
         tooltip: {
           backgroundColor: tooltipBg,
-          titleColor: state.theme === "dark" ? "#fff" : "#000",
-          bodyColor: state.theme === "dark" ? "#fff" : "#000",
+          titleColor: state.theme !== "light" ? "#fff" : "#000",
+          bodyColor: state.theme !== "light" ? "#fff" : "#000",
+          borderColor: borderColor,
+          borderWidth: 1
+        }
+      }
+    }
+  });
+}
+
+// Render Cost vs Revenue chart
+function renderCostRevenueChart(filteredSalesList) {
+  if (typeof Chart === 'undefined') {
+    console.warn("Chart.js is not loaded. Skipping cost vs revenue chart rendering.");
+    return;
+  }
+  const canvas = document.getElementById("costRevenueChart");
+  if (!canvas) {
+    console.warn("costRevenueChart canvas not found. Skipping chart rendering.");
+    return;
+  }
+  const ctx = canvas.getContext("2d");
+
+  if (costRevenueChartInstance) {
+    try {
+      costRevenueChartInstance.destroy();
+    } catch (e) {
+      console.error("Error destroying costRevenueChartInstance:", e);
+    }
+  }
+
+  // Group sales by Date
+  const salesByDate = {};
+  filteredSalesList.forEach(sale => {
+    const dateStr = sale.saleDate;
+    if (!salesByDate[dateStr]) {
+      salesByDate[dateStr] = { revenue: 0, cost: 0 };
+    }
+    salesByDate[dateStr].revenue += sale.sellPrice;
+    salesByDate[dateStr].cost += sale.cost;
+  });
+
+  const sortedDates = Object.keys(salesByDate).sort((a, b) => new Date(a) - new Date(b));
+  
+  const labels = sortedDates.map(d => {
+    const opt = { month: 'short', day: 'numeric' };
+    return new Date(d).toLocaleDateString('en-US', opt);
+  });
+  const revenueData = sortedDates.map(d => salesByDate[d].revenue);
+  const costData = sortedDates.map(d => salesByDate[d].cost);
+
+  if (sortedDates.length === 0) {
+    labels.push("No Sales Data");
+    revenueData.push(0);
+    costData.push(0);
+  }
+
+  const rootStyle = getComputedStyle(document.documentElement);
+  const textSecondaryColor = rootStyle.getPropertyValue('--text-secondary').trim() || 'hsl(220, 12%, 65%)';
+  const borderColor = rootStyle.getPropertyValue('--border-color').trim() || 'hsla(224, 20%, 25%, 0.15)';
+  const tooltipBg = rootStyle.getPropertyValue('--bg-sidebar').trim() || 'hsl(224, 25%, 10%)';
+
+  costRevenueChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Acquisition Cost',
+          data: costData,
+          backgroundColor: 'hsl(330, 95%, 60%)', // Pink
+          borderRadius: 4
+        },
+        {
+          label: 'Revenue',
+          data: revenueData,
+          backgroundColor: 'hsl(195, 90%, 50%)', // Cyan
+          borderRadius: 4
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: textSecondaryColor, font: { family: 'Inter', size: 10 } }
+        },
+        y: {
+          grid: { color: borderColor },
+          ticks: { color: textSecondaryColor, font: { family: 'Inter', size: 10 } }
+        }
+      },
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: textSecondaryColor, font: { family: 'Inter', size: 10 }, boxWidth: 12 }
+        },
+        tooltip: {
+          backgroundColor: tooltipBg,
+          titleColor: state.themeMode !== "light" ? "#fff" : "#000",
+          bodyColor: state.themeMode !== "light" ? "#fff" : "#000",
+          borderColor: borderColor,
+          borderWidth: 1
+        }
+      }
+    }
+  });
+}
+
+// Render Supplier stock distribution chart
+function renderSupplierSplitChart(filteredInventoryList) {
+  if (typeof Chart === 'undefined') {
+    console.warn("Chart.js is not loaded. Skipping supplier split chart rendering.");
+    return;
+  }
+  const canvas = document.getElementById("supplierSplitChart");
+  if (!canvas) {
+    console.warn("supplierSplitChart canvas not found. Skipping chart rendering.");
+    return;
+  }
+  const ctx = canvas.getContext("2d");
+
+  if (supplierSplitChartInstance) {
+    try {
+      supplierSplitChartInstance.destroy();
+    } catch (e) {
+      console.error("Error destroying supplierSplitChartInstance:", e);
+    }
+  }
+
+  // Count unsold stock per supplier
+  const supplierCounts = {};
+  filteredInventoryList.forEach(item => {
+    if (item.status !== "Sold") {
+      const supplier = item.source || "Unknown";
+      supplierCounts[supplier] = (supplierCounts[supplier] || 0) + 1;
+    }
+  });
+
+  const labels = Object.keys(supplierCounts);
+  const data = Object.values(supplierCounts);
+
+  if (labels.length === 0) {
+    labels.push("No Available Stock");
+    data.push(1);
+  }
+
+  const backgroundColors = [
+    'hsl(270, 85%, 60%)', // Purple
+    'hsl(195, 90%, 50%)', // Cyan
+    'hsl(175, 90%, 48%)', // Teal
+    'hsl(40, 95%, 55%)',  // Gold
+    'hsl(330, 95%, 60%)', // Pink
+    'hsl(355, 85%, 55%)'  // Danger
+  ];
+
+  const rootStyle = getComputedStyle(document.documentElement);
+  const textSecondaryColor = rootStyle.getPropertyValue('--text-secondary').trim() || 'hsl(220, 12%, 65%)';
+  const bgCardColor = rootStyle.getPropertyValue('--bg-card').trim() || 'hsl(224, 22%, 12%)';
+  const borderColor = rootStyle.getPropertyValue('--border-color').trim() || 'hsla(224, 20%, 30%, 0.5)';
+  const tooltipBg = rootStyle.getPropertyValue('--bg-sidebar').trim() || 'hsl(224, 25%, 10%)';
+
+  supplierSplitChartInstance = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data,
+        backgroundColor: backgroundColors.slice(0, labels.length),
+        borderWidth: 2,
+        borderColor: bgCardColor,
+        hoverOffset: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            color: textSecondaryColor,
+            font: { family: 'Inter', size: 10 },
+            boxWidth: 12
+          }
+        },
+        tooltip: {
+          backgroundColor: tooltipBg,
+          titleColor: state.themeMode !== "light" ? "#fff" : "#000",
+          bodyColor: state.themeMode !== "light" ? "#fff" : "#000",
+          borderColor: borderColor,
+          borderWidth: 1
+        }
+      }
+    }
+  });
+}
+
+// Render top bestselling games horizontal bar chart
+function renderTopBestsellersChart(filteredSalesList) {
+  if (typeof Chart === 'undefined') {
+    console.warn("Chart.js is not loaded. Skipping bestsellers chart rendering.");
+    return;
+  }
+  const canvas = document.getElementById("topBestsellersChart");
+  if (!canvas) {
+    console.warn("topBestsellersChart canvas not found. Skipping chart rendering.");
+    return;
+  }
+  const ctx = canvas.getContext("2d");
+
+  if (topBestsellersChartInstance) {
+    try {
+      topBestsellersChartInstance.destroy();
+    } catch (e) {
+      console.error("Error destroying topBestsellersChartInstance:", e);
+    }
+  }
+
+  // Calculate net profit per game title
+  const gameProfits = {};
+  filteredSalesList.forEach(sale => {
+    const title = sale.gameTitle || "Unknown Game";
+    gameProfits[title] = (gameProfits[title] || 0) + sale.profit;
+  });
+
+  // Sort and pick top 5
+  const sortedGames = Object.keys(gameProfits)
+    .map(title => ({ title: title, profit: gameProfits[title] }))
+    .sort((a, b) => b.profit - a.profit)
+    .slice(0, 5);
+
+  const labels = sortedGames.map(g => g.title);
+  const data = sortedGames.map(g => g.profit);
+
+  if (labels.length === 0) {
+    labels.push("No Sales");
+    data.push(0);
+  }
+
+  const rootStyle = getComputedStyle(document.documentElement);
+  const textSecondaryColor = rootStyle.getPropertyValue('--text-secondary').trim() || 'hsl(220, 12%, 65%)';
+  const borderColor = rootStyle.getPropertyValue('--border-color').trim() || 'hsla(224, 20%, 25%, 0.15)';
+  const tooltipBg = rootStyle.getPropertyValue('--bg-sidebar').trim() || 'hsl(224, 25%, 10%)';
+
+  topBestsellersChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Net Profit',
+        data: data,
+        backgroundColor: 'hsl(175, 90%, 48%)', // Teal
+        borderRadius: 4
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          grid: { color: borderColor },
+          ticks: { color: textSecondaryColor, font: { family: 'Inter', size: 10 } }
+        },
+        y: {
+          grid: { display: false },
+          ticks: { color: textSecondaryColor, font: { family: 'Inter', size: 10 } }
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: tooltipBg,
+          titleColor: state.themeMode !== "light" ? "#fff" : "#000",
+          bodyColor: state.themeMode !== "light" ? "#fff" : "#000",
           borderColor: borderColor,
           borderWidth: 1
         }
@@ -4415,13 +5293,22 @@ function applyLogo(logoData) {
   }
 }
 
-function updateThemeSelectionCards(theme) {
-  const optDark = document.getElementById("theme-opt-dark");
-  const optLight = document.getElementById("theme-opt-light");
-  if (optDark && optLight) {
-    optDark.classList.toggle("active", theme === "dark");
-    optLight.classList.toggle("active", theme === "light");
-  }
+function updateThemeSelectionCards(mode, color) {
+  const modes = ["dark", "light"];
+  modes.forEach(m => {
+    const el = document.getElementById(`mode-opt-${m}`);
+    if (el) {
+      el.classList.toggle("active", mode === m);
+    }
+  });
+  
+  const colors = ["classic", "ocean", "cyberpunk", "emerald", "amber", "nordic"];
+  colors.forEach(c => {
+    const el = document.getElementById(`color-opt-${c}`);
+    if (el) {
+      el.classList.toggle("active", color === c);
+    }
+  });
 }
 
 // Regional Currency Formatting and UI Sync Helpers
@@ -4693,7 +5580,10 @@ function applyMetricsVisibility() {
     cost: document.getElementById("card-inventory-cost"),
     revenue: document.getElementById("card-total-revenue"),
     roi: document.getElementById("card-roi"),
-    stock: document.getElementById("card-available-stock")
+    stock: document.getElementById("card-available-stock"),
+    velocity: document.getElementById("card-sales-velocity"),
+    str: document.getElementById("card-sell-through-rate"),
+    unitProfit: document.getElementById("card-avg-profit-key")
   };
   
   Object.keys(cards).forEach(key => {
@@ -4714,6 +5604,60 @@ function applyMetricsVisibility() {
   });
 }
 
+function applyFiguresVisibility() {
+  const cards = {
+    salesProfit: document.getElementById("card-chart-salesProfit"),
+    platformSplit: document.getElementById("card-chart-platformSplit"),
+    costRevenue: document.getElementById("card-chart-costRevenue"),
+    supplierSplit: document.getElementById("card-chart-supplierSplit"),
+    topBestsellers: document.getElementById("card-chart-topBestsellers")
+  };
+  
+  Object.keys(cards).forEach(key => {
+    const cardEl = cards[key];
+    if (cardEl) {
+      if (state.visibleFigures && state.visibleFigures[key]) {
+        cardEl.style.display = "";
+      } else {
+        cardEl.style.display = "none";
+      }
+    }
+    
+    // Also update checkbox state in the dropdown panel
+    const checkbox = document.getElementById(`toggle-figure-${key}`);
+    if (checkbox) {
+      checkbox.checked = !!(state.visibleFigures && state.visibleFigures[key]);
+    }
+  });
+
+  // Toggle grid rows
+  const row1 = document.getElementById("charts-grid-row-1");
+  if (row1) {
+    const showRow1 = !!(state.visibleFigures && (state.visibleFigures.salesProfit || state.visibleFigures.platformSplit));
+    row1.style.display = showRow1 ? "" : "none";
+    if (showRow1) {
+      const bothShown = !!(state.visibleFigures.salesProfit && state.visibleFigures.platformSplit);
+      row1.style.gridTemplateColumns = bothShown ? "" : "minmax(0, 1fr)";
+    }
+  }
+
+  const row2 = document.getElementById("charts-grid-row-2");
+  if (row2) {
+    const showRow2 = !!(state.visibleFigures && (state.visibleFigures.costRevenue || state.visibleFigures.supplierSplit));
+    row2.style.display = showRow2 ? "" : "none";
+    if (showRow2) {
+      const bothShown = !!(state.visibleFigures.costRevenue && state.visibleFigures.supplierSplit);
+      row2.style.gridTemplateColumns = bothShown ? "" : "minmax(0, 1fr)";
+    }
+  }
+
+  const row3 = document.getElementById("charts-grid-row-3");
+  if (row3) {
+    const showRow3 = !!(state.visibleFigures && state.visibleFigures.topBestsellers);
+    row3.style.display = showRow3 ? "" : "none";
+  }
+}
+
 function applyMetricOrder() {
   const grid = document.querySelector(".metrics-grid");
   if (!grid) return;
@@ -4723,7 +5667,10 @@ function applyMetricOrder() {
     "card-inventory-cost",
     "card-total-revenue",
     "card-roi",
-    "card-available-stock"
+    "card-available-stock",
+    "card-sales-velocity",
+    "card-sell-through-rate",
+    "card-avg-profit-key"
   ];
   
   const order = state.metricOrder && state.metricOrder.length === defaultOrder.length
@@ -5081,8 +6028,8 @@ function renderFinanceView() {
         },
         tooltip: {
           backgroundColor: tooltipBg,
-          titleColor: state.theme === "dark" ? "#fff" : "#000",
-          bodyColor: state.theme === "dark" ? "#fff" : "#000",
+          titleColor: state.theme !== "light" ? "#fff" : "#000",
+          bodyColor: state.theme !== "light" ? "#fff" : "#000",
           borderColor: borderColor,
           borderWidth: 1
         }
@@ -5441,10 +6388,26 @@ async function dbLoadState() {
 
     if (settingsData && settingsData.length > 0) {
       settingsData.forEach(s => {
-        if (s.key === "theme") {
-          state.theme = s.value;
-          applyTheme(state.theme);
-          updateThemeSelectionCards(state.theme);
+        if (s.key === "themeMode") {
+          state.themeMode = s.value;
+          applyTheme(state.themeMode, state.themeColor);
+          updateThemeSelectionCards(state.themeMode, state.themeColor);
+        } else if (s.key === "themeColor") {
+          state.themeColor = s.value;
+          applyTheme(state.themeMode, state.themeColor);
+          updateThemeSelectionCards(state.themeMode, state.themeColor);
+        } else if (s.key === "theme") {
+          // Handle legacy remote theme load
+          const val = s.value;
+          if (val === "light") {
+            state.themeMode = "light";
+            state.themeColor = "classic";
+          } else {
+            state.themeMode = "dark";
+            state.themeColor = val === "dark" ? "classic" : val;
+          }
+          applyTheme(state.themeMode, state.themeColor);
+          updateThemeSelectionCards(state.themeMode, state.themeColor);
         } else if (s.key === "currency") {
           state.currency = s.value;
           updateCurrencySymbols();
@@ -5466,10 +6429,28 @@ async function dbLoadState() {
           const toggleSales = document.getElementById("toggle-show-sales-ledger");
           if (toggleSales) toggleSales.checked = state.showSalesLedger;
         } else if (s.key === "visibleMetrics") {
-          state.visibleMetrics = s.value;
+          try {
+            state.visibleMetrics = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+          } catch(e) {
+            console.error("Error parsing visibleMetrics:", e);
+            state.visibleMetrics = s.value;
+          }
           applyMetricsVisibility();
+        } else if (s.key === "visibleFigures") {
+          try {
+            state.visibleFigures = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+          } catch(e) {
+            console.error("Error parsing visibleFigures:", e);
+            state.visibleFigures = s.value;
+          }
+          applyFiguresVisibility();
         } else if (s.key === "metricOrder") {
-          state.metricOrder = s.value;
+          try {
+            state.metricOrder = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+          } catch(e) {
+            console.error("Error parsing metricOrder:", e);
+            state.metricOrder = s.value;
+          }
           applyMetricOrder();
         } else if (s.key === "customLogo") {
           state.customLogo = s.value;
@@ -5564,13 +6545,16 @@ async function dbSeedDatabase() {
       .insert(customData);
 
     const settings = [
-      { key: "theme", value: state.theme },
+      { key: "themeMode", value: state.themeMode },
+      { key: "themeColor", value: state.themeColor },
+      { key: "theme", value: state.themeMode === "light" ? "light" : state.themeColor },
       { key: "currency", value: state.currency },
       { key: "dateFormat", value: state.dateFormat },
       { key: "fontSize", value: state.fontSize },
       { key: "showFeeCalculator", value: state.showFeeCalculator },
       { key: "showSalesLedger", value: state.showSalesLedger },
       { key: "visibleMetrics", value: state.visibleMetrics },
+      { key: "visibleFigures", value: state.visibleFigures },
       { key: "metricOrder", value: state.metricOrder },
       { key: "customLogo", value: state.customLogo },
       { key: "lowStockThreshold", value: state.lowStockThreshold },
@@ -6139,12 +7123,12 @@ function exportStateBackupJSON() {
   const backupData = {};
   const keys = [
     "gv_inventory", "gv_sales", "gv_suppliers", "gv_platforms",
-    "gv_inv_layout", "gv_supplier_display_mode", "gv_theme", "gv_currency", "gv_date_format",
+    "gv_inv_layout", "gv_supplier_display_mode", "gv_theme", "gv_theme_mode", "gv_theme_color", "gv_currency", "gv_date_format",
     "gv_sidebar_collapsed", "gv_show_fee_calculator", "gv_show_sales_ledger",
-    "gv_visible_metrics", "gv_metric_order", "gv_font_size", "gv_menu_icons",
+    "gv_visible_metrics", "gv_visible_figures", "gv_metric_order", "gv_font_size", "gv_menu_icons",
     "gv_menu_titles", "gv_custom_logo", "gv_low_stock_threshold",
     "gv_default_markup_type", "gv_default_markup_value",
-    "gv_platform_fee_presets", "gv_sync_mode"
+    "gv_platform_fee_presets", "gv_sync_mode", "gv_recycle_bin"
   ];
   
   keys.forEach(k => {
@@ -6356,13 +7340,16 @@ async function synchronizeCloudDatabase() {
     
     // 4. Sync settings
     const settings = [
-      { key: "theme", value: state.theme },
+      { key: "themeMode", value: state.themeMode },
+      { key: "themeColor", value: state.themeColor },
+      { key: "theme", value: state.themeMode === "light" ? "light" : state.themeColor },
       { key: "currency", value: state.currency },
       { key: "dateFormat", value: state.dateFormat },
       { key: "fontSize", value: state.fontSize },
       { key: "showFeeCalculator", value: state.showFeeCalculator },
       { key: "showSalesLedger", value: state.showSalesLedger },
       { key: "visibleMetrics", value: state.visibleMetrics },
+      { key: "visibleFigures", value: state.visibleFigures },
       { key: "metricOrder", value: state.metricOrder },
       { key: "customLogo", value: state.customLogo },
       { key: "lowStockThreshold", value: state.lowStockThreshold },
@@ -6391,3 +7378,151 @@ async function synchronizeCloudDatabase() {
     }
   }
 }
+
+// ==========================================================================
+// RECYCLE BIN VIEW RENDERERS & MUTATORS
+// ==========================================================================
+function escapeHTML(str) {
+  if (!str) return "";
+  return str.toString()
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function renderRecycleBin() {
+  const tbody = document.getElementById("recycle-table-body");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  if (!state.recycleBin || !state.recycleBin.inventory || state.recycleBin.inventory.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9" class="text-center" style="text-align: center; padding: 30px; color: var(--text-muted);">Recycle Bin is empty.</td></tr>`;
+    const selectAllCheckbox = document.getElementById("recycle-select-all");
+    if (selectAllCheckbox) selectAllCheckbox.checked = false;
+    updateRecycleBulkActionsBar();
+    return;
+  }
+
+  state.recycleBin.inventory.forEach(item => {
+    const tr = document.createElement("tr");
+    const maskedKey = `${item.key.slice(0, 4)}-****-****-${item.key.slice(-4)}`;
+
+    const supplierObj = state.suppliers.find(s => s.name === item.source);
+    const colorName = supplierObj ? (supplierObj.color || getSupplierColorName(item.source)) : getSupplierColorName(item.source);
+    const colorPreset = SUPPLIER_COLORS.find(c => c.name === colorName) || SUPPLIER_COLORS[0];
+    const supplierBadge = `
+      <span class="supplier-tag" style="background-color: ${colorPreset.value}12; border-color: ${colorPreset.value}25; color: ${colorPreset.value}; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px; vertical-align: middle;">
+        <span class="supplier-dot" style="background-color: ${colorPreset.value}; width: 6px; height: 6px;"></span>
+        ${item.source}
+      </span>
+    `;
+
+    tr.innerHTML = `
+      <td style="text-align: center; vertical-align: middle;">
+        <input type="checkbox" class="recycle-row-select" data-id="${item.id}" style="cursor: pointer;">
+      </td>
+      <td><strong>${escapeHTML(item.title)}</strong></td>
+      <td><span class="platform-indicator"><i class="fa-solid fa-gamepad" style="font-size: 0.8rem; margin-right: 6px;"></i> ${escapeHTML(item.platform)}</span></td>
+      <td><div class="secured-key"><code>${maskedKey}</code></div></td>
+      <td>${formatCurrency(item.cost)}</td>
+      <td style="text-align: center;">${supplierBadge}</td>
+      <td>${formatDate(item.purchaseDate)}</td>
+      <td><span class="badge ${item.status === 'Sold' ? 'badge-sold' : 'badge-available'}">${item.status}</span></td>
+      <td>
+        <div class="table-actions">
+          <button class="btn-action btn-action-edit" onclick="triggerRestoreGame('${item.id}')" title="Restore Key" style="color: var(--accent-cyan); border-color: var(--accent-cyan);"><i class="fa-solid fa-trash-arrow-up"></i></button>
+          <button class="btn-action btn-action-delete" onclick="triggerPurgeGame('${item.id}')" title="Delete Permanently"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Bind change listeners to checkboxes
+  document.querySelectorAll(".recycle-row-select").forEach(cb => {
+    cb.addEventListener("change", () => {
+      updateRecycleBulkActionsBar();
+    });
+  });
+}
+
+function updateRecycleBulkActionsBar() {
+  const selectedCheckboxes = document.querySelectorAll(".recycle-row-select:checked");
+  const count = selectedCheckboxes.length;
+  const bar = document.getElementById("recycle-bulk-actions");
+  const infoText = document.getElementById("recycle-info-text");
+  const countText = document.getElementById("recycle-select-count");
+  
+  if (bar && infoText && countText) {
+    if (count > 0) {
+      countText.textContent = `${count} item${count === 1 ? '' : 's'} selected`;
+      bar.classList.remove("hidden");
+      infoText.classList.add("hidden");
+    } else {
+      bar.classList.add("hidden");
+      infoText.classList.remove("hidden");
+    }
+  }
+
+  const selectAllCheckbox = document.getElementById("recycle-select-all");
+  if (selectAllCheckbox) {
+    const allCheckboxes = document.querySelectorAll(".recycle-row-select");
+    selectAllCheckbox.checked = allCheckboxes.length > 0 && Array.from(allCheckboxes).every(cb => cb.checked);
+  }
+}
+
+window.triggerRestoreGame = async function(gameId) {
+  const game = state.recycleBin.inventory.find(item => item.id === gameId);
+  if (!game) return;
+
+  // Restore game
+  state.recycleBin.inventory = state.recycleBin.inventory.filter(item => item.id !== gameId);
+  state.inventory.push(game);
+
+  // Restore associated sale if any
+  const associatedSaleIndex = state.recycleBin.sales.findIndex(sale => sale.inventoryId === gameId);
+  let sale = null;
+  if (associatedSaleIndex !== -1) {
+    sale = state.recycleBin.sales[associatedSaleIndex];
+    state.recycleBin.sales.splice(associatedSaleIndex, 1);
+    state.sales.push(sale);
+  }
+
+  // Optimize: remove from pending deletes if it is in manual sync queue
+  if (state.pendingDeletes.inventory.includes(gameId)) {
+    state.pendingDeletes.inventory = state.pendingDeletes.inventory.filter(id => id !== gameId);
+  }
+  if (sale && state.pendingDeletes.sales.includes(sale.id)) {
+    state.pendingDeletes.sales = state.pendingDeletes.sales.filter(id => id !== sale.id);
+  }
+
+  saveStateToStorage();
+  
+  if (window.supabaseClient) {
+    await dbSaveInventory(game);
+    if (sale) {
+      await dbSaveSale(sale);
+    }
+  } else if (state.syncMode === "manual") {
+    setUnsyncedChanges(true);
+  }
+
+  updateUI();
+  showToast(`Restored "${game.title}" to active inventory.`, "success");
+};
+
+window.triggerPurgeGame = async function(gameId) {
+  const game = state.recycleBin.inventory.find(item => item.id === gameId);
+  if (!game) return;
+
+  if (confirm(`Are you sure you want to permanently delete "${game.title}"? This action cannot be undone.`)) {
+    state.recycleBin.inventory = state.recycleBin.inventory.filter(item => item.id !== gameId);
+    state.recycleBin.sales = state.recycleBin.sales.filter(sale => sale.inventoryId !== gameId);
+
+    saveStateToStorage();
+    updateUI();
+    showToast(`Permanently deleted "${game.title}".`, "success");
+  }
+};

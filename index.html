@@ -95,6 +95,12 @@
             </a>
           </li>
           <li>
+            <a href="#recycle" class="nav-link" id="nav-recycle">
+              <i class="fa-solid fa-trash-can" id="sidebar-icon-recycle"></i>
+              <span id="sidebar-text-recycle">Recycle Bin</span>
+            </a>
+          </li>
+          <li>
             <a href="#settings" class="nav-link" id="nav-settings">
               <i class="fa-solid fa-gear" id="sidebar-icon-settings"></i>
               <span id="sidebar-text-settings">Settings</span>
@@ -190,6 +196,48 @@
                     <input type="checkbox" id="toggle-metric-stock" checked>
                     <span class="checkbox-label">Available Stock</span>
                   </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="toggle-metric-velocity" checked>
+                    <span class="checkbox-label">Sales Velocity</span>
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="toggle-metric-str" checked>
+                    <span class="checkbox-label">Sell-Through Rate</span>
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="toggle-metric-unitProfit" checked>
+                    <span class="checkbox-label">Avg Profit per Key</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Customize Figures Dropdown -->
+              <div class="dropdown-container" id="figures-customize-dropdown">
+                <button class="btn btn-outline btn-sm" id="btn-toggle-figures-panel" title="Customize Figures">
+                  <i class="fa-solid fa-chart-simple"></i> <span>Figures</span>
+                </button>
+                <div class="dropdown-menu glass-panel" id="figures-customize-panel">
+                  <h5>Show/Hide Figures</h5>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="toggle-figure-salesProfit" checked>
+                    <span class="checkbox-label">Sales & Profit Trend</span>
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="toggle-figure-platformSplit" checked>
+                    <span class="checkbox-label">Platform Sales Split</span>
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="toggle-figure-costRevenue" checked>
+                    <span class="checkbox-label">Cost vs Revenue</span>
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="toggle-figure-supplierSplit" checked>
+                    <span class="checkbox-label">Supplier Stock Distribution</span>
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="toggle-figure-topBestsellers" checked>
+                    <span class="checkbox-label">Top Bestsellers</span>
+                  </label>
                 </div>
               </div>
 
@@ -275,11 +323,44 @@
                 <i class="fa-solid fa-boxes-stacked"></i>
               </div>
             </div>
+
+            <div class="metric-card bg-gradient-amber" id="card-sales-velocity">
+              <div class="metric-info">
+                <span class="metric-label">Sales Velocity</span>
+                <h3 class="metric-value" id="metric-sales-velocity">0.0 days</h3>
+                <span class="metric-subtext" id="metric-velocity-subtext">0 sales tracked</span>
+              </div>
+              <div class="metric-icon">
+                <i class="fa-solid fa-gauge-high"></i>
+              </div>
+            </div>
+
+            <div class="metric-card bg-gradient-teal" id="card-sell-through-rate">
+              <div class="metric-info">
+                <span class="metric-label">Sell-Through Rate</span>
+                <h3 class="metric-value" id="metric-sell-through">0.0%</h3>
+                <span class="metric-subtext" id="metric-str-subtext">0 sold / 0 total</span>
+              </div>
+              <div class="metric-icon">
+                <i class="fa-solid fa-chart-pie"></i>
+              </div>
+            </div>
+
+            <div class="metric-card bg-gradient-blue" id="card-avg-profit-key">
+              <div class="metric-info">
+                <span class="metric-label">Avg Profit per Key</span>
+                <h3 class="metric-value" id="metric-avg-profit-key">€0.00</h3>
+                <span class="metric-subtext" id="metric-avg-profit-subtext">Based on 0 sales</span>
+              </div>
+              <div class="metric-icon">
+                <i class="fa-solid fa-tags"></i>
+              </div>
+            </div>
           </div>
 
           <!-- Charts Grid -->
-          <div class="charts-grid">
-            <div class="chart-card large-chart">
+          <div class="charts-grid" id="charts-grid-row-1">
+            <div class="chart-card large-chart" id="card-chart-salesProfit">
               <div class="chart-card-header">
                 <h4>Sales vs Profit Trend</h4>
                 <i class="fa-solid fa-ellipsis-vertical"></i>
@@ -289,13 +370,49 @@
               </div>
             </div>
 
-            <div class="chart-card small-chart">
+            <div class="chart-card small-chart" id="card-chart-platformSplit">
               <div class="chart-card-header">
                 <h4>Platform Sales Split</h4>
                 <i class="fa-solid fa-ellipsis-vertical"></i>
               </div>
               <div class="chart-body doughnut-container">
                 <canvas id="platformSplitChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Charts Grid Row 2 -->
+          <div class="charts-grid" id="charts-grid-row-2">
+            <div class="chart-card large-chart" id="card-chart-costRevenue">
+              <div class="chart-card-header">
+                <h4>Monthly Cost vs Revenue Comparison</h4>
+                <i class="fa-solid fa-ellipsis-vertical"></i>
+              </div>
+              <div class="chart-body">
+                <canvas id="costRevenueChart"></canvas>
+              </div>
+            </div>
+
+            <div class="chart-card small-chart" id="card-chart-supplierSplit">
+              <div class="chart-card-header">
+                <h4>Supplier Stock Distribution</h4>
+                <i class="fa-solid fa-ellipsis-vertical"></i>
+              </div>
+              <div class="chart-body doughnut-container">
+                <canvas id="supplierSplitChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Charts Grid Row 3 (Full Width) -->
+          <div class="charts-grid" id="charts-grid-row-3">
+            <div class="chart-card large-chart" id="card-chart-topBestsellers" style="grid-column: 1 / -1;">
+              <div class="chart-card-header">
+                <h4>Top 5 Bestselling Games by Net Profit</h4>
+                <i class="fa-solid fa-ellipsis-vertical"></i>
+              </div>
+              <div class="chart-body">
+                <canvas id="topBestsellersChart"></canvas>
               </div>
             </div>
           </div>
@@ -367,8 +484,8 @@
               <button class="btn btn-outline" id="btn-export-inventory">
                 <i class="fa-solid fa-download"></i> <span>Export CSV</span>
               </button>
-              <button class="btn btn-primary" id="btn-add-game-inventory">
-                <i class="fa-solid fa-plus"></i> <span>Add Key</span>
+              <button class="btn btn-outline" id="btn-go-to-recycle" title="Open Recycle Bin">
+                <i class="fa-solid fa-trash-can"></i> <span>Recycle Bin</span>
               </button>
             </div>
           </div>
@@ -434,6 +551,9 @@
               <table class="table" id="inventory-table">
                 <thead>
                   <tr>
+                    <th style="width: 40px; text-align: center;">
+                      <input type="checkbox" id="inv-select-all" style="cursor: pointer;">
+                    </th>
                     <th>Game Title</th>
                     <th>Platform</th>
                     <th>Digital Key</th>
@@ -464,6 +584,19 @@
             
             <div class="table-footer">
               <span id="inventory-count-text">Showing 0 of 0 inventory items</span>
+              <div class="pagination-controls" style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                <div class="page-size-selector" style="display: flex; align-items: center; gap: 8px;">
+                  <label for="inv-page-size" style="white-space: nowrap; margin-bottom: 0;">Show:</label>
+                  <select id="inv-page-size" class="form-control form-control-sm" style="width: auto; padding: 4px 8px; height: 32px;">
+                    <option value="25" selected>25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                  </select>
+                </div>
+                <div class="pagination-buttons" id="inventory-pagination" style="display: flex; align-items: center; gap: 4px;">
+                  <!-- Injected by JS -->
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -881,6 +1014,61 @@
             </div>
           </section>
 
+          <!-- RECYCLE BIN VIEW -->
+          <section id="recycle-view" class="content-view">
+            <div class="view-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+              <div>
+                <h2 class="view-title">Recycle Bin</h2>
+                <p class="view-subtitle">Restore deleted game keys or permanently purge them from the database.</p>
+              </div>
+              <div>
+                <button class="btn btn-danger btn-sm" id="btn-empty-recycle">
+                  <i class="fa-solid fa-dumpster-fire"></i> Empty Recycle Bin
+                </button>
+              </div>
+            </div>
+
+            <div class="inventory-table-card">
+              <div class="table-actions-header" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border-color); min-height: 70px;">
+                <div class="recycle-bulk-actions hidden" id="recycle-bulk-actions" style="display: flex; gap: 10px; align-items: center;">
+                  <span id="recycle-select-count" style="font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-right: 8px;">0 items selected</span>
+                  <button class="btn btn-primary btn-sm" id="btn-recycle-bulk-restore">
+                    <i class="fa-solid fa-trash-arrow-up"></i> Restore Selected
+                  </button>
+                  <button class="btn btn-danger btn-sm" id="btn-recycle-bulk-purge">
+                    <i class="fa-solid fa-trash"></i> Delete Permanently
+                  </button>
+                </div>
+                <div id="recycle-info-text" style="font-size: 0.85rem; color: var(--text-secondary);">
+                  Manage items currently in the trash.
+                </div>
+              </div>
+
+              <div class="table-responsive">
+                <table class="table" id="recycle-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 40px; text-align: center;">
+                        <input type="checkbox" id="recycle-select-all" style="cursor: pointer;">
+                      </th>
+                      <th>Game Title</th>
+                      <th>Platform</th>
+                      <th>Digital Key</th>
+                      <th>Cost</th>
+                      <th style="text-align: center;">Supplier</th>
+                      <th>Date Added</th>
+                      <th>Original Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="recycle-table-body">
+                    <!-- Dynamically rendered -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
           <!-- SETTINGS VIEW -->
           <section id="settings-view" class="content-view">
             <div class="view-header">
@@ -891,21 +1079,49 @@
             <div class="responsive-grid-equal">
               <!-- Left Column: Theme & Currency -->
               <div style="display: flex; flex-direction: column; gap: 24px;">
-                <!-- Theme Settings Card -->
-                <div class="calc-card" style="margin-bottom: 0;">
-                  <h3>Application Theme</h3>
+                               <div class="calc-card" style="margin-bottom: 0;">
+                  <h3>Application Appearance</h3>
                   <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
-                    Choose the visual style for the dashboard.
+                    Customize the interface visual mode and color palette.
                   </p>
                   
-                  <div class="theme-select-group" style="display: flex; gap: 16px;">
-                    <div class="theme-option-card" id="theme-opt-dark" style="flex: 1; padding: 20px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
-                      <i class="fa-solid fa-moon" style="font-size: 2rem; color: var(--accent-purple); margin-bottom: 10px; display: block;"></i>
+                  <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 12px;">Appearance Mode</h4>
+                  <div class="theme-select-group" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                    <div class="theme-option-card" id="mode-opt-dark" style="padding: 16px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-moon" style="font-size: 1.8rem; color: var(--accent-purple); margin-bottom: 8px; display: block;"></i>
                       <strong>Dark Mode</strong>
                     </div>
-                    <div class="theme-option-card" id="theme-opt-light" style="flex: 1; padding: 20px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
-                      <i class="fa-solid fa-sun" style="font-size: 2rem; color: var(--accent-warning); margin-bottom: 10px; display: block;"></i>
+                    <div class="theme-option-card" id="mode-opt-light" style="padding: 16px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-sun" style="font-size: 1.8rem; color: var(--accent-warning); margin-bottom: 8px; display: block;"></i>
                       <strong>Light Mode</strong>
+                    </div>
+                  </div>
+                  
+                  <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 12px;">Color Palette</h4>
+                  <div class="theme-select-group" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px;">
+                    <div class="theme-option-card" id="color-opt-classic" style="padding: 16px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-palette" style="font-size: 1.8rem; color: var(--accent-purple); margin-bottom: 8px; display: block;"></i>
+                      <strong>Classic</strong>
+                    </div>
+                    <div class="theme-option-card" id="color-opt-ocean" style="padding: 16px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-water" style="font-size: 1.8rem; color: hsl(195, 95%, 50%); margin-bottom: 8px; display: block;"></i>
+                      <strong>Midnight Ocean</strong>
+                    </div>
+                    <div class="theme-option-card" id="color-opt-cyberpunk" style="padding: 16px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-bolt" style="font-size: 1.8rem; color: hsl(355, 95%, 55%); margin-bottom: 8px; display: block;"></i>
+                      <strong>Cyberpunk Neon</strong>
+                    </div>
+                    <div class="theme-option-card" id="color-opt-emerald" style="padding: 16px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-tree" style="font-size: 1.8rem; color: hsl(145, 85%, 48%); margin-bottom: 8px; display: block;"></i>
+                      <strong>Forest Emerald</strong>
+                    </div>
+                    <div class="theme-option-card" id="color-opt-amber" style="padding: 16px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-crown" style="font-size: 1.8rem; color: hsl(45, 95%, 50%); margin-bottom: 8px; display: block;"></i>
+                      <strong>Amber Gold</strong>
+                    </div>
+                    <div class="theme-option-card" id="color-opt-nordic" style="padding: 16px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-snowflake" style="font-size: 1.8rem; color: hsl(200, 95%, 60%); margin-bottom: 8px; display: block;"></i>
+                      <strong>Nordic Frost</strong>
                     </div>
                   </div>
                 </div>
@@ -1520,13 +1736,14 @@
           </div>
 
           <div class="form-group">
-            <label for="game-key" class="required">Digital Activation Key</label>
+            <label for="game-key" class="required">Digital Activation Key(s)</label>
             <div class="input-with-action">
-              <input type="text" id="game-key" class="form-control font-code" required placeholder="e.g. AAAA-BBBB-CCCC-DDDD">
+              <textarea id="game-key" class="form-control font-code" required placeholder="Enter keys (one per line)..." rows="3" style="resize: vertical;"></textarea>
               <button type="button" class="btn btn-outline" id="btn-generate-random-key" title="Generate dummy random key for testing">
                 <i class="fa-solid fa-dice"></i>
               </button>
             </div>
+            <span class="form-help">Enter one key per line to add multiple keys at once with the same details.</span>
           </div>
 
           <div class="form-row-2">
@@ -1735,6 +1952,16 @@
           <button type="submit" class="btn btn-primary">Save Changes</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- BULK ACTIONS BAR -->
+  <div id="bulk-actions-bar" class="bulk-actions-bar glass-panel hidden">
+    <span id="bulk-select-count">0 items selected</span>
+    <div class="bulk-buttons">
+      <button class="btn btn-danger btn-sm" id="btn-bulk-delete">
+        <i class="fa-solid fa-trash"></i> Delete Selected
+      </button>
     </div>
   </div>
 
