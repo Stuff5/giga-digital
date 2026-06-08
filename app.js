@@ -301,10 +301,14 @@ let state = {
     sales: []
   },
   activePeriod: "all", // "all", "month", "week"
+  supActivePeriod: "all",
+  supFilterSupplier: "all",
   inventoryLayout: "list", // "list", "grid", "gallery"
   supplierDisplayMode: "name", // "name", "logo"
   inventoryPageSize: 25,
   inventoryCurrentPage: 1,
+  entriesPageSize: 25,
+  entriesCurrentPage: 1,
   themeMode: "dark", // "dark", "light"
   themeColor: "classic", // "classic", "ocean", "cyberpunk", "emerald", "amber", "nordic"
   customLogo: null, // Base64 string or image URL
@@ -323,6 +327,16 @@ let state = {
     str: true,
     unitProfit: true
   },
+  supVisibleMetrics: {
+    profit: true,
+    cost: true,
+    revenue: true,
+    roi: true,
+    stock: true,
+    velocity: true,
+    str: true,
+    unitProfit: true
+  },
   visibleFigures: {
     salesProfit: true,
     platformSplit: true,
@@ -331,6 +345,7 @@ let state = {
     topBestsellers: true
   },
   metricOrder: [],
+  supMetricOrder: [],
   fontSize: 16,
   menuIcons: {
     dashboard: "fa-chart-line",
@@ -459,8 +474,10 @@ document.addEventListener("DOMContentLoaded", () => {
     applyFeeCalculatorVisibility(state.showFeeCalculator);
     applySalesLedgerVisibility(state.showSalesLedger);
     applyMetricsVisibility();
+    applySupplierMetricsVisibility();
     applyFiguresVisibility();
     applyMetricOrder();
+    applySupplierMetricOrder();
     initDragAndDrop();
     applyMenuIcons();
     applyMenuTitles();
@@ -509,6 +526,8 @@ function loadStateFromStorage() {
     state.supplierDisplayMode = localStorage.getItem("gv_supplier_display_mode") || "name";
     state.inventoryPageSize = parseInt(localStorage.getItem("gv_inv_page_size")) || 25;
     state.inventoryCurrentPage = 1;
+    state.entriesPageSize = parseInt(localStorage.getItem("gv_entries_page_size")) || 25;
+    state.entriesCurrentPage = 1;
     // Load and migrate theme settings
     const legacyTheme = localStorage.getItem("gv_theme");
     state.themeMode = localStorage.getItem("gv_theme_mode");
@@ -560,6 +579,26 @@ function loadStateFromStorage() {
       }
     }
 
+    const storedSupVisibleMetrics = localStorage.getItem("gv_sup_visible_metrics");
+    if (storedSupVisibleMetrics) {
+      try {
+        const parsed = JSON.parse(storedSupVisibleMetrics);
+        state.supVisibleMetrics = {
+          profit: true,
+          cost: true,
+          revenue: true,
+          roi: true,
+          stock: true,
+          velocity: true,
+          str: true,
+          unitProfit: true,
+          ...parsed
+        };
+      } catch (e) {
+        console.error("Error parsing suppliers visible metrics state, using defaults:", e);
+      }
+    }
+
     const storedVisibleFigures = localStorage.getItem("gv_visible_figures");
     if (storedVisibleFigures) {
       try {
@@ -591,6 +630,15 @@ function loadStateFromStorage() {
         state.metricOrder = JSON.parse(storedMetricOrder) || [];
       } catch (e) {
         console.error("Error parsing metric order state, using defaults:", e);
+      }
+    }
+
+    const storedSupMetricOrder = localStorage.getItem("gv_sup_metric_order");
+    if (storedSupMetricOrder) {
+      try {
+        state.supMetricOrder = JSON.parse(storedSupMetricOrder) || [];
+      } catch (e) {
+        console.error("Error parsing suppliers metric order state, using defaults:", e);
       }
     }
 
@@ -749,6 +797,7 @@ function saveStateToStorage() {
   localStorage.setItem("gv_inv_layout", state.inventoryLayout);
   localStorage.setItem("gv_supplier_display_mode", state.supplierDisplayMode);
   localStorage.setItem("gv_inv_page_size", state.inventoryPageSize);
+  localStorage.setItem("gv_entries_page_size", state.entriesPageSize);
   localStorage.setItem("gv_theme_mode", state.themeMode);
   localStorage.setItem("gv_theme_color", state.themeColor);
   // Keep legacy gv_theme synced
@@ -759,8 +808,10 @@ function saveStateToStorage() {
   localStorage.setItem("gv_show_fee_calculator", state.showFeeCalculator);
   localStorage.setItem("gv_show_sales_ledger", state.showSalesLedger);
   localStorage.setItem("gv_visible_metrics", JSON.stringify(state.visibleMetrics));
+  localStorage.setItem("gv_sup_visible_metrics", JSON.stringify(state.supVisibleMetrics));
   localStorage.setItem("gv_visible_figures", JSON.stringify(state.visibleFigures));
   localStorage.setItem("gv_metric_order", JSON.stringify(state.metricOrder));
+  localStorage.setItem("gv_sup_metric_order", JSON.stringify(state.supMetricOrder));
   localStorage.setItem("gv_font_size", state.fontSize);
   localStorage.setItem("gv_low_stock_threshold", state.lowStockThreshold);
   localStorage.setItem("gv_default_markup_type", state.defaultMarkupType);
@@ -1468,6 +1519,23 @@ function initEventHandlers() {
     });
   }
 
+  // Entries Page Size Selector
+  const entriesPageSizeSelect = document.getElementById("entries-page-size");
+  if (entriesPageSizeSelect) {
+    entriesPageSizeSelect.value = state.entriesPageSize.toString();
+    entriesPageSizeSelect.addEventListener("change", (e) => {
+      state.entriesPageSize = parseInt(e.target.value) || 25;
+      state.entriesCurrentPage = 1;
+      saveStateToStorage();
+      if (window.supabaseClient && state.syncMode === "realtime") {
+        dbSaveSettings("entriesPageSize", state.entriesPageSize);
+      } else if (state.syncMode === "manual") {
+        setUnsyncedChanges(true);
+      }
+      updateUI();
+    });
+  }
+
   document.getElementById("btn-reset-inventory-filters").addEventListener("click", () => {
     document.getElementById("inv-filter-platform").value = "all";
     document.getElementById("inv-filter-status").value = "all";
@@ -1487,6 +1555,22 @@ function initEventHandlers() {
   if (dbSupplierSelect) {
     dbSupplierSelect.addEventListener("change", updateUI);
   }
+
+  // Suppliers view Filter Event Listeners
+  const supSupplierSelect = document.getElementById("sup-filter-supplier");
+  if (supSupplierSelect) {
+    supSupplierSelect.addEventListener("change", updateUI);
+  }
+
+  const supPeriodButtons = document.querySelectorAll("#sup-date-filter-group button");
+  supPeriodButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      supPeriodButtons.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      state.supActivePeriod = btn.getAttribute("data-sup-period");
+      updateUI();
+    });
+  });
   document.getElementById("btn-reset-sales-filters").addEventListener("click", () => {
     document.getElementById("sales-filter-platform").value = "all";
     document.getElementById("sales-search-input").value = "";
@@ -1517,7 +1601,10 @@ function initEventHandlers() {
   // Entries search input listener
   const entriesSearch = document.getElementById("entries-search-input");
   if (entriesSearch) {
-    entriesSearch.addEventListener("input", renderEntries);
+    entriesSearch.addEventListener("input", () => {
+      state.entriesCurrentPage = 1;
+      renderEntries();
+    });
   }
 
   // Suppliers Sort Listener
@@ -2039,6 +2126,40 @@ function initEventHandlers() {
           applyMetricsVisibility();
           if (window.supabaseClient) {
             dbSaveSettings("visibleMetrics", state.visibleMetrics);
+          }
+        });
+      }
+    });
+  }
+
+  // Suppliers Metrics Customizer Event Listeners
+  const btnToggleSupMetrics = document.getElementById("btn-toggle-sup-metrics-panel");
+  const supMetricsPanel = document.getElementById("sup-metrics-customize-panel");
+  
+  if (btnToggleSupMetrics && supMetricsPanel) {
+    btnToggleSupMetrics.addEventListener("click", () => {
+      supMetricsPanel.classList.toggle("active");
+    });
+    
+    // Close panel on clicking outside
+    document.addEventListener("click", (e) => {
+      const container = document.getElementById("sup-metrics-customize-dropdown");
+      if (container && !container.contains(e.target)) {
+        supMetricsPanel.classList.remove("active");
+      }
+    });
+    
+    // Bind supplier metric checkboxes
+    const supMetricKeys = ["profit", "cost", "revenue", "roi", "stock", "velocity", "str", "unitProfit"];
+    supMetricKeys.forEach(key => {
+      const checkbox = document.getElementById(`toggle-sup-metric-${key}`);
+      if (checkbox) {
+        checkbox.addEventListener("change", (e) => {
+          state.supVisibleMetrics[key] = e.target.checked;
+          saveStateToStorage();
+          applySupplierMetricsVisibility();
+          if (window.supabaseClient) {
+            dbSaveSettings("supVisibleMetrics", state.supVisibleMetrics);
           }
         });
       }
@@ -2773,6 +2894,57 @@ window.triggerEditCatalogEntry = function(title) {
   openModal("edit-catalog-entry-modal");
 };
 
+window.triggerDeleteCatalogEntry = async function(title) {
+  const titleLower = title.trim().toLowerCase();
+  const itemsToDelete = state.inventory.filter(item => item.title.trim().toLowerCase() === titleLower);
+  const salesToDelete = state.sales.filter(sale => sale.title.trim().toLowerCase() === titleLower);
+  
+  const totalKeys = itemsToDelete.length;
+  const soldKeys = itemsToDelete.filter(i => i.status === "Sold").length;
+  const availableKeys = totalKeys - soldKeys;
+  const totalSales = salesToDelete.length;
+
+  if (totalKeys === 0 && totalSales === 0) {
+    showToast(`No records found for game title "${title}".`, "error");
+    return;
+  }
+
+  if (confirm(`Are you sure you want to delete the catalog entry "${title}"?\n\nThis will move:\n- ${availableKeys} available key(s) to the Recycle Bin\n- ${soldKeys} sold key(s) and their ${totalSales} sales ledger records to the Recycle Bin.`)) {
+    // Move matching inventory items to Recycle Bin
+    itemsToDelete.forEach(item => {
+      state.recycleBin.inventory.push(item);
+    });
+    
+    // Filter out matching items from inventory
+    state.inventory = state.inventory.filter(item => item.title.trim().toLowerCase() !== titleLower);
+    
+    // Move matching sales records to Recycle Bin
+    salesToDelete.forEach(sale => {
+      state.recycleBin.sales.push(sale);
+    });
+    
+    // Filter out matching sales from sales ledger
+    state.sales = state.sales.filter(sale => sale.title.trim().toLowerCase() !== titleLower);
+    
+    saveStateToStorage();
+    
+    // Cloud sync mutations
+    if (window.supabaseClient) {
+      for (const item of itemsToDelete) {
+        await dbDeleteInventory(item.id);
+      }
+      for (const sale of salesToDelete) {
+        await dbDeleteSale(sale.id);
+      }
+    } else if (state.syncMode === "manual") {
+      setUnsyncedChanges(true);
+    }
+    
+    updateUI();
+    showToast(`Catalog entry "${title}" and all associated keys/sales moved to the Recycle Bin.`, "info");
+  }
+};
+
 async function handleEditCatalogEntrySubmit(e) {
   e.preventDefault();
 
@@ -2940,6 +3112,7 @@ function updateUI() {
 
   // 2. Render Metrics Cards based on filtered period and supplier
   calculateMetrics(dbFilteredSales, dbFilteredInventory);
+  calculateSupplierMetrics();
 
   // 2b. Apply figures visibility first so that shown canvases have layout dimensions
   applyFiguresVisibility();
@@ -3131,6 +3304,20 @@ function renderSuppliers() {
         dbFilterSelect.value = prevDbFilterVal;
       } else {
         dbFilterSelect.value = "all";
+      }
+    }
+
+    // Populate suppliers view filter dropdown as well
+    const supFilterSelect = document.getElementById("sup-filter-supplier");
+    if (supFilterSelect) {
+      const prevSupFilterVal = supFilterSelect.value;
+      supFilterSelect.innerHTML = '<option value="all">All Suppliers</option>' +
+        dropdownSuppliers.map(s => `<option value="${s.name}">${s.name}${s.enabled === false ? ' (Disabled)' : ''}</option>`).join("");
+      
+      if (prevSupFilterVal && (prevSupFilterVal === "all" || state.suppliers.some(s => s.name === prevSupFilterVal))) {
+        supFilterSelect.value = prevSupFilterVal;
+      } else {
+        supFilterSelect.value = "all";
       }
     }
   }
@@ -3799,6 +3986,145 @@ function calculateMetrics(filteredSalesList, filteredInventoryList) {
   if (metricAvgProfitSubEl) {
     metricAvgProfitSubEl.textContent = `Based on ${filteredSalesList.length} sales`;
   }
+}
+
+// Recalculates metrics specifically for the Suppliers view
+function calculateSupplierMetrics() {
+  const supSupplierSelect = document.getElementById("sup-filter-supplier");
+  const selectedSupplier = supSupplierSelect ? supSupplierSelect.value : "all";
+  
+  const now = new Date();
+  
+  // 1. Filter Sales by Date Period and Supplier
+  let filteredSales = [...state.sales];
+  
+  // A. Date Filter
+  const activePeriod = state.supActivePeriod || "all";
+  if (activePeriod === "month") {
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    filteredSales = filteredSales.filter(item => new Date(item.saleDate) >= startOfMonth);
+  } else if (activePeriod === "week") {
+    const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay())); // Sunday
+    filteredSales = filteredSales.filter(item => new Date(item.saleDate) >= startOfWeek);
+  } else if (activePeriod === "today") {
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const todayStr = `${year}-${month}-${day}`;
+    filteredSales = filteredSales.filter(item => item.saleDate === todayStr);
+  }
+  
+  // B. Supplier Filter
+  if (selectedSupplier !== "all") {
+    filteredSales = filteredSales.filter(sale => {
+      const game = state.inventory.find(item => item.id === sale.inventoryId);
+      return game && game.source === selectedSupplier;
+    });
+  }
+  
+  // 2. Filter Inventory by Supplier
+  let filteredInventory = [...state.inventory];
+  if (selectedSupplier !== "all") {
+    filteredInventory = filteredInventory.filter(item => item.source === selectedSupplier);
+  }
+  
+  // 3. Compute Metrics
+  let totalRevenue = 0;
+  let totalCostOfSales = 0;
+  let totalFees = 0;
+  let totalNetProfit = 0;
+  let totalSellDays = 0;
+  let soldWithDurationCount = 0;
+
+  filteredSales.forEach(sale => {
+    totalRevenue += sale.sellPrice;
+    totalCostOfSales += sale.cost;
+    totalFees += sale.fees;
+    totalNetProfit += sale.profit;
+
+    // Retrieve corresponding inventory purchaseDate
+    const invItem = state.inventory.find(i => i.id === sale.inventoryId);
+    if (invItem && invItem.purchaseDate && sale.saleDate) {
+      const start = new Date(invItem.purchaseDate);
+      const end = new Date(sale.saleDate);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(0, 0, 0, 0);
+      const diffTime = Math.max(0, end - start);
+      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+      totalSellDays += diffDays;
+      soldWithDurationCount++;
+    }
+  });
+
+  // Inventory value (cost of unsold stock)
+  let totalUnsoldCost = 0;
+  let totalUnsoldCount = 0;
+  filteredInventory.forEach(item => {
+    if (item.status !== "Sold") {
+      totalUnsoldCost += item.cost;
+      totalUnsoldCount++;
+    }
+  });
+
+  // Calculate percentages and metrics
+  const marginPercentage = totalRevenue > 0 ? (totalNetProfit / totalRevenue) * 100 : 0;
+  const roiPercentage = totalCostOfSales > 0 ? (totalNetProfit / totalCostOfSales) * 100 : 0;
+  const avgDaysToSell = soldWithDurationCount > 0 ? (totalSellDays / soldWithDurationCount) : 0;
+  const totalKeysInSubset = filteredSales.length + totalUnsoldCount;
+  const sellThroughRate = totalKeysInSubset > 0 ? (filteredSales.length / totalKeysInSubset) * 100 : 0;
+  const avgProfitPerKey = filteredSales.length > 0 ? (totalNetProfit / filteredSales.length) : 0;
+
+  // Render to DOM
+  const profitEl = document.getElementById("sup-metric-profit");
+  if (profitEl) profitEl.textContent = formatCurrency(totalNetProfit);
+  
+  const profitChangeEl = document.getElementById("sup-metric-profit-change");
+  if (profitChangeEl) {
+    profitChangeEl.innerHTML = `
+      <i class="fa-solid ${marginPercentage >= 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down'}"></i> 
+      ${marginPercentage.toFixed(1)}% margin
+    `;
+    profitChangeEl.className = `metric-subtext ${marginPercentage >= 0 ? 'positive' : 'negative'}`;
+  }
+
+  const costEl = document.getElementById("sup-metric-cost");
+  if (costEl) costEl.textContent = formatCurrency(totalUnsoldCost);
+  
+  const unsoldKeysEl = document.getElementById("sup-metric-unsold-keys");
+  if (unsoldKeysEl) unsoldKeysEl.textContent = `${totalUnsoldCount} keys in stock`;
+
+  const revenueEl = document.getElementById("sup-metric-revenue");
+  if (revenueEl) revenueEl.textContent = formatCurrency(totalRevenue);
+  
+  const soldKeysEl = document.getElementById("sup-metric-sold-keys");
+  if (soldKeysEl) soldKeysEl.textContent = `${filteredSales.length} keys sold`;
+
+  const roiEl = document.getElementById("sup-metric-roi");
+  if (roiEl) roiEl.textContent = `${roiPercentage.toFixed(1)}%`;
+  
+  const feesPaidEl = document.getElementById("sup-metric-fees-paid");
+  if (feesPaidEl) feesPaidEl.textContent = `${formatCurrency(totalFees)} paid in fees`;
+
+  const stockKeysCountEl = document.getElementById("sup-metric-stock-keys-count");
+  if (stockKeysCountEl) stockKeysCountEl.textContent = `${totalUnsoldCount} keys`;
+
+  const salesVelocityEl = document.getElementById("sup-metric-sales-velocity");
+  if (salesVelocityEl) salesVelocityEl.textContent = `${avgDaysToSell.toFixed(1)} days`;
+  
+  const velocitySubtextEl = document.getElementById("sup-metric-velocity-subtext");
+  if (velocitySubtextEl) velocitySubtextEl.textContent = `${soldWithDurationCount} sales tracked`;
+
+  const sellThroughEl = document.getElementById("sup-metric-sell-through");
+  if (sellThroughEl) sellThroughEl.textContent = `${sellThroughRate.toFixed(1)}%`;
+  
+  const strSubtextEl = document.getElementById("sup-metric-str-subtext");
+  if (strSubtextEl) strSubtextEl.textContent = `${filteredSales.length} sold / ${totalKeysInSubset} total`;
+
+  const avgProfitKeyEl = document.getElementById("sup-metric-avg-profit-key");
+  if (avgProfitKeyEl) avgProfitKeyEl.textContent = formatCurrency(avgProfitPerKey);
+  
+  const avgProfitSubtextEl = document.getElementById("sup-metric-avg-profit-subtext");
+  if (avgProfitSubtextEl) avgProfitSubtextEl.textContent = `Based on ${filteredSales.length} sales`;
 }
 
 // Render Table: Inventory Stock List Router
@@ -5452,14 +5778,21 @@ function renderEntries() {
   // Sort alphabetically
   entriesList.sort((a, b) => a.title.localeCompare(b.title));
 
-  if (entriesList.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9" class="text-center" style="text-align: center; padding: 30px; color: var(--text-muted);">No matching game entries found.</td></tr>`;
-    document.getElementById("entries-count-text").textContent = "Showing 0 game titles";
-    return;
+  // Pagination Logic for Entries
+  const totalPages = Math.ceil(entriesList.length / state.entriesPageSize) || 1;
+  if (state.entriesCurrentPage > totalPages) {
+    state.entriesCurrentPage = totalPages;
+  }
+  if (state.entriesCurrentPage < 1) {
+    state.entriesCurrentPage = 1;
   }
 
+  const startIndex = (state.entriesCurrentPage - 1) * state.entriesPageSize;
+  const endIndex = startIndex + state.entriesPageSize;
+  const paginatedEntriesList = entriesList.slice(startIndex, endIndex);
+
   // Draw entries rows
-  entriesList.forEach(entry => {
+  paginatedEntriesList.forEach(entry => {
     const tr = document.createElement("tr");
 
     // ROI = Net Profit / Cost of Sold Keys * 100
@@ -5503,15 +5836,99 @@ function renderEntries() {
       <td class="${entry.profit >= 0 ? 'text-success-neon' : 'text-danger-soft'}"><strong>${formatCurrency(entry.profit)}</strong></td>
       <td class="${roiPercentage >= 0 ? 'text-success-neon' : 'text-danger-soft'}">${roiPercentage.toFixed(1)}%</td>
       <td style="text-align: right;">
-        <button class="btn btn-outline btn-sm" onclick="triggerEditCatalogEntry('${safeTitle}')">
-          <i class="fa-solid fa-pen"></i> Edit
-        </button>
+        <div style="display: inline-flex; gap: 8px; justify-content: flex-end; width: 100%;">
+          <button class="btn btn-outline btn-sm" onclick="triggerEditCatalogEntry('${safeTitle}')" title="Edit Catalog Entry">
+            <i class="fa-solid fa-pen"></i> Edit
+          </button>
+          <button class="btn btn-outline btn-sm" onclick="triggerDeleteCatalogEntry('${safeTitle}')" title="Delete Catalog Entry" style="color: var(--accent-danger); border-color: var(--accent-danger);">
+            <i class="fa-solid fa-trash"></i> Delete
+          </button>
+        </div>
       </td>
     `;
     tbody.appendChild(tr);
   });
 
-  document.getElementById("entries-count-text").textContent = `Showing ${entriesList.length} unique game titles`;
+  const showingStart = entriesList.length === 0 ? 0 : startIndex + 1;
+  const showingEnd = Math.min(endIndex, entriesList.length);
+  document.getElementById("entries-count-text").textContent = `Showing ${showingStart}-${showingEnd} of ${entriesList.length} unique game titles`;
+
+  // Render pagination controls
+  renderEntriesPagination(entriesList.length);
+}
+
+// Render dynamic pagination controls for the Entries view
+function renderEntriesPagination(totalItems) {
+  const container = document.getElementById("entries-pagination");
+  if (!container) return;
+  container.innerHTML = "";
+
+  const totalPages = Math.ceil(totalItems / state.entriesPageSize) || 1;
+  if (totalPages <= 1) {
+    container.style.display = "none";
+    return;
+  }
+  container.style.display = "flex";
+
+  // Helper to create page buttons
+  const createBtn = (label, targetPage, disabled = false, isActive = false) => {
+    const btn = document.createElement("button");
+    btn.className = "pagination-btn";
+    if (isActive) btn.classList.add("active");
+    btn.disabled = disabled;
+    btn.innerHTML = label;
+    if (!disabled && !isActive) {
+      btn.addEventListener("click", () => {
+        state.entriesCurrentPage = targetPage;
+        updateUI();
+        const entriesView = document.getElementById("entries-view");
+        if (entriesView) {
+          entriesView.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
+    }
+    return btn;
+  };
+
+  // Prev Button
+  container.appendChild(createBtn('<i class="fa-solid fa-angle-left"></i>', state.entriesCurrentPage - 1, state.entriesCurrentPage === 1));
+
+  // Page Numbers with sliding window
+  const maxButtons = 5;
+  let startPage = Math.max(1, state.entriesCurrentPage - Math.floor(maxButtons / 2));
+  let endPage = startPage + maxButtons - 1;
+
+  if (endPage > totalPages) {
+    endPage = totalPages;
+    startPage = Math.max(1, endPage - maxButtons + 1);
+  }
+
+  if (startPage > 1) {
+    container.appendChild(createBtn("1", 1));
+    if (startPage > 2) {
+      const dots = document.createElement("span");
+      dots.className = "pagination-dots";
+      dots.textContent = "...";
+      container.appendChild(dots);
+    }
+  }
+
+  for (let i = startPage; i <= endPage; i++) {
+    container.appendChild(createBtn(i.toString(), i, false, i === state.entriesCurrentPage));
+  }
+
+  if (endPage < totalPages) {
+    if (endPage < totalPages - 1) {
+      const dots = document.createElement("span");
+      dots.className = "pagination-dots";
+      dots.textContent = "...";
+      container.appendChild(dots);
+    }
+    container.appendChild(createBtn(totalPages.toString(), totalPages));
+  }
+
+  // Next Button
+  container.appendChild(createBtn('<i class="fa-solid fa-angle-right"></i>', state.entriesCurrentPage + 1, state.entriesCurrentPage === totalPages));
 }
 
 function applySidebarState(isCollapsed) {
@@ -5604,6 +6021,36 @@ function applyMetricsVisibility() {
   });
 }
 
+function applySupplierMetricsVisibility() {
+  const cards = {
+    profit: document.getElementById("sup-card-net-profit"),
+    cost: document.getElementById("sup-card-inventory-cost"),
+    revenue: document.getElementById("sup-card-total-revenue"),
+    roi: document.getElementById("sup-card-roi"),
+    stock: document.getElementById("sup-card-available-stock"),
+    velocity: document.getElementById("sup-card-sales-velocity"),
+    str: document.getElementById("sup-card-sell-through-rate"),
+    unitProfit: document.getElementById("sup-card-avg-profit-key")
+  };
+  
+  Object.keys(cards).forEach(key => {
+    const cardEl = cards[key];
+    if (cardEl) {
+      if (state.supVisibleMetrics && state.supVisibleMetrics[key]) {
+        cardEl.classList.remove("hidden");
+      } else {
+        cardEl.classList.add("hidden");
+      }
+    }
+    
+    // Also update checkbox state in the dropdown panel
+    const checkbox = document.getElementById(`toggle-sup-metric-${key}`);
+    if (checkbox) {
+      checkbox.checked = !!(state.supVisibleMetrics && state.supVisibleMetrics[key]);
+    }
+  });
+}
+
 function applyFiguresVisibility() {
   const cards = {
     salesProfit: document.getElementById("card-chart-salesProfit"),
@@ -5659,7 +6106,7 @@ function applyFiguresVisibility() {
 }
 
 function applyMetricOrder() {
-  const grid = document.querySelector(".metrics-grid");
+  const grid = document.querySelector("#dashboard-view .metrics-grid");
   if (!grid) return;
   
   const defaultOrder = [
@@ -5686,7 +6133,7 @@ function applyMetricOrder() {
 }
 
 function saveMetricOrder() {
-  const grid = document.querySelector(".metrics-grid");
+  const grid = document.querySelector("#dashboard-view .metrics-grid");
   if (!grid) return;
   const children = Array.from(grid.children);
   const order = children.map(child => child.id);
@@ -5697,53 +6144,98 @@ function saveMetricOrder() {
   }
 }
 
+function applySupplierMetricOrder() {
+  const grid = document.getElementById("suppliers-metrics-grid");
+  if (!grid) return;
+  
+  const defaultOrder = [
+    "sup-card-net-profit",
+    "sup-card-inventory-cost",
+    "sup-card-total-revenue",
+    "sup-card-roi",
+    "sup-card-available-stock",
+    "sup-card-sales-velocity",
+    "sup-card-sell-through-rate",
+    "sup-card-avg-profit-key"
+  ];
+  
+  const order = state.supMetricOrder && state.supMetricOrder.length === defaultOrder.length
+    ? state.supMetricOrder
+    : defaultOrder;
+    
+  order.forEach(id => {
+    const card = document.getElementById(id);
+    if (card && card.parentNode === grid) {
+      grid.appendChild(card);
+    }
+  });
+}
+
+function saveSupplierMetricOrder() {
+  const grid = document.getElementById("suppliers-metrics-grid");
+  if (!grid) return;
+  const children = Array.from(grid.children);
+  const order = children.map(child => child.id);
+  state.supMetricOrder = order;
+  saveStateToStorage();
+  if (window.supabaseClient) {
+    dbSaveSettings("supMetricOrder", state.supMetricOrder);
+  }
+}
+
 let dragSource = null;
 
 function initDragAndDrop() {
-  const grid = document.querySelector(".metrics-grid");
-  if (!grid) return;
-  
-  const cards = grid.querySelectorAll(".metric-card");
-  cards.forEach(card => {
-    card.setAttribute("draggable", "true");
-    
-    card.addEventListener("dragstart", (e) => {
-      dragSource = card;
-      card.classList.add("dragging");
-      e.dataTransfer.effectAllowed = "move";
-    });
-    
-    card.addEventListener("dragend", () => {
-      dragSource = null;
-      card.classList.remove("dragging");
-      cards.forEach(c => c.classList.remove("drag-over"));
-      saveMetricOrder();
-    });
-    
-    card.addEventListener("dragover", (e) => {
-      e.preventDefault();
-      if (card === dragSource) return;
-      card.classList.add("drag-over");
-    });
-    
-    card.addEventListener("dragleave", () => {
-      card.classList.remove("drag-over");
-    });
-    
-    card.addEventListener("drop", (e) => {
-      e.preventDefault();
-      card.classList.remove("drag-over");
-      if (card === dragSource) return;
+  const grids = document.querySelectorAll(".metrics-grid");
+  grids.forEach(grid => {
+    const cards = grid.querySelectorAll(".metric-card");
+    cards.forEach(card => {
+      card.setAttribute("draggable", "true");
       
-      const children = Array.from(grid.children);
-      const srcIndex = children.indexOf(dragSource);
-      const targetIndex = children.indexOf(card);
+      card.addEventListener("dragstart", (e) => {
+        dragSource = card;
+        card.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+      });
       
-      if (srcIndex < targetIndex) {
-        grid.insertBefore(dragSource, card.nextSibling);
-      } else {
-        grid.insertBefore(dragSource, card);
-      }
+      card.addEventListener("dragend", () => {
+        dragSource = null;
+        card.classList.remove("dragging");
+        grid.querySelectorAll(".metric-card").forEach(c => c.classList.remove("drag-over"));
+        if (grid.id === "suppliers-metrics-grid") {
+          saveSupplierMetricOrder();
+        } else {
+          saveMetricOrder();
+        }
+      });
+      
+      card.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        if (card === dragSource) return;
+        if (card.parentNode !== dragSource.parentNode) return;
+        card.classList.add("drag-over");
+      });
+      
+      card.addEventListener("dragleave", () => {
+        card.classList.remove("drag-over");
+      });
+      
+      card.addEventListener("drop", (e) => {
+        e.preventDefault();
+        card.classList.remove("drag-over");
+        if (card === dragSource) return;
+        if (card.parentNode !== dragSource.parentNode) return;
+        
+        const children = Array.from(grid.children);
+        const srcIndex = children.indexOf(dragSource);
+        const targetIndex = children.indexOf(card);
+        
+        if (srcIndex < targetIndex) {
+          grid.insertBefore(dragSource, card.nextSibling);
+        } else {
+          grid.insertBefore(dragSource, card);
+        }
+      });
     });
   });
 }
@@ -6436,6 +6928,14 @@ async function dbLoadState() {
             state.visibleMetrics = s.value;
           }
           applyMetricsVisibility();
+        } else if (s.key === "supVisibleMetrics") {
+          try {
+            state.supVisibleMetrics = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+          } catch(e) {
+            console.error("Error parsing supVisibleMetrics:", e);
+            state.supVisibleMetrics = s.value;
+          }
+          applySupplierMetricsVisibility();
         } else if (s.key === "visibleFigures") {
           try {
             state.visibleFigures = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
@@ -6452,6 +6952,14 @@ async function dbLoadState() {
             state.metricOrder = s.value;
           }
           applyMetricOrder();
+        } else if (s.key === "supMetricOrder") {
+          try {
+            state.supMetricOrder = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+          } catch(e) {
+            console.error("Error parsing supMetricOrder:", e);
+            state.supMetricOrder = s.value;
+          }
+          applySupplierMetricOrder();
         } else if (s.key === "customLogo") {
           state.customLogo = s.value;
           applyLogo(state.customLogo);
@@ -6554,8 +7062,10 @@ async function dbSeedDatabase() {
       { key: "showFeeCalculator", value: state.showFeeCalculator },
       { key: "showSalesLedger", value: state.showSalesLedger },
       { key: "visibleMetrics", value: state.visibleMetrics },
+      { key: "supVisibleMetrics", value: state.supVisibleMetrics },
       { key: "visibleFigures", value: state.visibleFigures },
       { key: "metricOrder", value: state.metricOrder },
+      { key: "supMetricOrder", value: state.supMetricOrder },
       { key: "customLogo", value: state.customLogo },
       { key: "lowStockThreshold", value: state.lowStockThreshold },
       { key: "defaultMarkupType", value: state.defaultMarkupType },
@@ -7123,9 +7633,9 @@ function exportStateBackupJSON() {
   const backupData = {};
   const keys = [
     "gv_inventory", "gv_sales", "gv_suppliers", "gv_platforms",
-    "gv_inv_layout", "gv_supplier_display_mode", "gv_theme", "gv_theme_mode", "gv_theme_color", "gv_currency", "gv_date_format",
+    "gv_inv_layout", "gv_supplier_display_mode", "gv_inv_page_size", "gv_entries_page_size", "gv_theme", "gv_theme_mode", "gv_theme_color", "gv_currency", "gv_date_format",
     "gv_sidebar_collapsed", "gv_show_fee_calculator", "gv_show_sales_ledger",
-    "gv_visible_metrics", "gv_visible_figures", "gv_metric_order", "gv_font_size", "gv_menu_icons",
+    "gv_visible_metrics", "gv_sup_visible_metrics", "gv_visible_figures", "gv_metric_order", "gv_sup_metric_order", "gv_font_size", "gv_menu_icons",
     "gv_menu_titles", "gv_custom_logo", "gv_low_stock_threshold",
     "gv_default_markup_type", "gv_default_markup_value",
     "gv_platform_fee_presets", "gv_sync_mode", "gv_recycle_bin"
@@ -7349,8 +7859,10 @@ async function synchronizeCloudDatabase() {
       { key: "showFeeCalculator", value: state.showFeeCalculator },
       { key: "showSalesLedger", value: state.showSalesLedger },
       { key: "visibleMetrics", value: state.visibleMetrics },
+      { key: "supVisibleMetrics", value: state.supVisibleMetrics },
       { key: "visibleFigures", value: state.visibleFigures },
       { key: "metricOrder", value: state.metricOrder },
+      { key: "supMetricOrder", value: state.supMetricOrder },
       { key: "customLogo", value: state.customLogo },
       { key: "lowStockThreshold", value: state.lowStockThreshold },
       { key: "defaultMarkupType", value: state.defaultMarkupType },

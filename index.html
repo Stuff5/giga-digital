@@ -779,9 +779,161 @@
 
           <!-- SUPPLIERS VIEW -->
           <section id="suppliers-view" class="content-view">
-            <div class="view-header">
-              <h2 class="view-title">Manage Suppliers</h2>
-              <p class="view-subtitle">Add, remove, and monitor the purchase sources for your game key inventory.</p>
+            <div class="view-header flex-header">
+              <div>
+                <h2 class="view-title">Manage Suppliers</h2>
+                <p class="view-subtitle">Add, remove, and monitor the purchase sources for your game key inventory.</p>
+              </div>
+              <div class="header-controls">
+                <!-- Customize Metrics Dropdown -->
+                <div class="dropdown-container" id="sup-metrics-customize-dropdown">
+                  <button class="btn btn-outline btn-sm" id="btn-toggle-sup-metrics-panel" title="Customize Metrics">
+                    <i class="fa-solid fa-sliders"></i> <span>Metrics</span>
+                  </button>
+                  <div class="dropdown-menu glass-panel" id="sup-metrics-customize-panel">
+                    <h5>Show/Hide Metrics</h5>
+                    <label class="checkbox-container">
+                      <input type="checkbox" id="toggle-sup-metric-profit" checked>
+                      <span class="checkbox-label">Net Profit</span>
+                    </label>
+                    <label class="checkbox-container">
+                      <input type="checkbox" id="toggle-sup-metric-cost" checked>
+                      <span class="checkbox-label">Inventory Cost</span>
+                    </label>
+                    <label class="checkbox-container">
+                      <input type="checkbox" id="toggle-sup-metric-revenue" checked>
+                      <span class="checkbox-label">Total Revenue</span>
+                    </label>
+                    <label class="checkbox-container">
+                      <input type="checkbox" id="toggle-sup-metric-roi" checked>
+                      <span class="checkbox-label">ROI %</span>
+                    </label>
+                    <label class="checkbox-container">
+                      <input type="checkbox" id="toggle-sup-metric-stock" checked>
+                      <span class="checkbox-label">Available Stock</span>
+                    </label>
+                    <label class="checkbox-container">
+                      <input type="checkbox" id="toggle-sup-metric-velocity" checked>
+                      <span class="checkbox-label">Sales Velocity</span>
+                    </label>
+                    <label class="checkbox-container">
+                      <input type="checkbox" id="toggle-sup-metric-str" checked>
+                      <span class="checkbox-label">Sell-Through Rate</span>
+                    </label>
+                    <label class="checkbox-container">
+                      <input type="checkbox" id="toggle-sup-metric-unitProfit" checked>
+                      <span class="checkbox-label">Avg Profit per Key</span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Supplier Filter Dropdown -->
+                <div class="supplier-filter-dashboard">
+                  <select id="sup-filter-supplier" class="form-control form-control-sm" style="width: auto; min-width: 140px; height: 32px; padding: 4px 8px;">
+                    <option value="all">All Suppliers</option>
+                  </select>
+                </div>
+                
+                <div class="date-filter-group" id="sup-date-filter-group">
+                  <button class="btn btn-outline btn-sm active" data-sup-period="all">All Time</button>
+                  <button class="btn btn-outline btn-sm" data-sup-period="month">This Month</button>
+                  <button class="btn btn-outline btn-sm" data-sup-period="week">This Week</button>
+                  <button class="btn btn-outline btn-sm" data-sup-period="today">Today</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Suppliers Metrics Grid -->
+            <div class="metrics-grid" id="suppliers-metrics-grid" style="margin-bottom: 25px;">
+              <div class="metric-card bg-gradient-purple" id="sup-card-net-profit">
+                <div class="metric-info">
+                  <span class="metric-label">Total Net Profit</span>
+                  <h3 class="metric-value" id="sup-metric-profit">€0.00</h3>
+                  <span class="metric-subtext positive" id="sup-metric-profit-change">
+                    <i class="fa-solid fa-arrow-trend-up"></i> +0% margin
+                  </span>
+                </div>
+                <div class="metric-icon">
+                  <i class="fa-solid fa-wallet"></i>
+                </div>
+              </div>
+
+              <div class="metric-card bg-gradient-cyan" id="sup-card-inventory-cost">
+                <div class="metric-info">
+                  <span class="metric-label">Inventory Cost Value</span>
+                  <h3 class="metric-value" id="sup-metric-cost">€0.00</h3>
+                  <span class="metric-subtext" id="sup-metric-unsold-keys">0 keys in stock</span>
+                </div>
+                <div class="metric-icon">
+                  <i class="fa-solid fa-cubes"></i>
+                </div>
+              </div>
+
+              <div class="metric-card bg-gradient-pink" id="sup-card-total-revenue">
+                <div class="metric-info">
+                  <span class="metric-label">Total Revenue</span>
+                  <h3 class="metric-value" id="sup-metric-revenue">€0.00</h3>
+                  <span class="metric-subtext" id="sup-metric-sold-keys">0 keys sold</span>
+                </div>
+                <div class="metric-icon">
+                  <i class="fa-solid fa-receipt"></i>
+                </div>
+              </div>
+
+              <div class="metric-card bg-gradient-emerald" id="sup-card-roi">
+                <div class="metric-info">
+                  <span class="metric-label">ROI (Return on Inv.)</span>
+                  <h3 class="metric-value" id="sup-metric-roi">0%</h3>
+                  <span class="metric-subtext" id="sup-metric-fees-paid">€0.00 paid in fees</span>
+                </div>
+                <div class="metric-icon">
+                  <i class="fa-solid fa-percent"></i>
+                </div>
+              </div>
+
+              <div class="metric-card bg-gradient-blue" id="sup-card-available-stock">
+                <div class="metric-info">
+                  <span class="metric-label">Available Stock</span>
+                  <h3 class="metric-value" id="sup-metric-stock-keys-count">0 keys</h3>
+                  <span class="metric-subtext">Keys remaining in stock</span>
+                </div>
+                <div class="metric-icon">
+                  <i class="fa-solid fa-boxes-stacked"></i>
+                </div>
+              </div>
+
+              <div class="metric-card bg-gradient-amber" id="sup-card-sales-velocity">
+                <div class="metric-info">
+                  <span class="metric-label">Sales Velocity</span>
+                  <h3 class="metric-value" id="sup-metric-sales-velocity">0.0 days</h3>
+                  <span class="metric-subtext" id="sup-metric-velocity-subtext">0 sales tracked</span>
+                </div>
+                <div class="metric-icon">
+                  <i class="fa-solid fa-gauge-high"></i>
+                </div>
+              </div>
+
+              <div class="metric-card bg-gradient-teal" id="sup-card-sell-through-rate">
+                <div class="metric-info">
+                  <span class="metric-label">Sell-Through Rate</span>
+                  <h3 class="metric-value" id="sup-metric-sell-through">0.0%</h3>
+                  <span class="metric-subtext" id="sup-metric-str-subtext">0 sold / 0 total</span>
+                </div>
+                <div class="metric-icon">
+                  <i class="fa-solid fa-chart-pie"></i>
+                </div>
+              </div>
+
+              <div class="metric-card bg-gradient-blue" id="sup-card-avg-profit-key">
+                <div class="metric-info">
+                  <span class="metric-label">Avg Profit per Key</span>
+                  <h3 class="metric-value" id="sup-metric-avg-profit-key">€0.00</h3>
+                  <span class="metric-subtext" id="sup-metric-avg-profit-subtext">Based on 0 sales</span>
+                </div>
+                <div class="metric-icon">
+                  <i class="fa-solid fa-tags"></i>
+                </div>
+              </div>
             </div>
 
             <div class="responsive-grid-2">
@@ -943,6 +1095,19 @@
               </div>
               <div class="table-footer">
                 <span id="entries-count-text">Showing 0 unique game titles</span>
+                <div class="pagination-controls" style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                  <div class="page-size-selector" style="display: flex; align-items: center; gap: 8px;">
+                    <label for="entries-page-size" style="white-space: nowrap; margin-bottom: 0;">Show:</label>
+                    <select id="entries-page-size" class="form-control form-control-sm" style="width: auto; padding: 4px 8px; height: 32px;">
+                      <option value="25" selected>25</option>
+                      <option value="50">50</option>
+                      <option value="100">100</option>
+                    </select>
+                  </div>
+                  <div class="pagination-buttons" id="entries-pagination" style="display: flex; align-items: center; gap: 4px;">
+                    <!-- Injected by JS -->
+                  </div>
+                </div>
               </div>
             </div>
           </section>
