@@ -2173,14 +2173,19 @@ function initEventHandlers() {
   const btnGrid = document.getElementById("btn-layout-grid");
   const btnGallery = document.getElementById("btn-layout-gallery");
   
-  if (btnList && btnGrid && btnGallery) {
-    const setInvLayout = (layout) => {
-      try {
-        console.log("setInvLayout called with layout:", layout);
-        state.inventoryLayout = layout;
-        saveStateToStorage();
-        
-        // Update toggle buttons active state
+  // Make setInvLayout global so inline onclick handlers in index.html work reliably
+  window.setInvLayout = (layout) => {
+    try {
+      console.log("setInvLayout called with layout:", layout);
+      state.inventoryLayout = layout;
+      saveStateToStorage();
+      
+      // Update toggle buttons active state
+      const btnList = document.getElementById("btn-layout-list");
+      const btnGrid = document.getElementById("btn-layout-grid");
+      const btnGallery = document.getElementById("btn-layout-gallery");
+      
+      if (btnList && btnGrid && btnGallery) {
         btnList.classList.remove("active");
         btnGrid.classList.remove("active");
         btnGallery.classList.remove("active");
@@ -2188,19 +2193,22 @@ function initEventHandlers() {
         if (layout === "list") btnList.classList.add("active");
         if (layout === "grid") btnGrid.classList.add("active");
         if (layout === "gallery") btnGallery.classList.add("active");
-        
-        // Re-render inventory only
-        const filtered = getFilteredInventory();
-        console.log("setInvLayout filtering complete, item count:", filtered.length);
-        renderInventoryTable(filtered);
-      } catch (err) {
-        console.error("Error in setInvLayout:", err);
       }
-    };
+      
+      // Re-render inventory only
+      const filtered = getFilteredInventory();
+      console.log("setInvLayout filtering complete, item count:", filtered.length);
+      renderInventoryTable(filtered);
+    } catch (err) {
+      console.error("Error in setInvLayout:", err);
+    }
+  };
 
-    btnList.addEventListener("click", () => setInvLayout("list"));
-    btnGrid.addEventListener("click", () => setInvLayout("grid"));
-    btnGallery.addEventListener("click", () => setInvLayout("gallery"));
+  // Keep event listeners on DOM elements as an additional backup binding
+  if (btnList && btnGrid && btnGallery) {
+    btnList.addEventListener("click", () => window.setInvLayout("list"));
+    btnGrid.addEventListener("click", () => window.setInvLayout("grid"));
+    btnGallery.addEventListener("click", () => window.setInvLayout("gallery"));
   }
 
   // Settings Page - Appearance Mode Click Listeners
