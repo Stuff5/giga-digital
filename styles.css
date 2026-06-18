@@ -159,16 +159,7 @@
   --accent-cyan-glow: hsla(45, 95%, 50%, 0.3);
 }
 
-[data-theme-color="nordic"] {
-  --accent-purple: hsl(200, 95%, 60%);
-  --accent-purple-glow: hsla(200, 95%, 60%, 0.3);
-  --accent-pink: hsl(210, 15%, 65%);
-  --accent-pink-glow: hsla(210, 15%, 65%, 0.3);
-  --accent-teal: hsl(210, 15%, 65%);
-  --accent-teal-glow: hsla(210, 15%, 65%, 0.3);
-  --accent-cyan: hsl(200, 95%, 60%);
-  --accent-cyan-glow: hsla(200, 95%, 60%, 0.3);
-}
+
 
 /* COMBINATIONS: DARK MODE + SPECIFIC THEME COLORS */
 [data-theme-mode="dark"][data-theme-color="ocean"] {
@@ -283,33 +274,7 @@
   --shadow-glow: 0 0 20px hsla(45, 95%, 50%, 0.15);
 }
 
-[data-theme-mode="dark"][data-theme-color="nordic"] {
-  --bg-app: hsl(215, 20%, 9%);
-  --bg-sidebar: hsl(215, 20%, 7%);
-  --bg-card: hsla(215, 18%, 13%, 0.75);
-  --bg-card-hover: hsla(215, 18%, 17%, 0.85);
-  --bg-input: hsl(215, 15%, 15%);
-  --bg-input-focus: hsl(215, 15%, 18%);
-  --border-color: hsla(215, 15%, 26%, 0.35);
-  --border-focus: hsla(200, 95%, 60%, 0.5);
-  --text-main: hsl(200, 15%, 95%);
-  --text-secondary: hsl(200, 10%, 72%);
-  --text-muted: hsl(200, 8%, 52%);
-  --bg-topbar: hsla(215, 20%, 9%, 0.85);
-  --bg-sidebar-footer: hsla(215, 20%, 5%, 0.5);
-  --bg-hero-overlay-start: hsla(215, 20%, 9%, 0.95);
-  --bg-hero-overlay-end: hsla(215, 20%, 9%, 0.2);
-  --bg-modal-footer: hsla(215, 20%, 5%, 0.3);
-  --bg-summary-card: hsla(215, 15%, 15%, 0.5);
-  --bg-key-card: hsla(215, 20%, 5%, 0.4);
-  --bg-toast: hsla(215, 18%, 15%, 0.9);
-  --bg-badge-info: hsla(200, 95%, 60%, 0.1);
-  --border-badge-info: hsla(200, 95%, 60%, 0.2);
-  --border-sidebar: hsla(215, 15%, 26%, 0.35);
-  --bg-glow-start: hsla(200, 95%, 60%, 0.08);
-  --bg-glow-end: hsla(210, 15%, 65%, 0.05);
-  --shadow-glow: 0 0 20px hsla(200, 95%, 60%, 0.15);
-}
+
 
 /* COMBINATIONS: LIGHT MODE + SPECIFIC THEME COLORS */
 [data-theme-mode="light"][data-theme-color="ocean"] {
@@ -404,28 +369,7 @@
   --shadow-glow: 0 0 20px rgba(255, 180, 0, 0.06);
 }
 
-[data-theme-mode="light"][data-theme-color="nordic"] {
-  --bg-app: hsl(215, 20%, 96%);
-  --bg-sidebar: hsl(215, 20%, 91%);
-  --bg-card: hsla(215, 20%, 100%, 0.8);
-  --bg-card-hover: hsla(215, 20%, 97%, 0.9);
-  --bg-input: hsl(215, 15%, 88%);
-  --bg-input-focus: hsl(215, 15%, 84%);
-  --border-color: hsla(215, 15%, 75%, 0.4);
-  --border-focus: hsla(200, 95%, 60%, 0.6);
-  --bg-topbar: hsla(215, 20%, 96%, 0.85);
-  --bg-sidebar-footer: hsla(215, 20%, 87%, 0.7);
-  --bg-hero-overlay-start: hsla(215, 20%, 96%, 0.95);
-  --bg-hero-overlay-end: hsla(215, 20%, 96%, 0.25);
-  --bg-modal-footer: hsla(215, 20%, 88%, 0.4);
-  --bg-summary-card: hsla(215, 15%, 90%, 0.6);
-  --bg-key-card: hsla(215, 20%, 88%, 0.5);
-  --bg-toast: hsla(215, 20%, 96%, 0.95);
-  --border-sidebar: hsla(215, 15%, 75%, 0.4);
-  --bg-glow-start: hsla(200, 95%, 60%, 0.02);
-  --bg-glow-end: hsla(210, 15%, 65%, 0.02);
-  --shadow-glow: 0 0 20px rgba(0, 150, 255, 0.06);
-}
+
 
 /* ==========================================================================
    RESET & BASE STYLES
@@ -1244,6 +1188,10 @@ a {
   background-color: hsla(28, 95%, 50%, 0.15);
   color: hsl(28, 95%, 55%);
 }
+.badge-rejected {
+  background-color: hsla(0, 95%, 60%, 0.15);
+  color: hsl(0, 95%, 60%);
+}
 
 /* Action button inside tables */
 .table-actions {
@@ -1504,12 +1452,7 @@ textarea.form-control {
 /* ==========================================================================
    PLATFORM CALCULATOR SECTION
    ========================================================================== */
-.calculator-container {
-  display: grid;
-  grid-template-columns: 1fr 1.2fr;
-  gap: 32px;
-  margin-top: 12px;
-}
+
 .calc-card {
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);
@@ -1868,7 +1811,7 @@ textarea.form-control {
   .charts-grid, .dashboard-details-grid {
     grid-template-columns: minmax(0, 1fr);
   }
-  .calculator-container, .responsive-grid-2, .responsive-grid-equal {
+  .responsive-grid-2, .responsive-grid-equal {
     grid-template-columns: 1fr;
     gap: 24px;
   }
@@ -3318,6 +3261,81 @@ textarea.form-control {
   transform: translateY(1px);
 }
 
+/* Finance Layout Toggles styling */
+.layout-toggle-buttons {
+  display: flex;
+  background-color: var(--bg-input) !important;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  align-items: center;
+  gap: 4px;
+}
 
+.layout-toggle-buttons button.btn-toggle-layout {
+  margin: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  color: var(--text-secondary) !important;
+  padding: 6px 12px !important;
+  border-radius: var(--radius-sm) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 0.85rem !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: var(--transition-smooth) !important;
+  gap: 6px !important;
+}
 
+.layout-toggle-buttons button.btn-toggle-layout:hover {
+  color: var(--text-primary) !important;
+  background-color: hsla(0, 0%, 100%, 0.05) !important;
+}
 
+.layout-toggle-buttons button.btn-toggle-layout.active {
+  background-color: var(--accent-purple) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+/* Responsive layout adjustments for the Finance View */
+@media (max-width: 900px) {
+  /* Collapse layout selector text on tablet/mobile */
+  .layout-toggle-buttons button .layout-btn-text {
+    display: none;
+  }
+  .layout-toggle-buttons button {
+    padding: 6px 12px !important;
+  }
+}
+
+@media (max-width: 600px) {
+  /* Make the detail card header wrap nicely and stack buttons */
+  .detail-card-header.flex-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+  .detail-card-header.flex-header > div {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap !important;
+    gap: 8px;
+  }
+  /* Stacking controls on small phones */
+  .detail-card-header select {
+    width: auto !important;
+    flex-grow: 1;
+  }
+  /* Chart header responsiveness */
+  .chart-card-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+  .chart-card-header select {
+    width: 100% !important;
+  }
+}

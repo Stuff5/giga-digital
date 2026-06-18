@@ -88,12 +88,7 @@
               <span id="sidebar-text-entries">Entries</span>
             </a>
           </li>
-          <li>
-            <a href="#calculator" class="nav-link" id="nav-calculator">
-              <i class="fa-solid fa-calculator" id="sidebar-icon-calculator"></i>
-              <span id="sidebar-text-calculator">Fee Calculator</span>
-            </a>
-          </li>
+
           <li>
             <a href="#recycle" class="nav-link" id="nav-recycle">
               <i class="fa-solid fa-trash-can" id="sidebar-icon-recycle"></i>
@@ -163,53 +158,21 @@
         
         <!-- DASHBOARD VIEW -->
         <section id="dashboard-view" class="content-view active">
+          <!-- Dashboard Hero Banner -->
+          <div class="dashboard-hero">
+            <div class="hero-content">
+              <h3>Secure Key Operations Center</h3>
+              <p>Simulate commissions, secure validation codes, and track profits from digital inventory.</p>
+            </div>
+          </div>
+
           <div class="view-header flex-header">
             <div>
               <h2 class="view-title">Dashboard Overview</h2>
               <p class="view-subtitle">Real-time statistics on your game key trading operations.</p>
             </div>
             <div class="header-controls">
-              <!-- Customize Metrics Dropdown -->
-              <div class="dropdown-container" id="metrics-customize-dropdown">
-                <button class="btn btn-outline btn-sm" id="btn-toggle-metrics-panel" title="Customize Metrics">
-                  <i class="fa-solid fa-sliders"></i> <span>Metrics</span>
-                </button>
-                <div class="dropdown-menu glass-panel" id="metrics-customize-panel">
-                  <h5>Show/Hide Metrics</h5>
-                  <label class="checkbox-container">
-                    <input type="checkbox" id="toggle-metric-profit" checked>
-                    <span class="checkbox-label">Net Profit</span>
-                  </label>
-                  <label class="checkbox-container">
-                    <input type="checkbox" id="toggle-metric-cost" checked>
-                    <span class="checkbox-label">Inventory Cost</span>
-                  </label>
-                  <label class="checkbox-container">
-                    <input type="checkbox" id="toggle-metric-revenue" checked>
-                    <span class="checkbox-label">Total Revenue</span>
-                  </label>
-                  <label class="checkbox-container">
-                    <input type="checkbox" id="toggle-metric-roi" checked>
-                    <span class="checkbox-label">ROI %</span>
-                  </label>
-                  <label class="checkbox-container">
-                    <input type="checkbox" id="toggle-metric-stock" checked>
-                    <span class="checkbox-label">Available Stock</span>
-                  </label>
-                  <label class="checkbox-container">
-                    <input type="checkbox" id="toggle-metric-velocity" checked>
-                    <span class="checkbox-label">Sales Velocity</span>
-                  </label>
-                  <label class="checkbox-container">
-                    <input type="checkbox" id="toggle-metric-str" checked>
-                    <span class="checkbox-label">Sell-Through Rate</span>
-                  </label>
-                  <label class="checkbox-container">
-                    <input type="checkbox" id="toggle-metric-unitProfit" checked>
-                    <span class="checkbox-label">Avg Profit per Key</span>
-                  </label>
-                </div>
-              </div>
+
 
               <!-- Customize Figures Dropdown -->
               <div class="dropdown-container" id="figures-customize-dropdown">
@@ -241,122 +204,141 @@
                 </div>
               </div>
 
-              <!-- Supplier Filter Dropdown -->
-              <div class="supplier-filter-dashboard">
-                <select id="db-filter-supplier" class="form-control form-control-sm" style="width: auto; min-width: 140px; height: 32px; padding: 4px 8px;">
-                  <option value="all">All Suppliers</option>
-                </select>
-              </div>
 
-              <div class="date-filter-group">
-                <button class="btn btn-outline btn-sm active" data-period="all">All Time</button>
-                <button class="btn btn-outline btn-sm" data-period="month">This Month</button>
-                <button class="btn btn-outline btn-sm" data-period="week">This Week</button>
-                <button class="btn btn-outline btn-sm" data-period="today">Today</button>
+
+              <div class="date-filter-group" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <div style="display: flex; gap: 4px;">
+                  <button class="btn btn-outline btn-sm active" data-period="all">All Time</button>
+                  <button class="btn btn-outline btn-sm" data-period="month">This Month</button>
+                  <button class="btn btn-outline btn-sm" data-period="week">This Week</button>
+                  <button class="btn btn-outline btn-sm" data-period="today">Today</button>
+                  <button class="btn btn-outline btn-sm" data-period="custom" id="btn-custom-date">Custom</button>
+                </div>
+                
+                <div id="custom-date-inputs" class="hidden" style="display: flex; align-items: center; gap: 6px;">
+                  <input type="date" id="db-start-date" class="form-control form-control-sm" style="width: auto; height: 32px; padding: 2px 8px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-input); color: var(--text-primary); margin: 0;">
+                  <span style="font-size: 0.8rem; color: var(--text-muted);">to</span>
+                  <input type="date" id="db-end-date" class="form-control form-control-sm" style="width: auto; height: 32px; padding: 2px 8px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-input); color: var(--text-primary); margin: 0;">
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Dashboard Hero Banner -->
-          <div class="dashboard-hero">
-            <div class="hero-content">
-              <h3>Secure Key Operations Center</h3>
-              <p>Simulate commissions, secure validation codes, and track profits from digital inventory.</p>
+          <!-- Dashboard Active Period Summary Card & Inventory Status Card -->
+          <div class="charts-grid" id="dashboard-period-summary-row" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-bottom: 24px;">
+            <!-- Performance Summary Card (2/3 width on desktop) -->
+            <div class="detail-card">
+              <div class="detail-card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+                <h4 id="period-summary-title" style="margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Performance Summary: All Time</h4>
+                <div class="metric-icon" style="position: static; font-size: 1.25rem; opacity: 0.8; width: auto; height: auto; background: none; display: flex; align-items: center; justify-content: center;">
+                  <i class="fa-solid fa-chart-line"></i>
+                </div>
+              </div>
+              
+              <!-- Performance Stats Row -->
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 20px; padding: 4px;">
+                <!-- Net Profit -->
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-wallet" style="margin-right: 6px; color: var(--accent-purple);"></i>Net Profit</span>
+                  <h3 id="summary-metric-profit" style="margin: 0; font-size: 1.5rem; font-weight: 700;">€0.00</h3>
+                </div>
+                
+                <!-- Profit Margin -->
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-chart-pie" style="margin-right: 6px; color: var(--accent-pink);"></i>Margin</span>
+                  <h3 id="summary-metric-margin" style="margin: 0; font-size: 1.5rem; font-weight: 700;">0.0%</h3>
+                </div>
+
+                <!-- Keys Sold -->
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-receipt" style="margin-right: 6px; color: var(--accent-cyan);"></i>Keys Sold</span>
+                  <h3 id="summary-metric-sold" style="margin: 0; font-size: 1.5rem; font-weight: 700;">0</h3>
+                </div>
+
+                <!-- Revenue -->
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-coins" style="margin-right: 6px; color: var(--accent-pink);"></i>Revenue</span>
+                  <h3 id="summary-metric-revenue" style="margin: 0; font-size: 1.5rem; font-weight: 700;">€0.00</h3>
+                </div>
+
+                <!-- Spending -->
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-tags" style="margin-right: 6px; color: var(--accent-emerald);"></i>Spending (Cost)</span>
+                  <h3 id="summary-metric-spending" style="margin: 0; font-size: 1.5rem; font-weight: 700;">€0.00</h3>
+                </div>
+              </div>
+            </div>
+
+            <!-- Inventory Stock Status Card (1/3 width on desktop) -->
+            <div class="detail-card">
+              <div class="detail-card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+                <h4 style="margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Inventory Status</h4>
+                <div class="metric-icon" style="position: static; font-size: 1.25rem; opacity: 0.8; width: auto; height: auto; background: none; display: flex; align-items: center; justify-content: center;">
+                  <i class="fa-solid fa-boxes-stacked"></i>
+                </div>
+              </div>
+              
+              <!-- Stock Stats Row -->
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 20px; padding: 4px;">
+                <!-- Available Keys -->
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-box" style="margin-right: 6px; color: var(--accent-teal);"></i>Available</span>
+                  <h3 id="summary-metric-available" style="margin: 0; font-size: 1.5rem; font-weight: 700;">0</h3>
+                </div>
+
+                <!-- Reserved Keys -->
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-clock" style="margin-right: 6px; color: var(--accent-warning);"></i>Reserved</span>
+                  <h3 id="summary-metric-reserved" style="margin: 0; font-size: 1.5rem; font-weight: 700; color: var(--accent-warning);">0</h3>
+                </div>
+
+                <!-- Inventory Value -->
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-vault" style="margin-right: 6px; color: var(--accent-emerald);"></i>Stock Cost</span>
+                  <h3 id="summary-metric-stock-cost" style="margin: 0; font-size: 1.5rem; font-weight: 700; color: var(--accent-emerald);">€0.00</h3>
+                </div>
+              </div>
+            </div>
+
+            <!-- Operational Efficiency & Potential Card -->
+            <div class="detail-card">
+              <div class="detail-card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+                <h4 style="margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Efficiency & Potential</h4>
+                <div class="metric-icon" style="position: static; font-size: 1.25rem; opacity: 0.8; width: auto; height: auto; background: none; display: flex; align-items: center; justify-content: center;">
+                  <i class="fa-solid fa-percent"></i>
+                </div>
+              </div>
+              
+              <!-- Efficiency Stats Row -->
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 20px; padding: 4px;">
+                <!-- ROI % -->
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-circle-dollar-to-slot" style="margin-right: 6px; color: var(--accent-purple);"></i>ROI %</span>
+                  <h3 id="summary-metric-roi" style="margin: 0; font-size: 1.5rem; font-weight: 700;">0.0%</h3>
+                </div>
+
+                <!-- Avg Profit per Key -->
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-hand-holding-dollar" style="margin-right: 6px; color: var(--accent-cyan);"></i>Avg Profit/Key</span>
+                  <h3 id="summary-metric-avg-profit" style="margin: 0; font-size: 1.5rem; font-weight: 700;">€0.00</h3>
+                </div>
+
+                <!-- Potential Profit -->
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-vault" style="margin-right: 6px; color: var(--accent-teal);"></i>Profit Potential</span>
+                  <h3 id="summary-metric-potential-profit" style="margin: 0; font-size: 1.5rem; font-weight: 700; color: var(--text-success-neon);">€0.00</h3>
+                </div>
+
+                <!-- Avg Days to Sell -->
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-gauge" style="margin-right: 6px; color: var(--accent-amber);"></i>Days to Sell</span>
+                  <h3 id="summary-metric-velocity" style="margin: 0; font-size: 1.5rem; font-weight: 700;">0.0 days</h3>
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- Metrics Grid -->
-          <div class="metrics-grid">
-            <div class="metric-card bg-gradient-purple" id="card-net-profit">
-              <div class="metric-info">
-                <span class="metric-label">Total Net Profit</span>
-                <h3 class="metric-value" id="metric-profit">€0.00</h3>
-                <span class="metric-subtext positive" id="metric-profit-change">
-                  <i class="fa-solid fa-arrow-trend-up"></i> +0% margin
-                </span>
-              </div>
-              <div class="metric-icon">
-                <i class="fa-solid fa-wallet"></i>
-              </div>
-            </div>
 
-            <div class="metric-card bg-gradient-cyan" id="card-inventory-cost">
-              <div class="metric-info">
-                <span class="metric-label">Inventory Cost Value</span>
-                <h3 class="metric-value" id="metric-inventory-cost">€0.00</h3>
-                <span class="metric-subtext" id="metric-unsold-keys">0 keys in stock</span>
-              </div>
-              <div class="metric-icon">
-                <i class="fa-solid fa-cubes"></i>
-              </div>
-            </div>
-
-            <div class="metric-card bg-gradient-pink" id="card-total-revenue">
-              <div class="metric-info">
-                <span class="metric-label">Total Revenue</span>
-                <h3 class="metric-value" id="metric-revenue">€0.00</h3>
-                <span class="metric-subtext" id="metric-sold-keys">0 keys sold</span>
-              </div>
-              <div class="metric-icon">
-                <i class="fa-solid fa-receipt"></i>
-              </div>
-            </div>
-
-            <div class="metric-card bg-gradient-emerald" id="card-roi">
-              <div class="metric-info">
-                <span class="metric-label">ROI (Return on Inv.)</span>
-                <h3 class="metric-value" id="metric-roi">0%</h3>
-                <span class="metric-subtext" id="metric-fees-paid">€0.00 paid in fees</span>
-              </div>
-              <div class="metric-icon">
-                <i class="fa-solid fa-percent"></i>
-              </div>
-            </div>
-
-            <div class="metric-card bg-gradient-blue" id="card-available-stock">
-              <div class="metric-info">
-                <span class="metric-label">Available Stock</span>
-                <h3 class="metric-value" id="metric-stock-keys-count">0 keys</h3>
-                <span class="metric-subtext">Keys remaining in stock</span>
-              </div>
-              <div class="metric-icon">
-                <i class="fa-solid fa-boxes-stacked"></i>
-              </div>
-            </div>
-
-            <div class="metric-card bg-gradient-amber" id="card-sales-velocity">
-              <div class="metric-info">
-                <span class="metric-label">Sales Velocity</span>
-                <h3 class="metric-value" id="metric-sales-velocity">0.0 days</h3>
-                <span class="metric-subtext" id="metric-velocity-subtext">0 sales tracked</span>
-              </div>
-              <div class="metric-icon">
-                <i class="fa-solid fa-gauge-high"></i>
-              </div>
-            </div>
-
-            <div class="metric-card bg-gradient-teal" id="card-sell-through-rate">
-              <div class="metric-info">
-                <span class="metric-label">Sell-Through Rate</span>
-                <h3 class="metric-value" id="metric-sell-through">0.0%</h3>
-                <span class="metric-subtext" id="metric-str-subtext">0 sold / 0 total</span>
-              </div>
-              <div class="metric-icon">
-                <i class="fa-solid fa-chart-pie"></i>
-              </div>
-            </div>
-
-            <div class="metric-card bg-gradient-blue" id="card-avg-profit-key">
-              <div class="metric-info">
-                <span class="metric-label">Avg Profit per Key</span>
-                <h3 class="metric-value" id="metric-avg-profit-key">€0.00</h3>
-                <span class="metric-subtext" id="metric-avg-profit-subtext">Based on 0 sales</span>
-              </div>
-              <div class="metric-icon">
-                <i class="fa-solid fa-tags"></i>
-              </div>
-            </div>
-          </div>
 
           <!-- Charts Grid -->
           <div class="charts-grid" id="charts-grid-row-1">
@@ -417,6 +399,8 @@
             </div>
           </div>
 
+
+
           <!-- Dashboard Subsections -->
           <div class="dashboard-details-grid">
             <!-- Recent Activity Table -->
@@ -467,13 +451,13 @@
             <div class="action-buttons">
               <!-- View Toggle Controls -->
               <div class="layout-toggle-group">
-                <button class="btn btn-outline btn-sm active" id="btn-layout-list" title="List View">
+                <button class="btn btn-outline btn-sm active" id="btn-layout-list" title="List View" onclick="setInvLayout('list')">
                   <i class="fa-solid fa-list"></i>
                 </button>
-                <button class="btn btn-outline btn-sm" id="btn-layout-grid" title="Grid View">
+                <button class="btn btn-outline btn-sm" id="btn-layout-grid" title="Grid View" onclick="setInvLayout('grid')">
                   <i class="fa-solid fa-border-all"></i>
                 </button>
-                <button class="btn btn-outline btn-sm" id="btn-layout-gallery" title="Gallery View">
+                <button class="btn btn-outline btn-sm" id="btn-layout-gallery" title="Gallery View" onclick="setInvLayout('gallery')">
                   <i class="fa-solid fa-image"></i>
                 </button>
               </div>
@@ -514,6 +498,7 @@
                 <option value="Available">Available</option>
                 <option value="Reserved">Reserved</option>
                 <option value="Sold">Sold</option>
+                <option value="Rejected">Rejected</option>
               </select>
             </div>
 
@@ -525,11 +510,17 @@
               </select>
             </div>
 
+
+
             <div class="filter-group">
-              <label for="inv-supplier-display">Supplier Column</label>
-              <select id="inv-supplier-display" class="form-control form-control-sm">
-                <option value="name" selected>Show Name</option>
-                <option value="logo">Show Logo</option>
+              <label for="inv-sort-by">Sort By</label>
+              <select id="inv-sort-by" class="form-control form-control-sm">
+                <option value="date-desc" selected>Date Added (Newest)</option>
+                <option value="date-asc">Date Added (Oldest)</option>
+                <option value="title-asc">Game Title (A-Z)</option>
+                <option value="title-desc">Game Title (Z-A)</option>
+                <option value="duration-desc">Duration (Longest)</option>
+                <option value="duration-asc">Duration (Shortest)</option>
               </select>
             </div>
 
@@ -555,9 +546,10 @@
                       <input type="checkbox" id="inv-select-all" style="cursor: pointer;">
                     </th>
                     <th>Game Title</th>
-                    <th>Platform</th>
                     <th>Digital Key</th>
                     <th>Cost</th>
+                    <th>Sold Price</th>
+                    <th>Profit</th>
                     <th style="text-align: center;">Supplier</th>
                     <th>Date Added</th>
                     <th>Date Closed</th>
@@ -654,7 +646,6 @@
                     <th>Cost</th>
                     <th>Sale Price</th>
                     <th>Sold On</th>
-                    <th>Platform Fees</th>
                     <th>Net Profit</th>
                     <th>Date Closed</th>
                     <th>Notes</th>
@@ -668,114 +659,22 @@
             </div>
             <div class="table-footer">
               <span id="sales-count-text">Showing 0 of 0 sales transactions</span>
+              <div class="pagination-controls" style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                <div class="page-size-selector" style="display: flex; align-items: center; gap: 8px;">
+                  <label for="sales-page-size" style="white-space: nowrap; margin-bottom: 0;">Show:</label>
+                  <select id="sales-page-size" class="form-control form-control-sm" style="width: auto; padding: 4px 8px; height: 32px;">
+                    <option value="25" selected>25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                  </select>
+                </div>
+                <div class="pagination-buttons" id="sales-pagination" style="display: flex; align-items: center; gap: 4px;">
+                  <!-- Injected by JS -->
+                </div>
+              </div>
             </div>
           </div>
         </section>
-
-        <!-- FEE CALCULATOR VIEW -->
-        <section id="calculator-view" class="content-view">
-          <div class="view-header">
-            <h2 class="view-title">Platform Fee Calculator</h2>
-            <p class="view-subtitle">Pre-calculate fees, profits, and optimal list pricing across standard platforms before listing.</p>
-          </div>
-
-          <div class="calculator-container">
-            <!-- Input Card -->
-            <div class="calc-card input-card">
-              <h3>Simulation Settings</h3>
-              
-              <div class="form-group">
-                <label for="calc-buy-price">Acquisition Cost (<span class="currency-symbol">€</span>)</label>
-                <div class="input-with-icon">
-                  <i class="fa-solid fa-euro-sign currency-icon"></i>
-                  <input type="number" id="calc-buy-price" class="form-control" placeholder="0.00" step="0.01" min="0" value="5.00">
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label for="calc-sell-price">Target Selling Price (<span class="currency-symbol">€</span>)</label>
-                <div class="input-with-icon">
-                  <i class="fa-solid fa-euro-sign currency-icon"></i>
-                  <input type="number" id="calc-sell-price" class="form-control" placeholder="0.00" step="0.01" min="0" value="12.00">
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label for="calc-platform">Selling Platform Preset</label>
-                <select id="calc-platform" class="form-control">
-                  <option value="g2a">G2A (10.8% + €0.40 listing fee)</option>
-                  <option value="kinguin" selected>Kinguin (11% + €0.35 sales fee)</option>
-                  <option value="ebay">eBay (15% + €0.30 payment fee)</option>
-                  <option value="playerauctions">PlayerAuctions (10% standard)</option>
-                  <option value="direct">Direct Sale (0% fees - Discord, Forums)</option>
-                  <option value="custom">Custom Percentage Fee</option>
-                </select>
-              </div>
-
-              <div id="custom-fee-container" class="form-group" style="display: none;">
-                <label for="calc-custom-fee">Custom Fee Percentage (%)</label>
-                <div class="input-with-icon">
-                  <i class="fa-solid fa-percent"></i>
-                  <input type="number" id="calc-custom-fee" class="form-control" placeholder="0.0" step="0.1" min="0" max="100" value="5">
-                </div>
-              </div>
-
-              <button class="btn btn-primary btn-block" id="btn-run-calc">
-                <i class="fa-solid fa-calculator"></i> Simulate Profitability
-              </button>
-            </div>
-
-            <!-- Output Card -->
-            <div class="calc-card results-card bg-gradient-dark">
-              <h3>Financial Projection</h3>
-              
-              <div class="result-details">
-                <div class="res-row">
-                  <span>Gross Sales Price:</span>
-                  <strong id="res-gross">€0.00</strong>
-                </div>
-                <div class="res-row">
-                  <span>Acquisition Cost:</span>
-                  <strong id="res-cost">€0.00</strong>
-                </div>
-                <div class="res-row text-danger-soft">
-                  <span>Estimated Platform Fees:</span>
-                  <strong id="res-fees">€0.00</strong>
-                </div>
-                <hr class="calc-divider">
-                <div class="res-row res-total">
-                  <span>Projected Net Profit:</span>
-                  <strong id="res-net" class="text-success-neon">€0.00</strong>
-                </div>
-              </div>
-
-              <div class="progress-bar-container">
-                <div class="progress-bar-label">
-                  <span>Profit Margin</span>
-                  <span id="res-margin-label">0%</span>
-                </div>
-                <div class="progress-bar">
-                  <div class="progress-fill" id="res-margin-bar" style="width: 0%;"></div>
-                </div>
-              </div>
-
-              <div class="metric-mini-grid">
-                <div class="mini-metric">
-                  <span class="mini-label">ROI Percentage</span>
-                  <strong id="res-roi" class="text-cyan">0%</strong>
-                </div>
-                <div class="mini-metric">
-                  <span class="mini-label">Breakeven Price</span>
-                  <strong id="res-breakeven">€0.00</strong>
-                </div>
-              </div>
-
-              <div class="fee-breakdown-note" id="fee-note">
-                * Based on Kinguin fee structure: 11% commission plus a flat €0.35 fee per transaction.
-              </div>
-              </div>
-            </div>
-          </section>
 
           <!-- SUPPLIERS VIEW -->
           <section id="suppliers-view" class="content-view">
@@ -783,6 +682,14 @@
               <div>
                 <h2 class="view-title">Manage Suppliers</h2>
                 <p class="view-subtitle">Add, remove, and monitor the purchase sources for your game key inventory.</p>
+                <div class="layout-toggle-buttons" id="suppliers-view-tabs" style="display: flex; background: var(--bg-input); padding: 2px; border-radius: 6px; border: 1px solid var(--border-color); margin-top: 12px; width: fit-content;">
+                  <button class="btn-supplier-tab-toggle active" id="btn-tab-by-supplier" data-tab="supplier" style="background: none; border: none; padding: 6px 12px; border-radius: 4px; color: var(--text-primary); cursor: pointer; font-size: 0.85rem; font-weight: 500; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-truck-ramp-box"></i> By Supplier
+                  </button>
+                  <button class="btn-supplier-tab-toggle" id="btn-tab-by-publisher" data-tab="publisher" style="background: none; border: none; padding: 6px 12px; border-radius: 4px; color: var(--text-secondary); cursor: pointer; font-size: 0.85rem; font-weight: 500; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-building"></i> By Publisher
+                  </button>
+                </div>
               </div>
               <div class="header-controls">
                 <!-- Customize Metrics Dropdown -->
@@ -884,7 +791,7 @@
                 <div class="metric-info">
                   <span class="metric-label">ROI (Return on Inv.)</span>
                   <h3 class="metric-value" id="sup-metric-roi">0%</h3>
-                  <span class="metric-subtext" id="sup-metric-fees-paid">€0.00 paid in fees</span>
+                  <span class="metric-subtext" id="sup-metric-roi-subtext">Cost of sales: €0.00</span>
                 </div>
                 <div class="metric-icon">
                   <i class="fa-solid fa-percent"></i>
@@ -936,7 +843,8 @@
               </div>
             </div>
 
-            <div class="responsive-grid-2">
+            <!-- Suppliers Tab Content (Visible by default) -->
+            <div id="suppliers-tab-content" class="responsive-grid-2">
               <!-- Add Supplier Card -->
               <div class="calc-card">
                 <h3>Add New Supplier</h3>
@@ -999,6 +907,33 @@
                 </div>
               </div>
             </div>
+
+            <!-- Publishers Tab Content (Hidden by default) -->
+            <div id="publishers-tab-content" class="calc-card hidden" style="width: 100%;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+                <h3 style="margin-bottom: 0; border: none; padding-bottom: 0;">Publisher Analytics & Distribution</h3>
+              </div>
+              <div class="table-responsive">
+                <table class="table" id="publishers-table">
+                  <thead>
+                    <tr>
+                      <th>Publisher Name</th>
+                      <th>Keys Purchased</th>
+                      <th>Keys Sold</th>
+                      <th>In Stock</th>
+                      <th>Total Spent</th>
+                      <th>Total Revenue</th>
+                      <th>Net Profit</th>
+                      <th>ROI %</th>
+                      <th>Avg Days to Sell</th>
+                    </tr>
+                  </thead>
+                  <tbody id="publishers-table-body">
+                    <!-- Injected by JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </section>
 
           <!-- PLATFORMS VIEW -->
@@ -1016,6 +951,17 @@
                   <div class="form-group">
                     <label for="platform-name-input" class="required">Platform Name</label>
                     <input type="text" id="platform-name-input" class="form-control" required placeholder="e.g. Steam, Nintendo Switch">
+                  </div>
+                  <div class="form-group">
+                    <label>Platform Logo / Icon</label>
+                    <div class="image-input-container">
+                      <input type="text" id="platform-logo-url-input" class="form-control form-control-sm" placeholder="Paste logo image URL...">
+                      <div class="image-divider"><span>OR</span></div>
+                      <label class="btn btn-outline btn-sm file-upload-label" style="width: 100%; justify-content: center;">
+                        <i class="fa-solid fa-upload"></i> Upload Logo
+                        <input type="file" id="platform-logo-file-input" accept="image/*" style="display: none;">
+                      </label>
+                    </div>
                   </div>
                   <button type="submit" class="btn btn-primary btn-block">
                     <i class="fa-solid fa-plus"></i> Add Platform
@@ -1085,6 +1031,7 @@
                       <th>Total Revenue</th>
                       <th>Net Profit</th>
                       <th>ROI %</th>
+                      <th>Margin %</th>
                       <th style="text-align: right; width: 100px;">Actions</th>
                     </tr>
                   </thead>
@@ -1131,50 +1078,53 @@
               <!-- Rendered dynamically -->
             </div>
 
-            <!-- Monthly breakdown chart & details table -->
-            <div class="charts-grid" style="margin-bottom: 32px; grid-template-columns: 1.2fr 1fr;">
-              <!-- Left: monthly trend chart of profit vs cost vs revenue -->
-              <div class="chart-card">
-                <div class="chart-card-header">
-                  <h4 id="finance-chart-title">Monthly Financial Trend</h4>
-                  <select id="finance-chart-breakdown-type" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
+            <!-- Monthly trend chart -->
+            <div class="chart-card" style="margin-bottom: 24px;">
+              <div class="chart-card-header">
+                <h4 id="finance-chart-title">Monthly Financial Trend</h4>
+                <select id="finance-chart-breakdown-type" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
+                  <option value="month">By Month</option>
+                  <option value="year">By Year</option>
+                  <option value="all">All Time</option>
+                </select>
+              </div>
+              <div class="chart-body">
+                <canvas id="financeMonthlyChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Detailed breakdown ledger/cards -->
+            <div class="detail-card" id="finance-detail-card" style="margin-bottom: 32px;">
+              <div class="detail-card-header flex-header" style="flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;">
+                <h4 id="finance-breakdown-title" style="margin: 0;">Monthly Ledger Breakdown</h4>
+                
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <div class="layout-toggle-buttons" id="finance-layout-toggles" style="display: flex; background: var(--bg-input); padding: 2px; border-radius: 6px; border: 1px solid var(--border-color);">
+                      <button class="btn-toggle-layout" data-style="transposed" title="Spreadsheet View" style="background: none; border: none; padding: 4px 8px; border-radius: 4px; color: var(--text-secondary); cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 4px;"><i class="fa-solid fa-table"></i> <span class="layout-btn-text">Spreadsheet</span></button>
+                      <button class="btn-toggle-layout" data-style="grid" title="Grid Cards View" style="background: none; border: none; padding: 4px 8px; border-radius: 4px; color: var(--text-secondary); cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 4px;"><i class="fa-solid fa-table-cells-large"></i> <span class="layout-btn-text">Grid</span></button>
+                      <button class="btn-toggle-layout" data-style="expandable" title="Expandable Table View" style="background: none; border: none; padding: 4px 8px; border-radius: 4px; color: var(--text-secondary); cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 4px;"><i class="fa-solid fa-indent"></i> <span class="layout-btn-text">Expandable</span></button>
+                      <button class="btn-toggle-layout" data-style="tabbed" title="Tabbed Table View" style="background: none; border: none; padding: 4px 8px; border-radius: 4px; color: var(--text-secondary); cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 4px;"><i class="fa-solid fa-window-maximize"></i> <span class="layout-btn-text">Tabbed</span></button>
+                      <button class="btn-toggle-layout active" data-style="full" title="Full-Width Table View" style="background: none; border: none; padding: 4px 8px; border-radius: 4px; color: var(--text-primary); cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 4px;"><i class="fa-solid fa-arrows-left-right"></i> <span class="layout-btn-text">Full Width</span></button>
+                    </div>
+
+                  <select id="finance-breakdown-type" class="form-control form-control-sm" style="width: auto; min-width: 100px; height: 32px; padding: 2px 8px; margin: 0;">
                     <option value="month">By Month</option>
                     <option value="year">By Year</option>
                     <option value="all">All Time</option>
                   </select>
-                </div>
-                <div class="chart-body">
-                  <canvas id="financeMonthlyChart"></canvas>
+
+                  <select id="finance-breakdown-year-filter" class="form-control form-control-sm hidden" style="width: auto; min-width: 110px; height: 32px; padding: 2px 8px; margin: 0;">
+                    <option value="all">All Years</option>
+                  </select>
+
+                  <button id="finance-breakdown-sort-order" class="btn btn-sm btn-outline" style="padding: 4px 8px; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; margin: 0;" title="Toggle Sort Order">
+                    <i class="fa-solid fa-arrow-down-wide-short"></i>
+                  </button>
                 </div>
               </div>
-
-              <!-- Right: detailed table -->
-              <div class="detail-card">
-                <div class="detail-card-header">
-                  <h4 id="finance-breakdown-title">Monthly Ledger Breakdown</h4>
-                  <select id="finance-breakdown-type" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
-                    <option value="month">By Month</option>
-                    <option value="year">By Year</option>
-                    <option value="all">All Time</option>
-                  </select>
-                </div>
-                <div class="table-responsive">
-                  <table class="table" id="finance-monthly-table">
-                    <thead>
-                      <tr>
-                        <th id="finance-table-header-period">Month</th>
-                        <th>Sold Keys</th>
-                        <th>Revenue</th>
-                        <th>Expenses (Cost)</th>
-                        <th>Net Profit</th>
-                        <th>ROI</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <!-- Dynamically rendered -->
-                    </tbody>
-                  </table>
-                </div>
+              
+              <div id="finance-detail-content" style="margin-top: 16px;">
+                <!-- Dynamic layout content injected here by JS -->
               </div>
             </div>
           </section>
@@ -1251,46 +1201,42 @@
                   </p>
                   
                   <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 12px;">Appearance Mode</h4>
-                  <div class="theme-select-group" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px; margin-bottom: 24px;">
-                    <div class="theme-option-card" id="mode-opt-dark" style="padding: 16px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
-                      <i class="fa-solid fa-moon" style="font-size: 1.8rem; color: var(--accent-purple); margin-bottom: 8px; display: block;"></i>
-                      <strong>Dark Mode</strong>
+                  <div class="theme-select-group" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; margin-bottom: 20px;">
+                    <div class="theme-option-card" id="mode-opt-dark" style="padding: 10px 14px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-moon" style="font-size: 1.4rem; color: var(--accent-purple); margin-bottom: 6px; display: block;"></i>
+                      <strong style="font-size: 0.85rem;">Dark Mode</strong>
                     </div>
-                    <div class="theme-option-card" id="mode-opt-light" style="padding: 16px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
-                      <i class="fa-solid fa-sun" style="font-size: 1.8rem; color: var(--accent-warning); margin-bottom: 8px; display: block;"></i>
-                      <strong>Light Mode</strong>
+                    <div class="theme-option-card" id="mode-opt-light" style="padding: 10px 14px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-sun" style="font-size: 1.4rem; color: var(--accent-warning); margin-bottom: 6px; display: block;"></i>
+                      <strong style="font-size: 0.85rem;">Light Mode</strong>
                     </div>
                   </div>
                   
                   <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 12px;">Color Palette</h4>
-                  <div class="theme-select-group" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px;">
-                    <div class="theme-option-card" id="color-opt-classic" style="padding: 16px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
-                      <i class="fa-solid fa-palette" style="font-size: 1.8rem; color: var(--accent-purple); margin-bottom: 8px; display: block;"></i>
-                      <strong>Classic</strong>
+                  <div class="theme-select-group" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px;">
+                    <div class="theme-option-card" id="color-opt-classic" style="padding: 10px 14px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-palette" style="font-size: 1.4rem; color: var(--accent-purple); margin-bottom: 6px; display: block;"></i>
+                      <strong style="font-size: 0.85rem;">Classic</strong>
                     </div>
-                    <div class="theme-option-card" id="color-opt-ocean" style="padding: 16px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
-                      <i class="fa-solid fa-water" style="font-size: 1.8rem; color: hsl(195, 95%, 50%); margin-bottom: 8px; display: block;"></i>
-                      <strong>Midnight Ocean</strong>
+                    <div class="theme-option-card" id="color-opt-ocean" style="padding: 10px 14px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-water" style="font-size: 1.4rem; color: hsl(195, 95%, 50%); margin-bottom: 6px; display: block;"></i>
+                      <strong style="font-size: 0.85rem;">Ocean</strong>
                     </div>
-                    <div class="theme-option-card" id="color-opt-cyberpunk" style="padding: 16px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
-                      <i class="fa-solid fa-bolt" style="font-size: 1.8rem; color: hsl(355, 95%, 55%); margin-bottom: 8px; display: block;"></i>
-                      <strong>Cyberpunk Neon</strong>
+                    <div class="theme-option-card" id="color-opt-cyberpunk" style="padding: 10px 14px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-bolt" style="font-size: 1.4rem; color: hsl(355, 95%, 55%); margin-bottom: 6px; display: block;"></i>
+                      <strong style="font-size: 0.85rem;">Cyberpunk</strong>
                     </div>
-                    <div class="theme-option-card" id="color-opt-emerald" style="padding: 16px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
-                      <i class="fa-solid fa-tree" style="font-size: 1.8rem; color: hsl(145, 85%, 48%); margin-bottom: 8px; display: block;"></i>
-                      <strong>Forest Emerald</strong>
+                    <div class="theme-option-card" id="color-opt-emerald" style="padding: 10px 14px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-tree" style="font-size: 1.4rem; color: hsl(145, 85%, 48%); margin-bottom: 6px; display: block;"></i>
+                      <strong style="font-size: 0.85rem;">Emerald</strong>
                     </div>
-                    <div class="theme-option-card" id="color-opt-amber" style="padding: 16px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
-                      <i class="fa-solid fa-crown" style="font-size: 1.8rem; color: hsl(45, 95%, 50%); margin-bottom: 8px; display: block;"></i>
-                      <strong>Amber Gold</strong>
-                    </div>
-                    <div class="theme-option-card" id="color-opt-nordic" style="padding: 16px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
-                      <i class="fa-solid fa-snowflake" style="font-size: 1.8rem; color: hsl(200, 95%, 60%); margin-bottom: 8px; display: block;"></i>
-                      <strong>Nordic Frost</strong>
+                    <div class="theme-option-card" id="color-opt-amber" style="padding: 10px 14px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-crown" style="font-size: 1.4rem; color: hsl(45, 95%, 50%); margin-bottom: 6px; display: block;"></i>
+                      <strong style="font-size: 0.85rem;">Amber</strong>
                     </div>
                   </div>
                 </div>
-
+ 
                 <!-- Currency Settings Card -->
                 <div class="calc-card" style="margin-bottom: 0;">
                   <h3>Regional Currency</h3>
@@ -1298,14 +1244,14 @@
                     Choose the currency notation for the entire dashboard interface.
                   </p>
                   
-                  <div class="theme-select-group" style="display: flex; gap: 16px;">
-                    <div class="theme-option-card" id="curr-opt-eur" style="flex: 1; padding: 20px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
-                      <i class="fa-solid fa-euro-sign" style="font-size: 2rem; color: var(--accent-teal); margin-bottom: 10px; display: block;"></i>
-                      <strong>Euro (€)</strong>
+                  <div class="theme-select-group" style="display: flex; gap: 12px;">
+                    <div class="theme-option-card" id="curr-opt-eur" style="flex: 1; padding: 12px 18px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-euro-sign" style="font-size: 1.6rem; color: var(--accent-teal); margin-bottom: 8px; display: block;"></i>
+                      <strong style="font-size: 0.9rem;">Euro (€)</strong>
                     </div>
-                    <div class="theme-option-card" id="curr-opt-usd" style="flex: 1; padding: 20px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
-                      <i class="fa-solid fa-dollar-sign" style="font-size: 2rem; color: var(--accent-emerald); margin-bottom: 10px; display: block;"></i>
-                      <strong>US Dollar ($)</strong>
+                    <div class="theme-option-card" id="curr-opt-usd" style="flex: 1; padding: 12px 18px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-dollar-sign" style="font-size: 1.6rem; color: var(--accent-emerald); margin-bottom: 8px; display: block;"></i>
+                      <strong style="font-size: 0.9rem;">US Dollar ($)</strong>
                     </div>
                   </div>
                 </div>
@@ -1380,21 +1326,7 @@
                   </div>
                 </div>
 
-                <!-- Platform Fee Presets Settings Card -->
-                <div class="calc-card" style="margin-bottom: 0;">
-                  <h3>Platform Fee Presets</h3>
-                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
-                    Set standard commission rates and fixed listing fees per platform.
-                  </p>
-                  
-                  <div class="fee-presets-grid" id="settings-fee-presets-list">
-                    <!-- Injected dynamically by JS -->
-                  </div>
-                  
-                  <button type="button" class="btn btn-primary btn-block" id="btn-save-fee-presets">
-                    <i class="fa-solid fa-floppy-disk"></i> Save Fee Presets
-                  </button>
-                </div>
+
 
                 <!-- Database Configuration Card -->
                 <div class="calc-card" style="margin-bottom: 0; padding: 24px; border: 2px solid var(--accent-purple-glow); background: hsla(270, 85%, 60%, 0.01); display: flex; flex-direction: column; gap: 24px;">
@@ -1571,21 +1503,22 @@
                     </div>
                   </div>
 
-                  <!-- Fee Calculator Toggle -->
-                  <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background-color: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                      <i class="fa-solid fa-calculator" style="font-size: 1.25rem; color: var(--accent-purple);"></i>
-                      <div style="display: flex; flex-direction: column; text-align: left;">
-                        <strong style="font-size: 0.9rem; color: var(--text-main);">Fee Calculator</strong>
-                        <span style="font-size: 0.75rem; color: var(--text-muted);">Enable expected return tool</span>
-                      </div>
-                    </div>
-                    <div>
-                      <label class="switch-toggle" style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer; margin: 0;">
-                        <input type="checkbox" id="toggle-show-calculator" style="opacity: 0; width: 0; height: 0;" checked>
-                        <span class="switch-slider" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: hsla(0, 0%, 100%, 0.1); border-radius: 34px; transition: 0.3s ease;"></span>
-                      </label>
-                    </div>
+
+                </div>
+
+                <!-- Inventory Display Preferences Card -->
+                <div class="calc-card">
+                  <h3>Inventory Display Preferences</h3>
+                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+                    Choose whether to display logo thumbnails or plain text tags in the main inventory table's Supplier column.
+                  </p>
+                  
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label for="settings-supplier-display">Supplier Column</label>
+                    <select id="settings-supplier-display" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main); font-weight: 500; width: 100%;">
+                      <option value="name" selected>Show Name</option>
+                      <option value="logo">Show Logo</option>
+                    </select>
                   </div>
                 </div>
 
@@ -1607,7 +1540,7 @@
                     Backup or restore all game vault configurations and records via JSON.
                   </p>
                   
-                  <div class="backup-restore-group">
+                  <div class="backup-restore-group" style="margin-bottom: 24px;">
                     <button type="button" class="btn btn-primary btn-block" id="btn-export-backup" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
                       <i class="fa-solid fa-download"></i> Export Backup (JSON)
                     </button>
@@ -1616,6 +1549,107 @@
                       <i class="fa-solid fa-upload"></i> Restore Backup (JSON)
                     </button>
                     <input type="file" id="settings-backup-file" accept=".json" style="display: none;">
+                  </div>
+
+                  <!-- Danger Zone -->
+                  <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-danger); margin-bottom: 12px; border-top: 1px solid var(--border-color); padding-top: 16px;">Danger Zone</h4>
+                  <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 16px;">
+                    Irreversibly delete all items currently stored in your inventory. This action cannot be undone.
+                  </p>
+                  <button type="button" class="btn btn-danger btn-block" id="btn-delete-all-inventory" style="display: flex; align-items: center; justify-content: center; gap: 8px; background-color: var(--accent-danger); border-color: var(--accent-danger); color: #fff;">
+                    <i class="fa-solid fa-trash-can"></i> Delete All Inventory Items
+                  </button>
+                </div>
+
+                <!-- Excel/CSV Bulk Import Card -->
+                <div class="calc-card">
+                  <h3>Excel/CSV Bulk Import</h3>
+                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+                    Import raw inventory data from an Excel workbook (.xlsx, .xls) or a standard CSV file.
+                  </p>
+                  
+                  <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <div class="file-drop-zone" style="border: 2px dashed var(--border-color); border-radius: var(--radius-lg); padding: 30px 20px; text-align: center; background: hsla(0, 0%, 100%, 0.01); transition: var(--transition-smooth); cursor: pointer;" id="import-drop-zone">
+                      <i class="fa-solid fa-file-excel" style="font-size: 2.5rem; color: var(--accent-emerald); margin-bottom: 12px;"></i>
+                      <p style="font-size: 0.9rem; font-weight: 500; margin-bottom: 4px;" id="import-file-name">Drag & drop your file here, or click to browse</p>
+                      <p style="font-size: 0.75rem; color: var(--text-secondary);">Supports XLSX, XLS, and CSV formats</p>
+                      <input type="file" id="settings-import-file" accept=".xlsx,.xls,.csv" style="display: none;">
+                    </div>
+                    
+                    <div id="import-progress-container" class="hidden" style="display: flex; flex-direction: column; gap: 6px;">
+                      <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
+                        <span id="import-progress-status" style="color: var(--text-secondary);">Processing rows...</span>
+                        <span id="import-progress-percent" style="font-weight: 600; color: var(--text-main);">0%</span>
+                      </div>
+                      <div style="width: 100%; height: 6px; background: var(--bg-input); border-radius: 3px; overflow: hidden;">
+                        <div id="import-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent-emerald), var(--accent-teal)); transition: width 0.1s ease;"></div>
+                      </div>
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary btn-block" id="btn-import-sheet" disabled style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                      <i class="fa-solid fa-file-import"></i> Start Import
+                    </button>
+                  </div>
+                </div>
+
+                <!-- User Management Settings Card (Admin only) -->
+                <div class="calc-card" id="settings-user-mgmt-card">
+                  <h3>User Management</h3>
+                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+                    Manually create additional user accounts and view existing registered users.
+                  </p>
+                  
+                  <form id="admin-create-user-form" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 24px;">
+                    <h4 style="margin: 0 0 8px 0; font-size: 0.9rem; text-transform: uppercase; color: var(--accent-purple); letter-spacing: 0.05em;">Create New User</h4>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="admin-new-username" style="font-size: 0.8rem; margin-bottom: 4px;">Username</label>
+                        <input type="text" id="admin-new-username" class="form-control" placeholder="Username" required minlength="3" maxlength="15" style="height: 36px; padding: 6px 12px; font-size: 0.85rem;">
+                      </div>
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="admin-new-email" style="font-size: 0.8rem; margin-bottom: 4px;">Email Address</label>
+                        <input type="email" id="admin-new-email" class="form-control" placeholder="Email Address" required style="height: 36px; padding: 6px 12px; font-size: 0.85rem;">
+                      </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="admin-new-password" style="font-size: 0.8rem; margin-bottom: 4px;">Password</label>
+                        <input type="password" id="admin-new-password" class="form-control" placeholder="Password" required minlength="6" style="height: 36px; padding: 6px 12px; font-size: 0.85rem;">
+                      </div>
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="admin-confirm-password" style="font-size: 0.8rem; margin-bottom: 4px;">Confirm Password</label>
+                        <input type="password" id="admin-confirm-password" class="form-control" placeholder="Confirm Password" required style="height: 36px; padding: 6px 12px; font-size: 0.85rem;">
+                      </div>
+                    </div>
+                    
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px; flex-wrap: wrap; gap: 12px;">
+                      <label class="checkbox-container" style="margin-bottom: 0;">
+                        <input type="checkbox" id="admin-new-2fa">
+                        <span class="checkbox-label" style="font-weight: 500; font-size: 0.85rem;">Enable Two-Factor Authentication (2FA)</span>
+                      </label>
+                      <button type="submit" class="btn btn-primary" style="height: 36px; padding: 0 16px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; width: auto; margin-top: 0;">
+                        <i class="fa-solid fa-user-plus"></i> Create User
+                      </button>
+                    </div>
+                  </form>
+                  
+                  <h4 style="margin: 0 0 12px 0; font-size: 0.9rem; text-transform: uppercase; color: var(--text-primary); letter-spacing: 0.05em;">Registered Users</h4>
+                  <div class="table-responsive">
+                    <table class="table" style="font-size: 0.85rem;" id="admin-users-table">
+                      <thead>
+                        <tr>
+                          <th>Username</th>
+                          <th>Email</th>
+                          <th>2FA Status</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody id="admin-users-list">
+                        <!-- Injected by JS -->
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>
@@ -1640,9 +1674,8 @@
         </div>
       </div>
 
-      <div class="auth-tabs">
-        <button class="auth-tab-btn active" id="tab-login" onclick="switchAuthTab('login')">Sign In</button>
-        <button class="auth-tab-btn" id="tab-register" onclick="switchAuthTab('register')">Create Account</button>
+      <div class="auth-tabs" style="border-bottom: none; margin-bottom: 24px; justify-content: center;">
+        <h3 style="margin: 0; font-size: 1.25rem; font-weight: 600; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.05em;">Sign In</h3>
       </div>
 
       <!-- Login Tab Content -->
@@ -1675,40 +1708,29 @@
         </form>
       </div>
 
-      <!-- Register Tab Content -->
-      <div id="auth-register-section" class="auth-section">
-        <form id="register-form">
-          <div class="form-group">
-            <label for="register-username">Username</label>
-            <div class="input-with-icon">
-              <i class="fa-solid fa-user"></i>
-              <input type="text" id="register-username" class="form-control" placeholder="Choose username" required autocomplete="username" minlength="3" maxlength="15">
+      <!-- Two-Factor Authentication Section -->
+      <div id="auth-2fa-section" class="auth-section">
+        <form id="2fa-form">
+          <div style="text-align: center; margin-bottom: 20px;">
+            <div style="font-size: 2.4rem; color: var(--accent-purple); margin-bottom: 10px;">
+              <i class="fa-solid fa-key"></i>
             </div>
+            <h4 style="margin-bottom: 5px; font-weight: 600; color: var(--text-main);">Two-Factor Verification</h4>
+            <p style="font-size: 1.2rem; color: var(--text-muted); line-height: 1.5;">Enter the 6-digit verification code sent to your authenticator app/email.</p>
           </div>
           <div class="form-group">
-            <label for="register-email">Email Address</label>
-            <div class="input-with-icon">
-              <i class="fa-solid fa-envelope"></i>
-              <input type="email" id="register-email" class="form-control" placeholder="Enter email" required autocomplete="email">
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="register-password">Password</label>
-            <div class="input-with-icon">
-              <i class="fa-solid fa-lock"></i>
-              <input type="password" id="register-password" class="form-control" placeholder="Choose password" required autocomplete="new-password" minlength="6">
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="register-confirm">Confirm Password</label>
+            <label for="auth-2fa-code">Verification Code</label>
             <div class="input-with-icon">
               <i class="fa-solid fa-shield-halved"></i>
-              <input type="password" id="register-confirm" class="form-control" placeholder="Confirm password" required autocomplete="new-password">
+              <input type="text" id="auth-2fa-code" class="form-control" placeholder="000000" required maxlength="6" pattern="\\d{6}" style="text-align: center; font-size: 2.2rem; letter-spacing: 8px; font-weight: bold;">
             </div>
           </div>
-          <button type="submit" class="btn btn-primary btn-block">
-            <i class="fa-solid fa-user-plus"></i> Create Account
+          <button type="submit" class="btn btn-primary btn-block" id="btn-verify-2fa">
+            <i class="fa-solid fa-check"></i> Verify & Access
           </button>
+          <div style="text-align: center; margin-top: 20px;">
+            <a href="#" class="forgot-password-link" onclick="switchAuthTab('login')">Back to Sign In</a>
+          </div>
         </form>
       </div>
     </div>
@@ -1772,6 +1794,7 @@
               <option value="Available">Available</option>
               <option value="Reserved">Reserved</option>
               <option value="Sold">Sold</option>
+              <option value="Rejected">Rejected</option>
             </select>
           </div>
 
@@ -1792,6 +1815,11 @@
               <label for="edit-game-purchase-date" class="required">Purchase Date</label>
               <input type="date" id="edit-game-purchase-date" class="form-control" required>
             </div>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-game-publisher">Publisher</label>
+            <input type="text" id="edit-game-publisher" class="form-control" placeholder="e.g. Bandai Namco, Ubisoft">
           </div>
 
           <div class="form-group">
@@ -1902,12 +1930,7 @@
 
           <div class="form-group">
             <label for="game-key" class="required">Digital Activation Key(s)</label>
-            <div class="input-with-action">
-              <textarea id="game-key" class="form-control font-code" required placeholder="Enter keys (one per line)..." rows="3" style="resize: vertical;"></textarea>
-              <button type="button" class="btn btn-outline" id="btn-generate-random-key" title="Generate dummy random key for testing">
-                <i class="fa-solid fa-dice"></i>
-              </button>
-            </div>
+            <textarea id="game-key" class="form-control font-code" required placeholder="Enter keys (one per line)..." rows="3" style="resize: vertical;"></textarea>
             <span class="form-help">Enter one key per line to add multiple keys at once with the same details.</span>
           </div>
 
@@ -1923,6 +1946,11 @@
               <label for="game-purchase-date" class="required">Purchase Date</label>
               <input type="date" id="game-purchase-date" class="form-control" required>
             </div>
+          </div>
+
+          <div class="form-group">
+            <label for="game-publisher">Publisher</label>
+            <input type="text" id="game-publisher" class="form-control" placeholder="e.g. Bandai Namco, Ubisoft">
           </div>
 
           <div class="form-group">
@@ -1947,6 +1975,7 @@
       </div>
       <form id="sell-game-form">
         <input type="hidden" id="sell-game-id">
+        <input type="hidden" id="sale-fees" value="0.00">
         <div class="modal-body">
           <div class="sale-summary-card">
             <h4 id="sell-modal-title">Game Title Here</h4>
@@ -1976,20 +2005,9 @@
             </div>
           </div>
 
-          <div class="form-row-2">
-            <div class="form-group">
-              <label for="sale-fees">Estimated Fees (<span class="currency-symbol">€</span>)</label>
-              <div class="input-with-icon">
-                <i class="fa-solid fa-euro-sign currency-icon"></i>
-                <input type="number" id="sale-fees" class="form-control" step="0.01" min="0" placeholder="Auto-calculated">
-              </div>
-              <small class="form-help">Calculated automatically but can be customized.</small>
-            </div>
-
-            <div class="form-group">
-              <label for="sale-date" class="required">Sale Date</label>
-              <input type="date" id="sale-date" class="form-control" required>
-            </div>
+          <div class="form-group">
+            <label for="sale-date" class="required">Sale Date</label>
+            <input type="date" id="sale-date" class="form-control" required>
           </div>
 
           <div class="form-group">
@@ -2058,6 +2076,55 @@
     </div>
   </div>
 
+  <!-- CATALOG KEYS LIST MODAL -->
+  <div class="modal-backdrop" id="catalog-keys-modal">
+    <div class="modal-card" style="max-width: 850px; width: 95%;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-key text-teal"></i> <span id="catalog-keys-modal-title">Game Title Keys</span></h3>
+        <button class="modal-close-btn" data-close-modal="catalog-keys-modal">&times;</button>
+      </div>
+      <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+        <div class="table-responsive">
+          <table class="table" id="catalog-keys-table">
+            <thead>
+              <tr>
+                <th>Platform</th>
+                <th>Digital Key</th>
+                <th>Cost</th>
+                <th>Sale Price</th>
+                <th>Selling Platform</th>
+                <th>Status</th>
+                <th style="text-align: right; width: 120px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="catalog-keys-table-body">
+              <!-- Injected by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+        <div class="table-footer" style="margin-top: 10px;">
+          <span id="catalog-keys-count-text">Showing 0 keys</span>
+          <div class="pagination-controls" style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <div class="page-size-selector" style="display: flex; align-items: center; gap: 8px;">
+              <label for="catalog-keys-page-size" style="white-space: nowrap; margin-bottom: 0; font-size: 0.8rem;">Show:</label>
+              <select id="catalog-keys-page-size" class="form-control form-control-sm" style="width: auto; padding: 4px 8px; height: 32px;">
+                <option value="25" selected>25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+            <div class="pagination-buttons" id="catalog-keys-pagination" style="display: flex; align-items: center; gap: 4px;">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-close-modal="catalog-keys-modal">Close</button>
+      </div>
+    </div>
+  </div>
+
   <!-- EDIT SUPPLIER MODAL -->
   <div class="modal-backdrop" id="edit-supplier-modal">
     <div class="modal-card" style="max-width: 450px;">
@@ -2111,9 +2178,48 @@
             <label for="edit-platform-name" class="required">Platform Name</label>
             <input type="text" id="edit-platform-name" class="form-control" required placeholder="e.g. Steam, Epic Games">
           </div>
+          <div class="form-group">
+            <label>Platform Logo / Icon</label>
+            <div class="image-input-container">
+              <input type="text" id="edit-platform-logo-url" class="form-control form-control-sm" placeholder="Paste logo image URL...">
+              <div class="image-divider"><span>OR</span></div>
+              <label class="btn btn-outline btn-sm file-upload-label" style="width: 100%; justify-content: center;">
+                <i class="fa-solid fa-upload"></i> Upload Logo
+                <input type="file" id="edit-platform-logo-file" accept="image/*" style="display: none;">
+              </label>
+            </div>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline" data-close-modal="edit-platform-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- EDIT USER MODAL -->
+  <div class="modal-backdrop" id="edit-user-modal">
+    <div class="modal-card" style="max-width: 450px;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-user-gear text-purple"></i> Edit User Account</h3>
+        <button class="modal-close-btn" data-close-modal="edit-user-modal">&times;</button>
+      </div>
+      <form id="edit-user-form">
+        <input type="hidden" id="edit-user-original-username">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="edit-user-username" class="required">Username</label>
+            <input type="text" id="edit-user-username" class="form-control" required placeholder="Username" minlength="3" maxlength="15">
+          </div>
+
+          <div class="form-group">
+            <label for="edit-user-email" class="required">Email Address</label>
+            <input type="email" id="edit-user-email" class="form-control" required placeholder="Email Address">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close-modal="edit-user-modal">Cancel</button>
           <button type="submit" class="btn btn-primary">Save Changes</button>
         </div>
       </form>
@@ -2133,7 +2239,9 @@
   <!-- TOAST NOTIFICATION CONTAINER -->
   <div class="toast-container" id="toast-container"></div>
 
+  <!-- Excel Parser SheetJS -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <!-- Main JavaScript File -->
-  <script src="app.js"></script>
+  <script src="app.js?v=2"></script>
 </body>
 </html>
