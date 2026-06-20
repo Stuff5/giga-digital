@@ -1025,26 +1025,38 @@ window.handleForgotPassword = function(e) {
 
 // Helper to get registered user list
 function getUsersFromStorage() {
+  let arr = [];
   try {
     const users = localStorage.getItem("gv_users");
-    const parsed = users ? JSON.parse(users) : [];
-    const arr = Array.isArray(parsed) ? parsed : [];
-    if (arr.length === 0) {
-      const defaultAdmin = {
-        username: "admin",
-        email: "admin@gamevault.local",
-        password: "password",
-        twoFactorEnabled: false
-      };
-      const seeded = [defaultAdmin];
-      localStorage.setItem("gv_users", JSON.stringify(seeded));
-      return seeded;
+    if (users) {
+      const parsed = JSON.parse(users);
+      if (Array.isArray(parsed)) {
+        arr = parsed;
+      }
     }
-    return arr;
   } catch (err) {
     console.error("Error reading users from storage:", err);
-    return [];
+    try {
+      localStorage.removeItem("gv_users");
+    } catch (e) {}
   }
+
+  const hasAdmin = arr.some(u => u.username.toLowerCase() === "admin");
+  if (!hasAdmin) {
+    const defaultAdmin = {
+      username: "admin",
+      email: "admin@gamevault.local",
+      password: "password",
+      twoFactorEnabled: false
+    };
+    arr.push(defaultAdmin);
+    try {
+      localStorage.setItem("gv_users", JSON.stringify(arr));
+    } catch (e) {
+      console.error("Failed to seed default admin to storage:", e);
+    }
+  }
+  return arr;
 }
 
 // Helper to save users list
