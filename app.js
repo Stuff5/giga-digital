@@ -66,8 +66,24 @@ const safeStorage = (() => {
   };
 })();
 
-// Override localStorage locally within this script's scope
+// Override localStorage and sessionStorage locally within this script's scope
 const localStorage = safeStorage;
+const sessionStorage = safeStorage;
+
+// Global error boundary display for remote environment debugging
+window.addEventListener("error", (event) => {
+  const errContainer = document.createElement("div");
+  errContainer.style.cssText = "position: fixed; top: 10px; left: 10px; right: 10px; background: rgba(220, 53, 69, 0.95); color: white; padding: 15px; border-radius: 8px; z-index: 100000; font-family: monospace; font-size: 12px; border: 1px solid #ff0000; box-shadow: 0 4px 15px rgba(0,0,0,0.3); overflow-wrap: break-word; max-height: 50vh; overflow-y: auto;";
+  errContainer.innerHTML = `<strong>[Global Runtime Error]</strong><br>${event.message}<br><small>in ${event.filename} at line ${event.lineno}:${event.colno}</small><pre style="margin-top: 8px; white-space: pre-wrap; font-size: 11px;">${event.error ? event.error.stack : 'No stack trace'}</pre>`;
+  document.body.appendChild(errContainer);
+});
+
+window.addEventListener("unhandledrejection", (event) => {
+  const errContainer = document.createElement("div");
+  errContainer.style.cssText = "position: fixed; top: 10px; left: 10px; right: 10px; background: rgba(220, 53, 69, 0.95); color: white; padding: 15px; border-radius: 8px; z-index: 100000; font-family: monospace; font-size: 12px; border: 1px solid #ff0000; box-shadow: 0 4px 15px rgba(0,0,0,0.3); overflow-wrap: break-word; max-height: 50vh; overflow-y: auto;";
+  errContainer.innerHTML = `<strong>[Unhandled Promise Rejection]</strong><br>${event.reason}<br><pre style="margin-top: 8px; white-space: pre-wrap; font-size: 11px;">${event.reason && event.reason.stack ? event.reason.stack : 'No stack trace'}</pre>`;
+  document.body.appendChild(errContainer);
+});
 
 // ==========================================================================
 // MOCK INITIAL DATA (For first-load experience)
