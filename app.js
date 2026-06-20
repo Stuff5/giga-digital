@@ -3,6 +3,72 @@
  * Main Application Script (app.js)
  */
 
+// Safe localStorage wrapper to prevent crashes in private windows or restricted iframe origins (like GitHub Pages)
+const safeStorage = (() => {
+  const memoryStore = {};
+  let isSupported = false;
+  try {
+    const testKey = "__storage_test__";
+    window.localStorage.setItem(testKey, testKey);
+    window.localStorage.removeItem(testKey);
+    isSupported = true;
+  } catch (e) {
+    isSupported = false;
+    console.warn("localStorage is not accessible in this environment. Falling back to in-memory storage.");
+  }
+
+  return {
+    getItem(key) {
+      if (isSupported) {
+        try {
+          return window.localStorage.getItem(key);
+        } catch (e) {
+          // Fallback
+        }
+      }
+      return Object.prototype.hasOwnProperty.call(memoryStore, key) ? memoryStore[key] : null;
+    },
+    setItem(key, value) {
+      if (isSupported) {
+        try {
+          window.localStorage.setItem(key, value);
+          return;
+        } catch (e) {
+          // Fallback
+        }
+      }
+      memoryStore[key] = String(value);
+    },
+    removeItem(key) {
+      if (isSupported) {
+        try {
+          window.localStorage.removeItem(key);
+          return;
+        } catch (e) {
+          // Fallback
+        }
+      }
+      delete memoryStore[key];
+    },
+    clear() {
+      if (isSupported) {
+        try {
+          window.localStorage.clear();
+          return;
+        } catch (e) {
+          // Fallback
+        }
+      }
+      for (const key in memoryStore) {
+        delete memoryStore[key];
+      }
+    }
+  };
+})();
+
+// Override localStorage locally within this script's scope
+const localStorage = safeStorage;
+
 // ==========================================================================
 // MOCK INITIAL DATA (For first-load experience)
 // ==========================================================================
