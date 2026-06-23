@@ -459,7 +459,10 @@ let state = {
     entries: "Entries",
     recycle: "Recycle Bin",
     settings: "Settings"
-  }
+  },
+  autoSyncInterval: localStorage.getItem("gv_auto_sync_interval") || "off",
+  autoPushGitHub: localStorage.getItem("gv_auto_push_github") === "true",
+  autoPullGitHub: localStorage.getItem("gv_auto_pull_github") === "true"
 };
 
 // Charts reference objects for hot-reloading data
@@ -604,8 +607,85 @@ document.addEventListener("DOMContentLoaded", () => {
     bindSupabaseSettingsControls();
     initFirebaseConnection();
     bindFirebaseSettingsControls();
+    initGitHubConnection();
+    bindGitHubSettingsControls();
     initAdvancedSettings();
     bindAdvancedSettingsControls();
+    initPayouts();
+
+    // Auto-Pull from GitHub on startup if configured and credentials exist
+    if (state.autoPullGitHub) {
+      const token = localStorage.getItem("gv_github_token") || "";
+      const repo = localStorage.getItem("gv_github_repo") || "";
+      if (token && repo) {
+        console.log("GitHub Auto-Pull on startup enabled, initiating remote pull...");
+        setTimeout(() => {
+          syncFromGitHub(true);
+        }, 1000);
+      }
+    }
+
+    // Bind Help Modal Elements
+    const btnOpenHelp = document.getElementById("btn-open-help");
+    const helpModal = document.getElementById("help-modal");
+    if (btnOpenHelp) {
+      btnOpenHelp.addEventListener("click", () => {
+        openModal("help-modal");
+      });
+    }
+
+    // Tab switcher in help modal
+    const helpTabs = document.querySelectorAll(".help-tab-btn");
+    const helpPanes = document.querySelectorAll(".help-tab-pane");
+    helpTabs.forEach(tab => {
+      tab.addEventListener("click", () => {
+        const targetPaneId = tab.getAttribute("data-help-tab");
+        helpTabs.forEach(t => {
+          t.classList.remove("active");
+          t.style.backgroundColor = "transparent";
+          t.style.color = "var(--text-secondary)";
+        });
+        helpPanes.forEach(p => {
+          p.classList.add("hidden");
+        });
+        
+        tab.classList.add("active");
+        tab.style.backgroundColor = "var(--bg-input)";
+        tab.style.color = "var(--text-main)";
+        
+        const targetPane = document.getElementById(targetPaneId);
+        if (targetPane) {
+          targetPane.classList.remove("hidden");
+        }
+      });
+    });
+
+    // Keyboard Shortcuts (F1, ?, Escape)
+    window.addEventListener("keydown", (e) => {
+      // Avoid triggering when user is typing inside text inputs or textareas
+      const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : "";
+      if (activeTag === "input" || activeTag === "textarea" || (document.activeElement && document.activeElement.isContentEditable)) {
+        if (e.key === "Escape" && helpModal && helpModal.classList.contains("active")) {
+          closeModal("help-modal");
+        }
+        return;
+      }
+
+      if (e.key === "F1" || e.key === "?") {
+        e.preventDefault();
+        if (helpModal) {
+          if (helpModal.classList.contains("active")) {
+            closeModal("help-modal");
+          } else {
+            openModal("help-modal");
+          }
+        }
+      } else if (e.key === "Escape") {
+        if (helpModal && helpModal.classList.contains("active")) {
+          closeModal("help-modal");
+        }
+      }
+    });
 
     const toggleSalesInput = document.getElementById("toggle-show-sales-ledger");
     if (toggleSalesInput) {
@@ -627,6 +707,9 @@ document.addEventListener("DOMContentLoaded", () => {
 // Load data from LocalStorage
 function loadStateFromStorage() {
   try {
+    if (typeof clearHistoryStacks === "function") {
+      clearHistoryStacks();
+    }
     state.inventoryLayout = localStorage.getItem("gv_inv_layout") || "list";
     state.supplierDisplayMode = localStorage.getItem("gv_supplier_display_mode") || "name";
     state.platformDisplayMode = localStorage.getItem("gv_platform_display_mode") || "name";
@@ -890,6 +973,19 @@ function loadStateFromStorage() {
       state.recycleBin = { inventory: [], sales: [] };
     }
 
+    try {
+      const storedPayouts = localStorage.getItem("gv_payouts" + userSuffix);
+      state.payouts = storedPayouts ? JSON.parse(storedPayouts) : [];
+      if (!Array.isArray(state.payouts)) state.payouts = [];
+    } catch (e) {
+      console.error("Error parsing payouts data, resetting to empty:", e);
+      state.payouts = [];
+    }
+
+    state.autoSyncInterval = localStorage.getItem("gv_auto_sync_interval") || "off";
+    state.autoPushGitHub = localStorage.getItem("gv_auto_push_github") === "true";
+    state.autoPullGitHub = localStorage.getItem("gv_auto_pull_github") === "true";
+
     // Purge empty/invalid rows from the database state automatically
     cleanupEmptyDatabaseRows();
 
@@ -945,6 +1041,7 @@ function saveStateToStorage() {
   localStorage.setItem("gv_suppliers" + userSuffix, JSON.stringify(state.suppliers));
   localStorage.setItem("gv_platforms" + userSuffix, JSON.stringify(state.platforms));
   localStorage.setItem("gv_recycle_bin" + userSuffix, JSON.stringify(state.recycleBin));
+  localStorage.setItem("gv_payouts" + userSuffix, JSON.stringify(state.payouts));
   localStorage.setItem("gv_inv_layout", state.inventoryLayout);
   localStorage.setItem("gv_supplier_display_mode", state.supplierDisplayMode);
   localStorage.setItem("gv_platform_display_mode", state.platformDisplayMode);
@@ -971,12 +1068,126 @@ function saveStateToStorage() {
   localStorage.setItem("gv_default_markup_type", state.defaultMarkupType);
   localStorage.setItem("gv_default_markup_value", state.defaultMarkupValue);
   localStorage.setItem("gv_sync_mode", state.syncMode);
+  localStorage.setItem("gv_auto_sync_interval", state.autoSyncInterval);
+  localStorage.setItem("gv_auto_push_github", state.autoPushGitHub ? "true" : "false");
+  localStorage.setItem("gv_auto_pull_github", state.autoPullGitHub ? "true" : "false");
   localStorage.setItem("gv_platform_fee_presets", JSON.stringify(PLATFORM_FEE_PRESETS));
   if (state.customLogo) {
     localStorage.setItem("gv_custom_logo", state.customLogo);
   } else {
     localStorage.removeItem("gv_custom_logo");
   }
+
+  if (state.autoPushGitHub && !state._isImporting && !state._isRestoring) {
+    triggerDebouncedGitHubPush();
+  }
+}
+
+// ==========================================================================
+// UNDO / REDO HISTORY MANAGEMENT
+// ==========================================================================
+let undoStack = [];
+let redoStack = [];
+const MAX_HISTORY_LIMIT = 50;
+
+function pushToUndoStack() {
+  const snapshot = {
+    inventory: JSON.parse(JSON.stringify(state.inventory || [])),
+    sales: JSON.parse(JSON.stringify(state.sales || [])),
+    suppliers: JSON.parse(JSON.stringify(state.suppliers || [])),
+    platforms: JSON.parse(JSON.stringify(state.platforms || [])),
+    recycleBin: JSON.parse(JSON.stringify(state.recycleBin || { inventory: [], sales: [] })),
+    payouts: JSON.parse(JSON.stringify(state.payouts || []))
+  };
+  
+  undoStack.push(snapshot);
+  if (undoStack.length > MAX_HISTORY_LIMIT) {
+    undoStack.shift();
+  }
+  redoStack = [];
+  updateUndoRedoButtons();
+}
+
+function updateUndoRedoButtons() {
+  const btnUndo = document.getElementById("btn-undo");
+  const btnRedo = document.getElementById("btn-redo");
+  if (btnUndo) {
+    btnUndo.disabled = undoStack.length === 0;
+  }
+  if (btnRedo) {
+    btnRedo.disabled = redoStack.length === 0;
+  }
+}
+
+function restoreFromSnapshot(snapshot) {
+  state.inventory = JSON.parse(JSON.stringify(snapshot.inventory));
+  state.sales = JSON.parse(JSON.stringify(snapshot.sales));
+  state.suppliers = JSON.parse(JSON.stringify(snapshot.suppliers));
+  state.platforms = JSON.parse(JSON.stringify(snapshot.platforms));
+  state.recycleBin = JSON.parse(JSON.stringify(snapshot.recycleBin));
+  state.payouts = JSON.parse(JSON.stringify(snapshot.payouts));
+  
+  saveStateToStorage();
+  
+  if (window.supabaseClient) {
+    localStorage.setItem("gv_unsynced_changes", "true");
+    const syncIndicator = document.getElementById("sync-pending-indicator");
+    if (syncIndicator) syncIndicator.classList.remove("hidden");
+    if (state.syncMode === "realtime" && typeof pushStateToCloud === "function") {
+      pushStateToCloud();
+    }
+  }
+  
+  updateUI();
+  updateUndoRedoButtons();
+}
+
+window.handleUndo = function() {
+  if (undoStack.length === 0) return;
+  
+  const currentSnapshot = {
+    inventory: JSON.parse(JSON.stringify(state.inventory || [])),
+    sales: JSON.parse(JSON.stringify(state.sales || [])),
+    suppliers: JSON.parse(JSON.stringify(state.suppliers || [])),
+    platforms: JSON.parse(JSON.stringify(state.platforms || [])),
+    recycleBin: JSON.parse(JSON.stringify(state.recycleBin || { inventory: [], sales: [] })),
+    payouts: JSON.parse(JSON.stringify(state.payouts || []))
+  };
+  redoStack.push(currentSnapshot);
+  if (redoStack.length > MAX_HISTORY_LIMIT) {
+    redoStack.shift();
+  }
+  
+  const previousSnapshot = undoStack.pop();
+  restoreFromSnapshot(previousSnapshot);
+  showToast("Action undone", "info");
+};
+
+window.handleRedo = function() {
+  if (redoStack.length === 0) return;
+  
+  const currentSnapshot = {
+    inventory: JSON.parse(JSON.stringify(state.inventory || [])),
+    sales: JSON.parse(JSON.stringify(state.sales || [])),
+    suppliers: JSON.parse(JSON.stringify(state.suppliers || [])),
+    platforms: JSON.parse(JSON.stringify(state.platforms || [])),
+    recycleBin: JSON.parse(JSON.stringify(state.recycleBin || { inventory: [], sales: [] })),
+    payouts: JSON.parse(JSON.stringify(state.payouts || []))
+  };
+  undoStack.push(currentSnapshot);
+  if (undoStack.length > MAX_HISTORY_LIMIT) {
+    undoStack.shift();
+  }
+  
+  const nextSnapshot = redoStack.pop();
+  restoreFromSnapshot(nextSnapshot);
+  showToast("Action redone", "info");
+};
+
+function clearHistoryStacks() {
+  undoStack = [];
+  redoStack = [];
+  updateUndoRedoButtons();
 }
 
 // ==========================================================================
@@ -1365,6 +1576,7 @@ function handleAdminCreateUser(e) {
     localStorage.setItem(`gv_suppliers_${username}`, JSON.stringify([]));
     localStorage.setItem(`gv_platforms_${username}`, JSON.stringify([]));
     localStorage.setItem(`gv_recycle_bin_${username}`, JSON.stringify({ inventory: [], sales: [] }));
+    localStorage.setItem(`gv_payouts_${username}`, JSON.stringify([]));
 
     showToast(`User '${username}' created successfully!`, "success");
 
@@ -1399,6 +1611,7 @@ window.deleteUser = function(username) {
     localStorage.removeItem(`gv_suppliers_${username}`);
     localStorage.removeItem(`gv_platforms_${username}`);
     localStorage.removeItem(`gv_recycle_bin_${username}`);
+    localStorage.removeItem(`gv_payouts_${username}`);
 
     showToast(`User '${username}' deleted successfully.`, "success");
     renderAdminUsers();
@@ -1504,6 +1717,7 @@ function handleEditUserSubmit(e) {
       migrateKey(`gv_suppliers_${originalUsername}`, `gv_suppliers_${newUsername}`);
       migrateKey(`gv_platforms_${originalUsername}`, `gv_platforms_${newUsername}`);
       migrateKey(`gv_recycle_bin_${originalUsername}`, `gv_recycle_bin_${newUsername}`);
+      migrateKey(`gv_payouts_${originalUsername}`, `gv_payouts_${newUsername}`);
     }
 
     // If this is the current active session user, update session state!
@@ -1958,8 +2172,39 @@ function startClock() {
 // EVENT HANDLERS & MODALS
 // ==========================================================================
 function initEventHandlers() {
+  // Undo/Redo click listeners
+  const btnUndo = document.getElementById("btn-undo");
+  const btnRedo = document.getElementById("btn-redo");
+  if (btnUndo) btnUndo.addEventListener("click", window.handleUndo);
+  if (btnRedo) btnRedo.addEventListener("click", window.handleRedo);
+
+  // Undo/Redo keyboard shortcuts
+  document.addEventListener("keydown", (e) => {
+    const activeEl = document.activeElement;
+    if (activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA" || activeEl.isContentEditable)) {
+      return;
+    }
+    if (e.ctrlKey || e.metaKey) {
+      if (e.key === "z" || e.key === "Z") {
+        e.preventDefault();
+        if (e.shiftKey) {
+          window.handleRedo();
+        } else {
+          window.handleUndo();
+        }
+      } else if (e.key === "y" || e.key === "Y") {
+        e.preventDefault();
+        window.handleRedo();
+      }
+    }
+  });
+
   // Modal opening buttons
   document.getElementById("btn-add-game-modal").addEventListener("click", () => openModal("add-game-modal"));
+  const btnCreateSupplier = document.getElementById("btn-create-supplier");
+  if (btnCreateSupplier) {
+    btnCreateSupplier.addEventListener("click", () => openModal("add-supplier-modal"));
+  }
 
   // Modal closing buttons (via data attribute)
   document.querySelectorAll("[data-close-modal]").forEach(btn => {
@@ -2077,6 +2322,10 @@ function initEventHandlers() {
   document.getElementById("inv-filter-platform").addEventListener("change", handleInventoryFilterChange);
   document.getElementById("inv-filter-status").addEventListener("change", handleInventoryFilterChange);
   document.getElementById("inv-filter-supplier").addEventListener("change", handleInventoryFilterChange);
+  const invFilterAging = document.getElementById("inv-filter-aging");
+  if (invFilterAging) {
+    invFilterAging.addEventListener("change", handleInventoryFilterChange);
+  }
   const supplierDisplayInput = document.getElementById("settings-supplier-display");
   if (supplierDisplayInput) {
     supplierDisplayInput.addEventListener("change", (e) => {
@@ -2183,6 +2432,8 @@ function initEventHandlers() {
     document.getElementById("inv-filter-platform").value = "all";
     document.getElementById("inv-filter-status").value = "all";
     document.getElementById("inv-filter-supplier").value = "all";
+    const agingFilterEl = document.getElementById("inv-filter-aging");
+    if (agingFilterEl) agingFilterEl.value = "all";
     document.getElementById("inv-search-input").value = "";
     state.inventoryCurrentPage = 1;
     updateUI();
@@ -2536,22 +2787,12 @@ function initEventHandlers() {
   }
 
   // CSV Import/Export Buttons
-  const btnImport = document.getElementById("btn-import-inventory");
-  const fileInputImport = document.getElementById("btn-import-inventory-file");
-  if (btnImport && fileInputImport) {
-    btnImport.addEventListener("click", () => {
-      fileInputImport.click();
-    });
-    fileInputImport.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        importInventoryFromCSV(file);
-        fileInputImport.value = "";
-      }
-    });
-  }
 
   document.getElementById("btn-export-inventory").addEventListener("click", exportInventoryToCSV);
+  const btnExportAgingReport = document.getElementById("btn-export-aging-report");
+  if (btnExportAgingReport) {
+    btnExportAgingReport.addEventListener("click", exportAgingReportToCSV);
+  }
   const btnGoToRecycle = document.getElementById("btn-go-to-recycle");
   if (btnGoToRecycle) {
     btnGoToRecycle.addEventListener("click", () => {
@@ -2911,6 +3152,7 @@ function initEventHandlers() {
 
       const confirmMsg = `Are you sure you want to move the ${selectedIds.length} selected key(s) to the Recycle Bin?`;
       if (confirm(confirmMsg)) {
+        pushToUndoStack();
         // Backup the items we are about to delete
         const deletedInventory = state.inventory.filter(item => selectedIds.includes(item.id));
         const deletedSales = state.sales.filter(sale => selectedIds.includes(sale.inventoryId));
@@ -2967,6 +3209,7 @@ function initEventHandlers() {
       if (ids.length === 0) return;
 
       if (confirm(`Are you sure you want to restore the ${ids.length} selected item(s) back to active inventory?`)) {
+        pushToUndoStack();
         const restoredGames = [];
         const restoredSales = [];
 
@@ -3024,6 +3267,7 @@ function initEventHandlers() {
       if (ids.length === 0) return;
 
       if (confirm(`Are you sure you want to permanently delete the ${ids.length} selected item(s)? This action cannot be undone.`)) {
+        pushToUndoStack();
         state.recycleBin.inventory = state.recycleBin.inventory.filter(item => !ids.includes(item.id));
         state.recycleBin.sales = state.recycleBin.sales.filter(sale => !ids.includes(sale.inventoryId));
 
@@ -3043,6 +3287,7 @@ function initEventHandlers() {
         return;
       }
       if (confirm("Are you sure you want to permanently empty the Recycle Bin? All items will be permanently deleted and cannot be restored.")) {
+        pushToUndoStack();
         state.recycleBin.inventory = [];
         state.recycleBin.sales = [];
 
@@ -3123,9 +3368,17 @@ function initEventHandlers() {
 
     btnImportSheet.addEventListener("click", () => {
       if (selectedFileForImport) {
-        importStateFromSpreadsheet(selectedFileForImport);
+        if (selectedFileForImport.name.toLowerCase().endsWith(".csv")) {
+          importInventoryFromCSV(selectedFileForImport);
+        } else {
+          importStateFromSpreadsheet(selectedFileForImport);
+        }
       }
     });
+  }
+  
+  if (typeof initCSVImportWizard === "function") {
+    initCSVImportWizard();
   }
 }
 
@@ -3155,17 +3408,27 @@ function updateBulkActionsBar() {
 // Modal helper functions
 function openModal(id) {
   const modal = document.getElementById(id);
-  modal.classList.add("active");
+  if (modal) {
+    modal.classList.add("active");
+  } else {
+    console.warn(`openModal: Element with ID "${id}" not found.`);
+  }
 }
 
 function closeModal(id) {
   const modal = document.getElementById(id);
-  modal.classList.remove("active");
-  
-  // Custom reset for view key modal security
-  if (id === "view-key-modal") {
-    document.getElementById("view-modal-key-input").type = "password";
-    document.getElementById("toggle-key-eye-icon").className = "fa-solid fa-eye";
+  if (modal) {
+    modal.classList.remove("active");
+    
+    // Custom reset for view key modal security
+    if (id === "view-key-modal") {
+      const pswInput = document.getElementById("view-modal-key-input");
+      if (pswInput) pswInput.type = "password";
+      const eyeIcon = document.getElementById("toggle-key-eye-icon");
+      if (eyeIcon) eyeIcon.className = "fa-solid fa-eye";
+    }
+  } else {
+    console.warn(`closeModal: Element with ID "${id}" not found.`);
   }
 }
 
@@ -3264,6 +3527,7 @@ async function handleAddGameSubmit(e) {
   const baseTime = Date.now();
   const addedGames = [];
 
+  pushToUndoStack();
   keys.forEach((key, index) => {
     const uniqueId = "inv_" + (baseTime + index) + "_" + Math.random().toString(36).substr(2, 5);
     const newGame = {
@@ -3333,6 +3597,7 @@ async function handleSellGameSubmit(e) {
 
   const game = state.inventory[gameIndex];
   
+  pushToUndoStack();
   // Update inventory status
   game.status = "Sold";
 
@@ -3447,6 +3712,7 @@ window.triggerDeleteGame = async function(gameId) {
   if (!game) return;
 
   if (confirm(`Are you sure you want to move "${game.title}" to the Recycle Bin?`)) {
+    pushToUndoStack();
     // Move game
     state.inventory = state.inventory.filter(item => item.id !== gameId);
     state.recycleBin.inventory.push(game);
@@ -3487,6 +3753,7 @@ window.triggerDeleteAllInventory = async function() {
   }
 
   try {
+    pushToUndoStack();
     const gamesToMove = [...state.inventory];
     const ids = gamesToMove.map(item => item.id);
     
@@ -3546,6 +3813,7 @@ window.triggerCancelSale = async function(saleId) {
   if (!sale) return;
 
   if (confirm(`Do you want to cancel the sale of "${sale.title}"? This will return the game key back to "Available" inventory.`)) {
+    pushToUndoStack();
     // Return game back to Available status
     const game = state.inventory.find(item => item.id === sale.inventoryId);
     if (game) {
@@ -3639,6 +3907,7 @@ async function handleEditGameSubmit(e) {
     }
   }
 
+  pushToUndoStack();
   // Update inventory item
   state.inventory[gameIndex] = {
     ...state.inventory[gameIndex],
@@ -4122,7 +4391,7 @@ function renderSuppliers() {
   tbody.innerHTML = "";
 
   if (state.suppliers.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 20px;">No suppliers registered.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 20px;">No suppliers registered.</td></tr>`;
   } else {
     // Sort suppliers list based on user selection
     const sortVal = document.getElementById("suppliers-sort")?.value || "date-desc";
@@ -4138,11 +4407,42 @@ function renderSuppliers() {
       sortedSuppliers.sort((a, b) => b.name.localeCompare(a.name));
     }
 
+    // Pre-index inventory by ID for O(1) lookups
+    const inventoryMap = new Map();
+    state.inventory.forEach(item => {
+      inventoryMap.set(item.id, item);
+    });
+
     sortedSuppliers.forEach(supplierObj => {
       const supplierName = supplierObj.name;
+      
       // Calculate total game keys purchased and currently in stock from this supplier
       const totalPurchases = state.inventory.filter(item => item.source === supplierName).length;
       const inStock = state.inventory.filter(item => item.source === supplierName && item.status !== "Sold").length;
+      
+      // Calculate total cost of unsold stock for this supplier
+      let costOfInStock = 0;
+      state.inventory.forEach(item => {
+        if (item.source === supplierName && item.status !== "Sold") {
+          costOfInStock += item.cost;
+        }
+      });
+
+      // Calculate sold financial metrics
+      const supplierSales = state.sales.filter(sale => {
+        const game = inventoryMap.get(sale.inventoryId);
+        return game && game.source === supplierName;
+      });
+      
+      let revenue = 0;
+      let costOfSold = 0;
+      let netProfit = 0;
+      
+      supplierSales.forEach(sale => {
+        revenue += sale.sellPrice;
+        costOfSold += sale.cost;
+        netProfit += sale.profit;
+      });
       
       const colorName = supplierObj.color || getSupplierColorName(supplierName);
       const colorPreset = SUPPLIER_COLORS.find(c => c.name === colorName) || SUPPLIER_COLORS[0];
@@ -4178,12 +4478,26 @@ function renderSuppliers() {
         </td>
         <td>
           <span class="supplier-tag" style="background-color: ${colorPreset.value}15; border-color: ${colorPreset.value}30; color: ${colorPreset.value}; font-weight: 600;">
-            ${totalPurchases} keys purchased
+            ${totalPurchases} keys
           </span>
         </td>
         <td>
           <span class="badge ${inStock > 0 ? 'badge-available' : 'badge-sold'}">
             ${inStock} in stock
+          </span>
+        </td>
+        <td>
+          <span style="font-weight: 500; color: var(--text-secondary);">${formatCurrency(costOfInStock)}</span>
+        </td>
+        <td>
+          <span style="font-weight: 500; color: var(--text-secondary);">${formatCurrency(costOfSold)}</span>
+        </td>
+        <td>
+          <span style="font-weight: 500; color: var(--text-secondary);">${formatCurrency(revenue)}</span>
+        </td>
+        <td>
+          <span style="font-weight: 600; color: ${netProfit >= 0 ? 'var(--accent-teal)' : 'var(--accent-danger)'};">
+            ${netProfit >= 0 ? '+' : ''}${formatCurrency(netProfit)}
           </span>
         </td>
         <td>
@@ -4370,6 +4684,7 @@ async function handleAddSupplierSubmit(e) {
   if (colorInput) colorInput.value = "purple";
 
   showToast(`Successfully registered supplier: ${name}`, "success");
+  closeModal("add-supplier-modal");
 }
 
 window.triggerEditSupplier = function(oldName) {
@@ -4902,6 +5217,16 @@ function getFilteredInventory() {
     list = list.filter(item => item.source === supplierFilter);
   }
 
+  // E. Aging category filter
+  const agingFilterEl = document.getElementById("inv-filter-aging");
+  const agingFilter = agingFilterEl ? agingFilterEl.value : "all";
+  if (agingFilter !== "all") {
+    list = list.filter(item => {
+      const category = getAgingCategory(item.purchaseDate).name;
+      return category === agingFilter;
+    });
+  }
+
   // D. Search input
   const search = document.getElementById("inv-search-input").value.toLowerCase().trim();
   if (search) {
@@ -4971,6 +5296,25 @@ function getFilteredInventory() {
       mapped.sort((a, b) => b.duration - a.duration);
     } else {
       mapped.sort((a, b) => a.duration - b.duration);
+    }
+    
+    list = mapped.map(el => list[el.index]);
+  } else if (sortBy.startsWith("age-")) {
+    const nowTime = new Date().setHours(0, 0, 0, 0);
+    const mapped = list.map((item, index) => {
+      let age = 0;
+      if (item.purchaseDate) {
+        const start = new Date(item.purchaseDate);
+        start.setHours(0, 0, 0, 0);
+        age = Math.max(0, Math.round((nowTime - start.getTime()) / (1000 * 60 * 60 * 24)));
+      }
+      return { index, age };
+    });
+    
+    if (sortBy === "age-desc") {
+      mapped.sort((a, b) => b.age - a.age);
+    } else {
+      mapped.sort((a, b) => a.age - b.age);
     }
     
     list = mapped.map(el => list[el.index]);
@@ -5619,7 +5963,13 @@ function renderInventoryListLayout(itemsList) {
         if (saleItem) {
           durationCell = `<span class="duration-days text-success-neon" style="font-weight: 600;">${diffDays} day${diffDays === 1 ? '' : 's'}</span>`;
         } else {
-          durationCell = `<span style="color: var(--text-secondary); font-size: 0.85rem;">${diffDays} day${diffDays === 1 ? '' : 's'} <span style="color: var(--text-muted); font-size: 0.75rem;">(active)</span></span>`;
+          const agingCat = getAgingCategory(item.purchaseDate);
+          durationCell = `
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;">${diffDays} day${diffDays === 1 ? '' : 's'}</span>
+              <span class="badge ${agingCat.class}" style="font-size: 0.65rem; padding: 2px 6px; width: fit-content; text-transform: uppercase; line-height: 1;">${agingCat.name}</span>
+            </div>
+          `;
         }
       } else {
         durationCell = `<span style="color: var(--text-muted); font-size: 0.8rem;">-</span>`;
@@ -5719,8 +6069,9 @@ function renderInventoryGridLayout(itemsList) {
       const titleStr = String(item.title || "Untitled Game");
       const initials = titleStr.split(" ").map(w => w ? w[0] : "").join("").slice(0, 3) || "???";
       const bannerHtml = item.imageUrl
-        ? `<img src="${item.imageUrl}" class="grid-card-img" alt="${titleStr}">`
+        ? `<img src="${item.imageUrl}" class="grid-card-img" alt="${titleStr}" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('loading');" onerror="this.parentElement.classList.remove('loading');">`
         : `<div class="grid-card-placeholder">${initials}</div>`;
+      const bannerClass = item.imageUrl ? "grid-card-banner loading" : "grid-card-banner";
 
       // Platform icon classes
       const platformStr = String(item.platform || "PC");
@@ -5765,7 +6116,13 @@ function renderInventoryGridLayout(itemsList) {
         if (saleItem) {
           durationRow = `<span style="color: var(--accent-cyan); font-weight: 500;">Duration: ${diffDays} day${diffDays === 1 ? '' : 's'}</span>`;
         } else {
-          durationRow = `<span style="color: var(--text-secondary);">Active: ${diffDays} day${diffDays === 1 ? '' : 's'}</span>`;
+          const agingCat = getAgingCategory(item.purchaseDate);
+          durationRow = `
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="color: var(--text-secondary);">Active: ${diffDays} day${diffDays === 1 ? '' : 's'}</span>
+              <span class="badge ${agingCat.class}" style="font-size: 0.62rem; padding: 1px 6px; text-transform: uppercase;">${agingCat.name}</span>
+            </div>
+          `;
         }
       }
       
@@ -5819,7 +6176,7 @@ function renderInventoryGridLayout(itemsList) {
       }
 
       card.innerHTML = `
-        <div class="grid-card-banner">
+        <div class="${bannerClass}">
           ${bannerHtml}
           <span class="grid-card-platform"><i class="${platformIcon}"></i> ${platformStr}</span>
           <span class="badge ${statusClass} grid-card-status">${item.status || "Available"}</span>
@@ -5951,7 +6308,8 @@ function renderInventoryGalleryLayout(itemsList) {
         if (saleItem) {
           durationMeta = `<div class="gallery-card-hover-meta-item"><span>Duration:</span><strong class="text-success-neon">${diffDays} day${diffDays === 1 ? '' : 's'}</strong></div>`;
         } else {
-          durationMeta = `<div class="gallery-card-hover-meta-item"><span>Active:</span><strong>${diffDays} day${diffDays === 1 ? '' : 's'}</strong></div>`;
+          const agingCat = getAgingCategory(item.purchaseDate);
+          durationMeta = `<div class="gallery-card-hover-meta-item"><span>Active:</span><strong>${diffDays} day${diffDays === 1 ? '' : 's'} <span class="badge ${agingCat.class}" style="font-size: 0.6rem; padding: 1px 5px; text-transform: uppercase; margin-left: 6px; line-height: 1; vertical-align: middle;">${agingCat.name}</span></strong></div>`;
         }
       }
 
@@ -6156,6 +6514,29 @@ function renderSalesPagination(totalItems) {
   container.appendChild(createBtn('<i class="fa-solid fa-angle-right"></i>', state.salesCurrentPage + 1, state.salesCurrentPage === totalPages));
 }
 
+// Calculates age category for an inventory item
+function getAgingCategory(purchaseDate) {
+  if (!purchaseDate) {
+    return { name: "Fresh", class: "badge-age-fresh", days: 0 };
+  }
+  const start = new Date(purchaseDate);
+  const end = new Date();
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+  const diffTime = Math.max(0, end - start);
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays < 30) {
+    return { name: "Fresh", class: "badge-age-fresh", days: diffDays };
+  } else if (diffDays <= 60) {
+    return { name: "Aging", class: "badge-age-aging", days: diffDays };
+  } else if (diffDays <= 90) {
+    return { name: "Stale", class: "badge-age-stale", days: diffDays };
+  } else {
+    return { name: "Very Stale", class: "badge-age-verystale", days: diffDays };
+  }
+}
+
 // Render dashboard secondary panels
 function renderDashboardDetails(filteredSalesList, filteredInventoryList) {
   // Recent transactions table (limit to 5)
@@ -6274,9 +6655,42 @@ function renderDashboardDetails(filteredSalesList, filteredInventoryList) {
           <span class="summary-count">${count} in stock</span>
         </div>
       `;
-      stockSummaryList.appendChild(div);
     });
   }
+
+  // Inventory Aging Summary calculation
+  const agingStats = {
+    Fresh: { count: 0, cost: 0 },
+    Aging: { count: 0, cost: 0 },
+    Stale: { count: 0, cost: 0 },
+    "Very Stale": { count: 0, cost: 0 }
+  };
+
+  let totalActiveAging = 0;
+  filteredInventoryList.forEach(item => {
+    if (item.status !== "Sold") {
+      const cat = getAgingCategory(item.purchaseDate);
+      if (agingStats[cat.name]) {
+        agingStats[cat.name].count++;
+        agingStats[cat.name].cost += (item.cost || 0);
+        totalActiveAging++;
+      }
+    }
+  });
+
+  // Render segments to DOM
+  const updateAgingRow = (idCount, idVal, keyName) => {
+    const countEl = document.getElementById(idCount);
+    const valEl = document.getElementById(idVal);
+    const stats = agingStats[keyName];
+    if (countEl) countEl.textContent = stats.count;
+    if (valEl) valEl.textContent = formatCurrency(stats.cost);
+  };
+
+  updateAgingRow("aging-count-fresh", "aging-val-fresh", "Fresh");
+  updateAgingRow("aging-count-aging", "aging-val-aging", "Aging");
+  updateAgingRow("aging-count-stale", "aging-val-stale", "Stale");
+  updateAgingRow("aging-count-verystale", "aging-val-verystale", "Very Stale");
 }
 
 // ==========================================================================
@@ -6814,78 +7228,414 @@ function parseCSVLine(text) {
   return r;
 }
 
-// Import inventory items from parsed CSV file
-async function importInventoryFromCSV(file) {
-  const reader = new FileReader();
-  reader.onload = async function(e) {
-    const text = e.target.result;
-    const lines = text.split(/\r?\n/);
-    if (lines.length < 2) {
-      showToast("CSV file is empty or invalid.", "error");
-      return;
+// CSV Import Wizard State
+let wizardFile = null;
+let wizardHeaders = [];
+let wizardLines = [];
+let wizardStep = 1;
+let wizardMappings = {};
+
+const DB_FIELDS = [
+  { key: 'title', label: 'Game Title', required: true, desc: 'Title of the game' },
+  { key: 'key', label: 'Digital Key', required: true, desc: 'Unique digital activation key' },
+  { key: 'platform', label: 'Platform', required: false, defaultValue: 'Steam', desc: 'e.g. Steam, GOG, PS5' },
+  { key: 'cost', label: 'Acquisition Cost', required: false, defaultValue: '0.00', desc: 'Price paid for the key' },
+  { key: 'source', label: 'Supplier / Vendor', required: false, defaultValue: 'Direct', desc: 'Where the key was bought' },
+  { key: 'purchaseDate', label: 'Purchase Date', required: false, defaultValue: 'Today', desc: 'Acquisition date' },
+  { key: 'status', label: 'Status', required: false, defaultValue: 'Available', desc: 'e.g. Available, Sold, Rejected' },
+  { key: 'publisher', label: 'Publisher', required: false, defaultValue: '', desc: 'Publisher of the game' },
+  { key: 'notes', label: 'Notes', required: false, defaultValue: '', desc: 'Additional notes or comments' }
+];
+
+function initCSVImportWizard() {
+  const resetWizard = () => {
+    wizardFile = null;
+    wizardHeaders = [];
+    wizardLines = [];
+    wizardStep = 1;
+    wizardMappings = {};
+    
+    // UI resets
+    const fileInput = document.getElementById("csv-wizard-file-input");
+    if (fileInput) fileInput.value = "";
+    
+    const fileInfo = document.getElementById("csv-file-info");
+    if (fileInfo) fileInfo.style.display = "none";
+    
+    const dropZone = document.getElementById("csv-drop-zone");
+    if (dropZone) dropZone.style.display = "block";
+    
+    const backBtn = document.getElementById("btn-import-wizard-back");
+    if (backBtn) backBtn.style.visibility = "hidden";
+    
+    const nextBtn = document.getElementById("btn-import-wizard-next");
+    if (nextBtn) {
+      nextBtn.textContent = "Next";
+      nextBtn.disabled = true;
     }
     
-    // Parse headers
-    const headers = parseCSVLine(lines[0]);
+    // Show step 1, hide others
+    const s1 = document.getElementById("import-wizard-section-1");
+    if (s1) s1.style.display = "block";
     
-    // Map headers to fields
-    let titleIdx = -1;
-    let platformIdx = -1;
-    let keyIdx = -1;
-    let costIdx = -1;
-    let sourceIdx = -1;
-    let dateIdx = -1;
-    let statusIdx = -1;
-    let notesIdx = -1;
-    let idIdx = -1;
+    const s2 = document.getElementById("import-wizard-section-2");
+    if (s2) s2.style.display = "none";
     
-    headers.forEach((h, idx) => {
-      const clean = h.trim().toLowerCase();
-      if (clean === "game title" || clean === "title") titleIdx = idx;
-      else if (clean === "platform") platformIdx = idx;
-      else if (clean === "digital key" || clean === "key") keyIdx = idx;
-      else if (clean === "acquisition cost" || clean === "cost") costIdx = idx;
-      else if (clean === "source" || clean === "vendor") sourceIdx = idx;
-      else if (clean === "date added" || clean === "purchasedate" || clean === "date") dateIdx = idx;
-      else if (clean === "status") statusIdx = idx;
-      else if (clean === "notes") notesIdx = idx;
-      else if (clean === "id") idIdx = idx;
+    const s3 = document.getElementById("import-wizard-section-3");
+    if (s3) s3.style.display = "none";
+    
+    updateStepIndicators(1);
+  };
+
+  const updateStepIndicators = (step) => {
+    for (let i = 1; i <= 3; i++) {
+      const ind = document.getElementById(`import-step-${i}-indicator`);
+      if (ind) {
+        const num = ind.querySelector(".step-num");
+        if (i === step) {
+          ind.style.color = "var(--accent-purple)";
+          if (num) {
+            num.style.background = "var(--accent-purple)";
+            num.style.color = "white";
+          }
+          ind.style.fontWeight = "600";
+        } else if (i < step) {
+          ind.style.color = "var(--text-teal)";
+          if (num) {
+            num.style.background = "var(--text-teal)";
+            num.style.color = "white";
+          }
+          ind.style.fontWeight = "500";
+        } else {
+          ind.style.color = "var(--text-muted)";
+          if (num) {
+            num.style.background = "var(--border-color)";
+            num.style.color = "var(--text-muted)";
+          }
+          ind.style.fontWeight = "500";
+        }
+      }
+    }
+  };
+
+  // Bind trigger on inventory view import button
+  const btnImport = document.getElementById("btn-import-inventory");
+  if (btnImport) {
+    btnImport.addEventListener("click", () => {
+      resetWizard();
+      openModal("csv-import-wizard-modal");
+    });
+  }
+
+  // File selection / drag drop handlers
+  const fileInput = document.getElementById("csv-wizard-file-input");
+  const dropZone = document.getElementById("csv-drop-zone");
+  const browseBtn = document.getElementById("btn-browse-csv");
+  const removeBtn = document.getElementById("btn-remove-csv");
+
+  if (browseBtn && fileInput) {
+    browseBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      fileInput.click();
+    });
+  }
+
+  if (dropZone && fileInput) {
+    dropZone.addEventListener("click", () => {
+      fileInput.click();
+    });
+    dropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropZone.style.borderColor = "var(--accent-purple)";
+      dropZone.style.background = "rgba(139, 92, 246, 0.05)";
+    });
+    dropZone.addEventListener("dragleave", () => {
+      dropZone.style.borderColor = "var(--border-color)";
+      dropZone.style.background = "var(--bg-card)";
+    });
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropZone.style.borderColor = "var(--border-color)";
+      dropZone.style.background = "var(--bg-card)";
+      if (e.dataTransfer.files.length > 0) {
+        handleFileSelected(e.dataTransfer.files[0]);
+      }
+    });
+  }
+
+  if (fileInput) {
+    fileInput.addEventListener("change", (e) => {
+      if (e.target.files.length > 0) {
+        handleFileSelected(e.target.files[0]);
+      }
+    });
+  }
+
+  if (removeBtn) {
+    removeBtn.addEventListener("click", () => {
+      resetWizard();
+    });
+  }
+
+  const handleFileSelected = (file) => {
+    if (!file.name.endsWith(".csv")) {
+      showToast("Only CSV files are supported.", "error");
+      return;
+    }
+    wizardFile = file;
+    const fName = document.getElementById("csv-file-name");
+    const fSize = document.getElementById("csv-file-size");
+    const drop = document.getElementById("csv-drop-zone");
+    const info = document.getElementById("csv-file-info");
+    const nextBtn = document.getElementById("btn-import-wizard-next");
+
+    if (fName) fName.textContent = file.name;
+    if (fSize) fSize.textContent = (file.size / 1024).toFixed(2) + " KB";
+    if (drop) drop.style.display = "none";
+    if (info) info.style.display = "flex";
+    
+    // Read headers
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const text = e.target.result;
+      wizardLines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l !== "");
+      if (wizardLines.length < 2) {
+        showToast("CSV file is empty or lacks data rows.", "error");
+        resetWizard();
+        return;
+      }
+      wizardHeaders = parseCSVLine(wizardLines[0]);
+      if (nextBtn) nextBtn.disabled = false;
+    };
+    reader.readAsText(file);
+  };
+
+  const buildMappingUI = () => {
+    const tbody = document.getElementById("csv-mapping-tbody");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    
+    DB_FIELDS.forEach(field => {
+      const tr = document.createElement("tr");
+      
+      // DB Field Name cell
+      const tdLabel = document.createElement("td");
+      tdLabel.style.verticalAlign = "middle";
+      tdLabel.innerHTML = `<strong style="color: var(--text-main);">${field.label}</strong> ${field.required ? '<span class="text-danger">*</span>' : ''}<br><small style="color: var(--text-muted); font-size: 0.75rem;">${field.desc}</small>`;
+      
+      // Dropdown cell
+      const tdSelect = document.createElement("td");
+      tdSelect.style.verticalAlign = "middle";
+      
+      const select = document.createElement("select");
+      select.className = "form-control form-control-sm select-csv-map";
+      select.setAttribute("data-db-field", field.key);
+      select.style.background = "var(--bg-input)";
+      select.style.color = "var(--text-main)";
+      select.style.borderColor = "var(--border-color)";
+      
+      // Unmapped Option
+      const optDefault = document.createElement("option");
+      optDefault.value = "";
+      optDefault.textContent = field.required ? "-- Select CSV Column --" : "[Don't Import / Set Default]";
+      select.appendChild(optDefault);
+      
+      // CSV Column Options
+      let autoSelectIndex = -1;
+      wizardHeaders.forEach((header, idx) => {
+        const opt = document.createElement("option");
+        opt.value = idx;
+        opt.textContent = `${header} (Col ${idx + 1})`;
+        select.appendChild(opt);
+        
+        // Auto-mapping check
+        const hClean = header.trim().toLowerCase();
+        const fKey = field.key.toLowerCase();
+        const fLabel = field.label.toLowerCase();
+        
+        if (hClean === fKey || hClean === fLabel) {
+          autoSelectIndex = idx;
+        } else if (fKey === "title" && (hClean === "game title" || hClean === "game" || hClean === "name")) {
+          autoSelectIndex = idx;
+        } else if (fKey === "key" && (hClean === "digital key" || hClean === "game key" || hClean === "serial" || hClean === "code")) {
+          autoSelectIndex = idx;
+        } else if (fKey === "purchasedate" && (hClean === "date added" || hClean === "purchase date" || hClean === "date" || hClean === "entry date")) {
+          autoSelectIndex = idx;
+        } else if (fKey === "cost" && (hClean === "acquisition cost" || hClean === "price" || hClean === "buy price")) {
+          autoSelectIndex = idx;
+        } else if (fKey === "source" && (hClean === "vendor" || hClean === "supplier")) {
+          autoSelectIndex = idx;
+        }
+      });
+      
+      if (autoSelectIndex !== -1) {
+        select.value = autoSelectIndex;
+      }
+      
+      tdSelect.appendChild(select);
+      
+      // Default Value cell
+      const tdDefault = document.createElement("td");
+      tdDefault.style.verticalAlign = "middle";
+      if (field.required) {
+        tdDefault.innerHTML = `<span style="font-size: 0.8rem; color: var(--text-muted);">Required Field</span>`;
+      } else {
+        tdDefault.innerHTML = `<input type="text" class="form-control form-control-sm input-csv-default" data-db-field="${field.key}" value="${field.defaultValue}" style="max-width: 150px; background: var(--bg-input); color: var(--text-main); border-color: var(--border-color);">`;
+      }
+      
+      tr.appendChild(tdLabel);
+      tr.appendChild(tdSelect);
+      tr.appendChild(tdDefault);
+      tbody.appendChild(tr);
+    });
+
+    // Add event listener to check mapping validation
+    document.querySelectorAll(".select-csv-map").forEach(sel => {
+      sel.addEventListener("change", validateMapping);
     });
     
-    if (titleIdx === -1 || keyIdx === -1) {
-      showToast("CSV must contain at least 'Game Title' (or Title) and 'Digital Key' (or Key) columns.", "error");
-      return;
+    validateMapping();
+  };
+
+  const validateMapping = () => {
+    let titleMapped = false;
+    let keyMapped = false;
+    
+    document.querySelectorAll(".select-csv-map").forEach(sel => {
+      const dbField = sel.getAttribute("data-db-field");
+      if (dbField === "title" && sel.value !== "") titleMapped = true;
+      if (dbField === "key" && sel.value !== "") keyMapped = true;
+    });
+    
+    const warning = document.getElementById("csv-mapping-warning");
+    const nextBtn = document.getElementById("btn-import-wizard-next");
+    
+    if (titleMapped && keyMapped) {
+      if (warning) warning.style.display = "none";
+      if (nextBtn) nextBtn.disabled = false;
+    } else {
+      if (warning) warning.style.display = "block";
+      if (nextBtn) nextBtn.disabled = true;
+    }
+  };
+
+  const buildPreviewUI = () => {
+    // Read current mappings from select elements
+    wizardMappings = {};
+    document.querySelectorAll(".select-csv-map").forEach(sel => {
+      const dbField = sel.getAttribute("data-db-field");
+      wizardMappings[dbField] = sel.value === "" ? -1 : parseInt(sel.value);
+    });
+    
+    // Read default values
+    const defaultValues = {};
+    document.querySelectorAll(".input-csv-default").forEach(inp => {
+      const dbField = inp.getAttribute("data-db-field");
+      defaultValues[dbField] = inp.value.trim();
+    });
+    
+    // Build Headers in preview table
+    const thead = document.getElementById("csv-preview-thead");
+    if (!thead) return;
+    thead.innerHTML = "";
+    const trHead = document.createElement("tr");
+    
+    const activeFields = DB_FIELDS.filter(f => wizardMappings[f.key] !== -1);
+    
+    activeFields.forEach(field => {
+      const th = document.createElement("th");
+      th.textContent = field.label;
+      trHead.appendChild(th);
+    });
+    thead.appendChild(trHead);
+    
+    // Build Rows in preview table
+    const tbody = document.getElementById("csv-preview-tbody");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    
+    // Show first 5 rows
+    const previewRowsCount = Math.min(5, wizardLines.length - 1);
+    for (let i = 1; i <= previewRowsCount; i++) {
+      const values = parseCSVLine(wizardLines[i]);
+      const tr = document.createElement("tr");
+      
+      activeFields.forEach(field => {
+        const td = document.createElement("td");
+        const mappedIdx = wizardMappings[field.key];
+        let val = values[mappedIdx]?.trim() || "";
+        if (!val && !field.required) {
+          val = defaultValues[field.key] || "";
+        }
+        td.textContent = val;
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
     }
     
+    const totalCountText = document.getElementById("csv-total-rows-count");
+    if (totalCountText) totalCountText.textContent = (wizardLines.length - 1).toString();
+  };
+
+  const executeImport = async () => {
+    // Read mappings
+    wizardMappings = {};
+    document.querySelectorAll(".select-csv-map").forEach(sel => {
+      const dbField = sel.getAttribute("data-db-field");
+      wizardMappings[dbField] = sel.value === "" ? -1 : parseInt(sel.value);
+    });
+    
+    // Read default values
+    const defaultValues = {};
+    document.querySelectorAll(".input-csv-default").forEach(inp => {
+      const dbField = inp.getAttribute("data-db-field");
+      defaultValues[dbField] = inp.value.trim();
+    });
+
     const importedItems = [];
     const newSuppliers = [];
     const currentSupplierNames = new Set(state.suppliers.map(s => s.name.toLowerCase()));
+    const currentPlatformNames = new Set(state.platforms.map(p => p.name.toLowerCase()));
     
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) continue; // skip empty lines
+    showToast("Processing import...", "info");
+    
+    for (let i = 1; i < wizardLines.length; i++) {
+      const line = wizardLines[i].trim();
+      if (!line) continue;
       
       const values = parseCSVLine(line);
-      if (values.length < Math.max(titleIdx, keyIdx) + 1) continue; // skip short lines
+      
+      const titleIdx = wizardMappings['title'];
+      const keyIdx = wizardMappings['key'];
+      
+      if (values.length < Math.max(titleIdx, keyIdx) + 1) continue;
       
       const title = values[titleIdx]?.trim() || "";
       const key = values[keyIdx]?.trim() || "";
       
-      if (!title || !key) continue; // skip invalid rows
+      if (!title || !key) continue;
       
-      const platform = platformIdx !== -1 ? (values[platformIdx]?.trim() || "Steam") : "Steam";
-      const cost = costIdx !== -1 ? (parseFloat(values[costIdx]) || 0) : 0;
-      const source = sourceIdx !== -1 ? (values[sourceIdx]?.trim() || "Direct") : "Direct";
+      // Extract other mapped values, otherwise fall back to defaults
+      const pIdx = wizardMappings['platform'];
+      const platform = pIdx !== -1 ? (values[pIdx]?.trim() || defaultValues['platform']) : defaultValues['platform'];
       
-      // Default to today if Date Added is missing or invalid
-      let purchaseDate = new Date().toISOString().split("T")[0];
-      if (dateIdx !== -1 && values[dateIdx]) {
-        const rawDate = values[dateIdx].trim();
-        if (/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
-          purchaseDate = rawDate;
+      const cIdx = wizardMappings['cost'];
+      const costVal = cIdx !== -1 ? values[cIdx] : null;
+      const cost = costVal !== null ? (parseFloat(costVal) || 0) : (parseFloat(defaultValues['cost']) || 0);
+      
+      const sIdx = wizardMappings['source'];
+      const source = sIdx !== -1 ? (values[sIdx]?.trim() || defaultValues['source']) : defaultValues['source'];
+      
+      // Date Added
+      const dIdx = wizardMappings['purchaseDate'];
+      let purchaseDate = new Date().toISOString().split("T")[0]; // default today
+      let dateVal = dIdx !== -1 ? values[dIdx]?.trim() : "";
+      if (dateVal) {
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateVal)) {
+          purchaseDate = dateVal;
         } else {
           try {
-            const parsed = new Date(rawDate);
+            const parsed = new Date(dateVal);
             if (!isNaN(parsed.getTime())) {
               purchaseDate = parsed.toISOString().split("T")[0];
             }
@@ -6893,17 +7643,33 @@ async function importInventoryFromCSV(file) {
         }
       }
       
-      const status = statusIdx !== -1 ? (values[statusIdx]?.trim() || "Available") : "Available";
-      const notes = notesIdx !== -1 ? (values[notesIdx]?.trim() || "") : "";
+      const stIdx = wizardMappings['status'];
+      const status = stIdx !== -1 ? (values[stIdx]?.trim() || defaultValues['status']) : defaultValues['status'];
       
-      let id = idIdx !== -1 ? (values[idIdx]?.trim() || "") : "";
-      if (!id) {
-        id = "inv_" + Date.now() + "_" + Math.floor(Math.random() * 10000);
-      }
+      const pubIdx = wizardMappings['publisher'];
+      const publisher = pubIdx !== -1 ? (values[pubIdx]?.trim() || defaultValues['publisher']) : defaultValues['publisher'];
       
-      // Check if item already exists in local inventory
-      const duplicateIndex = state.inventory.findIndex(item => item.id === id || (item.key === key && item.key !== ""));
-      const newItem = { id, title, platform, key, cost, source, purchaseDate, status, notes, imageUrl: "" };
+      const nIdx = wizardMappings['notes'];
+      const notes = nIdx !== -1 ? (values[nIdx]?.trim() || defaultValues['notes']) : defaultValues['notes'];
+      
+      const id = "inv_" + Date.now() + "_" + Math.floor(Math.random() * 10000) + "_" + i;
+      
+      // Check if key already exists to avoid duplicates
+      const duplicateIndex = state.inventory.findIndex(item => item.key === key && item.key !== "");
+      
+      const newItem = {
+        id: duplicateIndex !== -1 ? state.inventory[duplicateIndex].id : id,
+        title,
+        platform,
+        key,
+        cost,
+        source,
+        purchaseDate,
+        status,
+        publisher,
+        notes,
+        imageUrl: duplicateIndex !== -1 ? (state.inventory[duplicateIndex].imageUrl || "") : ""
+      };
       
       if (duplicateIndex !== -1) {
         state.inventory[duplicateIndex] = newItem;
@@ -6912,12 +7678,21 @@ async function importInventoryFromCSV(file) {
       }
       importedItems.push(newItem);
       
+      // Auto-add new supplier
       const sourceKey = source.toLowerCase();
       if (source && !currentSupplierNames.has(sourceKey)) {
         const newSup = { name: source, dateAdded: Date.now(), color: "purple", enabled: true };
         state.suppliers.push(newSup);
         currentSupplierNames.add(sourceKey);
         newSuppliers.push(newSup);
+      }
+      
+      // Auto-add new platform
+      const platKey = platform.toLowerCase();
+      if (platform && !currentPlatformNames.has(platKey)) {
+        const newPlat = { name: platform, dateAdded: Date.now(), enabled: true };
+        state.platforms.push(newPlat);
+        currentPlatformNames.add(platKey);
       }
     }
     
@@ -6926,65 +7701,147 @@ async function importInventoryFromCSV(file) {
       return;
     }
     
+    // Clean up empty database rows
+    cleanupEmptyDatabaseRows();
     saveStateToStorage();
     
-    // Cloud sync
+    // Sync with Supabase
     if (window.supabaseClient) {
       try {
         showToast("Synchronizing imported entries to cloud...", "info");
-        
-        // Upsert suppliers
-        if (newSuppliers.length > 0) {
-          const { error: supErr } = await window.supabaseClient.from('suppliers').upsert(newSuppliers.map(s => ({
+        // Save suppliers
+        for (const s of newSuppliers) {
+          await window.supabaseClient.from('suppliers').upsert({
             name: s.name,
             dateAdded: s.dateAdded,
             color: s.color,
-            enabled: s.enabled,
-            logo: s.logo || null
-          })));
-          if (supErr) {
-            if (supErr.message && supErr.message.includes('column "logo" of relation "suppliers" does not exist')) {
-              console.warn("Supabase relation 'suppliers' is missing the 'logo' column. Falling back to upsert without logo.");
-              await window.supabaseClient.from('suppliers').upsert(newSuppliers.map(s => ({
-                name: s.name,
-                dateAdded: s.dateAdded,
-                color: s.color,
-                enabled: s.enabled
-              })));
-            } else {
-              throw supErr;
-            }
-          }
+            enabled: s.enabled
+          });
         }
-        
-        // Upsert inventory
-        const { error } = await window.supabaseClient.from('inventory').upsert(importedItems.map(item => ({
-          id: item.id,
-          title: item.title,
-          platform: item.platform,
-          key: item.key,
-          cost: item.cost,
-          source: item.source,
-          purchaseDate: item.purchaseDate,
-          imageUrl: item.imageUrl || null,
-          status: item.status,
-          notes: item.notes || null
-        })));
-        
-        if (error) throw error;
-        showToast(`Imported & cloud-synced ${importedItems.length} keys successfully!`, "success");
+        // Save inventory
+        for (const item of importedItems) {
+          await dbSaveInventory(item);
+        }
+        showToast("Synchronized successfully to cloud!", "success");
       } catch (err) {
-        console.error("Supabase import sync error:", err);
-        showToast(`Local import succeeded, but cloud sync failed: ${err.message || err}`, "warning");
+        console.error("Error syncing import to Supabase:", err);
+        showToast("Imported locally. Failed to sync to cloud database.", "warning");
       }
-    } else {
-      showToast(`Imported ${importedItems.length} keys successfully!`, "success");
     }
     
+    // Refresh UI
     updateUI();
+    closeModal("csv-import-wizard-modal");
+    showToast(`Successfully imported ${importedItems.length} items!`, "success");
   };
-  
-  reader.readAsText(file);
+
+  const backBtn = document.getElementById("btn-import-wizard-back");
+  const nextBtn = document.getElementById("btn-import-wizard-next");
+
+  if (backBtn) {
+    // Remove existing listeners
+    const newBackBtn = backBtn.cloneNode(true);
+    backBtn.parentNode.replaceChild(newBackBtn, backBtn);
+    newBackBtn.addEventListener("click", () => {
+      if (wizardStep === 2) {
+        wizardStep = 1;
+        document.getElementById("import-wizard-section-1").style.display = "block";
+        document.getElementById("import-wizard-section-2").style.display = "none";
+        newBackBtn.style.visibility = "hidden";
+        updateStepIndicators(1);
+      } else if (wizardStep === 3) {
+        wizardStep = 2;
+        document.getElementById("import-wizard-section-2").style.display = "block";
+        document.getElementById("import-wizard-section-3").style.display = "none";
+        if (nextBtn) nextBtn.textContent = "Next";
+        updateStepIndicators(2);
+      }
+    });
+  }
+
+  if (nextBtn) {
+    // Remove existing listeners
+    const newNextBtn = nextBtn.cloneNode(true);
+    nextBtn.parentNode.replaceChild(newNextBtn, nextBtn);
+    newNextBtn.addEventListener("click", () => {
+      const back = document.getElementById("btn-import-wizard-back");
+      if (wizardStep === 1) {
+        wizardStep = 2;
+        document.getElementById("import-wizard-section-1").style.display = "none";
+        document.getElementById("import-wizard-section-2").style.display = "block";
+        if (back) back.style.visibility = "visible";
+        
+        buildMappingUI();
+        updateStepIndicators(2);
+      } else if (wizardStep === 2) {
+        wizardStep = 3;
+        document.getElementById("import-wizard-section-2").style.display = "none";
+        document.getElementById("import-wizard-section-3").style.display = "block";
+        newNextBtn.textContent = "Confirm Import";
+        
+        buildPreviewUI();
+        updateStepIndicators(3);
+      } else if (wizardStep === 3) {
+        executeImport();
+      }
+    });
+  }
+}
+
+// Backwards compatible wrapper for direct spreadsheet import
+async function importInventoryFromCSV(file) {
+  openModal("csv-import-wizard-modal");
+  if (typeof initCSVImportWizard === "function") {
+    initCSVImportWizard();
+  }
+  const fileInput = document.getElementById("csv-wizard-file-input");
+  if (fileInput) {
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    fileInput.files = dataTransfer.files;
+    const event = new Event('change', { bubbles: true });
+    fileInput.dispatchEvent(event);
+  }
+}
+
+function exportAgingReportToCSV() {
+  const unsoldKeys = state.inventory.filter(item => item.status !== "Sold");
+  if (unsoldKeys.length === 0) {
+    showToast("No active inventory stock to run aging reports.", "error");
+    return;
+  }
+
+  const csvRows = [];
+  // Header row
+  csvRows.push(["ID", "Game Title", "Platform", "Digital Key", "Acquisition Cost", "Source", "Date Added", "Status", "Age (Days)", "Aging Category"]);
+
+  const nowTime = new Date().setHours(0, 0, 0, 0);
+
+  unsoldKeys.forEach(item => {
+    let diffDays = 0;
+    if (item.purchaseDate) {
+      const start = new Date(item.purchaseDate);
+      start.setHours(0, 0, 0, 0);
+      diffDays = Math.max(0, Math.round((nowTime - start.getTime()) / (1000 * 60 * 60 * 24)));
+    }
+    const category = getAgingCategory(item.purchaseDate).name;
+
+    csvRows.push([
+      item.id,
+      `"${item.title.replace(/"/g, '""')}"`,
+      item.platform,
+      item.key,
+      item.cost.toFixed(2),
+      `"${item.source.replace(/"/g, '""')}"`,
+      item.purchaseDate,
+      item.status,
+      diffDays,
+      category
+    ]);
+  });
+
+  downloadCSV(csvRows.join("\n"), "GameVault_Inventory_Aging_Report.csv");
+  showToast("Inventory aging report exported to CSV!", "success");
 }
 
 function exportInventoryToCSV() {
@@ -7804,7 +8661,7 @@ function renderFinanceView() {
     }
 
     if (!groupedData[key]) {
-      groupedData[key] = { revenue: 0, cost: 0, profit: 0, count: 0, totalSellDays: 0, durationCount: 0 };
+      groupedData[key] = { revenue: 0, cost: 0, profit: 0, count: 0, totalSellDays: 0, durationCount: 0, payoutFees: 0 };
     }
     groupedData[key].revenue += sale.sellPrice;
     groupedData[key].cost += sale.cost;
@@ -7824,6 +8681,45 @@ function renderFinanceView() {
       groupedData[key].durationCount += 1;
     }
   });
+
+  // Calculate and aggregate Payouts / Fees
+  let totalPayouts = 0;
+  state.payouts = state.payouts || [];
+  state.payouts.forEach(p => {
+    const amt = parseFloat(p.amount) || 0;
+    totalPayouts += amt;
+
+    let key = "All Time";
+    if (breakdownType === "month") {
+      const year = p.date.substring(0, 4);
+      if (selectedYear !== "all" && year !== selectedYear) {
+        return;
+      }
+      key = p.date.substring(0, 7);
+    } else if (breakdownType === "year") {
+      key = p.date.substring(0, 4);
+    }
+
+    if (!groupedData[key]) {
+      groupedData[key] = { revenue: 0, cost: 0, profit: 0, count: 0, totalSellDays: 0, durationCount: 0, payoutFees: 0 };
+    }
+    if (groupedData[key].payoutFees === undefined) {
+      groupedData[key].payoutFees = 0;
+    }
+    groupedData[key].payoutFees += amt;
+  });
+
+  // Factor payout fees into period expenses and profits
+  Object.keys(groupedData).forEach(k => {
+    const stats = groupedData[k];
+    const fees = stats.payoutFees || 0;
+    stats.cost += fees;
+    stats.profit -= fees;
+  });
+
+  // Factor lifetime payout fees into lifetime expenses and profits
+  totalCost += totalPayouts;
+  totalProfit -= totalPayouts;
 
   const lifetimeRoi = totalCost > 0 ? (totalProfit / totalCost) * 100 : 0;
 
@@ -8458,6 +9354,128 @@ function renderFinanceView() {
   });
 }
 
+// Initialize Payouts & Fees Ledger Controls
+function initPayouts() {
+  const form = document.getElementById("form-add-payout");
+  const dateInput = document.getElementById("payout-date");
+  if (dateInput) {
+    dateInput.value = new Date().toISOString().slice(0, 10);
+  }
+
+  if (form) {
+    const newForm = form.cloneNode(true);
+    form.parentNode.replaceChild(newForm, form);
+    newForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      
+      const date = document.getElementById("payout-date").value;
+      const description = document.getElementById("payout-description").value.trim();
+      const amount = parseFloat(document.getElementById("payout-amount").value);
+      
+      if (!date || !description || isNaN(amount) || amount < 0) {
+        showToast("Please enter valid payout details.", "error");
+        return;
+      }
+      
+      const newPayout = {
+        id: "payout_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9),
+        date,
+        description,
+        amount
+      };
+      
+      state.payouts = state.payouts || [];
+      state.payouts.push(newPayout);
+      
+      saveStateToStorage();
+      
+      // Update DB if Supabase is active
+      if (window.supabaseClient) {
+        localStorage.setItem("gv_unsynced_changes", "true");
+        const syncIndicator = document.getElementById("sync-pending-indicator");
+        if (syncIndicator) syncIndicator.classList.remove("hidden");
+      }
+      
+      // Reset description and amount
+      document.getElementById("payout-description").value = "";
+      document.getElementById("payout-amount").value = "";
+      
+      renderPayoutsLedger();
+      renderFinanceView();
+      showToast("Payout/Fee logged successfully!", "success");
+    });
+  }
+
+  const ledgerBody = document.getElementById("payouts-ledger-body");
+  if (ledgerBody) {
+    const newLedgerBody = ledgerBody.cloneNode(true);
+    ledgerBody.parentNode.replaceChild(newLedgerBody, ledgerBody);
+    newLedgerBody.addEventListener("click", (e) => {
+      const btn = e.target.closest(".btn-delete-payout");
+      if (btn) {
+        const id = btn.getAttribute("data-id");
+        if (!confirm("Are you sure you want to delete this payout/fee record?")) {
+          return;
+        }
+        
+        state.payouts = state.payouts || [];
+        state.payouts = state.payouts.filter(p => p.id !== id);
+        
+        saveStateToStorage();
+        
+        if (window.supabaseClient) {
+          localStorage.setItem("gv_unsynced_changes", "true");
+          const syncIndicator = document.getElementById("sync-pending-indicator");
+          if (syncIndicator) syncIndicator.classList.remove("hidden");
+        }
+        
+        renderPayoutsLedger();
+        renderFinanceView();
+        showToast("Payout/Fee record deleted.", "success");
+      }
+    });
+  }
+
+  renderPayoutsLedger();
+}
+
+// Render the registered payouts list table
+function renderPayoutsLedger() {
+  const ledgerBody = document.getElementById("payouts-ledger-body");
+  if (!ledgerBody) return;
+  
+  state.payouts = state.payouts || [];
+  
+  if (state.payouts.length === 0) {
+    ledgerBody.innerHTML = `
+      <tr>
+        <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 16px;">
+          No operational payouts or fees recorded yet.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
+  // Sort payouts by date descending
+  const sorted = [...state.payouts].sort((a, b) => b.date.localeCompare(a.date));
+  
+  ledgerBody.innerHTML = sorted.map(p => {
+    return `
+      <tr style="border-bottom: 1px solid var(--border-color);">
+        <td style="font-size: 0.85rem; font-weight: 500;">${p.date}</td>
+        <td style="font-size: 0.85rem; color: var(--text-main); font-weight: 500;">${p.description}</td>
+        <td style="font-size: 0.85rem; font-weight: 600; text-align: right; color: var(--accent-pink);">${formatCurrency(p.amount)}</td>
+        <td style="text-align: center;">
+          <button type="button" class="btn btn-outline btn-xs btn-delete-payout" data-id="${p.id}" style="padding: 2px 6px; color: var(--accent-danger); border-color: var(--accent-danger); cursor: pointer;" title="Delete Record">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
 function formatMonthKey(monthKey) {
   const [year, month] = monthKey.split("-");
   const date = new Date(year, parseInt(month) - 1, 1);
@@ -8483,7 +9501,7 @@ function exportFinanceToCSV() {
     }
 
     if (!groupedData[key]) {
-      groupedData[key] = { revenue: 0, cost: 0, profit: 0, count: 0, totalSellDays: 0, durationCount: 0 };
+      groupedData[key] = { revenue: 0, cost: 0, profit: 0, count: 0, totalSellDays: 0, durationCount: 0, payoutFees: 0 };
     }
     groupedData[key].revenue += sale.sellPrice;
     groupedData[key].cost += sale.cost;
@@ -8502,6 +9520,35 @@ function exportFinanceToCSV() {
       groupedData[key].totalSellDays += diffDays;
       groupedData[key].durationCount += 1;
     }
+  });
+
+  // Calculate and aggregate Payouts / Fees for CSV
+  state.payouts = state.payouts || [];
+  state.payouts.forEach(p => {
+    const amt = parseFloat(p.amount) || 0;
+    
+    let key = "All Time";
+    if (breakdownType === "month") {
+      key = p.date.substring(0, 7);
+    } else if (breakdownType === "year") {
+      key = p.date.substring(0, 4);
+    }
+
+    if (!groupedData[key]) {
+      groupedData[key] = { revenue: 0, cost: 0, profit: 0, count: 0, totalSellDays: 0, durationCount: 0, payoutFees: 0 };
+    }
+    if (groupedData[key].payoutFees === undefined) {
+      groupedData[key].payoutFees = 0;
+    }
+    groupedData[key].payoutFees += amt;
+  });
+
+  // Factor payout fees into period expenses and profits
+  Object.keys(groupedData).forEach(k => {
+    const stats = groupedData[k];
+    const fees = stats.payoutFees || 0;
+    stats.cost += fees;
+    stats.profit -= fees;
   });
 
   const sortedKeys = Object.keys(groupedData).sort();
@@ -8735,6 +9782,267 @@ function bindFirebaseSettingsControls() {
       initFirebaseConnection();
       showToast("Disconnected from Firebase.", "success");
     });
+  }
+}
+
+// ==========================================================================
+// GITHUB SYNC SERVICES
+// ==========================================================================
+
+// Helper for Base64 encode supporting Unicode
+function safeBase64Encode(str) {
+  return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function(match, p1) {
+    return String.fromCharCode(parseInt(p1, 16));
+  }));
+}
+
+// Helper for Base64 decode supporting Unicode
+function safeBase64Decode(str) {
+  return decodeURIComponent(Array.prototype.map.call(atob(str), function(c) {
+    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+  }).join(''));
+}
+
+// Initialize GitHub Connection Settings
+function initGitHubConnection() {
+  const token = localStorage.getItem("gv_github_token") || "";
+  const repo = localStorage.getItem("gv_github_repo") || "";
+  const branch = localStorage.getItem("gv_github_branch") || "main";
+  const path = localStorage.getItem("gv_github_path") || "gamevault_backup.json";
+
+  const tokenInput = document.getElementById("settings-github-token");
+  const repoInput = document.getElementById("settings-github-repo");
+  const branchInput = document.getElementById("settings-github-branch");
+  const pathInput = document.getElementById("settings-github-path");
+  const statusBadge = document.getElementById("github-connection-status");
+  const actionsRow = document.getElementById("github-actions-row");
+
+  if (tokenInput) tokenInput.value = token;
+  if (repoInput) repoInput.value = repo;
+  if (branchInput) branchInput.value = branch;
+  if (pathInput) pathInput.value = path;
+
+  if (token && repo) {
+    if (statusBadge) {
+      statusBadge.textContent = "Connected";
+      statusBadge.className = "badge badge-available";
+    }
+    if (actionsRow) actionsRow.classList.remove("hidden");
+  } else {
+    if (statusBadge) {
+      statusBadge.textContent = "Not Connected";
+      statusBadge.className = "badge badge-sold";
+    }
+    if (actionsRow) actionsRow.classList.add("hidden");
+  }
+}
+
+// Bind GitHub Settings Controls
+function bindGitHubSettingsControls() {
+  const btnConnect = document.getElementById("btn-connect-github");
+  if (btnConnect) {
+    const newBtnConnect = btnConnect.cloneNode(true);
+    btnConnect.parentNode.replaceChild(newBtnConnect, btnConnect);
+    newBtnConnect.addEventListener("click", () => {
+      const token = document.getElementById("settings-github-token")?.value.trim() || "";
+      const repo = document.getElementById("settings-github-repo")?.value.trim() || "";
+      let branch = document.getElementById("settings-github-branch")?.value.trim() || "main";
+      let path = document.getElementById("settings-github-path")?.value.trim() || "gamevault_backup.json";
+
+      if (!token || !repo) {
+        showToast("Please enter at least GitHub PAT Token and Repository name.", "error");
+        return;
+      }
+
+      localStorage.setItem("gv_github_token", token);
+      localStorage.setItem("gv_github_repo", repo);
+      localStorage.setItem("gv_github_branch", branch);
+      localStorage.setItem("gv_github_path", path);
+
+      showToast("Configuring GitHub connection...", "info");
+      initGitHubConnection();
+      showToast("GitHub configured successfully!", "success");
+    });
+  }
+
+  const btnDisconnect = document.getElementById("btn-disconnect-github");
+  if (btnDisconnect) {
+    const newBtnDisconnect = btnDisconnect.cloneNode(true);
+    btnDisconnect.parentNode.replaceChild(newBtnDisconnect, btnDisconnect);
+    newBtnDisconnect.addEventListener("click", () => {
+      localStorage.removeItem("gv_github_token");
+      localStorage.removeItem("gv_github_repo");
+      localStorage.removeItem("gv_github_branch");
+      localStorage.removeItem("gv_github_path");
+
+      const tokenInput = document.getElementById("settings-github-token");
+      const repoInput = document.getElementById("settings-github-repo");
+      const branchInput = document.getElementById("settings-github-branch");
+      const pathInput = document.getElementById("settings-github-path");
+
+      if (tokenInput) tokenInput.value = "";
+      if (repoInput) repoInput.value = "";
+      if (branchInput) branchInput.value = "main";
+      if (pathInput) pathInput.value = "gamevault_backup.json";
+
+      initGitHubConnection();
+      showToast("GitHub integration disconnected.", "success");
+    });
+  }
+
+  const btnPush = document.getElementById("btn-github-push");
+  if (btnPush) {
+    const newBtnPush = btnPush.cloneNode(true);
+    btnPush.parentNode.replaceChild(newBtnPush, btnPush);
+    newBtnPush.addEventListener("click", syncToGitHub);
+  }
+
+  const btnPull = document.getElementById("btn-github-pull");
+  if (btnPull) {
+    const newBtnPull = btnPull.cloneNode(true);
+    btnPull.parentNode.replaceChild(newBtnPull, btnPull);
+    newBtnPull.addEventListener("click", syncFromGitHub);
+  }
+}
+
+// Push local backup state to GitHub repository
+async function syncToGitHub(isBackground = false) {
+  const token = localStorage.getItem("gv_github_token") || "";
+  const repo = localStorage.getItem("gv_github_repo") || "";
+  const branch = localStorage.getItem("gv_github_branch") || "main";
+  const path = localStorage.getItem("gv_github_path") || "gamevault_backup.json";
+
+  if (!token || !repo) {
+    if (!isBackground) showToast("GitHub configuration is missing.", "error");
+    return;
+  }
+
+  if (!isBackground) showToast("Preparing state upload...", "info");
+  const backupContent = getBackupPayloadJSON();
+  const url = `https://api.github.com/repos/${repo}/contents/${path}`;
+
+  try {
+    // 1. Check if file already exists to get its SHA
+    let sha;
+    const checkRes = await fetch(`${url}?ref=${branch}`, {
+      method: "GET",
+      headers: {
+        "Authorization": `token ${token}`,
+        "Accept": "application/vnd.github.v3+json"
+      }
+    });
+
+    if (checkRes.status === 200) {
+      const fileData = await checkRes.json();
+      sha = fileData.sha;
+    }
+
+    // 2. Put the file contents
+    const putBody = {
+      message: `Automatic database sync: ${new Date().toISOString()}`,
+      content: safeBase64Encode(backupContent),
+      branch: branch
+    };
+    if (sha) {
+      putBody.sha = sha;
+    }
+
+    const putRes = await fetch(url, {
+      method: "PUT",
+      headers: {
+        "Authorization": `token ${token}`,
+        "Content-Type": "application/json",
+        "Accept": "application/vnd.github.v3+json"
+      },
+      body: JSON.stringify(putBody)
+    });
+
+    if (putRes.status === 200 || putRes.status === 201) {
+      showToast(isBackground ? "Auto-sync: database backed up to GitHub!" : "Successfully backed up database state to GitHub!", "success");
+    } else {
+      const errData = await putRes.json();
+      throw new Error(errData.message || `HTTP ${putRes.status}`);
+    }
+  } catch (e) {
+    console.error("GitHub push error:", e);
+    showToast(`GitHub Push Failed: ${e.message}`, "error");
+  }
+}
+
+// Pull backup state from GitHub repository and restore
+async function syncFromGitHub(isBackground = false) {
+  const token = localStorage.getItem("gv_github_token") || "";
+  const repo = localStorage.getItem("gv_github_repo") || "";
+  const branch = localStorage.getItem("gv_github_branch") || "main";
+  const path = localStorage.getItem("gv_github_path") || "gamevault_backup.json";
+
+  if (!token || !repo) {
+    if (!isBackground) showToast("GitHub configuration is missing.", "error");
+    return;
+  }
+
+  if (isBackground) {
+    showToast("Auto-sync: Fetching backup file from GitHub...", "info");
+  } else {
+    showToast("Fetching backup file from GitHub...", "info");
+  }
+  const url = `https://api.github.com/repos/${repo}/contents/${path}?ref=${branch}`;
+
+  try {
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Authorization": `token ${token}`,
+        "Accept": "application/vnd.github.v3+json"
+      }
+    });
+
+    if (res.status === 200) {
+      const fileData = await res.json();
+      const encodedContent = fileData.content.replace(/\s/g, ""); // Strip newlines
+      const backupJSONStr = safeBase64Decode(encodedContent);
+      const data = JSON.parse(backupJSONStr);
+
+      if (!data.gv_inventory || !data.gv_sales) {
+        showToast("Invalid file structure. Pull object is not a valid GameVault backup.", "error");
+        return;
+      }
+
+      if (!isBackground) {
+        if (!confirm("Are you sure you want to restore the backup from GitHub? All current local records and settings will be overwritten.")) {
+          return;
+        }
+      }
+
+      // To prevent sync loop, set a flag so we don't trigger auto-push during pull loading
+      state._isRestoring = true;
+
+      Object.keys(data).forEach(k => {
+        localStorage.setItem(k, data[k]);
+      });
+
+      showToast("Database state successfully pulled and restored! Reloading...", "success");
+      
+      if (window.supabaseClient) {
+        localStorage.setItem("gv_unsynced_changes", "true");
+      }
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } else if (res.status === 404) {
+      if (!isBackground) {
+        showToast(`GitHub Pull Failed: File not found at path "${path}" in branch "${branch}".`, "error");
+      }
+    } else {
+      const errData = await res.json();
+      throw new Error(errData.message || `HTTP ${res.status}`);
+    }
+  } catch (e) {
+    console.error("GitHub pull error:", e);
+    if (!isBackground) {
+      showToast(`GitHub Pull Failed: ${e.message}`, "error");
+    }
   }
 }
 
@@ -9291,6 +10599,104 @@ async function dbDeletePlatform(name) {
   }
 }
 
+// Auto-Sync schedules background variables and runners
+let autoSyncIntervalTimer = null;
+let autoSyncCountdownTimer = null;
+let autoSyncNextRunTime = null;
+let gitHubPushTimeout = null;
+
+function triggerDebouncedGitHubPush() {
+  if (gitHubPushTimeout) {
+    clearTimeout(gitHubPushTimeout);
+  }
+  gitHubPushTimeout = setTimeout(() => {
+    console.log("Triggering auto-scheduled background GitHub push...");
+    syncToGitHub(true);
+  }, 2000);
+}
+
+function setupAutoSyncTimer() {
+  if (autoSyncIntervalTimer) {
+    clearInterval(autoSyncIntervalTimer);
+    autoSyncIntervalTimer = null;
+  }
+  if (autoSyncCountdownTimer) {
+    clearInterval(autoSyncCountdownTimer);
+    autoSyncCountdownTimer = null;
+  }
+
+  if (state.autoSyncInterval === "off") {
+    autoSyncNextRunTime = null;
+    return;
+  }
+
+  const intervalMinutes = parseInt(state.autoSyncInterval);
+  if (isNaN(intervalMinutes)) return;
+
+  const intervalMs = intervalMinutes * 60 * 1000;
+  autoSyncNextRunTime = Date.now() + intervalMs;
+
+  autoSyncIntervalTimer = setInterval(() => {
+    triggerScheduledSync();
+    autoSyncNextRunTime = Date.now() + intervalMs;
+  }, intervalMs);
+
+  autoSyncCountdownTimer = setInterval(() => {
+    updateAutoSyncCountdown();
+  }, 1000);
+}
+
+function triggerScheduledSync() {
+  console.log("Auto-Sync Scheduled trigger executing...");
+  if (window.supabaseClient) {
+    synchronizeCloudDatabase();
+  }
+  const token = localStorage.getItem("gv_github_token") || "";
+  const repo = localStorage.getItem("gv_github_repo") || "";
+  if (token && repo) {
+    syncToGitHub(true);
+  }
+}
+
+function updateAutoSyncCountdown() {
+  const countdownEl = document.getElementById("auto-sync-timer-countdown");
+  if (!countdownEl || !autoSyncNextRunTime) return;
+
+  const diff = autoSyncNextRunTime - Date.now();
+  if (diff <= 0) {
+    countdownEl.textContent = "00:00";
+    return;
+  }
+
+  const totalSecs = Math.floor(diff / 1000);
+  const mins = Math.floor(totalSecs / 60);
+  const secs = totalSecs % 60;
+  
+  const displayMins = mins < 10 ? "0" + mins : mins;
+  const displaySecs = secs < 10 ? "0" + secs : secs;
+
+  countdownEl.textContent = `${displayMins}:${displaySecs}`;
+}
+
+function updateAutoSyncUI() {
+  const statusBadge = document.getElementById("auto-sync-status-badge");
+  const nextRunContainer = document.getElementById("auto-sync-next-run");
+  
+  if (state.autoSyncInterval === "off") {
+    if (statusBadge) {
+      statusBadge.textContent = "Inactive";
+      statusBadge.className = "badge badge-sold";
+    }
+    if (nextRunContainer) nextRunContainer.classList.add("hidden");
+  } else {
+    if (statusBadge) {
+      statusBadge.textContent = "Active";
+      statusBadge.className = "badge badge-available";
+    }
+    if (nextRunContainer) nextRunContainer.classList.remove("hidden");
+  }
+}
+
 // ==========================================================================
 // ADVANCED CONFIGURATION CONTROLS
 // ==========================================================================
@@ -9327,6 +10733,22 @@ function initAdvancedSettings() {
     syncModeSelect.value = state.syncMode;
   }
   updateSyncPendingIndicator();
+
+  // Auto-Sync schedules
+  const autoSyncIntervalSelect = document.getElementById("settings-auto-sync-interval");
+  if (autoSyncIntervalSelect) {
+    autoSyncIntervalSelect.value = state.autoSyncInterval;
+  }
+  const autoPushCheck = document.getElementById("settings-auto-push-github");
+  if (autoPushCheck) {
+    autoPushCheck.checked = state.autoPushGitHub;
+  }
+  const autoPullCheck = document.getElementById("settings-auto-pull-github");
+  if (autoPullCheck) {
+    autoPullCheck.checked = state.autoPullGitHub;
+  }
+  updateAutoSyncUI();
+  setupAutoSyncTimer();
 
 
 
@@ -9441,6 +10863,35 @@ function bindAdvancedSettingsControls() {
     });
   }
 
+  const autoSyncIntervalSelect = document.getElementById("settings-auto-sync-interval");
+  if (autoSyncIntervalSelect) {
+    autoSyncIntervalSelect.addEventListener("change", (e) => {
+      state.autoSyncInterval = e.target.value;
+      saveStateToStorage();
+      setupAutoSyncTimer();
+      updateAutoSyncUI();
+      showToast(`Auto-sync interval set to: ${state.autoSyncInterval === 'off' ? 'Off' : state.autoSyncInterval + ' minutes'}`, "info");
+    });
+  }
+
+  const autoPushCheck = document.getElementById("settings-auto-push-github");
+  if (autoPushCheck) {
+    autoPushCheck.addEventListener("change", (e) => {
+      state.autoPushGitHub = e.target.checked;
+      saveStateToStorage();
+      showToast(`GitHub Auto-Push on change is now ${state.autoPushGitHub ? 'Enabled' : 'Disabled'}`, "info");
+    });
+  }
+
+  const autoPullCheck = document.getElementById("settings-auto-pull-github");
+  if (autoPullCheck) {
+    autoPullCheck.addEventListener("change", (e) => {
+      state.autoPullGitHub = e.target.checked;
+      saveStateToStorage();
+      showToast(`GitHub Auto-Pull on startup is now ${state.autoPullGitHub ? 'Enabled' : 'Disabled'}`, "info");
+    });
+  }
+
   const btnExportBackup = document.getElementById("btn-export-backup");
   if (btnExportBackup) {
     btnExportBackup.addEventListener("click", exportStateBackupJSON);
@@ -9467,8 +10918,8 @@ function bindAdvancedSettingsControls() {
   }
 }
 
-// Export state backup as JSON file download
-function exportStateBackupJSON() {
+// Get state backup JSON payload
+function getBackupPayloadJSON() {
   const backupData = {};
   const keys = [
     "gv_inventory", "gv_sales", "gv_suppliers", "gv_platforms",
@@ -9477,7 +10928,7 @@ function exportStateBackupJSON() {
     "gv_visible_metrics", "gv_sup_visible_metrics", "gv_visible_figures", "gv_metric_order", "gv_sup_metric_order", "gv_font_size", "gv_menu_icons",
     "gv_menu_titles", "gv_custom_logo", "gv_low_stock_threshold",
     "gv_default_markup_type", "gv_default_markup_value",
-    "gv_platform_fee_presets", "gv_sync_mode", "gv_recycle_bin"
+    "gv_platform_fee_presets", "gv_sync_mode", "gv_recycle_bin", "gv_payouts"
   ];
   
   keys.forEach(k => {
@@ -9487,7 +10938,12 @@ function exportStateBackupJSON() {
     }
   });
   
-  const jsonStr = JSON.stringify(backupData, null, 2);
+  return JSON.stringify(backupData, null, 2);
+}
+
+// Export state backup as JSON file download
+function exportStateBackupJSON() {
+  const jsonStr = getBackupPayloadJSON();
   const blob = new Blob([jsonStr], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   
@@ -10007,6 +11463,8 @@ async function importStateFromSpreadsheet(file) {
         if (btnImportSheet) btnImportSheet.disabled = false;
         return;
       }
+
+      pushToUndoStack();
 
       if (progressStatus) progressStatus.textContent = `Analyzing ${rows.length} rows...`;
       if (progressPercent) progressPercent.textContent = "10%";

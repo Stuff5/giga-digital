@@ -146,6 +146,17 @@
             <i class="fa-regular fa-clock"></i>
             <span id="current-time">00:00:00</span>
           </div>
+          <div style="display: flex; gap: 8px; margin-right: 12px;">
+            <button class="btn btn-icon btn-outline" id="btn-undo" title="Undo (Ctrl+Z)" disabled>
+              <i class="fa-solid fa-arrow-rotate-left"></i>
+            </button>
+            <button class="btn btn-icon btn-outline" id="btn-redo" title="Redo (Ctrl+Y)" disabled>
+              <i class="fa-solid fa-arrow-rotate-right"></i>
+            </button>
+            <button class="btn btn-icon btn-outline" id="btn-open-help" title="Help & Documentation (F1)">
+              <i class="fa-solid fa-circle-question"></i>
+            </button>
+          </div>
           <button class="btn btn-primary" id="btn-add-game-modal">
             <i class="fa-solid fa-plus"></i>
             <span>Add Game Key</span>
@@ -336,6 +347,56 @@
                 </div>
               </div>
             </div>
+          </div> <!-- Close dashboard-period-summary-row -->
+
+          <!-- Inventory Aging Summary (Mockup Grid Layout) -->
+          <div class="detail-card" id="dashboard-aging-card" style="margin-bottom: 24px;">
+            <div class="detail-card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+              <h4 style="margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-clock-rotate-left" style="color: var(--accent-warning);"></i> Inventory Aging Summary
+              </h4>
+              <button class="btn btn-outline btn-xs" id="btn-export-aging-report" title="Export Aging Report" style="padding: 4px 8px; font-size: 0.72rem; display: flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-file-export"></i> Export Report
+              </button>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+              <!-- Fresh Card -->
+              <div style="background-color: var(--bg-age-fresh-card); border: 1px solid var(--border-age-fresh-card); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+                <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-age-fresh-card); text-transform: uppercase; letter-spacing: 0.5px;">Fresh (&lt; 30 days)</span>
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 4px;">
+                  <h3 id="aging-count-fresh" style="margin: 0; font-size: 2.2rem; font-weight: 800; color: var(--text-age-fresh-card); line-height: 1;">0</h3>
+                  <span id="aging-val-fresh" style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); opacity: 0.85;">€0.00</span>
+                </div>
+              </div>
+
+              <!-- Aging Card -->
+              <div style="background-color: var(--bg-age-aging-card); border: 1px solid var(--border-age-aging-card); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+                <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-age-aging-card); text-transform: uppercase; letter-spacing: 0.5px;">Aging (30-60 days)</span>
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 4px;">
+                  <h3 id="aging-count-aging" style="margin: 0; font-size: 2.2rem; font-weight: 800; color: var(--text-age-aging-card); line-height: 1;">0</h3>
+                  <span id="aging-val-aging" style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); opacity: 0.85;">€0.00</span>
+                </div>
+              </div>
+
+              <!-- Stale Card -->
+              <div style="background-color: var(--bg-age-stale-card); border: 1px solid var(--border-age-stale-card); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+                <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-age-stale-card); text-transform: uppercase; letter-spacing: 0.5px;">Stale (60-90 days)</span>
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 4px;">
+                  <h3 id="aging-count-stale" style="margin: 0; font-size: 2.2rem; font-weight: 800; color: var(--text-age-stale-card); line-height: 1;">0</h3>
+                  <span id="aging-val-stale" style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); opacity: 0.85;">€0.00</span>
+                </div>
+              </div>
+
+              <!-- Very Stale Card -->
+              <div style="background-color: var(--bg-age-verystale-card); border: 1px solid var(--border-age-verystale-card); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+                <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-age-verystale-card); text-transform: uppercase; letter-spacing: 0.5px;">Very Stale (&gt; 90 days)</span>
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 4px;">
+                  <h3 id="aging-count-verystale" style="margin: 0; font-size: 2.2rem; font-weight: 800; color: var(--text-age-verystale-card); line-height: 1;">0</h3>
+                  <span id="aging-val-verystale" style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); opacity: 0.85;">€0.00</span>
+                </div>
+              </div>
+            </div>
           </div>
 
 
@@ -428,14 +489,17 @@
               </div>
             </div>
 
-            <!-- Fast Selling Games / Low Stock Alert -->
-            <div class="detail-card">
-              <div class="detail-card-header">
-                <h4>Inventory Status Summary</h4>
-                <a href="#inventory" class="view-all-link">Manage Stock</a>
-              </div>
-              <div class="inventory-summary-list" id="inventory-summary-list">
-                <!-- Injected by JavaScript -->
+            <!-- Column 2 (Stacked smaller cards) -->
+            <div style="display: flex; flex-direction: column; gap: 24px;">
+              <!-- Inventory Status Summary -->
+              <div class="detail-card">
+                <div class="detail-card-header">
+                  <h4>Inventory Status Summary</h4>
+                  <a href="#inventory" class="view-all-link">Manage Stock</a>
+                </div>
+                <div class="inventory-summary-list" id="inventory-summary-list">
+                  <!-- Injected by JavaScript -->
+                </div>
               </div>
             </div>
           </div>
@@ -513,6 +577,17 @@
 
 
             <div class="filter-group">
+              <label for="inv-filter-aging">Aging Category</label>
+              <select id="inv-filter-aging" class="form-control form-control-sm">
+                <option value="all">All Ages</option>
+                <option value="Fresh">Fresh (&lt; 30 days)</option>
+                <option value="Aging">Aging (30-60 days)</option>
+                <option value="Stale">Stale (60-90 days)</option>
+                <option value="Very Stale">Very Stale (&gt; 90 days)</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
               <label for="inv-sort-by">Sort By</label>
               <select id="inv-sort-by" class="form-control form-control-sm">
                 <option value="date-desc" selected>Date Added (Newest)</option>
@@ -521,6 +596,8 @@
                 <option value="title-desc">Game Title (Z-A)</option>
                 <option value="duration-desc">Duration (Longest)</option>
                 <option value="duration-asc">Duration (Shortest)</option>
+                <option value="age-desc">Age (Oldest First)</option>
+                <option value="age-asc">Age (Newest First)</option>
               </select>
             </div>
 
@@ -844,49 +921,24 @@
             </div>
 
             <!-- Suppliers Tab Content (Visible by default) -->
-            <div id="suppliers-tab-content" class="responsive-grid-2">
-              <!-- Add Supplier Card -->
-              <div class="calc-card">
-                <h3>Add New Supplier</h3>
-                <form id="add-supplier-form">
-                  <div class="form-group">
-                    <label for="supplier-name-input" class="required">Supplier Name</label>
-                    <input type="text" id="supplier-name-input" class="form-control" required placeholder="e.g. Humble Bundle, Fanatical">
-                  </div>
-                  <div class="form-group">
-                    <label class="required">Supplier Tag Color</label>
-                    <div class="color-palette-grid" id="add-supplier-color-grid"></div>
-                    <input type="hidden" id="add-supplier-color-input" required value="purple">
-                  </div>
-                  <div class="form-group">
-                    <label>Supplier Logo</label>
-                    <div class="image-input-container">
-                      <input type="text" id="supplier-logo-url-input" class="form-control form-control-sm" placeholder="Paste logo image URL...">
-                      <div class="image-divider"><span>OR</span></div>
-                      <label class="btn btn-outline btn-sm file-upload-label" style="width: 100%; justify-content: center;">
-                        <i class="fa-solid fa-upload"></i> Upload Logo
-                        <input type="file" id="supplier-logo-file-input" accept="image/*" style="display: none;">
-                      </label>
-                    </div>
-                  </div>
-                  <button type="submit" class="btn btn-primary btn-block">
-                    <i class="fa-solid fa-plus"></i> Add Supplier
-                  </button>
-                </form>
-              </div>
-
-              <!-- Suppliers List Card -->
-              <div class="calc-card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+            <div id="suppliers-tab-content" style="width: 100%;">
+              <!-- Suppliers List Card (Full width) -->
+              <div class="calc-card" style="width: 100%;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; flex-wrap: wrap; gap: 12px;">
                   <h3 style="margin-bottom: 0; border: none; padding-bottom: 0;">Active Suppliers List</h3>
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <label for="suppliers-sort" style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; margin: 0; letter-spacing: 0.05em;">Sort:</label>
-                    <select id="suppliers-sort" class="form-control form-control-sm" style="width: auto; padding: 4px 10px; background-color: var(--bg-input);">
-                      <option value="date-desc" selected>Date Added (Newest)</option>
-                      <option value="date-asc">Date Added (Oldest)</option>
-                      <option value="name-asc">Alphabetical (A-Z)</option>
-                      <option value="name-desc">Alphabetical (Z-A)</option>
-                    </select>
+                  <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                    <button class="btn btn-primary btn-sm" id="btn-create-supplier" style="height: 32px; display: flex; align-items: center; gap: 6px;">
+                      <i class="fa-solid fa-plus"></i> Create New Supplier
+                    </button>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <label for="suppliers-sort" style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; margin: 0; letter-spacing: 0.05em;">Sort:</label>
+                      <select id="suppliers-sort" class="form-control form-control-sm" style="width: auto; padding: 4px 10px; background-color: var(--bg-input);">
+                        <option value="date-desc" selected>Date Added (Newest)</option>
+                        <option value="date-asc">Date Added (Oldest)</option>
+                        <option value="name-asc">Alphabetical (A-Z)</option>
+                        <option value="name-desc">Alphabetical (Z-A)</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
                 <div class="table-responsive">
@@ -894,8 +946,12 @@
                     <thead>
                       <tr>
                         <th>Supplier Name</th>
-                        <th>Keys Purchased</th>
+                        <th>Purchased</th>
                         <th>In Stock</th>
+                        <th>Cost (In Stock)</th>
+                        <th>Cost (Sold)</th>
+                        <th>Revenue</th>
+                        <th>Profit</th>
                         <th>Status</th>
                         <th style="text-align: right;">Actions</th>
                       </tr>
@@ -1125,6 +1181,59 @@
               
               <div id="finance-detail-content" style="margin-top: 16px;">
                 <!-- Dynamic layout content injected here by JS -->
+              </div>
+            </div>
+
+            <!-- Payouts & Fees Section -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+              <!-- Log New Payout / Fee Form -->
+              <div class="detail-card">
+                <div class="detail-card-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+                  <h4 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-file-invoice-dollar" style="color: var(--accent-purple);"></i> Record Monthly Payout / Fee
+                  </h4>
+                </div>
+                <form id="form-add-payout" style="display: flex; flex-direction: column; gap: 12px;">
+                  <div class="form-group">
+                    <label for="payout-date">Date</label>
+                    <input type="date" id="payout-date" class="form-control" required style="width: 100%;">
+                  </div>
+                  <div class="form-group">
+                    <label for="payout-description">Description / Type</label>
+                    <input type="text" id="payout-description" class="form-control" placeholder="e.g. PayPal Fee, Overhead Expenses" required style="width: 100%;">
+                  </div>
+                  <div class="form-group">
+                    <label for="payout-amount">Amount</label>
+                    <input type="number" id="payout-amount" class="form-control" placeholder="0.00" step="0.01" min="0" required style="width: 100%;">
+                  </div>
+                  <button type="submit" class="btn btn-primary btn-block" style="margin-top: 8px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px;">
+                    <i class="fa-solid fa-plus"></i> Record Expense
+                  </button>
+                </form>
+              </div>
+
+              <!-- Payouts & Fees Ledger Table -->
+              <div class="detail-card">
+                <div class="detail-card-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+                  <h4 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-list-check" style="color: var(--accent-cyan);"></i> Registered Monthly Payouts & Fees
+                  </h4>
+                </div>
+                <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                  <table class="table" id="payouts-ledger-table">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th style="text-align: right;">Amount</th>
+                        <th style="text-align: center; width: 60px;">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody id="payouts-ledger-body">
+                      <!-- Injected by JavaScript -->
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </section>
@@ -1413,6 +1522,57 @@
                     </div>
                   </div>
 
+                  <!-- GitHub Panel -->
+                  <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                      <h4 style="margin: 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-brands fa-github" style="color: var(--text-main);"></i> GitHub Sync
+                      </h4>
+                      <span id="github-connection-status" class="badge badge-sold">Not Connected</span>
+                    </div>
+                    <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 15px;">
+                      Backup and sync your database JSON files directly to a private/public GitHub repository.
+                    </p>
+                    
+                    <div class="form-group" style="margin-bottom: 12px;">
+                      <label for="settings-github-token">Personal Access Token (PAT)</label>
+                      <input type="password" id="settings-github-token" class="form-control" placeholder="ghp_yourPersonalAccessToken">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px;">
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="settings-github-repo">Repository</label>
+                        <input type="text" id="settings-github-repo" class="form-control" placeholder="owner/repo">
+                      </div>
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="settings-github-branch">Branch</label>
+                        <input type="text" id="settings-github-branch" class="form-control" placeholder="main">
+                      </div>
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="settings-github-path">File Path</label>
+                        <input type="text" id="settings-github-path" class="form-control" placeholder="backup.json">
+                      </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 12px; margin-top: 20px;">
+                      <button type="button" class="btn btn-primary btn-sm" id="btn-connect-github" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; font-size: 0.85rem;">
+                        <i class="fa-brands fa-github"></i> Connect GitHub
+                      </button>
+                      <button type="button" class="btn btn-outline btn-sm" id="btn-disconnect-github" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; font-size: 0.85rem;">
+                        <i class="fa-solid fa-unlink"></i> Disconnect
+                      </button>
+                    </div>
+
+                    <div id="github-actions-row" class="hidden" style="display: flex; gap: 12px; margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+                      <button type="button" class="btn btn-outline btn-sm" id="btn-github-push" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 10px; font-size: 0.8rem; border-color: var(--accent-cyan); color: var(--accent-cyan);">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> Push to GitHub
+                      </button>
+                      <button type="button" class="btn btn-outline btn-sm" id="btn-github-pull" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 10px; font-size: 0.8rem; border-color: var(--accent-purple); color: var(--accent-purple);">
+                        <i class="fa-solid fa-cloud-arrow-down"></i> Pull from GitHub
+                      </button>
+                    </div>
+                  </div>
+
                   <!-- Sync Strategy Panel -->
                   <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -1436,6 +1596,53 @@
                     <button type="button" class="btn btn-primary btn-block" id="btn-sync-now" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px; font-size: 0.85rem;">
                       <i class="fa-solid fa-sync"></i> Synchronize Now
                     </button>
+                  </div>
+
+                  <!-- Automated Sync Schedules Card -->
+                  <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                      <h4 style="margin: 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-clock-rotate-left" style="color: var(--accent-purple);"></i> Auto-Sync Schedule
+                      </h4>
+                      <span id="auto-sync-status-badge" class="badge badge-sold">Inactive</span>
+                    </div>
+                    <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 15px;">
+                      Automatically schedule recurring background backups to GitHub and synchronizations to your Cloud database.
+                    </p>
+
+                    <div class="form-group" style="margin-bottom: 15px;">
+                      <label for="settings-auto-sync-interval">Sync Interval</label>
+                      <select id="settings-auto-sync-interval" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main); font-weight: 500; width: 100%;">
+                        <option value="off">Off (Manual / Real-time only)</option>
+                        <option value="5">Every 5 Minutes</option>
+                        <option value="15">Every 15 Minutes</option>
+                        <option value="30">Every 30 Minutes</option>
+                        <option value="60">Every Hour</option>
+                        <option value="720">Every 12 Hours</option>
+                        <option value="1440">Every 24 Hours</option>
+                      </select>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 15px;">
+                      <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="color: var(--text-secondary); font-size: 0.825rem;">GitHub Auto-Push on change</span>
+                        <label class="switch-toggle" style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer; margin: 0;">
+                          <input type="checkbox" id="settings-auto-push-github" style="opacity: 0; width: 0; height: 0;">
+                          <span class="switch-slider" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: hsla(0, 0%, 100%, 0.1); border-radius: 34px; transition: 0.3s ease;"></span>
+                        </label>
+                      </div>
+                      <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="color: var(--text-secondary); font-size: 0.825rem;">GitHub Auto-Pull on startup</span>
+                        <label class="switch-toggle" style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer; margin: 0;">
+                          <input type="checkbox" id="settings-auto-pull-github" style="opacity: 0; width: 0; height: 0;">
+                          <span class="switch-slider" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: hsla(0, 0%, 100%, 0.1); border-radius: 34px; transition: 0.3s ease;"></span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div id="auto-sync-next-run" style="color: var(--text-muted); font-size: 0.75rem; margin-top: 5px; text-align: right;" class="hidden">
+                      Next sync in: <span id="auto-sync-timer-countdown" style="font-weight: 600; color: var(--accent-cyan);">--:--</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2223,6 +2430,313 @@
           <button type="submit" class="btn btn-primary">Save Changes</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- CSV IMPORT WIZARD MODAL -->
+  <div class="modal-backdrop" id="csv-import-wizard-modal">
+    <div class="modal-card" style="max-width: 800px; width: 95%;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-file-import text-teal"></i> CSV Import Wizard</h3>
+        <button class="modal-close-btn" data-close-modal="csv-import-wizard-modal">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 24px; overflow-y: auto; max-height: 70vh;">
+        <!-- Step Indicators -->
+        <div class="import-wizard-steps" style="display: flex; justify-content: space-around; margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 16px;">
+          <div class="wizard-step active" id="import-step-1-indicator" style="display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--accent-purple);">
+            <span class="step-num" style="background: var(--accent-purple); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">1</span>
+            <span>Upload File</span>
+          </div>
+          <div class="wizard-step" id="import-step-2-indicator" style="display: flex; align-items: center; gap: 8px; font-weight: 500; color: var(--text-muted);">
+            <span class="step-num" style="background: var(--border-color); color: var(--text-muted); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">2</span>
+            <span>Map Columns</span>
+          </div>
+          <div class="wizard-step" id="import-step-3-indicator" style="display: flex; align-items: center; gap: 8px; font-weight: 500; color: var(--text-muted);">
+            <span class="step-num" style="background: var(--border-color); color: var(--text-muted); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">3</span>
+            <span>Preview & Import</span>
+          </div>
+        </div>
+
+        <!-- STEP 1: UPLOAD FILE -->
+        <div class="wizard-section active" id="import-wizard-section-1">
+          <div class="file-drop-zone" id="csv-drop-zone" style="border: 2px dashed var(--border-color); border-radius: 8px; padding: 40px; text-align: center; cursor: pointer; transition: all 0.2s ease; background: var(--bg-card);">
+            <i class="fa-solid fa-cloud-arrow-up" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 16px;"></i>
+            <h4 style="margin-bottom: 8px; font-weight: 600; color: var(--text-main);">Drag and drop your CSV file here</h4>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 16px;">or click to browse your files</p>
+            <button type="button" class="btn btn-outline btn-sm" id="btn-browse-csv">Browse CSV</button>
+            <input type="file" id="csv-wizard-file-input" accept=".csv" style="display: none;">
+          </div>
+          <div id="csv-file-info" style="margin-top: 16px; display: none; align-items: center; justify-content: space-between; background: var(--bg-input); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <i class="fa-solid fa-file-csv" style="font-size: 2rem; color: #0284c7;"></i>
+              <div>
+                <strong id="csv-file-name" style="display: block; color: var(--text-main);">file.csv</strong>
+                <span id="csv-file-size" style="font-size: 0.8rem; color: var(--text-muted);">0 KB</span>
+              </div>
+            </div>
+            <button type="button" class="btn btn-danger btn-sm" id="btn-remove-csv" style="padding: 6px 10px;"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+
+        <!-- STEP 2: MAP COLUMNS -->
+        <div class="wizard-section" id="import-wizard-section-2" style="display: none;">
+          <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 16px;">
+            Map the fields in your CSV columns to the GameVault database fields. Fields marked with <span class="text-danger">*</span> are required.
+          </p>
+          <div class="table-responsive" style="max-height: 320px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 16px;">
+            <table class="table" style="margin-bottom: 0;">
+              <thead>
+                <tr>
+                  <th>Database Field</th>
+                  <th>CSV Column Header</th>
+                  <th>Default Value (If unmapped)</th>
+                </tr>
+              </thead>
+              <tbody id="csv-mapping-tbody">
+                <!-- Injected dynamically by JS -->
+              </tbody>
+            </table>
+          </div>
+          <div id="csv-mapping-warning" class="alert alert-danger" style="display: none; margin-top: 12px;">
+            <i class="fa-solid fa-circle-exclamation"></i> Please map the required fields: <strong>Game Title</strong> and <strong>Digital Key</strong>.
+          </div>
+        </div>
+
+        <!-- STEP 3: PREVIEW DATA -->
+        <div class="wizard-section" id="import-wizard-section-3" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0;">
+              Preview the first 5 records of your import. Total rows to import: <strong id="csv-total-rows-count" class="text-teal">0</strong>
+            </p>
+          </div>
+          <div class="table-responsive" style="border: 1px solid var(--border-color); border-radius: 6px; overflow-x: auto; max-height: 320px;">
+            <table class="table table-striped" style="margin-bottom: 0; font-size: 0.85rem; min-width: 600px;">
+              <thead id="csv-preview-thead">
+                <!-- Injected dynamically by JS -->
+              </thead>
+              <tbody id="csv-preview-tbody">
+                <!-- Injected dynamically by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: space-between; border-top: 1px solid var(--border-color); padding: 16px 24px; background: var(--bg-modal-footer);">
+        <button type="button" class="btn btn-outline" id="btn-import-wizard-back" style="visibility: hidden;">Back</button>
+        <div style="display: flex; gap: 12px;">
+          <button type="button" class="btn btn-outline" data-close-modal="csv-import-wizard-modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="btn-import-wizard-next" disabled>Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD SUPPLIER MODAL -->
+  <div class="modal-backdrop" id="add-supplier-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-truck-ramp-box text-purple"></i> Add New Supplier</h3>
+        <button class="modal-close-btn" data-close-modal="add-supplier-modal">&times;</button>
+      </div>
+      <form id="add-supplier-form">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="supplier-name-input" class="required">Supplier Name</label>
+            <input type="text" id="supplier-name-input" class="form-control" required placeholder="e.g. Humble Bundle, Fanatical">
+          </div>
+          <div class="form-group">
+            <label class="required">Supplier Tag Color</label>
+            <div class="color-palette-grid" id="add-supplier-color-grid"></div>
+            <input type="hidden" id="add-supplier-color-input" required value="purple">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label>Supplier Logo</label>
+            <div class="image-input-container">
+              <input type="text" id="supplier-logo-url-input" class="form-control form-control-sm" placeholder="Paste logo image URL...">
+              <div class="image-divider"><span>OR</span></div>
+              <label class="btn btn-outline btn-sm file-upload-label" style="width: 100%; justify-content: center;">
+                <i class="fa-solid fa-upload"></i> Upload Logo
+                <input type="file" id="supplier-logo-file-input" accept="image/*" style="display: none;">
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid var(--border-color); padding: 16px 24px; background: var(--bg-modal-footer);">
+          <button type="button" class="btn btn-outline" data-close-modal="add-supplier-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Supplier</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- HELP & DOCUMENTATION MODAL -->
+  <div class="modal-backdrop" id="help-modal">
+    <div class="modal-card" style="max-width: 800px; width: 95%;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-circle-question text-purple"></i> Help & Documentation Center</h3>
+        <button class="modal-close-btn" data-close-modal="help-modal">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 20px; overflow-y: hidden;">
+        <div style="display: grid; grid-template-columns: 200px 1fr; gap: 24px; min-height: 400px;">
+          <!-- Sidebar tabs -->
+          <div style="display: flex; flex-direction: column; gap: 6px; border-right: 1px solid var(--border-color); padding-right: 16px;">
+            <button type="button" class="btn btn-outline btn-sm help-tab-btn active" data-help-tab="help-tab-general" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background-color: var(--bg-input); color: var(--text-main); width: 100%;">
+              <i class="fa-solid fa-book" style="margin-right: 8px; width: 16px; color: var(--accent-cyan);"></i> General Guide
+            </button>
+            <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-import" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
+              <i class="fa-solid fa-file-excel" style="margin-right: 8px; width: 16px; color: var(--accent-emerald);"></i> Bulk Import Tips
+            </button>
+            <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-sync" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
+              <i class="fa-solid fa-arrows-rotate" style="margin-right: 8px; width: 16px; color: var(--accent-purple);"></i> Cloud & Auto-Sync
+            </button>
+            <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-shortcuts" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
+              <i class="fa-solid fa-keyboard" style="margin-right: 8px; width: 16px; color: var(--accent-pink);"></i> Keyboard Hotkeys
+            </button>
+          </div>
+          <!-- Pane contents -->
+          <div style="max-height: 420px; overflow-y: auto; padding-right: 8px; text-align: left;">
+            
+            <!-- Pane 1: General -->
+            <div id="help-tab-general" class="help-tab-pane">
+              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Key Merchant Pro Overview</h4>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                GameVault Key Merchant Pro is a high-performance inventory and sales pipeline management dashboard. It helps you track game activation keys, analyze financial records, monitor stock durations, and manage supplier transactions.
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Key Activation States</h5>
+              <ul style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.6; padding-left: 20px; margin-bottom: 16px;">
+                <li><strong style="color: var(--accent-teal);">Available:</strong> Keys currently active in stock and ready to be sold.</li>
+                <li><strong style="color: var(--accent-purple);">Sold:</strong> Dispatched keys. These are logged in the Sales Ledger and calculate profit margin.</li>
+                <li><strong style="color: var(--accent-pink);">Reserved:</strong> Keys held back for customer orders or pending deals.</li>
+                <li><strong style="color: var(--accent-warning);">Rejected:</strong> Revoked, faulty, or returned keys. Capital cost is tracked but they represent no profit.</li>
+              </ul>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Inventory Aging Alerts</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 0;">
+                To prevent stock depreciation, the app categorizes key storage duration:
+                <br>
+                <span class="badge badge-age-fresh" style="margin-top: 4px; display: inline-block;">Fresh</span> (under 30 days), 
+                <span class="badge badge-age-aging" style="display: inline-block;">Aging</span> (30-90 days), 
+                <span class="badge badge-age-stale" style="display: inline-block;">Stale</span> (90-180 days), and 
+                <span class="badge badge-age-verystale" style="display: inline-block;">Very Stale</span> (180+ days).
+              </p>
+            </div>
+
+            <!-- Pane 2: Import -->
+            <div id="help-tab-import" class="help-tab-pane hidden">
+              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Bulk Spreadsheet Ingestion</h4>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                You can import huge files directly from Excel/CSV workbooks. The parser reads standard files and updates your lists in batches.
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Expected Column Mappings</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 12px;">
+                The importer matches your sheet columns automatically. Make sure your file contains headers similar to:
+              </p>
+              <table style="width: 100%; border-collapse: collapse; font-size: 0.825rem; color: var(--text-secondary); margin-bottom: 16px;">
+                <thead>
+                  <tr style="border-bottom: 1px solid var(--border-color); text-align: left;">
+                    <th style="padding: 6px;">Excel Header</th>
+                    <th style="padding: 6px;">Maps To</th>
+                    <th style="padding: 6px;">Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 6px; font-weight: 600; color: var(--text-main);">Name / Title</td>
+                    <td style="padding: 6px;">Game Title</td>
+                    <td style="padding: 6px;">Required to group entries</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 6px; font-weight: 600; color: var(--text-main);">Vendor / Supplier</td>
+                    <td style="padding: 6px;">Supplier Source</td>
+                    <td style="padding: 6px;">Defaults to "Direct" if empty</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 6px; font-weight: 600; color: var(--text-main);">Key / Code</td>
+                    <td style="padding: 6px;">Activation Key</td>
+                    <td style="padding: 6px;">Stored encrypted locally</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 6px; font-weight: 600; color: var(--text-main);">Cost / Sell</td>
+                    <td style="padding: 6px;">Prices</td>
+                    <td style="padding: 6px;">Must be positive numbers</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 6px; font-weight: 600; color: var(--text-main);">Status</td>
+                    <td style="padding: 6px;">State</td>
+                    <td style="padding: 6px;">"Open" ➔ Available, "Closed" ➔ Sold, "Rejected"</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div style="background-color: rgba(255, 179, 0, 0.05); border-left: 3px solid var(--accent-warning); padding: 10px; border-radius: var(--radius-sm);">
+                <p style="color: var(--text-main); font-size: 0.8rem; margin: 0; line-height: 1.4;">
+                  <strong>Pro Tip:</strong> Use the **Excel/CSV Bulk Import** card in Settings. The importer handles large batches asynchronously, so the browser stays responsive.
+                </p>
+              </div>
+            </div>
+
+            <!-- Pane 3: Sync -->
+            <div id="help-tab-sync" class="help-tab-pane hidden">
+              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Cloud Synchronization & Backups</h4>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                Secure your database and collaborate across devices by configuring cloud sync services.
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Supabase & Firebase Sync</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                - <strong>Real-time mode:</strong> All edits (add, edit, sell, delete) instantly update your cloud tables.
+                <br>
+                - <strong>Manual mode:</strong> Edits are saved offline. An "Unsynced Changes" badge will display, allowing you to trigger a batch push via the **Synchronize Now** button.
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">GitHub Repositories Sync</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 0;">
+                Configure a Personal Access Token (PAT) to commit your database backups directly to your GitHub repo as a JSON file. Use **Auto-Push on Change** to sync silently in the background, or **Auto-Pull on Startup** to download the latest state automatically.
+              </p>
+            </div>
+
+            <!-- Pane 4: Shortcuts -->
+            <div id="help-tab-shortcuts" class="help-tab-pane hidden">
+              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Keyboard Hotkeys</h4>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                Speed up your catalog operations with these global keyboard shortcuts:
+              </p>
+              
+              <table style="width: 100%; border-collapse: collapse; font-size: 0.875rem; color: var(--text-secondary);">
+                <thead>
+                  <tr style="border-bottom: 1px solid var(--border-color); text-align: left; font-weight: 600; color: var(--text-main);">
+                    <th style="padding: 8px 6px;">Shortcut</th>
+                    <th style="padding: 8px 6px;">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 8px 6px;"><kbd style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 6px; font-family: monospace;">Ctrl + Z</kbd></td>
+                    <td style="padding: 8px 6px;">Undo last change (creates, edits, sales, deletes, bulk actions)</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 8px 6px;"><kbd style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 6px; font-family: monospace;">Ctrl + Y</kbd></td>
+                    <td style="padding: 8px 6px;">Redo last undone change</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 8px 6px;"><kbd style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 6px; font-family: monospace;">F1</kbd> or <kbd style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 6px; font-family: monospace;">?</kbd></td>
+                    <td style="padding: 8px 6px;">Launch Help & Documentation Center (this overlay)</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 8px 6px;"><kbd style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 6px; font-family: monospace;">Escape</kbd></td>
+                    <td style="padding: 8px 6px;">Instantly close any active modal dialog or popup list</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; padding: 16px 24px; border-top: 1px solid var(--border-color); background: var(--bg-modal-footer);">
+        <button type="button" class="btn btn-primary" data-close-modal="help-modal">Got it!</button>
+      </div>
     </div>
   </div>
 
