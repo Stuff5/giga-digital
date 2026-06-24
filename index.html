@@ -1712,40 +1712,6 @@
                     </div>
                   </div>
 
-                  <!-- Quick Actions Toolbar Toggle -->
-                  <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background-color: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: 0;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                      <i class="fa-solid fa-wand-magic-sparkles" style="font-size: 1.25rem; color: var(--accent-purple);"></i>
-                      <div style="display: flex; flex-direction: column; text-align: left;">
-                        <strong style="font-size: 0.9rem; color: var(--text-main);">Quick Actions Dock</strong>
-                        <span style="font-size: 0.75rem; color: var(--text-muted);">Show floating actions toolbar at the bottom center</span>
-                      </div>
-                    </div>
-                    <div>
-                      <label class="switch-toggle" style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer; margin: 0;">
-                        <input type="checkbox" id="toggle-show-quick-toolbar" style="opacity: 0; width: 0; height: 0;" checked>
-                        <span class="switch-slider" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: hsla(0, 0%, 100%, 0.1); border-radius: 34px; transition: 0.3s ease;"></span>
-                      </label>
-                    </div>
-                  </div>
-
-
-                </div>
-
-                <!-- Inventory Display Preferences Card -->
-                <div class="calc-card">
-                  <h3>Inventory Display Preferences</h3>
-                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
-                    Choose whether to display logo thumbnails or plain text tags in the main inventory table's Supplier column.
-                  </p>
-                  
-                  <div class="form-group" style="margin-bottom: 0;">
-                    <label for="settings-supplier-display">Supplier Column</label>
-                    <select id="settings-supplier-display" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main); font-weight: 500; width: 100%;">
-                      <option value="name" selected>Show Name</option>
-                      <option value="logo">Show Logo</option>
-                    </select>
-                  </div>
                 </div>
 
                 <!-- Sidebar Menu Customization Card -->
@@ -2887,46 +2853,6 @@
       <!-- Delete Selected -->
       <button type="button" class="btn btn-danger btn-sm" id="btn-bulk-delete" title="Move Selected to Recycle Bin">
         <i class="fa-solid fa-trash"></i> <span>Delete</span>
-      </button>
-    </div>
-  </div>
-
-  <!-- QUICK ACTIONS FLOATING TOOLBAR -->
-  <div id="quick-actions-toolbar" class="quick-actions-toolbar glass-panel hidden">
-    <div class="quick-actions-items">
-      <button class="quick-action-btn" id="qa-search" title="Quick Search (Ctrl+F equivalent)">
-        <i class="fa-solid fa-magnifying-glass text-cyan"></i>
-        <span>Search</span>
-      </button>
-      <button class="quick-action-btn" id="qa-add-key" title="Add Game Key">
-        <i class="fa-solid fa-plus text-teal"></i>
-        <span>Add Key</span>
-      </button>
-      <div class="quick-actions-divider"></div>
-      <button class="quick-action-btn" id="qa-undo" title="Undo Last Action" disabled>
-        <i class="fa-solid fa-arrow-rotate-left"></i>
-        <span>Undo</span>
-      </button>
-      <button class="quick-action-btn" id="qa-redo" title="Redo Last Action" disabled>
-        <i class="fa-solid fa-arrow-rotate-right"></i>
-        <span>Redo</span>
-      </button>
-      <div class="quick-actions-divider"></div>
-      <button class="quick-action-btn" id="qa-sync" title="Sync Database & Backups Now">
-        <i class="fa-solid fa-cloud-arrow-up text-cyan"></i>
-        <span>Sync</span>
-      </button>
-      <button class="quick-action-btn" id="qa-theme" title="Toggle Appearance Theme">
-        <i class="fa-solid fa-circle-half-stroke text-amber"></i>
-        <span>Theme</span>
-      </button>
-      <button class="quick-action-btn" id="qa-import" title="Bulk Import Excel/CSV">
-        <i class="fa-solid fa-file-import text-emerald"></i>
-        <span>Import</span>
-      </button>
-      <button class="quick-action-btn" id="qa-help" title="Open Help Center (F1)">
-        <i class="fa-solid fa-circle-question text-purple"></i>
-        <span>Help</span>
       </button>
     </div>
   </div>
