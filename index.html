@@ -1,0 +1,2940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GameVault - Digital Game Sales & Inventory Tracker</title>
+  <meta name="description" content="Manage your digital game keys, inventory, transactions, and profit margins in a premium, glassmorphic dark-mode application.">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Supabase JS Client CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- Firebase JS Client compat CDN -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  
+  <!-- App Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- App Shell Container -->
+  <div class="app-container" id="app-container">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="app-sidebar">
+      <div class="sidebar-brand">
+        <div class="logo-icon" id="brand-logo-container">
+          <i class="fa-solid fa-gamepad" id="brand-logo-default"></i>
+          <img src="" id="brand-logo-custom" class="hidden" alt="Brand Logo">
+        </div>
+        <div class="brand-text">
+          <h1>Game<span>Vault</span></h1>
+          <p>Key Merchant Pro</p>
+        </div>
+      </div>
+      
+      <nav class="sidebar-nav">
+        <ul>
+          <li>
+            <a href="#dashboard" class="nav-link active" id="nav-dashboard">
+              <i class="fa-solid fa-chart-line" id="sidebar-icon-dashboard"></i>
+              <span id="sidebar-text-dashboard">Dashboard</span>
+            </a>
+          </li>
+          <li>
+            <a href="#inventory" class="nav-link" id="nav-inventory">
+              <i class="fa-solid fa-boxes-stacked" id="sidebar-icon-inventory"></i>
+              <span id="sidebar-text-inventory">Inventory</span>
+            </a>
+          </li>
+          <li>
+            <a href="#sales" class="nav-link" id="nav-sales">
+              <i class="fa-solid fa-receipt" id="sidebar-icon-sales"></i>
+              <span id="sidebar-text-sales">Sales Ledger</span>
+            </a>
+          </li>
+          <li>
+            <a href="#finance" class="nav-link" id="nav-finance">
+              <i class="fa-solid fa-coins" id="sidebar-icon-finance"></i>
+              <span id="sidebar-text-finance">Finance</span>
+            </a>
+          </li>
+          <li>
+            <a href="#suppliers" class="nav-link" id="nav-suppliers">
+              <i class="fa-solid fa-truck-ramp-box" id="sidebar-icon-suppliers"></i>
+              <span id="sidebar-text-suppliers">Suppliers</span>
+            </a>
+          </li>
+          <li>
+            <a href="#platforms" class="nav-link" id="nav-platforms">
+              <i class="fa-solid fa-gamepad" id="sidebar-icon-platforms"></i>
+              <span id="sidebar-text-platforms">Platforms</span>
+            </a>
+          </li>
+          <li>
+            <a href="#entries" class="nav-link" id="nav-entries">
+              <i class="fa-solid fa-tags" id="sidebar-icon-entries"></i>
+              <span id="sidebar-text-entries">Entries</span>
+            </a>
+          </li>
+
+          <li>
+            <a href="#recycle" class="nav-link" id="nav-recycle">
+              <i class="fa-solid fa-trash-can" id="sidebar-icon-recycle"></i>
+              <span id="sidebar-text-recycle">Recycle Bin</span>
+            </a>
+          </li>
+          <li>
+            <a href="#settings" class="nav-link" id="nav-settings">
+              <i class="fa-solid fa-gear" id="sidebar-icon-settings"></i>
+              <span id="sidebar-text-settings">Settings</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="nav-link" id="nav-collapse-sidebar" title="Collapse Sidebar">
+              <i class="fa-solid fa-circle-chevron-left" id="collapse-icon"></i>
+              <span>Collapse Menu</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-profile">
+          <div class="avatar">
+            <i class="fa-solid fa-user-astronaut"></i>
+          </div>
+          <div class="profile-info">
+            <span class="user-name" id="user-display-name">Merchant Dashboard</span>
+            <span class="user-role">Administrator</span>
+          </div>
+          <button class="btn-logout" id="btn-logout" title="Log Out">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <!-- Top Navbar -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="mobile-toggle" id="sidebar-toggle" aria-label="Toggle Navigation">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <div class="search-bar">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="global-search" placeholder="Search keys, games, platforms...">
+          </div>
+        </div>
+        
+        <div class="topbar-right">
+          <div class="time-widget">
+            <i class="fa-regular fa-clock"></i>
+            <span id="current-time">00:00:00</span>
+          </div>
+          <div style="display: flex; gap: 8px; margin-right: 12px;">
+            <button class="btn btn-icon btn-outline" id="btn-undo" title="Undo (Ctrl+Z)" disabled>
+              <i class="fa-solid fa-arrow-rotate-left"></i>
+            </button>
+            <button class="btn btn-icon btn-outline" id="btn-redo" title="Redo (Ctrl+Y)" disabled>
+              <i class="fa-solid fa-arrow-rotate-right"></i>
+            </button>
+            <button class="btn btn-icon btn-outline" id="btn-open-help" title="Help & Documentation (F1)">
+              <i class="fa-solid fa-circle-question"></i>
+            </button>
+          </div>
+          <button class="btn btn-primary" id="btn-add-game-modal">
+            <i class="fa-solid fa-plus"></i>
+            <span>Add Game Key</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Content Views (Dynamically toggled via active class) -->
+      <div class="view-container">
+        
+        <!-- DASHBOARD VIEW -->
+        <section id="dashboard-view" class="content-view active">
+          <!-- Dashboard Hero Banner -->
+          <div class="dashboard-hero">
+            <div class="hero-content">
+              <h3>Secure Key Operations Center</h3>
+              <p>Simulate commissions, secure validation codes, and track profits from digital inventory.</p>
+            </div>
+          </div>
+
+          <div class="view-header flex-header">
+            <div>
+              <h2 class="view-title">Dashboard Overview</h2>
+              <p class="view-subtitle">Real-time statistics on your game key trading operations.</p>
+            </div>
+            <div class="header-controls">
+
+
+              <!-- Customize Figures Dropdown -->
+              <div class="dropdown-container" id="figures-customize-dropdown">
+                <button class="btn btn-outline btn-sm" id="btn-toggle-figures-panel" title="Customize Figures">
+                  <i class="fa-solid fa-chart-simple"></i> <span>Figures</span>
+                </button>
+                <div class="dropdown-menu glass-panel" id="figures-customize-panel">
+                  <h5>Show/Hide Figures</h5>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="toggle-figure-salesProfit" checked>
+                    <span class="checkbox-label">Sales & Profit Trend</span>
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="toggle-figure-platformSplit" checked>
+                    <span class="checkbox-label">Platform Sales Split</span>
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="toggle-figure-costRevenue" checked>
+                    <span class="checkbox-label">Cost vs Revenue</span>
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="toggle-figure-supplierSplit" checked>
+                    <span class="checkbox-label">Supplier Stock Distribution</span>
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="toggle-figure-topBestsellers" checked>
+                    <span class="checkbox-label">Top Bestsellers</span>
+                  </label>
+                </div>
+              </div>
+
+
+
+              <div class="date-filter-group" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <div style="display: flex; gap: 4px;">
+                  <button class="btn btn-outline btn-sm active" data-period="all">All Time</button>
+                  <button class="btn btn-outline btn-sm" data-period="month">This Month</button>
+                  <button class="btn btn-outline btn-sm" data-period="week">This Week</button>
+                  <button class="btn btn-outline btn-sm" data-period="today">Today</button>
+                  <button class="btn btn-outline btn-sm" data-period="custom" id="btn-custom-date">Custom</button>
+                </div>
+                
+                <div id="custom-date-inputs" class="hidden" style="display: flex; align-items: center; gap: 6px;">
+                  <input type="date" id="db-start-date" class="form-control form-control-sm" style="width: auto; height: 32px; padding: 2px 8px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-input); color: var(--text-primary); margin: 0;">
+                  <span style="font-size: 0.8rem; color: var(--text-muted);">to</span>
+                  <input type="date" id="db-end-date" class="form-control form-control-sm" style="width: auto; height: 32px; padding: 2px 8px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-input); color: var(--text-primary); margin: 0;">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dashboard Active Period Summary Card & Inventory Status Card -->
+          <div class="charts-grid" id="dashboard-period-summary-row" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-bottom: 24px;">
+            <!-- Performance Summary Card (2/3 width on desktop) -->
+            <div class="detail-card">
+              <div class="detail-card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+                <h4 id="period-summary-title" style="margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Performance Summary: All Time</h4>
+                <div class="metric-icon" style="position: static; font-size: 1.25rem; opacity: 0.8; width: auto; height: auto; background: none; display: flex; align-items: center; justify-content: center;">
+                  <i class="fa-solid fa-chart-line"></i>
+                </div>
+              </div>
+              
+              <!-- Performance Stats Row -->
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 20px; padding: 4px;">
+                <!-- Net Profit -->
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-wallet" style="margin-right: 6px; color: var(--accent-purple);"></i>Net Profit</span>
+                  <h3 id="summary-metric-profit" style="margin: 0; font-size: 1.5rem; font-weight: 700;">€0.00</h3>
+                </div>
+                
+                <!-- Profit Margin -->
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-chart-pie" style="margin-right: 6px; color: var(--accent-pink);"></i>Margin</span>
+                  <h3 id="summary-metric-margin" style="margin: 0; font-size: 1.5rem; font-weight: 700;">0.0%</h3>
+                </div>
+
+                <!-- Keys Sold -->
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-receipt" style="margin-right: 6px; color: var(--accent-cyan);"></i>Keys Sold</span>
+                  <h3 id="summary-metric-sold" style="margin: 0; font-size: 1.5rem; font-weight: 700;">0</h3>
+                </div>
+
+                <!-- Revenue -->
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-coins" style="margin-right: 6px; color: var(--accent-pink);"></i>Revenue</span>
+                  <h3 id="summary-metric-revenue" style="margin: 0; font-size: 1.5rem; font-weight: 700;">€0.00</h3>
+                </div>
+
+                <!-- Spending -->
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-tags" style="margin-right: 6px; color: var(--accent-emerald);"></i>Spending (Cost)</span>
+                  <h3 id="summary-metric-spending" style="margin: 0; font-size: 1.5rem; font-weight: 700;">€0.00</h3>
+                </div>
+              </div>
+            </div>
+
+            <!-- Inventory Stock Status Card (1/3 width on desktop) -->
+            <div class="detail-card">
+              <div class="detail-card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+                <h4 style="margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Inventory Status</h4>
+                <div class="metric-icon" style="position: static; font-size: 1.25rem; opacity: 0.8; width: auto; height: auto; background: none; display: flex; align-items: center; justify-content: center;">
+                  <i class="fa-solid fa-boxes-stacked"></i>
+                </div>
+              </div>
+              
+              <!-- Stock Stats Row -->
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 20px; padding: 4px;">
+                <!-- Available Keys -->
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-box" style="margin-right: 6px; color: var(--accent-teal);"></i>Available</span>
+                  <h3 id="summary-metric-available" style="margin: 0; font-size: 1.5rem; font-weight: 700;">0</h3>
+                </div>
+
+                <!-- Reserved Keys -->
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-clock" style="margin-right: 6px; color: var(--accent-warning);"></i>Reserved</span>
+                  <h3 id="summary-metric-reserved" style="margin: 0; font-size: 1.5rem; font-weight: 700; color: var(--accent-warning);">0</h3>
+                </div>
+
+                <!-- Inventory Value -->
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-vault" style="margin-right: 6px; color: var(--accent-emerald);"></i>Stock Cost</span>
+                  <h3 id="summary-metric-stock-cost" style="margin: 0; font-size: 1.5rem; font-weight: 700; color: var(--accent-emerald);">€0.00</h3>
+                </div>
+              </div>
+            </div>
+
+            <!-- Operational Efficiency & Potential Card -->
+            <div class="detail-card">
+              <div class="detail-card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+                <h4 style="margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Efficiency & Potential</h4>
+                <div class="metric-icon" style="position: static; font-size: 1.25rem; opacity: 0.8; width: auto; height: auto; background: none; display: flex; align-items: center; justify-content: center;">
+                  <i class="fa-solid fa-percent"></i>
+                </div>
+              </div>
+              
+              <!-- Efficiency Stats Row -->
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 20px; padding: 4px;">
+                <!-- ROI % -->
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-circle-dollar-to-slot" style="margin-right: 6px; color: var(--accent-purple);"></i>ROI %</span>
+                  <h3 id="summary-metric-roi" style="margin: 0; font-size: 1.5rem; font-weight: 700;">0.0%</h3>
+                </div>
+
+                <!-- Avg Profit per Key -->
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-hand-holding-dollar" style="margin-right: 6px; color: var(--accent-cyan);"></i>Avg Profit/Key</span>
+                  <h3 id="summary-metric-avg-profit" style="margin: 0; font-size: 1.5rem; font-weight: 700;">€0.00</h3>
+                </div>
+
+                <!-- Potential Profit -->
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-vault" style="margin-right: 6px; color: var(--accent-teal);"></i>Profit Potential</span>
+                  <h3 id="summary-metric-potential-profit" style="margin: 0; font-size: 1.5rem; font-weight: 700; color: var(--text-success-neon);">€0.00</h3>
+                </div>
+
+                <!-- Avg Days to Sell -->
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-gauge" style="margin-right: 6px; color: var(--accent-amber);"></i>Days to Sell</span>
+                  <h3 id="summary-metric-velocity" style="margin: 0; font-size: 1.5rem; font-weight: 700;">0.0 days</h3>
+                </div>
+              </div>
+            </div>
+          </div> <!-- Close dashboard-period-summary-row -->
+
+          <!-- Inventory Aging Summary (Mockup Grid Layout) -->
+          <div class="detail-card" id="dashboard-aging-card" style="margin-bottom: 24px;">
+            <div class="detail-card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+              <h4 style="margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-clock-rotate-left" style="color: var(--accent-warning);"></i> Inventory Aging Summary
+              </h4>
+              <button class="btn btn-outline btn-xs" id="btn-export-aging-report" title="Export Aging Report" style="padding: 4px 8px; font-size: 0.72rem; display: flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-file-export"></i> Export Report
+              </button>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+              <!-- Fresh Card -->
+              <div style="background-color: var(--bg-age-fresh-card); border: 1px solid var(--border-age-fresh-card); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+                <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-age-fresh-card); text-transform: uppercase; letter-spacing: 0.5px;">Fresh (&lt; 30 days)</span>
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 4px;">
+                  <h3 id="aging-count-fresh" style="margin: 0; font-size: 2.2rem; font-weight: 800; color: var(--text-age-fresh-card); line-height: 1;">0</h3>
+                  <span id="aging-val-fresh" style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); opacity: 0.85;">€0.00</span>
+                </div>
+              </div>
+
+              <!-- Aging Card -->
+              <div style="background-color: var(--bg-age-aging-card); border: 1px solid var(--border-age-aging-card); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+                <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-age-aging-card); text-transform: uppercase; letter-spacing: 0.5px;">Aging (30-60 days)</span>
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 4px;">
+                  <h3 id="aging-count-aging" style="margin: 0; font-size: 2.2rem; font-weight: 800; color: var(--text-age-aging-card); line-height: 1;">0</h3>
+                  <span id="aging-val-aging" style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); opacity: 0.85;">€0.00</span>
+                </div>
+              </div>
+
+              <!-- Stale Card -->
+              <div style="background-color: var(--bg-age-stale-card); border: 1px solid var(--border-age-stale-card); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+                <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-age-stale-card); text-transform: uppercase; letter-spacing: 0.5px;">Stale (60-90 days)</span>
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 4px;">
+                  <h3 id="aging-count-stale" style="margin: 0; font-size: 2.2rem; font-weight: 800; color: var(--text-age-stale-card); line-height: 1;">0</h3>
+                  <span id="aging-val-stale" style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); opacity: 0.85;">€0.00</span>
+                </div>
+              </div>
+
+              <!-- Very Stale Card -->
+              <div style="background-color: var(--bg-age-verystale-card); border: 1px solid var(--border-age-verystale-card); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+                <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-age-verystale-card); text-transform: uppercase; letter-spacing: 0.5px;">Very Stale (&gt; 90 days)</span>
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 4px;">
+                  <h3 id="aging-count-verystale" style="margin: 0; font-size: 2.2rem; font-weight: 800; color: var(--text-age-verystale-card); line-height: 1;">0</h3>
+                  <span id="aging-val-verystale" style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); opacity: 0.85;">€0.00</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+
+
+          <!-- Charts Grid -->
+          <div class="charts-grid" id="charts-grid-row-1">
+            <div class="chart-card large-chart" id="card-chart-salesProfit">
+              <div class="chart-card-header">
+                <h4>Sales vs Profit Trend</h4>
+                <i class="fa-solid fa-ellipsis-vertical"></i>
+              </div>
+              <div class="chart-body">
+                <canvas id="salesProfitChart"></canvas>
+              </div>
+            </div>
+
+            <div class="chart-card small-chart" id="card-chart-platformSplit">
+              <div class="chart-card-header">
+                <h4>Platform Sales Split</h4>
+                <i class="fa-solid fa-ellipsis-vertical"></i>
+              </div>
+              <div class="chart-body doughnut-container">
+                <canvas id="platformSplitChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Charts Grid Row 2 -->
+          <div class="charts-grid" id="charts-grid-row-2">
+            <div class="chart-card large-chart" id="card-chart-costRevenue">
+              <div class="chart-card-header">
+                <h4>Monthly Cost vs Revenue Comparison</h4>
+                <i class="fa-solid fa-ellipsis-vertical"></i>
+              </div>
+              <div class="chart-body">
+                <canvas id="costRevenueChart"></canvas>
+              </div>
+            </div>
+
+            <div class="chart-card small-chart" id="card-chart-supplierSplit">
+              <div class="chart-card-header">
+                <h4>Supplier Stock Distribution</h4>
+                <i class="fa-solid fa-ellipsis-vertical"></i>
+              </div>
+              <div class="chart-body doughnut-container">
+                <canvas id="supplierSplitChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Charts Grid Row 3 (Full Width) -->
+          <div class="charts-grid" id="charts-grid-row-3">
+            <div class="chart-card large-chart" id="card-chart-topBestsellers" style="grid-column: 1 / -1;">
+              <div class="chart-card-header">
+                <h4>Top 5 Bestselling Games by Net Profit</h4>
+                <i class="fa-solid fa-ellipsis-vertical"></i>
+              </div>
+              <div class="chart-body">
+                <canvas id="topBestsellersChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+
+
+          <!-- Dashboard Subsections -->
+          <div class="dashboard-details-grid">
+            <!-- Recent Activity Table -->
+            <div class="detail-card">
+              <div class="detail-card-header">
+                <h4>Recent Key Transactions</h4>
+                <a href="#sales" class="view-all-link">View Ledger</a>
+              </div>
+              <div class="table-responsive">
+                <table class="table" id="recent-sales-table">
+                  <thead>
+                    <tr>
+                      <th>Game</th>
+                      <th>Platform</th>
+                      <th>Purchase Price</th>
+                      <th>Sale Price</th>
+                      <th>Net Profit</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <!-- Injected by JavaScript -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Column 2 (Stacked smaller cards) -->
+            <div style="display: flex; flex-direction: column; gap: 24px;">
+              <!-- Inventory Status Summary -->
+              <div class="detail-card">
+                <div class="detail-card-header">
+                  <h4>Inventory Status Summary</h4>
+                  <a href="#inventory" class="view-all-link">Manage Stock</a>
+                </div>
+                <div class="inventory-summary-list" id="inventory-summary-list">
+                  <!-- Injected by JavaScript -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- INVENTORY VIEW -->
+        <section id="inventory-view" class="content-view">
+          <div class="view-header flex-header">
+            <div>
+              <h2 class="view-title">Game Keys Inventory</h2>
+              <p class="view-subtitle">Monitor available keys, acquisition sources, and track key security.</p>
+            </div>
+            <div class="action-buttons">
+              <!-- View Toggle Controls -->
+              <div class="layout-toggle-group">
+                <button class="btn btn-outline btn-sm active" id="btn-layout-list" title="List View" onclick="setInvLayout('list')">
+                  <i class="fa-solid fa-list"></i>
+                </button>
+                <button class="btn btn-outline btn-sm" id="btn-layout-grid" title="Grid View" onclick="setInvLayout('grid')">
+                  <i class="fa-solid fa-border-all"></i>
+                </button>
+                <button class="btn btn-outline btn-sm" id="btn-layout-gallery" title="Gallery View" onclick="setInvLayout('gallery')">
+                  <i class="fa-solid fa-image"></i>
+                </button>
+              </div>
+              <button class="btn btn-outline" id="btn-import-inventory">
+                <i class="fa-solid fa-upload"></i> <span>Import CSV</span>
+              </button>
+              <input type="file" id="btn-import-inventory-file" accept=".csv" style="display: none;">
+              <button class="btn btn-outline" id="btn-export-inventory">
+                <i class="fa-solid fa-download"></i> <span>Export CSV</span>
+              </button>
+              <button class="btn btn-outline" id="btn-go-to-recycle" title="Open Recycle Bin">
+                <i class="fa-solid fa-trash-can"></i> <span>Recycle Bin</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Filter Bar -->
+          <div class="filter-bar">
+            <div class="filter-group">
+              <label for="inv-filter-platform">Platform</label>
+              <select id="inv-filter-platform" class="form-control form-control-sm">
+                <option value="all">All Platforms</option>
+                <option value="Steam">Steam</option>
+                <option value="PlayStation 5">PlayStation 5</option>
+                <option value="Xbox Series X/S">Xbox Series X/S</option>
+                <option value="Nintendo Switch">Nintendo Switch</option>
+                <option value="Epic Games">Epic Games</option>
+                <option value="GOG">GOG</option>
+                <option value="Ubisoft Connect">Ubisoft Connect</option>
+                <option value="EA App">EA App</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label for="inv-filter-status">Status</label>
+              <select id="inv-filter-status" class="form-control form-control-sm">
+                <option value="all">All Statuses</option>
+                <option value="Available">Available</option>
+                <option value="Reserved">Reserved</option>
+                <option value="Sold">Sold</option>
+                <option value="Rejected">Rejected</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label for="inv-filter-supplier">Supplier</label>
+              <select id="inv-filter-supplier" class="form-control form-control-sm">
+                <option value="all">All Suppliers</option>
+                <!-- Dynamically populated from JS -->
+              </select>
+            </div>
+
+
+
+            <div class="filter-group">
+              <label for="inv-filter-aging">Aging Category</label>
+              <select id="inv-filter-aging" class="form-control form-control-sm">
+                <option value="all">All Ages</option>
+                <option value="Fresh">Fresh (&lt; 30 days)</option>
+                <option value="Aging">Aging (30-60 days)</option>
+                <option value="Stale">Stale (60-90 days)</option>
+                <option value="Very Stale">Very Stale (&gt; 90 days)</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label for="inv-sort-by">Sort By</label>
+              <select id="inv-sort-by" class="form-control form-control-sm">
+                <option value="date-desc" selected>Date Added (Newest)</option>
+                <option value="date-asc">Date Added (Oldest)</option>
+                <option value="title-asc">Game Title (A-Z)</option>
+                <option value="title-desc">Game Title (Z-A)</option>
+                <option value="duration-desc">Duration (Longest)</option>
+                <option value="duration-asc">Duration (Shortest)</option>
+                <option value="age-desc">Age (Oldest First)</option>
+                <option value="age-asc">Age (Newest First)</option>
+              </select>
+            </div>
+
+            <div class="filter-group search-filter">
+              <label for="inv-search-input">Search Title/Key</label>
+              <input type="text" id="inv-search-input" class="form-control form-control-sm" placeholder="Type game title, key, or source...">
+            </div>
+
+            <div class="filter-group reset-group">
+              <button class="btn btn-outline btn-sm btn-icon" id="btn-reset-inventory-filters" title="Reset Filters">
+                <i class="fa-solid fa-arrow-rotate-left"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Inventory Grid/Table -->
+          <div class="inventory-table-card">
+            <div class="table-responsive" id="inventory-table-container">
+              <table class="table" id="inventory-table">
+                <thead>
+                  <tr>
+                    <th style="width: 40px; text-align: center;">
+                      <input type="checkbox" id="inv-select-all" style="cursor: pointer;">
+                    </th>
+                    <th>Game Title</th>
+                    <th>Digital Key</th>
+                    <th>Cost</th>
+                    <th>Sold Price</th>
+                    <th>Profit</th>
+                    <th style="text-align: center;">Supplier</th>
+                    <th>Date Added</th>
+                    <th>Date Closed</th>
+                    <th>Duration</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="inventory-table-body">
+                  <!-- Injected by JS -->
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- Grid View Container -->
+            <div class="inventory-grid-container" id="inventory-grid-container" style="display: none;">
+              <!-- Injected by JS -->
+            </div>
+
+            <!-- Gallery View Container -->
+            <div class="inventory-gallery-container" id="inventory-gallery-container" style="display: none;">
+              <!-- Injected by JS -->
+            </div>
+            
+            <div class="table-footer">
+              <span id="inventory-count-text">Showing 0 of 0 inventory items</span>
+              <div class="pagination-controls" style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                <div class="page-size-selector" style="display: flex; align-items: center; gap: 8px;">
+                  <label for="inv-page-size" style="white-space: nowrap; margin-bottom: 0;">Show:</label>
+                  <select id="inv-page-size" class="form-control form-control-sm" style="width: auto; padding: 4px 8px; height: 32px;">
+                    <option value="25" selected>25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                    <option value="virtual">All (Virtual Scroll)</option>
+                  </select>
+                </div>
+                <div class="pagination-buttons" id="inventory-pagination" style="display: flex; align-items: center; gap: 4px;">
+                  <!-- Injected by JS -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SALES LEDGER VIEW -->
+        <section id="sales-view" class="content-view">
+          <div class="view-header flex-header">
+            <div>
+              <h2 class="view-title">Sales Ledger</h2>
+              <p class="view-subtitle">Historical records of all sold digital keys, platforms, and fee structures.</p>
+            </div>
+            <div class="action-buttons">
+              <button class="btn btn-outline" id="btn-export-sales">
+                <i class="fa-solid fa-download"></i> <span>Export CSV</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Sales Filters -->
+          <div class="filter-bar">
+            <div class="filter-group">
+              <label for="sales-filter-platform">Sale Platform</label>
+              <select id="sales-filter-platform" class="form-control form-control-sm">
+                <option value="all">All Selling Platforms</option>
+                <option value="G2A">G2A</option>
+                <option value="Kinguin">Kinguin</option>
+                <option value="eBay">eBay</option>
+                <option value="PlayerAuctions">PlayerAuctions</option>
+                <option value="Kinguin API">Kinguin API</option>
+                <option value="Discord">Discord Direct</option>
+                <option value="Other">Other Platform</option>
+              </select>
+            </div>
+
+            <div class="filter-group search-filter">
+              <label for="sales-search-input">Search Sales</label>
+              <input type="text" id="sales-search-input" class="form-control form-control-sm" placeholder="Search game, key, buyer, notes...">
+            </div>
+
+            <div class="filter-group reset-group">
+              <button class="btn btn-outline btn-sm btn-icon" id="btn-reset-sales-filters" title="Reset Filters">
+                <i class="fa-solid fa-arrow-rotate-left"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Sales Ledger Table -->
+          <div class="ledger-table-card">
+            <div class="table-responsive" id="sales-table-container">
+              <table class="table" id="sales-table">
+                <thead>
+                  <tr>
+                    <th>Game Title</th>
+                    <th>Platform</th>
+                    <th>Cost</th>
+                    <th>Sale Price</th>
+                    <th>Sold On</th>
+                    <th>Net Profit</th>
+                    <th>Date Closed</th>
+                    <th>Notes</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="sales-table-body">
+                  <!-- Injected by JS -->
+                </tbody>
+              </table>
+            </div>
+            <div class="table-footer">
+              <span id="sales-count-text">Showing 0 of 0 sales transactions</span>
+              <div class="pagination-controls" style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                <div class="page-size-selector" style="display: flex; align-items: center; gap: 8px;">
+                  <label for="sales-page-size" style="white-space: nowrap; margin-bottom: 0;">Show:</label>
+                  <select id="sales-page-size" class="form-control form-control-sm" style="width: auto; padding: 4px 8px; height: 32px;">
+                    <option value="25" selected>25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                    <option value="virtual">All (Virtual Scroll)</option>
+                  </select>
+                </div>
+                <div class="pagination-buttons" id="sales-pagination" style="display: flex; align-items: center; gap: 4px;">
+                  <!-- Injected by JS -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+          <!-- SUPPLIERS VIEW -->
+          <section id="suppliers-view" class="content-view">
+            <div class="view-header flex-header">
+              <div>
+                <h2 class="view-title">Manage Suppliers</h2>
+                <p class="view-subtitle">Add, remove, and monitor the purchase sources for your game key inventory.</p>
+                <div class="layout-toggle-buttons" id="suppliers-view-tabs" style="display: flex; background: var(--bg-input); padding: 2px; border-radius: 6px; border: 1px solid var(--border-color); margin-top: 12px; width: fit-content;">
+                  <button class="btn-supplier-tab-toggle active" id="btn-tab-by-supplier" data-tab="supplier" style="background: none; border: none; padding: 6px 12px; border-radius: 4px; color: var(--text-primary); cursor: pointer; font-size: 0.85rem; font-weight: 500; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-truck-ramp-box"></i> By Supplier
+                  </button>
+                  <button class="btn-supplier-tab-toggle" id="btn-tab-by-publisher" data-tab="publisher" style="background: none; border: none; padding: 6px 12px; border-radius: 4px; color: var(--text-secondary); cursor: pointer; font-size: 0.85rem; font-weight: 500; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-building"></i> By Publisher
+                  </button>
+                </div>
+              </div>
+              <div class="header-controls">
+                <!-- Customize Metrics Dropdown -->
+                <div class="dropdown-container" id="sup-metrics-customize-dropdown">
+                  <button class="btn btn-outline btn-sm" id="btn-toggle-sup-metrics-panel" title="Customize Metrics">
+                    <i class="fa-solid fa-sliders"></i> <span>Metrics</span>
+                  </button>
+                  <div class="dropdown-menu glass-panel" id="sup-metrics-customize-panel">
+                    <h5>Show/Hide Metrics</h5>
+                    <label class="checkbox-container">
+                      <input type="checkbox" id="toggle-sup-metric-profit" checked>
+                      <span class="checkbox-label">Net Profit</span>
+                    </label>
+                    <label class="checkbox-container">
+                      <input type="checkbox" id="toggle-sup-metric-cost" checked>
+                      <span class="checkbox-label">Inventory Cost</span>
+                    </label>
+                    <label class="checkbox-container">
+                      <input type="checkbox" id="toggle-sup-metric-revenue" checked>
+                      <span class="checkbox-label">Total Revenue</span>
+                    </label>
+                    <label class="checkbox-container">
+                      <input type="checkbox" id="toggle-sup-metric-roi" checked>
+                      <span class="checkbox-label">ROI %</span>
+                    </label>
+                    <label class="checkbox-container">
+                      <input type="checkbox" id="toggle-sup-metric-stock" checked>
+                      <span class="checkbox-label">Available Stock</span>
+                    </label>
+                    <label class="checkbox-container">
+                      <input type="checkbox" id="toggle-sup-metric-velocity" checked>
+                      <span class="checkbox-label">Sales Velocity</span>
+                    </label>
+                    <label class="checkbox-container">
+                      <input type="checkbox" id="toggle-sup-metric-str" checked>
+                      <span class="checkbox-label">Sell-Through Rate</span>
+                    </label>
+                    <label class="checkbox-container">
+                      <input type="checkbox" id="toggle-sup-metric-unitProfit" checked>
+                      <span class="checkbox-label">Avg Profit per Key</span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Supplier Filter Dropdown -->
+                <div class="supplier-filter-dashboard">
+                  <select id="sup-filter-supplier" class="form-control form-control-sm" style="width: auto; min-width: 140px; height: 32px; padding: 4px 8px;">
+                    <option value="all">All Suppliers</option>
+                  </select>
+                </div>
+                
+                <div class="date-filter-group" id="sup-date-filter-group">
+                  <button class="btn btn-outline btn-sm active" data-sup-period="all">All Time</button>
+                  <button class="btn btn-outline btn-sm" data-sup-period="month">This Month</button>
+                  <button class="btn btn-outline btn-sm" data-sup-period="week">This Week</button>
+                  <button class="btn btn-outline btn-sm" data-sup-period="today">Today</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Suppliers Metrics Grid -->
+            <div class="metrics-grid" id="suppliers-metrics-grid" style="margin-bottom: 25px;">
+              <div class="metric-card bg-gradient-purple" id="sup-card-net-profit">
+                <div class="metric-info">
+                  <span class="metric-label">Total Net Profit</span>
+                  <h3 class="metric-value" id="sup-metric-profit">€0.00</h3>
+                  <span class="metric-subtext positive" id="sup-metric-profit-change">
+                    <i class="fa-solid fa-arrow-trend-up"></i> +0% margin
+                  </span>
+                </div>
+                <div class="metric-icon">
+                  <i class="fa-solid fa-wallet"></i>
+                </div>
+              </div>
+
+              <div class="metric-card bg-gradient-cyan" id="sup-card-inventory-cost">
+                <div class="metric-info">
+                  <span class="metric-label">Inventory Cost Value</span>
+                  <h3 class="metric-value" id="sup-metric-cost">€0.00</h3>
+                  <span class="metric-subtext" id="sup-metric-unsold-keys">0 keys in stock</span>
+                </div>
+                <div class="metric-icon">
+                  <i class="fa-solid fa-cubes"></i>
+                </div>
+              </div>
+
+              <div class="metric-card bg-gradient-pink" id="sup-card-total-revenue">
+                <div class="metric-info">
+                  <span class="metric-label">Total Revenue</span>
+                  <h3 class="metric-value" id="sup-metric-revenue">€0.00</h3>
+                  <span class="metric-subtext" id="sup-metric-sold-keys">0 keys sold</span>
+                </div>
+                <div class="metric-icon">
+                  <i class="fa-solid fa-receipt"></i>
+                </div>
+              </div>
+
+              <div class="metric-card bg-gradient-emerald" id="sup-card-roi">
+                <div class="metric-info">
+                  <span class="metric-label">ROI (Return on Inv.)</span>
+                  <h3 class="metric-value" id="sup-metric-roi">0%</h3>
+                  <span class="metric-subtext" id="sup-metric-roi-subtext">Cost of sales: €0.00</span>
+                </div>
+                <div class="metric-icon">
+                  <i class="fa-solid fa-percent"></i>
+                </div>
+              </div>
+
+              <div class="metric-card bg-gradient-blue" id="sup-card-available-stock">
+                <div class="metric-info">
+                  <span class="metric-label">Available Stock</span>
+                  <h3 class="metric-value" id="sup-metric-stock-keys-count">0 keys</h3>
+                  <span class="metric-subtext">Keys remaining in stock</span>
+                </div>
+                <div class="metric-icon">
+                  <i class="fa-solid fa-boxes-stacked"></i>
+                </div>
+              </div>
+
+              <div class="metric-card bg-gradient-amber" id="sup-card-sales-velocity">
+                <div class="metric-info">
+                  <span class="metric-label">Sales Velocity</span>
+                  <h3 class="metric-value" id="sup-metric-sales-velocity">0.0 days</h3>
+                  <span class="metric-subtext" id="sup-metric-velocity-subtext">0 sales tracked</span>
+                </div>
+                <div class="metric-icon">
+                  <i class="fa-solid fa-gauge-high"></i>
+                </div>
+              </div>
+
+              <div class="metric-card bg-gradient-teal" id="sup-card-sell-through-rate">
+                <div class="metric-info">
+                  <span class="metric-label">Sell-Through Rate</span>
+                  <h3 class="metric-value" id="sup-metric-sell-through">0.0%</h3>
+                  <span class="metric-subtext" id="sup-metric-str-subtext">0 sold / 0 total</span>
+                </div>
+                <div class="metric-icon">
+                  <i class="fa-solid fa-chart-pie"></i>
+                </div>
+              </div>
+
+              <div class="metric-card bg-gradient-blue" id="sup-card-avg-profit-key">
+                <div class="metric-info">
+                  <span class="metric-label">Avg Profit per Key</span>
+                  <h3 class="metric-value" id="sup-metric-avg-profit-key">€0.00</h3>
+                  <span class="metric-subtext" id="sup-metric-avg-profit-subtext">Based on 0 sales</span>
+                </div>
+                <div class="metric-icon">
+                  <i class="fa-solid fa-tags"></i>
+                </div>
+              </div>
+            </div>
+
+            <!-- Suppliers Tab Content (Visible by default) -->
+            <div id="suppliers-tab-content" style="width: 100%;">
+              <!-- Suppliers List Card (Full width) -->
+              <div class="calc-card" style="width: 100%;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; flex-wrap: wrap; gap: 12px;">
+                  <h3 style="margin-bottom: 0; border: none; padding-bottom: 0;">Active Suppliers List</h3>
+                  <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                    <button class="btn btn-primary btn-sm" id="btn-create-supplier" style="height: 32px; display: flex; align-items: center; gap: 6px;">
+                      <i class="fa-solid fa-plus"></i> Create New Supplier
+                    </button>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <label for="suppliers-sort" style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; margin: 0; letter-spacing: 0.05em;">Sort:</label>
+                      <select id="suppliers-sort" class="form-control form-control-sm" style="width: auto; padding: 4px 10px; background-color: var(--bg-input);">
+                        <option value="date-desc" selected>Date Added (Newest)</option>
+                        <option value="date-asc">Date Added (Oldest)</option>
+                        <option value="name-asc">Alphabetical (A-Z)</option>
+                        <option value="name-desc">Alphabetical (Z-A)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                <div class="table-responsive">
+                  <table class="table" id="suppliers-table">
+                    <thead>
+                      <tr>
+                        <th>Supplier Name</th>
+                        <th>Purchased</th>
+                        <th>In Stock</th>
+                        <th>Cost (In Stock)</th>
+                        <th>Cost (Sold)</th>
+                        <th>Revenue</th>
+                        <th>Profit</th>
+                        <th>Status</th>
+                        <th style="text-align: right;">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="suppliers-table-body">
+                      <!-- Injected by JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Publishers Tab Content (Hidden by default) -->
+            <div id="publishers-tab-content" class="calc-card hidden" style="width: 100%;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+                <h3 style="margin-bottom: 0; border: none; padding-bottom: 0;">Publisher Analytics & Distribution</h3>
+              </div>
+              <div class="table-responsive">
+                <table class="table" id="publishers-table">
+                  <thead>
+                    <tr>
+                      <th>Publisher Name</th>
+                      <th>Keys Purchased</th>
+                      <th>Keys Sold</th>
+                      <th>In Stock</th>
+                      <th>Total Spent</th>
+                      <th>Total Revenue</th>
+                      <th>Net Profit</th>
+                      <th>ROI %</th>
+                      <th>Avg Days to Sell</th>
+                    </tr>
+                  </thead>
+                  <tbody id="publishers-table-body">
+                    <!-- Injected by JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- PLATFORMS VIEW -->
+          <section id="platforms-view" class="content-view">
+            <div class="view-header">
+              <h2 class="view-title">Manage Platforms</h2>
+              <p class="view-subtitle">Add, enable, disable, edit or delete gaming platforms for your key inventory.</p>
+            </div>
+
+            <div class="responsive-grid-2">
+              <!-- Add Platform Card -->
+              <div class="calc-card">
+                <h3>Add New Platform</h3>
+                <form id="add-platform-form">
+                  <div class="form-group">
+                    <label for="platform-name-input" class="required">Platform Name</label>
+                    <input type="text" id="platform-name-input" class="form-control" required placeholder="e.g. Steam, Nintendo Switch">
+                  </div>
+                  <div class="form-group">
+                    <label>Platform Logo / Icon</label>
+                    <div class="image-input-container">
+                      <input type="text" id="platform-logo-url-input" class="form-control form-control-sm" placeholder="Paste logo image URL...">
+                      <div class="image-divider"><span>OR</span></div>
+                      <label class="btn btn-outline btn-sm file-upload-label" style="width: 100%; justify-content: center;">
+                        <i class="fa-solid fa-upload"></i> Upload Logo
+                        <input type="file" id="platform-logo-file-input" accept="image/*" style="display: none;">
+                      </label>
+                    </div>
+                  </div>
+                  <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fa-solid fa-plus"></i> Add Platform
+                  </button>
+                </form>
+              </div>
+
+              <!-- Platforms List Card -->
+              <div class="calc-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+                  <h3 style="margin-bottom: 0; border: none; padding-bottom: 0;">Active Platforms List</h3>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <label for="platforms-sort" style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; margin: 0; letter-spacing: 0.05em;">Sort:</label>
+                    <select id="platforms-sort" class="form-control form-control-sm" style="width: auto; padding: 4px 10px; background-color: var(--bg-input);">
+                      <option value="date-desc" selected>Date Added (Newest)</option>
+                      <option value="date-asc">Date Added (Oldest)</option>
+                      <option value="name-asc">Alphabetical (A-Z)</option>
+                      <option value="name-desc">Alphabetical (Z-A)</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="table-responsive">
+                  <table class="table" id="platforms-table">
+                    <thead>
+                      <tr>
+                        <th>Platform Name</th>
+                        <th>Keys Registered</th>
+                        <th>In Stock</th>
+                        <th>Status</th>
+                        <th style="text-align: right;">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="platforms-table-body">
+                      <!-- Injected by JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ENTRIES VIEW -->
+          <section id="entries-view" class="content-view">
+            <div class="view-header flex-header">
+              <div>
+                <h2 class="view-title">Game Catalog Entries</h2>
+                <p class="view-subtitle">Track sales performance, purchase counts, and available stock per unique game title.</p>
+              </div>
+              <div class="action-buttons">
+                <div class="search-bar" style="margin-bottom: 0;">
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                  <input type="text" id="entries-search-input" placeholder="Search game title...">
+                </div>
+              </div>
+            </div>
+
+            <div class="inventory-table-card">
+              <div class="table-responsive">
+                <table class="table" id="entries-table">
+                  <thead>
+                    <tr>
+                      <th>Game Title</th>
+                      <th>Total Added</th>
+                      <th>Available Stock</th>
+                      <th>Total Sold</th>
+                      <th>Avg Days to Sell</th>
+                      <th>Total Revenue</th>
+                      <th>Net Profit</th>
+                      <th>ROI %</th>
+                      <th>Margin %</th>
+                      <th style="text-align: right; width: 100px;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="entries-table-body">
+                    <!-- Injected by JavaScript -->
+                  </tbody>
+                </table>
+              </div>
+              <div class="table-footer">
+                <span id="entries-count-text">Showing 0 unique game titles</span>
+                <div class="pagination-controls" style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                  <div class="page-size-selector" style="display: flex; align-items: center; gap: 8px;">
+                    <label for="entries-page-size" style="white-space: nowrap; margin-bottom: 0;">Show:</label>
+                    <select id="entries-page-size" class="form-control form-control-sm" style="width: auto; padding: 4px 8px; height: 32px;">
+                      <option value="25" selected>25</option>
+                      <option value="50">50</option>
+                      <option value="100">100</option>
+                    </select>
+                  </div>
+                  <div class="pagination-buttons" id="entries-pagination" style="display: flex; align-items: center; gap: 4px;">
+                    <!-- Injected by JS -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- FINANCE VIEW -->
+          <section id="finance-view" class="content-view">
+            <div class="view-header flex-header">
+              <div>
+                <h2 class="view-title">Finance & Statistics</h2>
+                <p class="view-subtitle">Monthly breakdown of revenue, expenses, profits, and volume.</p>
+              </div>
+              <div class="header-controls">
+                <button class="btn btn-outline btn-sm" id="btn-export-finance" title="Export CSV">
+                  <i class="fa-solid fa-file-export"></i> <span>Export Stats</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Summary stats cards -->
+            <div class="metrics-grid" id="finance-metrics-grid" style="margin-bottom: 24px;">
+              <!-- Rendered dynamically -->
+            </div>
+
+            <!-- Monthly trend chart -->
+            <div class="chart-card" style="margin-bottom: 24px;">
+              <div class="chart-card-header">
+                <h4 id="finance-chart-title">Monthly Financial Trend</h4>
+                <select id="finance-chart-breakdown-type" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
+                  <option value="month">By Month</option>
+                  <option value="year">By Year</option>
+                  <option value="all">All Time</option>
+                </select>
+              </div>
+              <div class="chart-body">
+                <canvas id="financeMonthlyChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Detailed breakdown ledger/cards -->
+            <div class="detail-card" id="finance-detail-card" style="margin-bottom: 32px;">
+              <div class="detail-card-header flex-header" style="flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;">
+                <h4 id="finance-breakdown-title" style="margin: 0;">Monthly Ledger Breakdown</h4>
+                
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <div class="layout-toggle-buttons" id="finance-layout-toggles" style="display: flex; background: var(--bg-input); padding: 2px; border-radius: 6px; border: 1px solid var(--border-color);">
+                      <button class="btn-toggle-layout" data-style="transposed" title="Spreadsheet View" style="background: none; border: none; padding: 4px 8px; border-radius: 4px; color: var(--text-secondary); cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 4px;"><i class="fa-solid fa-table"></i> <span class="layout-btn-text">Spreadsheet</span></button>
+                      <button class="btn-toggle-layout" data-style="grid" title="Grid Cards View" style="background: none; border: none; padding: 4px 8px; border-radius: 4px; color: var(--text-secondary); cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 4px;"><i class="fa-solid fa-table-cells-large"></i> <span class="layout-btn-text">Grid</span></button>
+                      <button class="btn-toggle-layout" data-style="expandable" title="Expandable Table View" style="background: none; border: none; padding: 4px 8px; border-radius: 4px; color: var(--text-secondary); cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 4px;"><i class="fa-solid fa-indent"></i> <span class="layout-btn-text">Expandable</span></button>
+                      <button class="btn-toggle-layout" data-style="tabbed" title="Tabbed Table View" style="background: none; border: none; padding: 4px 8px; border-radius: 4px; color: var(--text-secondary); cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 4px;"><i class="fa-solid fa-window-maximize"></i> <span class="layout-btn-text">Tabbed</span></button>
+                      <button class="btn-toggle-layout active" data-style="full" title="Full-Width Table View" style="background: none; border: none; padding: 4px 8px; border-radius: 4px; color: var(--text-primary); cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 4px;"><i class="fa-solid fa-arrows-left-right"></i> <span class="layout-btn-text">Full Width</span></button>
+                    </div>
+
+                  <select id="finance-breakdown-type" class="form-control form-control-sm" style="width: auto; min-width: 100px; height: 32px; padding: 2px 8px; margin: 0;">
+                    <option value="month">By Month</option>
+                    <option value="year">By Year</option>
+                    <option value="all">All Time</option>
+                  </select>
+
+                  <select id="finance-breakdown-year-filter" class="form-control form-control-sm hidden" style="width: auto; min-width: 110px; height: 32px; padding: 2px 8px; margin: 0;">
+                    <option value="all">All Years</option>
+                  </select>
+
+                  <button id="finance-breakdown-sort-order" class="btn btn-sm btn-outline" style="padding: 4px 8px; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; margin: 0;" title="Toggle Sort Order">
+                    <i class="fa-solid fa-arrow-down-wide-short"></i>
+                  </button>
+                </div>
+              </div>
+              
+              <div id="finance-detail-content" style="margin-top: 16px;">
+                <!-- Dynamic layout content injected here by JS -->
+              </div>
+            </div>
+
+            <!-- Payouts & Fees Section -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+              <!-- Log New Payout / Fee Form -->
+              <div class="detail-card">
+                <div class="detail-card-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+                  <h4 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-file-invoice-dollar" style="color: var(--accent-purple);"></i> Record Monthly Payout / Fee
+                  </h4>
+                </div>
+                <form id="form-add-payout" style="display: flex; flex-direction: column; gap: 12px;">
+                  <div class="form-group">
+                    <label for="payout-date">Date</label>
+                    <input type="date" id="payout-date" class="form-control" required style="width: 100%;">
+                  </div>
+                  <div class="form-group">
+                    <label for="payout-description">Description / Type</label>
+                    <input type="text" id="payout-description" class="form-control" placeholder="e.g. PayPal Fee, Overhead Expenses" required style="width: 100%;">
+                  </div>
+                  <div class="form-group">
+                    <label for="payout-amount">Amount</label>
+                    <input type="number" id="payout-amount" class="form-control" placeholder="0.00" step="0.01" min="0" required style="width: 100%;">
+                  </div>
+                  <button type="submit" class="btn btn-primary btn-block" style="margin-top: 8px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px;">
+                    <i class="fa-solid fa-plus"></i> Record Expense
+                  </button>
+                </form>
+              </div>
+
+              <!-- Payouts & Fees Ledger Table -->
+              <div class="detail-card">
+                <div class="detail-card-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+                  <h4 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-list-check" style="color: var(--accent-cyan);"></i> Registered Monthly Payouts & Fees
+                  </h4>
+                </div>
+                <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                  <table class="table" id="payouts-ledger-table">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th style="text-align: right;">Amount</th>
+                        <th style="text-align: center; width: 60px;">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody id="payouts-ledger-body">
+                      <!-- Injected by JavaScript -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- RECYCLE BIN VIEW -->
+          <section id="recycle-view" class="content-view">
+            <div class="view-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+              <div>
+                <h2 class="view-title">Recycle Bin</h2>
+                <p class="view-subtitle">Restore deleted game keys or permanently purge them from the database.</p>
+              </div>
+              <div>
+                <button class="btn btn-danger btn-sm" id="btn-empty-recycle">
+                  <i class="fa-solid fa-dumpster-fire"></i> Empty Recycle Bin
+                </button>
+              </div>
+            </div>
+
+            <div class="inventory-table-card">
+              <div class="table-actions-header" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border-color); min-height: 70px;">
+                <div class="recycle-bulk-actions hidden" id="recycle-bulk-actions" style="display: flex; gap: 10px; align-items: center;">
+                  <span id="recycle-select-count" style="font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-right: 8px;">0 items selected</span>
+                  <button class="btn btn-primary btn-sm" id="btn-recycle-bulk-restore">
+                    <i class="fa-solid fa-trash-arrow-up"></i> Restore Selected
+                  </button>
+                  <button class="btn btn-danger btn-sm" id="btn-recycle-bulk-purge">
+                    <i class="fa-solid fa-trash"></i> Delete Permanently
+                  </button>
+                </div>
+                <div id="recycle-info-text" style="font-size: 0.85rem; color: var(--text-secondary);">
+                  Manage items currently in the trash.
+                </div>
+              </div>
+
+              <div class="table-responsive">
+                <table class="table" id="recycle-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 40px; text-align: center;">
+                        <input type="checkbox" id="recycle-select-all" style="cursor: pointer;">
+                      </th>
+                      <th>Game Title</th>
+                      <th>Platform</th>
+                      <th>Digital Key</th>
+                      <th>Cost</th>
+                      <th style="text-align: center;">Supplier</th>
+                      <th>Date Added</th>
+                      <th>Original Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="recycle-table-body">
+                    <!-- Dynamically rendered -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- SETTINGS VIEW -->
+          <section id="settings-view" class="content-view">
+            <div class="view-header">
+              <h2 class="view-title">Settings</h2>
+              <p class="view-subtitle">Customize application theme and brand identity.</p>
+            </div>
+
+            <div class="responsive-grid-equal">
+              <!-- Left Column: Theme & Currency -->
+              <div style="display: flex; flex-direction: column; gap: 24px;">
+                               <div class="calc-card" style="margin-bottom: 0;">
+                  <h3>Application Appearance</h3>
+                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+                    Customize the interface visual mode and color palette.
+                  </p>
+                  
+                  <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 12px;">Appearance Mode</h4>
+                  <div class="theme-select-group" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; margin-bottom: 20px;">
+                    <div class="theme-option-card" id="mode-opt-dark" style="padding: 10px 14px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-moon" style="font-size: 1.4rem; color: var(--accent-purple); margin-bottom: 6px; display: block;"></i>
+                      <strong style="font-size: 0.85rem;">Dark Mode</strong>
+                    </div>
+                    <div class="theme-option-card" id="mode-opt-light" style="padding: 10px 14px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-sun" style="font-size: 1.4rem; color: var(--accent-warning); margin-bottom: 6px; display: block;"></i>
+                      <strong style="font-size: 0.85rem;">Light Mode</strong>
+                    </div>
+                  </div>
+                  
+                  <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 12px;">Color Palette</h4>
+                  <div class="theme-select-group" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px;">
+                    <div class="theme-option-card" id="color-opt-classic" style="padding: 10px 14px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-palette" style="font-size: 1.4rem; color: var(--accent-purple); margin-bottom: 6px; display: block;"></i>
+                      <strong style="font-size: 0.85rem;">Classic</strong>
+                    </div>
+                    <div class="theme-option-card" id="color-opt-ocean" style="padding: 10px 14px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-water" style="font-size: 1.4rem; color: hsl(195, 95%, 50%); margin-bottom: 6px; display: block;"></i>
+                      <strong style="font-size: 0.85rem;">Ocean</strong>
+                    </div>
+                    <div class="theme-option-card" id="color-opt-cyberpunk" style="padding: 10px 14px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-bolt" style="font-size: 1.4rem; color: hsl(355, 95%, 55%); margin-bottom: 6px; display: block;"></i>
+                      <strong style="font-size: 0.85rem;">Cyberpunk</strong>
+                    </div>
+                    <div class="theme-option-card" id="color-opt-emerald" style="padding: 10px 14px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-tree" style="font-size: 1.4rem; color: hsl(145, 85%, 48%); margin-bottom: 6px; display: block;"></i>
+                      <strong style="font-size: 0.85rem;">Emerald</strong>
+                    </div>
+                    <div class="theme-option-card" id="color-opt-amber" style="padding: 10px 14px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-crown" style="font-size: 1.4rem; color: hsl(45, 95%, 50%); margin-bottom: 6px; display: block;"></i>
+                      <strong style="font-size: 0.85rem;">Amber</strong>
+                    </div>
+                  </div>
+                </div>
+ 
+                <!-- Currency Settings Card -->
+                <div class="calc-card" style="margin-bottom: 0;">
+                  <h3>Regional Currency</h3>
+                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+                    Choose the currency notation for the entire dashboard interface.
+                  </p>
+                  
+                  <div class="theme-select-group" style="display: flex; gap: 12px;">
+                    <div class="theme-option-card" id="curr-opt-eur" style="flex: 1; padding: 12px 18px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-euro-sign" style="font-size: 1.6rem; color: var(--accent-teal); margin-bottom: 8px; display: block;"></i>
+                      <strong style="font-size: 0.9rem;">Euro (€)</strong>
+                    </div>
+                    <div class="theme-option-card" id="curr-opt-usd" style="flex: 1; padding: 12px 18px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-dollar-sign" style="font-size: 1.6rem; color: var(--accent-emerald); margin-bottom: 8px; display: block;"></i>
+                      <strong style="font-size: 0.9rem;">US Dollar ($)</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Date Format Settings Card -->
+                <div class="calc-card" style="margin-bottom: 0;">
+                  <h3>Date Format</h3>
+                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+                    Choose how dates are formatted across the application.
+                  </p>
+                  <div class="form-group" style="margin: 0;">
+                    <select id="settings-date-format" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main); font-weight: 500; width: 100%;">
+                      <option value="YYYY-MM-DD">YYYY-MM-DD (e.g. 2026-06-06)</option>
+                      <option value="MM/DD/YYYY">MM/DD/YYYY (e.g. 06/06/2026)</option>
+                      <option value="DD/MM/YYYY">DD/MM/YYYY (e.g. 06/06/2026)</option>
+                      <option value="Month DD, YYYY">Month DD, YYYY (e.g. June 06, 2026)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Font Size Settings Card -->
+                <div class="calc-card" style="margin-bottom: 0;">
+                  <h3>Interface Font Size</h3>
+                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+                    Adjust the text size of the interface.
+                  </p>
+                  
+                  <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <span id="font-size-label" style="font-size: 0.95rem; font-weight: 600; color: var(--text-main);">Font Size: 16px</span>
+                      <span style="font-size: 0.75rem; color: var(--text-muted);">12px - 22px</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">A-</span>
+                      <input type="range" id="settings-font-size" min="12" max="22" value="16" step="1" class="font-size-slider">
+                      <span style="font-size: 1.15rem; color: var(--text-main); font-weight: 600;">A+</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Alerts & Presets Settings Card -->
+                <div class="calc-card" style="margin-bottom: 0;">
+                  <h3>Alerts & Presets</h3>
+                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+                    Configure low stock warnings and target markup defaults.
+                  </p>
+                  
+                  <div class="form-group" style="margin-bottom: 20px;">
+                    <label for="settings-low-stock-threshold" style="display: flex; justify-content: space-between; align-items: center;">
+                      <span>Low Stock Alert Level</span>
+                      <strong id="low-stock-label" style="color: var(--accent-warning);">5 keys</strong>
+                    </label>
+                    <input type="range" id="settings-low-stock-threshold" min="1" max="30" value="5" step="1" class="font-size-slider" style="background: linear-gradient(90deg, var(--accent-warning), var(--accent-pink));">
+                    <small class="form-help" style="margin-top: 6px; display: block;">Get warnings when inventory stock drops below this number.</small>
+                  </div>
+                  
+                  <div class="form-row-2" style="margin-top: 0px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <label for="settings-markup-type">Default Markup Type</label>
+                      <select id="settings-markup-type" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main); font-weight: 500; width: 100%;">
+                        <option value="percent">Percentage (%)</option>
+                        <option value="flat">Flat Surcharge (€/$)</option>
+                      </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <label for="settings-markup-value">Markup Value</label>
+                      <div class="input-with-icon">
+                        <i class="fa-solid fa-percent" id="markup-value-icon"></i>
+                        <input type="number" id="settings-markup-value" class="form-control" placeholder="20" step="0.5" min="0" value="20" style="background-color: var(--bg-input); padding-left: 30px;">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+
+
+                <!-- Database Configuration Card -->
+                <div class="calc-card" style="margin-bottom: 0; padding: 24px; border: 2px solid var(--accent-purple-glow); background: hsla(270, 85%, 60%, 0.01); display: flex; flex-direction: column; gap: 24px;">
+                  <h3 style="margin-bottom: 0; padding-bottom: 12px; border-bottom: 2px solid var(--border-color); font-size: 1.2rem; color: var(--text-main); font-weight: 700; display: flex; align-items: center; gap: 10px; border-top: none;">
+                    <i class="fa-solid fa-server text-purple" style="color: var(--accent-purple);"></i> Cloud Integrations & Sync
+                  </h3>
+                  <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: -12px; margin-bottom: 0;">
+                    Configure external database services to securely store, back up, and synchronize your data in the cloud.
+                  </p>
+
+                  <!-- Supabase Panel -->
+                  <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                      <h4 style="margin: 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-cloud" style="color: var(--accent-teal);"></i> Supabase Database
+                      </h4>
+                      <span id="db-connection-status" class="badge badge-sold">Not Connected</span>
+                    </div>
+                    <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 15px;">
+                      Real-time Postgres database migration with relational integrity support.
+                    </p>
+                    
+                    <div class="form-group" style="margin-bottom: 12px;">
+                      <label for="settings-supabase-url">Supabase API URL</label>
+                      <input type="url" id="settings-supabase-url" class="form-control" placeholder="https://your-project.supabase.co">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 12px;">
+                      <label for="settings-supabase-key">Supabase Anon Key</label>
+                      <input type="password" id="settings-supabase-key" class="form-control" placeholder="your-anon-api-key">
+                    </div>
+                    
+                    <div style="display: flex; gap: 12px; margin-top: 15px;">
+                      <button type="button" class="btn btn-primary btn-sm" id="btn-connect-supabase" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; font-size: 0.85rem;">
+                        <i class="fa-solid fa-cloud"></i> Connect & Sync
+                      </button>
+                      <button type="button" class="btn btn-outline btn-sm" id="btn-disconnect-supabase" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; font-size: 0.85rem;">
+                        <i class="fa-solid fa-unlink"></i> Disconnect
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Firebase Panel -->
+                  <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                      <h4 style="margin: 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-fire" style="color: var(--accent-warning);"></i> Firebase Platform
+                      </h4>
+                      <span id="firebase-connection-status" class="badge badge-sold">Not Connected</span>
+                    </div>
+                    <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 15px;">
+                      BaaS integration for Firestore document storage, notifications, and analytics.
+                    </p>
+                    
+                    <div class="form-row-2">
+                      <div class="form-group" style="margin-bottom: 12px;">
+                        <label for="settings-firebase-apikey">API Key</label>
+                        <input type="password" id="settings-firebase-apikey" class="form-control" placeholder="AIzaSy...">
+                      </div>
+                      <div class="form-group" style="margin-bottom: 12px;">
+                        <label for="settings-firebase-projectid">Project ID</label>
+                        <input type="text" id="settings-firebase-projectid" class="form-control" placeholder="my-project-123">
+                      </div>
+                    </div>
+
+                    <div class="form-row-2" style="margin-top: 0px;">
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="settings-firebase-authdomain">Auth Domain</label>
+                        <input type="text" id="settings-firebase-authdomain" class="form-control" placeholder="my-project-123.firebaseapp.com">
+                      </div>
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="settings-firebase-appid">App ID</label>
+                        <input type="text" id="settings-firebase-appid" class="form-control" placeholder="1:12345:web:abcd">
+                      </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 12px; margin-top: 20px;">
+                      <button type="button" class="btn btn-primary btn-sm" id="btn-connect-firebase" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; font-size: 0.85rem;">
+                        <i class="fa-solid fa-fire"></i> Connect Firebase
+                      </button>
+                      <button type="button" class="btn btn-outline btn-sm" id="btn-disconnect-firebase" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; font-size: 0.85rem;">
+                        <i class="fa-solid fa-unlink"></i> Disconnect
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- GitHub Panel -->
+                  <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                      <h4 style="margin: 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-brands fa-github" style="color: var(--text-main);"></i> GitHub Sync
+                      </h4>
+                      <span id="github-connection-status" class="badge badge-sold">Not Connected</span>
+                    </div>
+                    <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 15px;">
+                      Backup and sync your database JSON files directly to a private/public GitHub repository.
+                    </p>
+                    
+                    <div class="form-group" style="margin-bottom: 12px;">
+                      <label for="settings-github-token">Personal Access Token (PAT)</label>
+                      <input type="password" id="settings-github-token" class="form-control" placeholder="ghp_yourPersonalAccessToken">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px;">
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="settings-github-repo">Repository</label>
+                        <input type="text" id="settings-github-repo" class="form-control" placeholder="owner/repo">
+                      </div>
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="settings-github-branch">Branch</label>
+                        <input type="text" id="settings-github-branch" class="form-control" placeholder="main">
+                      </div>
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="settings-github-path">File Path</label>
+                        <input type="text" id="settings-github-path" class="form-control" placeholder="backup.json">
+                      </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 12px; margin-top: 20px;">
+                      <button type="button" class="btn btn-primary btn-sm" id="btn-connect-github" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; font-size: 0.85rem;">
+                        <i class="fa-brands fa-github"></i> Connect GitHub
+                      </button>
+                      <button type="button" class="btn btn-outline btn-sm" id="btn-disconnect-github" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; font-size: 0.85rem;">
+                        <i class="fa-solid fa-unlink"></i> Disconnect
+                      </button>
+                    </div>
+
+                    <div id="github-actions-row" class="hidden" style="display: flex; gap: 12px; margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+                      <button type="button" class="btn btn-outline btn-sm" id="btn-github-push" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 10px; font-size: 0.8rem; border-color: var(--accent-cyan); color: var(--accent-cyan);">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> Push to GitHub
+                      </button>
+                      <button type="button" class="btn btn-outline btn-sm" id="btn-github-pull" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 10px; font-size: 0.8rem; border-color: var(--accent-purple); color: var(--accent-purple);">
+                        <i class="fa-solid fa-cloud-arrow-down"></i> Pull from GitHub
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Sync Strategy Panel -->
+                  <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                      <h4 style="margin: 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-arrows-rotate" style="color: var(--accent-cyan);"></i> Cloud Sync Preferences
+                      </h4>
+                      <span id="sync-pending-indicator" class="badge badge-sold hidden">Unsynced Changes</span>
+                    </div>
+                    <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 15px;">
+                      Select your preferred synchronization mode for cloud integrations.
+                    </p>
+                    
+                    <div class="form-group" style="margin-bottom: 15px;">
+                      <label for="settings-sync-mode">Sync Mode</label>
+                      <select id="settings-sync-mode" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main); font-weight: 500; width: 100%;">
+                        <option value="realtime">Real-time Sync (Immediate writes)</option>
+                        <option value="manual">Manual Sync (Trigger push on demand)</option>
+                      </select>
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary btn-block" id="btn-sync-now" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px; font-size: 0.85rem;">
+                      <i class="fa-solid fa-sync"></i> Synchronize Now
+                    </button>
+                  </div>
+
+                  <!-- Automated Sync Schedules Card -->
+                  <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                      <h4 style="margin: 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-clock-rotate-left" style="color: var(--accent-purple);"></i> Auto-Sync Schedule
+                      </h4>
+                      <span id="auto-sync-status-badge" class="badge badge-sold">Inactive</span>
+                    </div>
+                    <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 15px;">
+                      Automatically schedule recurring background backups to GitHub and synchronizations to your Cloud database.
+                    </p>
+
+                    <div class="form-group" style="margin-bottom: 15px;">
+                      <label for="settings-auto-sync-interval">Sync Interval</label>
+                      <select id="settings-auto-sync-interval" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main); font-weight: 500; width: 100%;">
+                        <option value="off">Off (Manual / Real-time only)</option>
+                        <option value="5">Every 5 Minutes</option>
+                        <option value="15">Every 15 Minutes</option>
+                        <option value="30">Every 30 Minutes</option>
+                        <option value="60">Every Hour</option>
+                        <option value="720">Every 12 Hours</option>
+                        <option value="1440">Every 24 Hours</option>
+                      </select>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 15px;">
+                      <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="color: var(--text-secondary); font-size: 0.825rem;">GitHub Auto-Push on change</span>
+                        <label class="switch-toggle" style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer; margin: 0;">
+                          <input type="checkbox" id="settings-auto-push-github" style="opacity: 0; width: 0; height: 0;">
+                          <span class="switch-slider" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: hsla(0, 0%, 100%, 0.1); border-radius: 34px; transition: 0.3s ease;"></span>
+                        </label>
+                      </div>
+                      <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="color: var(--text-secondary); font-size: 0.825rem;">GitHub Auto-Pull on startup</span>
+                        <label class="switch-toggle" style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer; margin: 0;">
+                          <input type="checkbox" id="settings-auto-pull-github" style="opacity: 0; width: 0; height: 0;">
+                          <span class="switch-slider" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: hsla(0, 0%, 100%, 0.1); border-radius: 34px; transition: 0.3s ease;"></span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div id="auto-sync-next-run" style="color: var(--text-muted); font-size: 0.75rem; margin-top: 5px; text-align: right;" class="hidden">
+                      Next sync in: <span id="auto-sync-timer-countdown" style="font-weight: 600; color: var(--accent-cyan);">--:--</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right Column: Brand, Menu Visibility, Sidebar Customization -->
+              <div style="display: flex; flex-direction: column; gap: 24px;">
+                <!-- Brand Settings Card -->
+                <div class="calc-card">
+                  <h3>Brand Customization</h3>
+                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+                    Upload a custom logo to display in the sidebar.
+                  </p>
+
+                  <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
+                    <div class="logo-preview-box" id="logo-preview">
+                      <i class="fa-solid fa-gamepad" id="preview-logo-default"></i>
+                      <img src="" id="preview-logo-custom" class="hidden" alt="Logo Preview">
+                    </div>
+                    <div>
+                      <button type="button" class="btn btn-outline btn-sm" id="btn-reset-logo">
+                        <i class="fa-solid fa-trash-can"></i> Reset to Default
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="settings-logo-url">Logo Image URL</label>
+                    <input type="url" id="settings-logo-url" class="form-control" placeholder="https://example.com/logo.png">
+                  </div>
+
+                  <div class="form-group" style="margin-top: 15px;">
+                    <label>Or Upload Logo File</label>
+                    <label class="btn btn-outline btn-block" style="cursor: pointer; padding: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                      <i class="fa-solid fa-upload"></i> Upload Image File
+                      <input type="file" id="settings-logo-file" accept="image/*" style="display: none;">
+                    </label>
+                  </div>
+                  
+                  <button type="button" class="btn btn-primary btn-block" id="btn-save-brand" style="margin-top: 20px;">
+                    <i class="fa-solid fa-floppy-disk"></i> Save Brand Logo
+                  </button>
+                </div>
+
+                <!-- Feature Visibility Settings Card -->
+                <div class="calc-card">
+                  <h3>Menu Visibility</h3>
+                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+                    Customize sidebar navigation menus.
+                  </p>
+                  
+                  <!-- Sales Ledger Toggle -->
+                  <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background-color: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: 12px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <i class="fa-solid fa-receipt" style="font-size: 1.25rem; color: var(--accent-cyan);"></i>
+                      <div style="display: flex; flex-direction: column; text-align: left;">
+                        <strong style="font-size: 0.9rem; color: var(--text-main);">Sales Ledger</strong>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">Enable transaction records log</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label class="switch-toggle" style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer; margin: 0;">
+                        <input type="checkbox" id="toggle-show-sales-ledger" style="opacity: 0; width: 0; height: 0;" checked>
+                        <span class="switch-slider" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: hsla(0, 0%, 100%, 0.1); border-radius: 34px; transition: 0.3s ease;"></span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- Quick Actions Toolbar Toggle -->
+                  <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background-color: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: 0;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <i class="fa-solid fa-wand-magic-sparkles" style="font-size: 1.25rem; color: var(--accent-purple);"></i>
+                      <div style="display: flex; flex-direction: column; text-align: left;">
+                        <strong style="font-size: 0.9rem; color: var(--text-main);">Quick Actions Dock</strong>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">Show floating actions toolbar at the bottom center</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label class="switch-toggle" style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer; margin: 0;">
+                        <input type="checkbox" id="toggle-show-quick-toolbar" style="opacity: 0; width: 0; height: 0;" checked>
+                        <span class="switch-slider" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: hsla(0, 0%, 100%, 0.1); border-radius: 34px; transition: 0.3s ease;"></span>
+                      </label>
+                    </div>
+                  </div>
+
+
+                </div>
+
+                <!-- Inventory Display Preferences Card -->
+                <div class="calc-card">
+                  <h3>Inventory Display Preferences</h3>
+                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+                    Choose whether to display logo thumbnails or plain text tags in the main inventory table's Supplier column.
+                  </p>
+                  
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label for="settings-supplier-display">Supplier Column</label>
+                    <select id="settings-supplier-display" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main); font-weight: 500; width: 100%;">
+                      <option value="name" selected>Show Name</option>
+                      <option value="logo">Show Logo</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Sidebar Menu Customization Card -->
+                <div class="calc-card">
+                  <h3>Sidebar Customization</h3>
+                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+                    Customize sidebar icons and navigation labels for each menu.
+                  </p>
+                  <div class="menu-icons-list" id="settings-menu-icons-list">
+                    <!-- Rendered dynamically via JavaScript -->
+                  </div>
+                </div>
+
+                <!-- Data Maintenance Settings Card -->
+                <div class="calc-card">
+                  <h3>Data Maintenance</h3>
+                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+                    Backup or restore all game vault configurations and records via JSON.
+                  </p>
+                  
+                  <div class="backup-restore-group" style="margin-bottom: 24px;">
+                    <button type="button" class="btn btn-primary btn-block" id="btn-export-backup" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                      <i class="fa-solid fa-download"></i> Export Backup (JSON)
+                    </button>
+                    
+                    <button type="button" class="btn btn-outline btn-block" id="btn-restore-backup" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                      <i class="fa-solid fa-upload"></i> Restore Backup (JSON)
+                    </button>
+                    <input type="file" id="settings-backup-file" accept=".json" style="display: none;">
+                  </div>
+
+                  <!-- Danger Zone -->
+                  <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-danger); margin-bottom: 12px; border-top: 1px solid var(--border-color); padding-top: 16px;">Danger Zone</h4>
+                  <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 16px;">
+                    Irreversibly delete all items currently stored in your inventory. This action cannot be undone.
+                  </p>
+                  <button type="button" class="btn btn-danger btn-block" id="btn-delete-all-inventory" style="display: flex; align-items: center; justify-content: center; gap: 8px; background-color: var(--accent-danger); border-color: var(--accent-danger); color: #fff;">
+                    <i class="fa-solid fa-trash-can"></i> Delete All Inventory Items
+                  </button>
+                </div>
+
+                <!-- Excel/CSV Bulk Import Card -->
+                <div class="calc-card">
+                  <h3>Excel/CSV Bulk Import</h3>
+                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+                    Import raw inventory data from an Excel workbook (.xlsx, .xls) or a standard CSV file.
+                  </p>
+                  
+                  <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <div class="file-drop-zone" style="border: 2px dashed var(--border-color); border-radius: var(--radius-lg); padding: 30px 20px; text-align: center; background: hsla(0, 0%, 100%, 0.01); transition: var(--transition-smooth); cursor: pointer;" id="import-drop-zone">
+                      <i class="fa-solid fa-file-excel" style="font-size: 2.5rem; color: var(--accent-emerald); margin-bottom: 12px;"></i>
+                      <p style="font-size: 0.9rem; font-weight: 500; margin-bottom: 4px;" id="import-file-name">Drag & drop your file here, or click to browse</p>
+                      <p style="font-size: 0.75rem; color: var(--text-secondary);">Supports XLSX, XLS, and CSV formats</p>
+                      <input type="file" id="settings-import-file" accept=".xlsx,.xls,.csv" style="display: none;">
+                    </div>
+                    
+                    <div id="import-progress-container" class="hidden" style="display: flex; flex-direction: column; gap: 6px;">
+                      <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
+                        <span id="import-progress-status" style="color: var(--text-secondary);">Processing rows...</span>
+                        <span id="import-progress-percent" style="font-weight: 600; color: var(--text-main);">0%</span>
+                      </div>
+                      <div style="width: 100%; height: 6px; background: var(--bg-input); border-radius: 3px; overflow: hidden;">
+                        <div id="import-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent-emerald), var(--accent-teal)); transition: width 0.1s ease;"></div>
+                      </div>
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary btn-block" id="btn-import-sheet" disabled style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                      <i class="fa-solid fa-file-import"></i> Start Import
+                    </button>
+                  </div>
+                </div>
+
+                <!-- User Management Settings Card (Admin only) -->
+                <div class="calc-card" id="settings-user-mgmt-card">
+                  <h3>User Management</h3>
+                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+                    Manually create additional user accounts and view existing registered users.
+                  </p>
+                  
+                  <form id="admin-create-user-form" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 24px;">
+                    <h4 style="margin: 0 0 8px 0; font-size: 0.9rem; text-transform: uppercase; color: var(--accent-purple); letter-spacing: 0.05em;">Create New User</h4>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="admin-new-username" style="font-size: 0.8rem; margin-bottom: 4px;">Username</label>
+                        <input type="text" id="admin-new-username" class="form-control" placeholder="Username" required minlength="3" maxlength="15" style="height: 36px; padding: 6px 12px; font-size: 0.85rem;">
+                      </div>
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="admin-new-email" style="font-size: 0.8rem; margin-bottom: 4px;">Email Address</label>
+                        <input type="email" id="admin-new-email" class="form-control" placeholder="Email Address" required style="height: 36px; padding: 6px 12px; font-size: 0.85rem;">
+                      </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="admin-new-password" style="font-size: 0.8rem; margin-bottom: 4px;">Password</label>
+                        <input type="password" id="admin-new-password" class="form-control" placeholder="Password" required minlength="6" style="height: 36px; padding: 6px 12px; font-size: 0.85rem;">
+                      </div>
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="admin-confirm-password" style="font-size: 0.8rem; margin-bottom: 4px;">Confirm Password</label>
+                        <input type="password" id="admin-confirm-password" class="form-control" placeholder="Confirm Password" required style="height: 36px; padding: 6px 12px; font-size: 0.85rem;">
+                      </div>
+                    </div>
+                    
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px; flex-wrap: wrap; gap: 12px;">
+                      <label class="checkbox-container" style="margin-bottom: 0;">
+                        <input type="checkbox" id="admin-new-2fa">
+                        <span class="checkbox-label" style="font-weight: 500; font-size: 0.85rem;">Enable Two-Factor Authentication (2FA)</span>
+                      </label>
+                      <button type="submit" class="btn btn-primary" style="height: 36px; padding: 0 16px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; width: auto; margin-top: 0;">
+                        <i class="fa-solid fa-user-plus"></i> Create User
+                      </button>
+                    </div>
+                  </form>
+                  
+                  <h4 style="margin: 0 0 12px 0; font-size: 0.9rem; text-transform: uppercase; color: var(--text-primary); letter-spacing: 0.05em;">Registered Users</h4>
+                  <div class="table-responsive">
+                    <table class="table" style="font-size: 0.85rem;" id="admin-users-table">
+                      <thead>
+                        <tr>
+                          <th>Username</th>
+                          <th>Email</th>
+                          <th>2FA Status</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody id="admin-users-list">
+                        <!-- Injected by JS -->
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+      </div>
+    </main>
+
+  </div>
+
+  <!-- AUTHENTICATION CONTAINER -->
+  <div id="auth-container" class="auth-container hidden">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="logo-icon auth-logo-icon">
+          <i class="fa-solid fa-gamepad"></i>
+        </div>
+        <div class="brand-text auth-brand-text">
+          <h2>Game<span>Vault</span></h2>
+          <p>Key Merchant Pro</p>
+        </div>
+      </div>
+
+      <div class="auth-tabs" style="border-bottom: none; margin-bottom: 24px; justify-content: center;">
+        <h3 style="margin: 0; font-size: 1.25rem; font-weight: 600; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.05em;">Sign In</h3>
+      </div>
+
+      <!-- Login Tab Content -->
+      <div id="auth-login-section" class="auth-section active">
+        <form id="login-form">
+          <div class="form-group">
+            <label for="login-username">Username</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-user"></i>
+              <input type="text" id="login-username" class="form-control" placeholder="Enter username" required autocomplete="username">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="login-password">Password</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-lock"></i>
+              <input type="password" id="login-password" class="form-control" placeholder="Enter password" required autocomplete="current-password">
+            </div>
+          </div>
+          <div class="auth-options">
+            <label class="checkbox-container">
+              <input type="checkbox" id="login-remember" checked>
+              <span class="checkbox-label">Remember Me</span>
+            </label>
+            <a href="#" class="forgot-password-link" onclick="handleForgotPassword(event)">Forgot Password?</a>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">
+            <i class="fa-solid fa-right-to-bracket"></i> Sign In
+          </button>
+        </form>
+      </div>
+
+      <!-- Two-Factor Authentication Section -->
+      <div id="auth-2fa-section" class="auth-section">
+        <form id="2fa-form">
+          <div style="text-align: center; margin-bottom: 20px;">
+            <div style="font-size: 2.4rem; color: var(--accent-purple); margin-bottom: 10px;">
+              <i class="fa-solid fa-key"></i>
+            </div>
+            <h4 style="margin-bottom: 5px; font-weight: 600; color: var(--text-main);">Two-Factor Verification</h4>
+            <p style="font-size: 1.2rem; color: var(--text-muted); line-height: 1.5;">Enter the 6-digit verification code sent to your authenticator app/email.</p>
+          </div>
+          <div class="form-group">
+            <label for="auth-2fa-code">Verification Code</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-shield-halved"></i>
+              <input type="text" id="auth-2fa-code" class="form-control" placeholder="000000" required maxlength="6" pattern="\\d{6}" style="text-align: center; font-size: 2.2rem; letter-spacing: 8px; font-weight: bold;">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block" id="btn-verify-2fa">
+            <i class="fa-solid fa-check"></i> Verify & Access
+          </button>
+          <div style="text-align: center; margin-top: 20px;">
+            <a href="#" class="forgot-password-link" onclick="switchAuthTab('login')">Back to Sign In</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT GAME MODAL -->
+  <div class="modal-backdrop" id="edit-game-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-pen-to-square text-purple"></i> Edit Game Info</h3>
+        <button class="modal-close-btn" data-close-modal="edit-game-modal">&times;</button>
+      </div>
+      <form id="edit-game-form">
+        <input type="hidden" id="edit-game-id">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="edit-game-title" class="required">Game Title</label>
+            <input type="text" id="edit-game-title" class="form-control" required placeholder="e.g. Elden Ring, Resident Evil 4">
+          </div>
+
+          <div class="form-group">
+            <label>Game Artwork / Cover Image</label>
+            <div class="image-input-container">
+              <input type="text" id="edit-game-image-url" class="form-control form-control-sm" placeholder="Paste image URL (HTTPS)...">
+              <div class="image-divider"><span>OR</span></div>
+              <label class="btn btn-outline btn-sm file-upload-label">
+                <i class="fa-solid fa-upload"></i> Upload Image
+                <input type="file" id="edit-game-image-file" accept="image/*" style="display: none;">
+              </label>
+            </div>
+            <small class="form-help">Paste cover artwork URL or upload a local image file.</small>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="edit-game-platform" class="required">Platform</label>
+              <select id="edit-game-platform" class="form-control" required>
+                <option value="Steam">Steam</option>
+                <option value="PlayStation 5">PlayStation 5</option>
+                <option value="Xbox Series X/S">Xbox Series X/S</option>
+                <option value="Nintendo Switch">Nintendo Switch</option>
+                <option value="Epic Games">Epic Games</option>
+                <option value="GOG">GOG</option>
+                <option value="Ubisoft Connect">Ubisoft Connect</option>
+                <option value="EA App">EA App</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="edit-game-cost" class="required">Purchase Price (<span class="currency-symbol">€</span>)</label>
+              <div class="input-with-icon">
+                <i class="fa-solid fa-euro-sign currency-icon"></i>
+                <input type="number" id="edit-game-cost" class="form-control" required step="0.01" min="0" placeholder="0.00">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-game-status" class="required">Inventory Status</label>
+            <select id="edit-game-status" class="form-control" required>
+              <option value="Available">Available</option>
+              <option value="Reserved">Reserved</option>
+              <option value="Sold">Sold</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-game-key" class="required">Digital Activation Key</label>
+            <input type="text" id="edit-game-key" class="form-control font-code" required placeholder="e.g. AAAA-BBBB-CCCC-DDDD">
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+            <label for="edit-game-source" class="required">Supplier</label>
+            <select id="edit-game-source" class="form-control" required>
+              <!-- Dynamically populated from JS -->
+            </select>
+          </div>
+
+            <div class="form-group">
+              <label for="edit-game-purchase-date" class="required">Purchase Date</label>
+              <input type="date" id="edit-game-purchase-date" class="form-control" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-game-publisher">Publisher</label>
+            <input type="text" id="edit-game-publisher" class="form-control" placeholder="e.g. Bandai Namco, Ubisoft">
+          </div>
+
+          <div class="form-group">
+            <label for="edit-game-notes">Inventory Notes</label>
+            <textarea id="edit-game-notes" class="form-control" rows="2" placeholder="Bundle details..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close-modal="edit-game-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- EDIT CATALOG ENTRY MODAL -->
+  <div class="modal-backdrop" id="edit-catalog-entry-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-pen-to-square text-cyan"></i> Edit Catalog Entry</h3>
+        <button class="modal-close-btn" data-close-modal="edit-catalog-entry-modal">&times;</button>
+      </div>
+      <form id="edit-catalog-entry-form">
+        <input type="hidden" id="edit-entry-old-title">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="edit-entry-title" class="required">Game Title</label>
+            <input type="text" id="edit-entry-title" class="form-control" required placeholder="e.g. Elden Ring">
+          </div>
+
+          <div class="form-group">
+            <label>Game Artwork / Cover Image</label>
+            <div class="image-input-container">
+              <input type="text" id="edit-entry-image-url" class="form-control form-control-sm" placeholder="Paste image URL (HTTPS)...">
+              <div class="image-divider"><span>OR</span></div>
+              <label class="btn btn-outline btn-sm file-upload-label">
+                <i class="fa-solid fa-upload"></i> Upload Image
+                <input type="file" id="edit-entry-image-file" accept="image/*" style="display: none;">
+              </label>
+            </div>
+            <small class="form-help">Updating this will update the cover artwork for all matching keys in inventory.</small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close-modal="edit-catalog-entry-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="fa-solid fa-floppy-disk"></i> Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADD GAME KEY MODAL -->
+  <div class="modal-backdrop" id="add-game-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-key text-teal"></i> Add Digital Game Key</h3>
+        <button class="modal-close-btn" data-close-modal="add-game-modal">&times;</button>
+      </div>
+      <form id="add-game-form">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="game-title" class="required">Game Title</label>
+            <div class="autocomplete-wrapper">
+              <input type="text" id="game-title" class="form-control" required placeholder="e.g. Elden Ring, Resident Evil 4" autocomplete="off">
+              <div id="game-title-suggestions" class="autocomplete-suggestions"></div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Game Artwork / Cover Image</label>
+            <div class="image-input-container">
+              <input type="text" id="game-image-url" class="form-control form-control-sm" placeholder="Paste image URL (HTTPS)...">
+              <div class="image-divider"><span>OR</span></div>
+              <label class="btn btn-outline btn-sm file-upload-label">
+                <i class="fa-solid fa-upload"></i> Upload Image
+                <input type="file" id="game-image-file" accept="image/*" style="display: none;">
+              </label>
+            </div>
+            <small class="form-help">Paste cover artwork URL or upload a local image file.</small>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="game-platform" class="required">Platform</label>
+              <select id="game-platform" class="form-control" required>
+                <option value="" disabled selected>Select Platform</option>
+                <option value="Steam">Steam</option>
+                <option value="PlayStation 5">PlayStation 5</option>
+                <option value="Xbox Series X/S">Xbox Series X/S</option>
+                <option value="Nintendo Switch">Nintendo Switch</option>
+                <option value="Epic Games">Epic Games</option>
+                <option value="GOG">GOG</option>
+                <option value="Ubisoft Connect">Ubisoft Connect</option>
+                <option value="EA App">EA App</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="game-cost" class="required">Purchase Price (<span class="currency-symbol">€</span>)</label>
+              <div class="input-with-icon">
+                <i class="fa-solid fa-euro-sign currency-icon"></i>
+                <input type="number" id="game-cost" class="form-control" required step="0.01" min="0" placeholder="0.00">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="game-key" class="required">Digital Activation Key(s)</label>
+            <textarea id="game-key" class="form-control font-code" required placeholder="Enter keys (one per line)..." rows="3" style="resize: vertical;"></textarea>
+            <span class="form-help">Enter one key per line to add multiple keys at once with the same details.</span>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="game-source" class="required">Supplier</label>
+              <select id="game-source" class="form-control" required>
+                <!-- Dynamically populated from JS -->
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="game-purchase-date" class="required">Purchase Date</label>
+              <input type="date" id="game-purchase-date" class="form-control" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="game-publisher">Publisher</label>
+            <input type="text" id="game-publisher" class="form-control" placeholder="e.g. Bandai Namco, Ubisoft">
+          </div>
+
+          <div class="form-group">
+            <label for="game-notes">Inventory Notes</label>
+            <textarea id="game-notes" class="form-control" rows="2" placeholder="Bundle details, region locks, expiration dates..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close-modal="add-game-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Key to Stock</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- SELL GAME MODAL -->
+  <div class="modal-backdrop" id="sell-game-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-euro-sign currency-icon text-pink"></i> Record Key Sale</h3>
+        <button class="modal-close-btn" data-close-modal="sell-game-modal">&times;</button>
+      </div>
+      <form id="sell-game-form">
+        <input type="hidden" id="sell-game-id">
+        <input type="hidden" id="sale-fees" value="0.00">
+        <div class="modal-body">
+          <div class="sale-summary-card">
+            <h4 id="sell-modal-title">Game Title Here</h4>
+            <p>Platform: <span id="sell-modal-platform">Steam</span> | Buy Cost: <span id="sell-modal-cost">€0.00</span></p>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="sale-price" class="required">Sale Price (<span class="currency-symbol">€</span>)</label>
+              <div class="input-with-icon">
+                <i class="fa-solid fa-euro-sign currency-icon"></i>
+                <input type="number" id="sale-price" class="form-control" required step="0.01" min="0" placeholder="0.00">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="sale-platform" class="required">Selling Platform</label>
+              <select id="sale-platform" class="form-control" required>
+                <option value="Kinguin" selected>Kinguin</option>
+                <option value="G2A">G2A</option>
+                <option value="eBay">eBay</option>
+                <option value="PlayerAuctions">PlayerAuctions</option>
+                <option value="Kinguin API">Kinguin API</option>
+                <option value="Discord">Discord Direct</option>
+                <option value="Other">Other Platform</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="sale-date" class="required">Sale Date</label>
+            <input type="date" id="sale-date" class="form-control" required>
+          </div>
+
+          <div class="form-group">
+            <label for="sale-notes">Transaction / Buyer Notes</label>
+            <input type="text" id="sale-notes" class="form-control" placeholder="e.g. Sold to user#1234, buyer order id">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close-modal="sell-game-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-pink">Record Sale</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- VIEW KEY DETAILS MODAL -->
+  <div class="modal-backdrop" id="view-key-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-shield-halved text-cyan"></i> Secure Key Viewer</h3>
+        <button class="modal-close-btn" data-close-modal="view-key-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="key-display-card">
+          <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;" id="view-modal-artwork-row">
+            <!-- Injected by JS -->
+          </div>
+          <div class="key-reveal-container">
+            <input type="password" id="view-modal-key-input" class="form-control key-code-input" readonly value="REVEAL-ME-NOW-SAMPLE">
+            <button class="btn btn-outline" id="btn-toggle-view-key" title="Toggle visibility">
+              <i class="fa-solid fa-eye" id="toggle-key-eye-icon"></i>
+            </button>
+            <button class="btn btn-primary" id="btn-copy-view-key" title="Copy key to clipboard">
+              <i class="fa-solid fa-copy"></i> Copy
+            </button>
+          </div>
+        </div>
+        
+        <div class="key-metadata-grid">
+          <div class="meta-item">
+            <span class="meta-label">Platform</span>
+            <strong id="view-modal-platform">Steam</strong>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Supplier</span>
+            <strong id="view-modal-source">Humble Bundle</strong>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Acquisition Cost</span>
+            <strong id="view-modal-cost">€0.00</strong>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Purchase Date</span>
+            <strong id="view-modal-date">2026-06-05</strong>
+          </div>
+        </div>
+
+        <div class="key-notes-box">
+          <h5>Distributor/Listing Notes:</h5>
+          <p id="view-modal-notes">No notes available.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-close-modal="view-key-modal">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CATALOG KEYS LIST MODAL -->
+  <div class="modal-backdrop" id="catalog-keys-modal">
+    <div class="modal-card" style="max-width: 850px; width: 95%;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-key text-teal"></i> <span id="catalog-keys-modal-title">Game Title Keys</span></h3>
+        <button class="modal-close-btn" data-close-modal="catalog-keys-modal">&times;</button>
+      </div>
+      <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+        <div class="table-responsive">
+          <table class="table" id="catalog-keys-table">
+            <thead>
+              <tr>
+                <th>Platform</th>
+                <th>Digital Key</th>
+                <th>Cost</th>
+                <th>Sale Price</th>
+                <th>Selling Platform</th>
+                <th>Status</th>
+                <th style="text-align: right; width: 120px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="catalog-keys-table-body">
+              <!-- Injected by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+        <div class="table-footer" style="margin-top: 10px;">
+          <span id="catalog-keys-count-text">Showing 0 keys</span>
+          <div class="pagination-controls" style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <div class="page-size-selector" style="display: flex; align-items: center; gap: 8px;">
+              <label for="catalog-keys-page-size" style="white-space: nowrap; margin-bottom: 0; font-size: 0.8rem;">Show:</label>
+              <select id="catalog-keys-page-size" class="form-control form-control-sm" style="width: auto; padding: 4px 8px; height: 32px;">
+                <option value="25" selected>25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+            <div class="pagination-buttons" id="catalog-keys-pagination" style="display: flex; align-items: center; gap: 4px;">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-close-modal="catalog-keys-modal">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT SUPPLIER MODAL -->
+  <div class="modal-backdrop" id="edit-supplier-modal">
+    <div class="modal-card" style="max-width: 450px;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-truck-ramp-box text-purple"></i> Edit Supplier</h3>
+        <button class="modal-close-btn" data-close-modal="edit-supplier-modal">&times;</button>
+      </div>
+      <form id="edit-supplier-form">
+        <input type="hidden" id="edit-supplier-old-name">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="edit-supplier-name" class="required">Supplier Name</label>
+            <input type="text" id="edit-supplier-name" class="form-control" required placeholder="e.g. Humble Bundle, Fanatical">
+          </div>
+          <div class="form-group">
+            <label class="required">Supplier Tag Color</label>
+            <div class="color-palette-grid" id="edit-supplier-color-grid"></div>
+            <input type="hidden" id="edit-supplier-color-input" required>
+          </div>
+          <div class="form-group">
+            <label>Supplier Logo</label>
+            <div class="image-input-container">
+              <input type="text" id="edit-supplier-logo-url" class="form-control form-control-sm" placeholder="Paste logo image URL...">
+              <div class="image-divider"><span>OR</span></div>
+              <label class="btn btn-outline btn-sm file-upload-label" style="width: 100%; justify-content: center;">
+                <i class="fa-solid fa-upload"></i> Upload Logo
+                <input type="file" id="edit-supplier-logo-file" accept="image/*" style="display: none;">
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close-modal="edit-supplier-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- EDIT PLATFORM MODAL -->
+  <div class="modal-backdrop" id="edit-platform-modal">
+    <div class="modal-card" style="max-width: 450px;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-gamepad text-purple"></i> Edit Platform</h3>
+        <button class="modal-close-btn" data-close-modal="edit-platform-modal">&times;</button>
+      </div>
+      <form id="edit-platform-form">
+        <input type="hidden" id="edit-platform-old-name">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="edit-platform-name" class="required">Platform Name</label>
+            <input type="text" id="edit-platform-name" class="form-control" required placeholder="e.g. Steam, Epic Games">
+          </div>
+          <div class="form-group">
+            <label>Platform Logo / Icon</label>
+            <div class="image-input-container">
+              <input type="text" id="edit-platform-logo-url" class="form-control form-control-sm" placeholder="Paste logo image URL...">
+              <div class="image-divider"><span>OR</span></div>
+              <label class="btn btn-outline btn-sm file-upload-label" style="width: 100%; justify-content: center;">
+                <i class="fa-solid fa-upload"></i> Upload Logo
+                <input type="file" id="edit-platform-logo-file" accept="image/*" style="display: none;">
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close-modal="edit-platform-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- EDIT USER MODAL -->
+  <div class="modal-backdrop" id="edit-user-modal">
+    <div class="modal-card" style="max-width: 450px;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-user-gear text-purple"></i> Edit User Account</h3>
+        <button class="modal-close-btn" data-close-modal="edit-user-modal">&times;</button>
+      </div>
+      <form id="edit-user-form">
+        <input type="hidden" id="edit-user-original-username">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="edit-user-username" class="required">Username</label>
+            <input type="text" id="edit-user-username" class="form-control" required placeholder="Username" minlength="3" maxlength="15">
+          </div>
+
+          <div class="form-group">
+            <label for="edit-user-email" class="required">Email Address</label>
+            <input type="email" id="edit-user-email" class="form-control" required placeholder="Email Address">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close-modal="edit-user-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- CSV IMPORT WIZARD MODAL -->
+  <div class="modal-backdrop" id="csv-import-wizard-modal">
+    <div class="modal-card" style="max-width: 800px; width: 95%;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-file-import text-teal"></i> CSV Import Wizard</h3>
+        <button class="modal-close-btn" data-close-modal="csv-import-wizard-modal">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 24px; overflow-y: auto; max-height: 70vh;">
+        <!-- Step Indicators -->
+        <div class="import-wizard-steps" style="display: flex; justify-content: space-around; margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 16px;">
+          <div class="wizard-step active" id="import-step-1-indicator" style="display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--accent-purple);">
+            <span class="step-num" style="background: var(--accent-purple); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">1</span>
+            <span>Upload File</span>
+          </div>
+          <div class="wizard-step" id="import-step-2-indicator" style="display: flex; align-items: center; gap: 8px; font-weight: 500; color: var(--text-muted);">
+            <span class="step-num" style="background: var(--border-color); color: var(--text-muted); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">2</span>
+            <span>Map Columns</span>
+          </div>
+          <div class="wizard-step" id="import-step-3-indicator" style="display: flex; align-items: center; gap: 8px; font-weight: 500; color: var(--text-muted);">
+            <span class="step-num" style="background: var(--border-color); color: var(--text-muted); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">3</span>
+            <span>Preview & Import</span>
+          </div>
+        </div>
+
+        <!-- STEP 1: UPLOAD FILE -->
+        <div class="wizard-section active" id="import-wizard-section-1">
+          <div class="file-drop-zone" id="csv-drop-zone" style="border: 2px dashed var(--border-color); border-radius: 8px; padding: 40px; text-align: center; cursor: pointer; transition: all 0.2s ease; background: var(--bg-card);">
+            <i class="fa-solid fa-cloud-arrow-up" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 16px;"></i>
+            <h4 style="margin-bottom: 8px; font-weight: 600; color: var(--text-main);">Drag and drop your CSV file here</h4>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 16px;">or click to browse your files</p>
+            <button type="button" class="btn btn-outline btn-sm" id="btn-browse-csv">Browse CSV</button>
+            <input type="file" id="csv-wizard-file-input" accept=".csv" style="display: none;">
+          </div>
+          <div id="csv-file-info" style="margin-top: 16px; display: none; align-items: center; justify-content: space-between; background: var(--bg-input); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <i class="fa-solid fa-file-csv" style="font-size: 2rem; color: #0284c7;"></i>
+              <div>
+                <strong id="csv-file-name" style="display: block; color: var(--text-main);">file.csv</strong>
+                <span id="csv-file-size" style="font-size: 0.8rem; color: var(--text-muted);">0 KB</span>
+              </div>
+            </div>
+            <button type="button" class="btn btn-danger btn-sm" id="btn-remove-csv" style="padding: 6px 10px;"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+
+        <!-- STEP 2: MAP COLUMNS -->
+        <div class="wizard-section" id="import-wizard-section-2" style="display: none;">
+          <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 16px;">
+            Map the fields in your CSV columns to the GameVault database fields. Fields marked with <span class="text-danger">*</span> are required.
+          </p>
+          <div class="table-responsive" style="max-height: 320px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 16px;">
+            <table class="table" style="margin-bottom: 0;">
+              <thead>
+                <tr>
+                  <th>Database Field</th>
+                  <th>CSV Column Header</th>
+                  <th>Default Value (If unmapped)</th>
+                </tr>
+              </thead>
+              <tbody id="csv-mapping-tbody">
+                <!-- Injected dynamically by JS -->
+              </tbody>
+            </table>
+          </div>
+          <div id="csv-mapping-warning" class="alert alert-danger" style="display: none; margin-top: 12px;">
+            <i class="fa-solid fa-circle-exclamation"></i> Please map the required fields: <strong>Game Title</strong> and <strong>Digital Key</strong>.
+          </div>
+        </div>
+
+        <!-- STEP 3: PREVIEW DATA -->
+        <div class="wizard-section" id="import-wizard-section-3" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0;">
+              Preview the first 5 records of your import. Total rows to import: <strong id="csv-total-rows-count" class="text-teal">0</strong>
+            </p>
+          </div>
+          <div class="table-responsive" style="border: 1px solid var(--border-color); border-radius: 6px; overflow-x: auto; max-height: 320px;">
+            <table class="table table-striped" style="margin-bottom: 0; font-size: 0.85rem; min-width: 600px;">
+              <thead id="csv-preview-thead">
+                <!-- Injected dynamically by JS -->
+              </thead>
+              <tbody id="csv-preview-tbody">
+                <!-- Injected dynamically by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: space-between; border-top: 1px solid var(--border-color); padding: 16px 24px; background: var(--bg-modal-footer);">
+        <button type="button" class="btn btn-outline" id="btn-import-wizard-back" style="visibility: hidden;">Back</button>
+        <div style="display: flex; gap: 12px;">
+          <button type="button" class="btn btn-outline" data-close-modal="csv-import-wizard-modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="btn-import-wizard-next" disabled>Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD SUPPLIER MODAL -->
+  <div class="modal-backdrop" id="add-supplier-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-truck-ramp-box text-purple"></i> Add New Supplier</h3>
+        <button class="modal-close-btn" data-close-modal="add-supplier-modal">&times;</button>
+      </div>
+      <form id="add-supplier-form">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="supplier-name-input" class="required">Supplier Name</label>
+            <input type="text" id="supplier-name-input" class="form-control" required placeholder="e.g. Humble Bundle, Fanatical">
+          </div>
+          <div class="form-group">
+            <label class="required">Supplier Tag Color</label>
+            <div class="color-palette-grid" id="add-supplier-color-grid"></div>
+            <input type="hidden" id="add-supplier-color-input" required value="purple">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label>Supplier Logo</label>
+            <div class="image-input-container">
+              <input type="text" id="supplier-logo-url-input" class="form-control form-control-sm" placeholder="Paste logo image URL...">
+              <div class="image-divider"><span>OR</span></div>
+              <label class="btn btn-outline btn-sm file-upload-label" style="width: 100%; justify-content: center;">
+                <i class="fa-solid fa-upload"></i> Upload Logo
+                <input type="file" id="supplier-logo-file-input" accept="image/*" style="display: none;">
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid var(--border-color); padding: 16px 24px; background: var(--bg-modal-footer);">
+          <button type="button" class="btn btn-outline" data-close-modal="add-supplier-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Supplier</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- HELP & DOCUMENTATION MODAL -->
+  <div class="modal-backdrop" id="help-modal">
+    <div class="modal-card" style="max-width: 800px; width: 95%;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-circle-question text-purple"></i> Help & Documentation Center</h3>
+        <button class="modal-close-btn" data-close-modal="help-modal">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 20px; overflow-y: hidden;">
+        <div style="display: grid; grid-template-columns: 200px 1fr; gap: 24px; min-height: 400px;">
+          <!-- Sidebar tabs -->
+          <div style="display: flex; flex-direction: column; gap: 6px; border-right: 1px solid var(--border-color); padding-right: 16px;">
+            <button type="button" class="btn btn-outline btn-sm help-tab-btn active" data-help-tab="help-tab-general" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background-color: var(--bg-input); color: var(--text-main); width: 100%;">
+              <i class="fa-solid fa-book" style="margin-right: 8px; width: 16px; color: var(--accent-cyan);"></i> General Guide
+            </button>
+            <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-import" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
+              <i class="fa-solid fa-file-excel" style="margin-right: 8px; width: 16px; color: var(--accent-emerald);"></i> Bulk Import Tips
+            </button>
+            <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-sync" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
+              <i class="fa-solid fa-arrows-rotate" style="margin-right: 8px; width: 16px; color: var(--accent-purple);"></i> Cloud & Auto-Sync
+            </button>
+            <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-shortcuts" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
+              <i class="fa-solid fa-keyboard" style="margin-right: 8px; width: 16px; color: var(--accent-pink);"></i> Keyboard Hotkeys
+            </button>
+          </div>
+          <!-- Pane contents -->
+          <div style="max-height: 420px; overflow-y: auto; padding-right: 8px; text-align: left;">
+            
+            <!-- Pane 1: General -->
+            <div id="help-tab-general" class="help-tab-pane">
+              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Key Merchant Pro Overview</h4>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                GameVault Key Merchant Pro is a high-performance inventory and sales pipeline management dashboard. It helps you track game activation keys, analyze financial records, monitor stock durations, and manage supplier transactions.
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Key Activation States</h5>
+              <ul style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.6; padding-left: 20px; margin-bottom: 16px;">
+                <li><strong style="color: var(--accent-teal);">Available:</strong> Keys currently active in stock and ready to be sold.</li>
+                <li><strong style="color: var(--accent-purple);">Sold:</strong> Dispatched keys. These are logged in the Sales Ledger and calculate profit margin.</li>
+                <li><strong style="color: var(--accent-pink);">Reserved:</strong> Keys held back for customer orders or pending deals.</li>
+                <li><strong style="color: var(--accent-warning);">Rejected:</strong> Revoked, faulty, or returned keys. Capital cost is tracked but they represent no profit.</li>
+              </ul>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Inventory Aging Alerts</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 0;">
+                To prevent stock depreciation, the app categorizes key storage duration:
+                <br>
+                <span class="badge badge-age-fresh" style="margin-top: 4px; display: inline-block;">Fresh</span> (under 30 days), 
+                <span class="badge badge-age-aging" style="display: inline-block;">Aging</span> (30-90 days), 
+                <span class="badge badge-age-stale" style="display: inline-block;">Stale</span> (90-180 days), and 
+                <span class="badge badge-age-verystale" style="display: inline-block;">Very Stale</span> (180+ days).
+              </p>
+            </div>
+
+            <!-- Pane 2: Import -->
+            <div id="help-tab-import" class="help-tab-pane hidden">
+              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Bulk Spreadsheet Ingestion</h4>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                You can import huge files directly from Excel/CSV workbooks. The parser reads standard files and updates your lists in batches.
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Expected Column Mappings</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 12px;">
+                The importer matches your sheet columns automatically. Make sure your file contains headers similar to:
+              </p>
+              <table style="width: 100%; border-collapse: collapse; font-size: 0.825rem; color: var(--text-secondary); margin-bottom: 16px;">
+                <thead>
+                  <tr style="border-bottom: 1px solid var(--border-color); text-align: left;">
+                    <th style="padding: 6px;">Excel Header</th>
+                    <th style="padding: 6px;">Maps To</th>
+                    <th style="padding: 6px;">Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 6px; font-weight: 600; color: var(--text-main);">Name / Title</td>
+                    <td style="padding: 6px;">Game Title</td>
+                    <td style="padding: 6px;">Required to group entries</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 6px; font-weight: 600; color: var(--text-main);">Vendor / Supplier</td>
+                    <td style="padding: 6px;">Supplier Source</td>
+                    <td style="padding: 6px;">Defaults to "Direct" if empty</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 6px; font-weight: 600; color: var(--text-main);">Key / Code</td>
+                    <td style="padding: 6px;">Activation Key</td>
+                    <td style="padding: 6px;">Stored encrypted locally</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 6px; font-weight: 600; color: var(--text-main);">Cost / Sell</td>
+                    <td style="padding: 6px;">Prices</td>
+                    <td style="padding: 6px;">Must be positive numbers</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 6px; font-weight: 600; color: var(--text-main);">Status</td>
+                    <td style="padding: 6px;">State</td>
+                    <td style="padding: 6px;">"Open" ➔ Available, "Closed" ➔ Sold, "Rejected"</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div style="background-color: rgba(255, 179, 0, 0.05); border-left: 3px solid var(--accent-warning); padding: 10px; border-radius: var(--radius-sm);">
+                <p style="color: var(--text-main); font-size: 0.8rem; margin: 0; line-height: 1.4;">
+                  <strong>Pro Tip:</strong> Use the **Excel/CSV Bulk Import** card in Settings. The importer handles large batches asynchronously, so the browser stays responsive.
+                </p>
+              </div>
+            </div>
+
+            <!-- Pane 3: Sync -->
+            <div id="help-tab-sync" class="help-tab-pane hidden">
+              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Cloud Synchronization & Backups</h4>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                Secure your database and collaborate across devices by configuring cloud sync services.
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Supabase & Firebase Sync</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                - <strong>Real-time mode:</strong> All edits (add, edit, sell, delete) instantly update your cloud tables.
+                <br>
+                - <strong>Manual mode:</strong> Edits are saved offline. An "Unsynced Changes" badge will display, allowing you to trigger a batch push via the **Synchronize Now** button.
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">GitHub Repositories Sync</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 0;">
+                Configure a Personal Access Token (PAT) to commit your database backups directly to your GitHub repo as a JSON file. Use **Auto-Push on Change** to sync silently in the background, or **Auto-Pull on Startup** to download the latest state automatically.
+              </p>
+            </div>
+
+            <!-- Pane 4: Shortcuts -->
+            <div id="help-tab-shortcuts" class="help-tab-pane hidden">
+              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Keyboard Hotkeys</h4>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                Speed up your catalog operations with these global keyboard shortcuts:
+              </p>
+              
+              <table style="width: 100%; border-collapse: collapse; font-size: 0.875rem; color: var(--text-secondary);">
+                <thead>
+                  <tr style="border-bottom: 1px solid var(--border-color); text-align: left; font-weight: 600; color: var(--text-main);">
+                    <th style="padding: 8px 6px;">Shortcut</th>
+                    <th style="padding: 8px 6px;">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 8px 6px;"><kbd style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 6px; font-family: monospace;">Ctrl + Z</kbd></td>
+                    <td style="padding: 8px 6px;">Undo last change (creates, edits, sales, deletes, bulk actions)</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 8px 6px;"><kbd style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 6px; font-family: monospace;">Ctrl + Y</kbd></td>
+                    <td style="padding: 8px 6px;">Redo last undone change</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 8px 6px;"><kbd style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 6px; font-family: monospace;">F1</kbd> or <kbd style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 6px; font-family: monospace;">?</kbd></td>
+                    <td style="padding: 8px 6px;">Launch Help & Documentation Center (this overlay)</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 8px 6px;"><kbd style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 6px; font-family: monospace;">Escape</kbd></td>
+                    <td style="padding: 8px 6px;">Instantly close any active modal dialog or popup list</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; padding: 16px 24px; border-top: 1px solid var(--border-color); background: var(--bg-modal-footer);">
+        <button type="button" class="btn btn-primary" data-close-modal="help-modal">Got it!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BULK PRICE ADJUSTMENT MODAL -->
+  <div class="modal hidden" id="bulk-price-adjust-modal">
+    <div class="modal-backdrop" data-close-modal="bulk-price-adjust-modal"></div>
+    <div class="modal-content modal-md">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-calculator"></i> Bulk Price Adjustment</h3>
+        <button class="modal-close-btn" data-close-modal="bulk-price-adjust-modal">&times;</button>
+      </div>
+      <form id="bulk-price-adjust-form" novalidate>
+        <div class="modal-body">
+          <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 20px;">
+            Apply modifications to the cost and sell price of <strong id="bulk-adjust-count-label">0</strong> selected inventory key(s).
+          </p>
+
+          <!-- Acquisition Cost Adjustments -->
+          <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; margin-bottom: 16px; background-color: rgba(255,255,255,0.02);">
+            <h4 style="margin-top: 0; margin-bottom: 12px; font-size: 0.95rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+              <span style="background-color: var(--accent-purple)20; color: var(--accent-purple); width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem;">1</span>
+              Acquisition Cost (Buy Price)
+            </h4>
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label for="bulk-cost-action">Modification Mode</label>
+              <select id="bulk-cost-action" class="form-control">
+                <option value="none">No Change</option>
+                <option value="set">Set Fixed Value</option>
+                <option value="adjust">Adjust (Add/Subtract)</option>
+              </select>
+            </div>
+            <div class="form-row" id="bulk-cost-value-row" style="display: none; gap: 12px;">
+              <div class="form-group" style="flex: 2; margin-bottom: 0;">
+                <label for="bulk-cost-value">Amount (<span class="currency-symbol">€</span>)</label>
+                <input type="number" id="bulk-cost-value" class="form-control" placeholder="0.00" step="0.01">
+              </div>
+              <div class="form-group" style="flex: 1; margin-bottom: 0; display: flex; align-items: flex-end;">
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-weight: 500; font-size: 0.85rem; color: var(--text-secondary);">
+                  <input type="checkbox" id="bulk-cost-percent" style="cursor: pointer; width: 16px; height: 16px;"> Percentage
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Target Sell Price Adjustments -->
+          <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; background-color: rgba(255,255,255,0.02);">
+            <h4 style="margin-top: 0; margin-bottom: 12px; font-size: 0.95rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+              <span style="background-color: var(--accent-pink)20; color: var(--accent-pink); width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem;">2</span>
+              Target Sell Price
+            </h4>
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label for="bulk-sell-action">Modification Mode</label>
+              <select id="bulk-sell-action" class="form-control">
+                <option value="none">No Change</option>
+                <option value="set">Set Fixed Value</option>
+                <option value="adjust">Adjust (Add/Subtract)</option>
+              </select>
+            </div>
+            <div class="form-row" id="bulk-sell-value-row" style="display: none; gap: 12px;">
+              <div class="form-group" style="flex: 2; margin-bottom: 0;">
+                <label for="bulk-sell-value">Amount (<span class="currency-symbol">€</span>)</label>
+                <input type="number" id="bulk-sell-value" class="form-control" placeholder="0.00" step="0.01">
+              </div>
+              <div class="form-group" style="flex: 1; margin-bottom: 0; display: flex; align-items: flex-end;">
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-weight: 500; font-size: 0.85rem; color: var(--text-secondary);">
+                  <input type="checkbox" id="bulk-sell-percent" style="cursor: pointer; width: 16px; height: 16px;"> Percentage
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close-modal="bulk-price-adjust-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Apply Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- BULK ACTIONS BAR -->
+  <div id="bulk-actions-bar" class="bulk-actions-bar glass-panel hidden">
+    <div class="bulk-info">
+      <span id="bulk-select-count">0 items selected</span>
+      <button type="button" class="btn-bulk-clear" id="btn-bulk-clear" title="Deselect All Items">Deselect All</button>
+    </div>
+    <div class="bulk-buttons">
+      <!-- Status Change -->
+      <div class="bulk-dropdown-wrapper">
+        <button type="button" class="btn btn-outline btn-sm" id="btn-bulk-status-toggle" title="Change Status">
+          <i class="fa-solid fa-tag"></i> <span>Status</span> <i class="fa-solid fa-chevron-down"></i>
+        </button>
+        <div class="bulk-dropdown-menu" id="bulk-status-menu">
+          <button type="button" class="bulk-menu-item" data-status="Available">Available</button>
+          <button type="button" class="bulk-menu-item" data-status="Reserved">Reserved</button>
+          <button type="button" class="bulk-menu-item" data-status="Rejected">Rejected</button>
+        </div>
+      </div>
+
+      <!-- Supplier Change -->
+      <div class="bulk-dropdown-wrapper">
+        <button type="button" class="btn btn-outline btn-sm" id="btn-bulk-supplier-toggle" title="Change Supplier">
+          <i class="fa-solid fa-truck"></i> <span>Supplier</span> <i class="fa-solid fa-chevron-down"></i>
+        </button>
+        <div class="bulk-dropdown-menu" id="bulk-supplier-menu">
+          <!-- Populated Dynamically -->
+        </div>
+      </div>
+
+      <!-- Platform Change -->
+      <div class="bulk-dropdown-wrapper">
+        <button type="button" class="btn btn-outline btn-sm" id="btn-bulk-platform-toggle" title="Change Platform">
+          <i class="fa-solid fa-gamepad"></i> <span>Platform</span> <i class="fa-solid fa-chevron-down"></i>
+        </button>
+        <div class="bulk-dropdown-menu" id="bulk-platform-menu">
+          <!-- Populated Dynamically -->
+        </div>
+      </div>
+
+      <!-- Adjust Price -->
+      <button type="button" class="btn btn-outline btn-sm" id="btn-bulk-price" title="Adjust Costs and Prices">
+        <i class="fa-solid fa-calculator"></i> <span>Price Adjust</span>
+      </button>
+
+      <!-- Export Selected -->
+      <button type="button" class="btn btn-outline btn-sm" id="btn-bulk-export" title="Export Selected Keys to CSV">
+        <i class="fa-solid fa-file-export"></i> <span>Export</span>
+      </button>
+
+      <!-- Delete Selected -->
+      <button type="button" class="btn btn-danger btn-sm" id="btn-bulk-delete" title="Move Selected to Recycle Bin">
+        <i class="fa-solid fa-trash"></i> <span>Delete</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- QUICK ACTIONS FLOATING TOOLBAR -->
+  <div id="quick-actions-toolbar" class="quick-actions-toolbar glass-panel hidden">
+    <div class="quick-actions-items">
+      <button class="quick-action-btn" id="qa-search" title="Quick Search (Ctrl+F equivalent)">
+        <i class="fa-solid fa-magnifying-glass text-cyan"></i>
+        <span>Search</span>
+      </button>
+      <button class="quick-action-btn" id="qa-add-key" title="Add Game Key">
+        <i class="fa-solid fa-plus text-teal"></i>
+        <span>Add Key</span>
+      </button>
+      <div class="quick-actions-divider"></div>
+      <button class="quick-action-btn" id="qa-undo" title="Undo Last Action" disabled>
+        <i class="fa-solid fa-arrow-rotate-left"></i>
+        <span>Undo</span>
+      </button>
+      <button class="quick-action-btn" id="qa-redo" title="Redo Last Action" disabled>
+        <i class="fa-solid fa-arrow-rotate-right"></i>
+        <span>Redo</span>
+      </button>
+      <div class="quick-actions-divider"></div>
+      <button class="quick-action-btn" id="qa-sync" title="Sync Database & Backups Now">
+        <i class="fa-solid fa-cloud-arrow-up text-cyan"></i>
+        <span>Sync</span>
+      </button>
+      <button class="quick-action-btn" id="qa-theme" title="Toggle Appearance Theme">
+        <i class="fa-solid fa-circle-half-stroke text-amber"></i>
+        <span>Theme</span>
+      </button>
+      <button class="quick-action-btn" id="qa-import" title="Bulk Import Excel/CSV">
+        <i class="fa-solid fa-file-import text-emerald"></i>
+        <span>Import</span>
+      </button>
+      <button class="quick-action-btn" id="qa-help" title="Open Help Center (F1)">
+        <i class="fa-solid fa-circle-question text-purple"></i>
+        <span>Help</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Main JavaScript File -->
+  <script src="app.js?v=2"></script>
+</body>
+</html>
