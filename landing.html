@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GameVault - SaaS Operations Hub for Game Key Merchants</title>
+  <meta name="description" content="Manage, sync, and scale your game key business. Track inventory, calculate real-time platform profits, sync data to Supabase/GitHub, and analyze supplier margins.">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Custom landing styling -->
+  <link rel="stylesheet" href="landing.css">
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="header" id="main-header">
+    <div class="container nav-wrapper">
+      <a href="#" class="logo">
+        <i class="fa-solid fa-gamepad"></i>
+        <span>Game<span style="color: var(--accent-pink);">Vault</span></span>
+      </a>
+      <ul class="nav-menu">
+        <li><a href="#features" class="nav-link">Features</a></li>
+        <li><a href="#calculator" class="nav-link">ROI Calculator</a></li>
+        <li><a href="#pricing" class="nav-link">Pricing</a></li>
+        <li><a href="#faq" class="nav-link">FAQ</a></li>
+      </ul>
+      <div class="nav-actions">
+        <a href="index.html" class="btn btn-outline" style="border-radius: 30px; font-size: 0.9rem; padding: 8px 18px;">Sign In</a>
+        <a href="index.html" class="btn btn-primary" style="border-radius: 30px; font-size: 0.9rem; padding: 8px 18px;">Open App</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO SECTION -->
+  <section class="hero">
+    <div class="container hero-grid">
+      <div class="hero-content">
+        <div class="hero-badge">
+          <i class="fa-solid fa-star"></i> Pro Edition v2.0 is Live
+        </div>
+        <h1 class="hero-title">
+          Scale Your <span class="text-gradient">Game Key</span> Brokerage Business
+        </h1>
+        <p class="hero-subtitle">
+          Effortlessly organize thousands of digital keys, automate Supabase cloud syncs, manage supplier margins, and export financial trends. Clean, high-performance, offline-first dashboard designed for power sellers.
+        </p>
+        <div class="hero-ctas">
+          <a href="index.html" class="btn btn-primary btn-lg">
+            <i class="fa-solid fa-rocket"></i> Launch Free Dashboard
+          </a>
+          <a href="#features" class="btn btn-outline btn-lg">
+            Explore Features
+          </a>
+        </div>
+      </div>
+      <div class="hero-mockup-wrapper">
+        <div class="hero-mockup-glow"></div>
+        <img src="assets/dashboard_showcase.png" alt="GameVault Dashboard Mockup" class="hero-mockup-image">
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS BAR -->
+  <section class="stats">
+    <div class="container stats-grid">
+      <div class="stat-item">
+        <h3 id="stat-keys">12,500+</h3>
+        <p>Keys Processed</p>
+      </div>
+      <div class="stat-item">
+        <h3 id="stat-uptime">99.99%</h3>
+        <p>Sync Uptime</p>
+      </div>
+      <div class="stat-item">
+        <h3 id="stat-hours">450h+</h3>
+        <p>Time Saved</p>
+      </div>
+      <div class="stat-item">
+        <h3 id="stat-suppliers">1,200+</h3>
+        <p>Active Sellers</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES SECTION -->
+  <section class="features" id="features">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Powerful Utilities</span>
+        <h2 class="section-title">Built for High-Frequency Digital Merchants</h2>
+        <p class="section-subtitle">Ditch spreadsheets. Get real-time inventory tracking, smart margins, and instant database recovery queues in one interface.</p>
+      </div>
+      
+      <div class="features-grid">
+        <!-- Feature 1 -->
+        <div class="feature-card">
+          <div class="feature-icon purple">
+            <i class="fa-solid fa-bolt"></i>
+          </div>
+          <h4>High-Performance Scrolling</h4>
+          <p>Features state-of-the-art DOM Virtualization enabling scroll lists to render over 12,000+ key records synchronously with sub-millisecond redraw latency.</p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="feature-card">
+          <div class="feature-icon cyan">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+          </div>
+          <h4>Real-Time Cloud Sync</h4>
+          <p>Integrated service syncs keys to Supabase databases. Supports offline-write storage buffering and background bulk push-pull queues.</p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="feature-card">
+          <div class="feature-icon pink">
+            <i class="fa-solid fa-coins"></i>
+          </div>
+          <h4>Transposed Finance Ledger</h4>
+          <p>Aggregates sales by month, year, or all-time into spreadsheet grid systems, detailing ROI rates, average sell velocities, margins, and duration spans.</p>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="feature-card">
+          <div class="feature-icon emerald">
+            <i class="fa-solid fa-code-branch"></i>
+          </div>
+          <h4>GitHub JSON Backups</h4>
+          <p>Keep direct ownership of your database. Automatically commit encrypted database state snapshots directly to your private GitHub repositories.</p>
+        </div>
+
+        <!-- Feature 5 -->
+        <div class="feature-card">
+          <div class="feature-icon amber">
+            <i class="fa-solid fa-table-cells"></i>
+          </div>
+          <h4>Autofills & Customizations</h4>
+          <p>Autofill game acquisition details, platform markups, low-stock notifications, sidebar links, regional currencies, and logo emblems.</p>
+        </div>
+
+        <!-- Feature 6 -->
+        <div class="feature-card">
+          <div class="feature-icon purple">
+            <i class="fa-solid fa-rotate-left"></i>
+          </div>
+          <h4>State Undo & Recovery</h4>
+          <p>Safety first. Supports an in-memory chronological state undo/redo stack (up to 20 operations deep) to reverse mistaken deletes instantly.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SAVINGS CALCULATOR SECTION -->
+  <section class="calc-section" id="calculator">
+    <div class="container calc-grid">
+      <div class="calc-text">
+        <span class="section-tag" style="color: var(--accent-cyan);">Savings Calculator</span>
+        <h2 class="section-title">Calculate Your Brokerage Efficiency Gains</h2>
+        <p class="section-subtitle" style="margin-bottom: 24px;">
+          Manual spreadsheet copy-pasting, sync coordination, and profit math drain key merchants of valuable hours. Use the sliders on the right to see how much time and money you recover with GameVault automation.
+        </p>
+        <ul style="list-style: none; margin-bottom: 30px; color: var(--text-secondary);">
+          <li style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <i class="fa-solid fa-circle-check" style="color: var(--accent-cyan);"></i> Zero spreadsheet formulas to write
+          </li>
+          <li style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <i class="fa-solid fa-circle-check" style="color: var(--accent-cyan);"></i> Instant automatic csv statements mapping
+          </li>
+          <li style="display: flex; align-items: center; gap: 12px;">
+            <i class="fa-solid fa-circle-check" style="color: var(--accent-cyan);"></i> Unified team access on multiple devices
+          </li>
+        </ul>
+      </div>
+      <div class="calc-panel">
+        <div class="calc-group">
+          <div class="calc-label-row">
+            <label for="slider-volume">Monthly Keys Sold</label>
+            <span class="calc-value-badge" id="val-volume">2,500 keys</span>
+          </div>
+          <input type="range" id="slider-volume" class="calc-slider" min="100" max="15000" step="100" value="2500">
+        </div>
+        
+        <div class="calc-group" style="margin-bottom: 40px;">
+          <div class="calc-label-row">
+            <label for="slider-time">Manual Time per Key</label>
+            <span class="calc-value-badge" id="val-time">3 minutes</span>
+          </div>
+          <input type="range" id="slider-time" class="calc-slider" min="1" max="10" step="0.5" value="3">
+        </div>
+
+        <div class="calc-results">
+          <div class="calc-result-card">
+            <h5>Hours Saved / Mo</h5>
+            <div class="calc-result-val" id="res-hours">125h</div>
+          </div>
+          <div class="calc-result-card highlight">
+            <h5>Estimated Profits Gain</h5>
+            <div class="calc-result-val" id="res-savings">€3,750</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING SECTION -->
+  <section class="pricing" id="pricing">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Pricing Plans</span>
+        <h2 class="section-title">Scale Gracefully as Your Volume Grows</h2>
+        <p class="section-subtitle">Start tracking keys locally for free. Upgrade whenever you need cloud scaling, API hooks, or real-time sync nodes.</p>
+      </div>
+
+      <div class="pricing-toggle-wrapper">
+        <span class="pricing-toggle-label active" id="toggle-label-monthly">Monthly Billing</span>
+        <label class="switch">
+          <input type="checkbox" id="pricing-toggle-checkbox">
+          <span class="slider-switch"></span>
+        </label>
+        <span class="pricing-toggle-label" id="toggle-label-annual">Annual Billing <span class="pricing-badge">Save 25%</span></span>
+      </div>
+
+      <div class="pricing-grid">
+        <!-- Tier 1 -->
+        <div class="price-card">
+          <div class="price-header">
+            <h4>Hobbyist</h4>
+            <p>Perfect for solo sellers tracking small key catalogs locally.</p>
+          </div>
+          <div class="price-tag">
+            <span class="price-num">€0</span>
+            <span class="price-period">/ month</span>
+          </div>
+          <ul class="price-features">
+            <li><i class="fa-solid fa-check"></i> IndexedDB Local Storage</li>
+            <li><i class="fa-solid fa-check"></i> Basic Sales Loggers</li>
+            <li><i class="fa-solid fa-check"></i> Advanced Statistics & Charts</li>
+            <li class="disabled"><i class="fa-solid fa-xmark"></i> Supabase Cloud Synchronizer</li>
+            <li class="disabled"><i class="fa-solid fa-xmark"></i> GitHub Repos Backups</li>
+            <li class="disabled"><i class="fa-solid fa-xmark"></i> Team Multi-Device Sync</li>
+          </ul>
+          <a href="index.html" class="btn btn-outline" style="width: 100%; border-radius: 30px;">Get Started Free</a>
+        </div>
+
+        <!-- Tier 2 -->
+        <div class="price-card popular">
+          <div class="price-header">
+            <h4>Broker Pro</h4>
+            <p>For active key brokers scaling cross-device syncs and backups.</p>
+          </div>
+          <div class="price-tag">
+            <span class="price-num" id="pro-price">€19</span>
+            <span class="price-period" id="pro-period">/ month</span>
+          </div>
+          <ul class="price-features">
+            <li><i class="fa-solid fa-check"></i> Unlimited Keys Inventory</li>
+            <li><i class="fa-solid fa-check"></i> Supabase Real-Time Cloud Node</li>
+            <li><i class="fa-solid fa-check"></i> GitHub Automated Backups</li>
+            <li><i class="fa-solid fa-check"></i> High-Speed DOM Virtualization</li>
+            <li><i class="fa-solid fa-check"></i> Custom Suppliers & Logo URLs</li>
+            <li><i class="fa-solid fa-check"></i> Multi-device State Syncing</li>
+          </ul>
+          <a href="index.html" class="btn btn-primary" style="width: 100%; border-radius: 30px;">Unlock Pro Access</a>
+        </div>
+
+        <!-- Tier 3 -->
+        <div class="price-card">
+          <div class="price-header">
+            <h4>Enterprise</h4>
+            <p>For large merchant teams requiring dedicated database nodes.</p>
+          </div>
+          <div class="price-tag">
+            <span class="price-num">Custom</span>
+            <span class="price-period">/ bespoke</span>
+          </div>
+          <ul class="price-features">
+            <li><i class="fa-solid fa-check"></i> Isolated Database Shards</li>
+            <li><i class="fa-solid fa-check"></i> Custom API Integrations</li>
+            <li><i class="fa-solid fa-check"></i> Dedicated SLA Uptime Nodes</li>
+            <li><i class="fa-solid fa-check"></i> Priority Account Management</li>
+            <li><i class="fa-solid fa-check"></i> Automated Payout Invoicing</li>
+            <li><i class="fa-solid fa-check"></i> Custom Roles & Audit Logs</li>
+          </ul>
+          <a href="mailto:support@gamevault.io" class="btn btn-outline" style="width: 100%; border-radius: 30px;">Contact Sales</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ SECTION -->
+  <section class="faq" id="faq">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Common Questions</span>
+        <h2 class="section-title">Frequently Asked Questions</h2>
+        <p class="section-subtitle">Everything you need to know about key storage, licenses, and sync modules.</p>
+      </div>
+
+      <div class="faq-list">
+        <div class="faq-item">
+          <button class="faq-question">
+            <h4>Can I import my existing Excel/CSV files?</h4>
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+          <div class="faq-answer">
+            <p>Yes. GameVault integrates SheetJS which lets you drag and drop any raw Excel sheet. You can map custom headers to Game Title, Platform, Key, and Cost properties dynamically in Settings.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question">
+            <h4>Where is my inventory database stored?</h4>
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+          <div class="faq-answer">
+            <p>GameVault is offline-first. By default, your data stays in your browser's secure HTML5 IndexedDB storage database. Once you save Supabase credentials, mutations are piped to your remote database.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question">
+            <h4>How does virtual scrolling help with large catalogs?</h4>
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+          <div class="faq-answer">
+            <p>Standard tables crash or lag when rendering 10,000+ items. Our virtualization engine only renders the 15-20 rows visible in the viewport, reusing table cells during scroll. This guarantees a smooth 60fps experience.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question">
+            <h4>What is the Undo stack limitation?</h4>
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+          <div class="faq-answer">
+            <p>The state Undo/Redo recovery stack preserves the last 20 state mutations. This lets you undo key creations, edits, bulk status adjustments, and deletions. Older records are purged to keep RAM usage low.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA BANNER -->
+  <section class="cta-banner">
+    <div class="container">
+      <div class="cta-box">
+        <h2>Ready to Automate Your Key Brokerage?</h2>
+        <p>Get started with the local dashboard free of charge. Set up cloud syncing and backup repository commits in under 2 minutes.</p>
+        <a href="index.html" class="btn btn-primary btn-lg">
+          <i class="fa-solid fa-rocket"></i> Launch Free Dashboard
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <h4>GameVault</h4>
+          <p>Premium operating dashboard and database console tailored for digital game key brokers and sales merchants.</p>
+          <div class="footer-socials">
+            <a href="#" class="social-icon"><i class="fa-brands fa-twitter"></i></a>
+            <a href="#" class="social-icon"><i class="fa-brands fa-github"></i></a>
+            <a href="#" class="social-icon"><i class="fa-brands fa-discord"></i></a>
+          </div>
+        </div>
+        <div class="footer-links">
+          <h5>Product</h5>
+          <ul>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#calculator">ROI Calculator</a></li>
+            <li><a href="#pricing">Pricing</a></li>
+            <li><a href="index.html">App Portal</a></li>
+          </ul>
+        </div>
+        <div class="footer-links">
+          <h5>Security</h5>
+          <ul>
+            <li><a href="#">Encryption Standards</a></li>
+            <li><a href="#">Supabase Credentials</a></li>
+            <li><a href="#">GitHub Integration</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+          </ul>
+        </div>
+        <div class="footer-links">
+          <h5>Company</h5>
+          <ul>
+            <li><a href="#">About Us</a></li>
+            <li><a href="#">Press Kit</a></li>
+            <li><a href="#">Support Hub</a></li>
+            <li><a href="mailto:support@gamevault.io">Contact Team</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span class="footer-copy">&copy; 2026 GameVault. All rights reserved. Made for key merchants worldwide.</span>
+        <span class="footer-copy">Version 2.4.0</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Page Interactivity Scripts -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      // 1. Header Scrolled Class Transitions
+      const header = document.getElementById("main-header");
+      window.addEventListener("scroll", () => {
+        if (window.scrollY > 50) {
+          header.classList.add("scrolled");
+        } else {
+          header.classList.remove("scrolled");
+        }
+      });
+
+      // 2. Savings ROI Calculator logic
+      const sliderVolume = document.getElementById("slider-volume");
+      const sliderTime = document.getElementById("slider-time");
+      
+      const valVolume = document.getElementById("val-volume");
+      const valTime = document.getElementById("val-time");
+      
+      const resHours = document.getElementById("res-hours");
+      const resSavings = document.getElementById("res-savings");
+
+      const formatNum = (num) => num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+      const updateSavings = () => {
+        const volume = parseInt(sliderVolume.value) || 0;
+        const time = parseFloat(sliderTime.value) || 0;
+
+        valVolume.textContent = `${formatNum(volume)} keys`;
+        valTime.textContent = `${time} minute${time === 1 ? '' : 's'}`;
+
+        // Calculate hours saved per month
+        const totalMinutes = volume * time;
+        const hoursSaved = Math.round(totalMinutes / 60);
+        resHours.textContent = `${formatNum(hoursSaved)}h`;
+
+        // Calculate money saved based on developer average rate (€30/hour)
+        const savingsMoney = Math.round(hoursSaved * 30);
+        resSavings.textContent = `€${formatNum(savingsMoney)}`;
+      };
+
+      if (sliderVolume && sliderTime) {
+        sliderVolume.addEventListener("input", updateSavings);
+        sliderTime.addEventListener("input", updateSavings);
+        updateSavings(); // Run initialization
+      }
+
+      // 3. Pricing Period Duration Toggle Switch
+      const billingToggle = document.getElementById("pricing-toggle-checkbox");
+      const labelMonthly = document.getElementById("toggle-label-monthly");
+      const labelAnnual = document.getElementById("toggle-label-annual");
+      
+      const proPrice = document.getElementById("pro-price");
+      const proPeriod = document.getElementById("pro-period");
+
+      const updatePricing = () => {
+        if (billingToggle.checked) {
+          // Annual billing
+          labelMonthly.classList.remove("active");
+          labelAnnual.classList.add("active");
+          proPrice.textContent = "€14";
+          proPeriod.textContent = " / month (billed annually)";
+        } else {
+          // Monthly billing
+          labelMonthly.classList.add("active");
+          labelAnnual.classList.remove("active");
+          proPrice.textContent = "€19";
+          proPeriod.textContent = " / month";
+        }
+      };
+
+      if (billingToggle) {
+        billingToggle.addEventListener("change", updatePricing);
+        updatePricing();
+      }
+
+      // 4. FAQ Accordion panel collapse animations
+      const faqQuestions = document.querySelectorAll(".faq-question");
+      faqQuestions.forEach(btn => {
+        btn.addEventListener("click", () => {
+          const faqItem = btn.parentElement;
+          const isActive = faqItem.classList.contains("active");
+          
+          // Collapse all faq items first
+          document.querySelectorAll(".faq-item").forEach(item => {
+            item.classList.remove("active");
+          });
+
+          // Expand selected one if it wasn't already active
+          if (!isActive) {
+            faqItem.classList.add("active");
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>

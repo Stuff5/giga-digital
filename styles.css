@@ -3415,3 +3415,198 @@ textarea.form-control {
   background-color: hsla(355, 90%, 55%, 0.15) !important;
   color: hsl(355, 90%, 58%) !important;
 }
+
+/* Quick Actions Floating Toolbar */
+.quick-actions-toolbar {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  left: auto;
+  transform: none;
+  z-index: 900; /* Stays below modals (1000) and toast container (1050) */
+  padding: 8px 16px;
+  border-radius: 40px;
+  background: var(--bg-card-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  transition: bottom 0.3s ease, right 0.3s ease, opacity 0.3s ease;
+}
+
+.quick-actions-toolbar.hidden {
+  display: none !important;
+}
+
+.quick-actions-items {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quick-action-btn {
+  background: transparent;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.quick-action-btn i {
+  font-size: 1.1rem;
+  transition: transform 0.2s ease;
+}
+
+.quick-action-btn span {
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.quick-action-btn:hover:not([disabled]) {
+  background-color: hsla(0, 0%, 100%, 0.08);
+  color: var(--text-main);
+}
+
+.quick-action-btn:hover:not([disabled]) i {
+  transform: translateY(-2px);
+}
+
+.quick-action-btn:active:not([disabled]) {
+  transform: scale(0.95);
+}
+
+.quick-action-btn[disabled] {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.quick-actions-divider {
+  width: 1px;
+  height: 24px;
+  background-color: var(--border-color);
+  margin: 0 4px;
+}
+
+/* Icon text colors */
+.text-teal { color: var(--accent-teal); }
+.text-pink { color: var(--accent-pink); }
+.text-emerald { color: var(--accent-emerald); }
+.text-purple { color: var(--accent-purple); }
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .quick-actions-toolbar {
+    bottom: 16px;
+    right: 16px;
+    left: auto;
+    transform: none;
+    padding: 6px 10px;
+  }
+  .quick-action-btn span {
+    display: none;
+  }
+  .quick-action-btn {
+    padding: 8px;
+    border-radius: 50%;
+  }
+}
+
+/* Enhanced Bulk Actions Bar Classes */
+.bulk-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-right: 1px solid var(--border-color);
+  padding-right: 16px;
+}
+
+.btn-bulk-clear {
+  background: transparent;
+  border: none;
+  color: var(--accent-pink);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+}
+
+.btn-bulk-clear:hover {
+  background-color: hsla(339, 81%, 65%, 0.12);
+  text-decoration: underline;
+}
+
+.bulk-dropdown-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.bulk-dropdown-menu {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background-color: var(--bg-toast);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 6px;
+  min-width: 150px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.bulk-dropdown-menu::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px;
+  border-style: solid;
+  border-color: var(--border-color) transparent transparent transparent;
+}
+
+.bulk-dropdown-menu.show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+
+.bulk-menu-item {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 0.85rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.bulk-menu-item:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+}
+
+.text-cyan { color: var(--accent-cyan); }
+.text-amber { color: var(--accent-amber); }
+

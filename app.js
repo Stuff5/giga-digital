@@ -3,65 +3,149 @@
  * Main Application Script (app.js)
  */
 
-// Safe localStorage wrapper to prevent crashes in private windows or restricted iframe origins (like GitHub Pages)
-const safeStorage = (() => {
-  const memoryStore = {};
-  let isSupported = false;
-  try {
-    const testKey = "__storage_test__";
-    window.localStorage.setItem(testKey, testKey);
-    window.localStorage.removeItem(testKey);
-    isSupported = true;
-  } catch (e) {
-    isSupported = false;
-    console.warn("localStorage is not accessible in this environment. Falling back to in-memory storage.");
+// IndexedDB low-level asynchronous storage layer
+const indexedDBStorage = (() => {
+  const DB_NAME = "GameVaultDB";
+  const DB_VERSION = 1;
+  const STORE_NAME = "key_value_store";
+  let dbPromise = null;
+
+  function getDB() {
+    if (dbPromise) return dbPromise;
+    dbPromise = new Promise((resolve, reject) => {
+      try {
+        const request = window.indexedDB.open(DB_NAME, DB_VERSION);
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME);
+          }
+        };
+        request.onsuccess = (event) => {
+          resolve(event.target.result);
+        };
+        request.onerror = (event) => {
+          console.error("IndexedDB open error:", event.target.error);
+          reject(event.target.error);
+        };
+      } catch (err) {
+        console.error("IndexedDB is not supported or blocked in this environment:", err);
+        reject(err);
+      }
+    });
+    return dbPromise;
   }
 
   return {
-    getItem(key) {
-      if (isSupported) {
-        try {
-          return window.localStorage.getItem(key);
-        } catch (e) {
-          // Fallback
-        }
+    async getItem(key) {
+      try {
+        const db = await getDB();
+        return new Promise((resolve, reject) => {
+          const transaction = db.transaction(STORE_NAME, "readonly");
+          const store = transaction.objectStore(STORE_NAME);
+          const request = store.get(key);
+          request.onsuccess = () => resolve(request.result !== undefined ? request.result : null);
+          request.onerror = () => reject(request.error);
+        });
+      } catch (e) {
+        return null;
       }
+    },
+    async setItem(key, value) {
+      try {
+        const db = await getDB();
+        return new Promise((resolve, reject) => {
+          const transaction = db.transaction(STORE_NAME, "readwrite");
+          const store = transaction.objectStore(STORE_NAME);
+          const request = store.put(value, key);
+          request.onsuccess = () => resolve();
+          request.onerror = () => reject(request.error);
+        });
+      } catch (e) {
+        console.error("IndexedDB setItem error:", e);
+      }
+    },
+    async removeItem(key) {
+      try {
+        const db = await getDB();
+        return new Promise((resolve, reject) => {
+          const transaction = db.transaction(STORE_NAME, "readwrite");
+          const store = transaction.objectStore(STORE_NAME);
+          const request = store.delete(key);
+          request.onsuccess = () => resolve();
+          request.onerror = () => reject(request.error);
+        });
+      } catch (e) {
+        console.error("IndexedDB removeItem error:", e);
+      }
+    },
+    async clear() {
+      try {
+        const db = await getDB();
+        return new Promise((resolve, reject) => {
+          const transaction = db.transaction(STORE_NAME, "readwrite");
+          const store = transaction.objectStore(STORE_NAME);
+          const request = store.clear();
+          request.onsuccess = () => resolve();
+          request.onerror = () => reject(request.error);
+        });
+      } catch (e) {
+        console.error("IndexedDB clear error:", e);
+      }
+    },
+    async getAll() {
+      try {
+        const db = await getDB();
+        return new Promise((resolve, reject) => {
+          const transaction = db.transaction(STORE_NAME, "readonly");
+          const store = transaction.objectStore(STORE_NAME);
+          const keysRequest = store.getAllKeys();
+          keysRequest.onsuccess = () => {
+            const keys = keysRequest.result;
+            const valuesRequest = store.getAll();
+            valuesRequest.onsuccess = () => {
+              const values = valuesRequest.result;
+              const result = {};
+              keys.forEach((key, index) => {
+                result[key] = values[index];
+              });
+              resolve(result);
+            };
+            valuesRequest.onerror = () => reject(valuesRequest.error);
+          };
+          keysRequest.onerror = () => reject(keysRequest.error);
+        });
+      } catch (e) {
+        return {};
+      }
+    }
+  };
+})();
+
+// Safe local storage interface wrapper backed by IndexedDB and synchronous memory fallback
+const safeStorage = (() => {
+  const memoryStore = {};
+
+  return {
+    _memoryStore: memoryStore,
+
+    getItem(key) {
       return Object.prototype.hasOwnProperty.call(memoryStore, key) ? memoryStore[key] : null;
     },
     setItem(key, value) {
-      if (isSupported) {
-        try {
-          window.localStorage.setItem(key, value);
-          return;
-        } catch (e) {
-          // Fallback
-        }
-      }
-      memoryStore[key] = String(value);
+      const stringValue = String(value);
+      memoryStore[key] = stringValue;
+      indexedDBStorage.setItem(key, stringValue);
     },
     removeItem(key) {
-      if (isSupported) {
-        try {
-          window.localStorage.removeItem(key);
-          return;
-        } catch (e) {
-          // Fallback
-        }
-      }
       delete memoryStore[key];
+      indexedDBStorage.removeItem(key);
     },
     clear() {
-      if (isSupported) {
-        try {
-          window.localStorage.clear();
-          return;
-        } catch (e) {
-          // Fallback
-        }
-      }
       for (const key in memoryStore) {
         delete memoryStore[key];
       }
+      indexedDBStorage.clear();
     }
   };
 })();
@@ -69,6 +153,51 @@ const safeStorage = (() => {
 // Override localStorage and sessionStorage locally within this script's scope
 const localStorage = safeStorage;
 const sessionStorage = safeStorage;
+
+// Initializes safeStorage memory cache from IndexedDB and migrates legacy localStorage values
+async function initIndexedDBStorage() {
+  try {
+    const dbData = await indexedDBStorage.getAll();
+    const dbKeys = Object.keys(dbData);
+
+    if (dbKeys.length > 0) {
+      // IndexedDB has data, populate memoryStore
+      dbKeys.forEach(key => {
+        safeStorage._memoryStore[key] = dbData[key];
+      });
+      console.log(`Loaded ${dbKeys.length} items from IndexedDB.`);
+    } else {
+      // IndexedDB is empty, check for legacy localStorage data to migrate
+      let migratedCount = 0;
+      try {
+        const testKey = "__storage_test__";
+        window.localStorage.setItem(testKey, testKey);
+        window.localStorage.removeItem(testKey);
+        
+        // Migrate all keys starting with "gv_"
+        for (let i = 0; i < window.localStorage.length; i++) {
+          const key = window.localStorage.key(i);
+          if (key && key.startsWith("gv_")) {
+            const value = window.localStorage.getItem(key);
+            safeStorage._memoryStore[key] = value;
+            await indexedDBStorage.setItem(key, value);
+            migratedCount++;
+          }
+        }
+        if (migratedCount > 0) {
+          console.log(`Migrated ${migratedCount} items from localStorage to IndexedDB.`);
+        }
+      } catch (storageErr) {
+        console.warn("localStorage legacy check failed or not accessible:", storageErr);
+      }
+    }
+  } catch (err) {
+    console.error("Failed to initialize IndexedDB storage cache:", err);
+  }
+}
+
+// Global DOM elements cache layer
+const DOM = {};
 
 // Global error boundary display for remote environment debugging
 window.addEventListener("error", (event) => {
@@ -376,6 +505,7 @@ let state = {
     suppliers: [],
     platforms: []
   },
+  selectedInventoryIds: [],
   inventory: [],
   sales: [],
   suppliers: [],
@@ -462,7 +592,8 @@ let state = {
   },
   autoSyncInterval: localStorage.getItem("gv_auto_sync_interval") || "off",
   autoPushGitHub: localStorage.getItem("gv_auto_push_github") === "true",
-  autoPullGitHub: localStorage.getItem("gv_auto_pull_github") === "true"
+  autoPullGitHub: localStorage.getItem("gv_auto_pull_github") === "true",
+  showQuickToolbar: localStorage.getItem("gv_show_quick_toolbar") !== "false"
 };
 
 // Charts reference objects for hot-reloading data
@@ -473,11 +604,36 @@ let costRevenueChartInstance = null;
 let supplierSplitChartInstance = null;
 let topBestsellersChartInstance = null;
 
+function initDOMCache() {
+  const elements = [
+    // Views
+    "dashboard-view", "inventory-view", "sales-view", "finance-view", "suppliers-view", "settings-view", "recycle-view", "entries-view",
+    // Modals
+    "add-game-modal", "edit-game-modal", "sell-game-modal", "help-modal", "view-key-modal", "catalog-keys-modal",
+    // Main UI tables & ledger containers
+    "publishers-table-body", "suppliers-table-body", "platforms-table-body", "entries-table-body", "recycle-table-body", "payouts-ledger-body",
+    // Toolbars & Action Bars
+    "quick-actions-toolbar", "bulk-actions-bar", "recycle-bulk-actions", "recycle-info-text",
+    // Sync indicators & timers
+    "sync-pending-indicator", "auto-sync-timer-countdown", "auto-sync-status-badge", "auto-sync-next-run"
+  ];
+  
+  elements.forEach(id => {
+    DOM[id] = document.getElementById(id);
+  });
+}
+
 // ==========================================================================
 // APP INITIALIZATION
 // ==========================================================================
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   try {
+    // Initialize DOM cache layer
+    initDOMCache();
+    
+    // Initialize IndexedDB storage and populate memory cache
+    await initIndexedDBStorage();
+    
     // Load State and check session
     loadStateFromStorage();
     
@@ -489,6 +645,10 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // Set up navigation router
     initNavigation();
+
+    // Apply quick actions toolbar visibility
+    applyQuickToolbarVisibility();
+    initQuickActionsToolbar();
 
     // Set up forms & modals event handlers
     initEventHandlers();
@@ -696,6 +856,19 @@ document.addEventListener("DOMContentLoaded", () => {
         applySalesLedgerVisibility(state.showSalesLedger);
         if (window.supabaseClient) {
           dbSaveSettings("showSalesLedger", state.showSalesLedger);
+        }
+      });
+    }
+
+    const toggleQuickToolbarInput = document.getElementById("toggle-show-quick-toolbar");
+    if (toggleQuickToolbarInput) {
+      toggleQuickToolbarInput.checked = state.showQuickToolbar;
+      toggleQuickToolbarInput.addEventListener("change", (e) => {
+        state.showQuickToolbar = e.target.checked;
+        saveStateToStorage();
+        applyQuickToolbarVisibility();
+        if (window.supabaseClient) {
+          dbSaveSettings("showQuickToolbar", state.showQuickToolbar);
         }
       });
     }
@@ -985,6 +1158,7 @@ function loadStateFromStorage() {
     state.autoSyncInterval = localStorage.getItem("gv_auto_sync_interval") || "off";
     state.autoPushGitHub = localStorage.getItem("gv_auto_push_github") === "true";
     state.autoPullGitHub = localStorage.getItem("gv_auto_pull_github") === "true";
+    state.showQuickToolbar = localStorage.getItem("gv_show_quick_toolbar") !== "false";
 
     // Purge empty/invalid rows from the database state automatically
     cleanupEmptyDatabaseRows();
@@ -1071,6 +1245,7 @@ function saveStateToStorage() {
   localStorage.setItem("gv_auto_sync_interval", state.autoSyncInterval);
   localStorage.setItem("gv_auto_push_github", state.autoPushGitHub ? "true" : "false");
   localStorage.setItem("gv_auto_pull_github", state.autoPullGitHub ? "true" : "false");
+  localStorage.setItem("gv_show_quick_toolbar", state.showQuickToolbar ? "true" : "false");
   localStorage.setItem("gv_platform_fee_presets", JSON.stringify(PLATFORM_FEE_PRESETS));
   if (state.customLogo) {
     localStorage.setItem("gv_custom_logo", state.customLogo);
@@ -1116,6 +1291,15 @@ function updateUndoRedoButtons() {
   }
   if (btnRedo) {
     btnRedo.disabled = redoStack.length === 0;
+  }
+
+  const qaUndo = document.getElementById("qa-undo");
+  const qaRedo = document.getElementById("qa-redo");
+  if (qaUndo) {
+    qaUndo.disabled = undoStack.length === 0;
+  }
+  if (qaRedo) {
+    qaRedo.disabled = redoStack.length === 0;
   }
 }
 
@@ -2360,9 +2544,9 @@ function initEventHandlers() {
   // Page Size Selector
   const invPageSizeSelect = document.getElementById("inv-page-size");
   if (invPageSizeSelect) {
-    invPageSizeSelect.value = state.inventoryPageSize.toString();
+    invPageSizeSelect.value = state.inventoryPageSize >= 100000 ? "virtual" : state.inventoryPageSize.toString();
     invPageSizeSelect.addEventListener("change", (e) => {
-      state.inventoryPageSize = parseInt(e.target.value) || 25;
+      state.inventoryPageSize = e.target.value === "virtual" ? 100000 : (parseInt(e.target.value) || 25);
       state.inventoryCurrentPage = 1;
       saveStateToStorage();
       if (window.supabaseClient && state.syncMode === "realtime") {
@@ -2377,9 +2561,9 @@ function initEventHandlers() {
   // Sales Page Size Selector
   const salesPageSizeSelect = document.getElementById("sales-page-size");
   if (salesPageSizeSelect) {
-    salesPageSizeSelect.value = state.salesPageSize.toString();
+    salesPageSizeSelect.value = state.salesPageSize >= 100000 ? "virtual" : state.salesPageSize.toString();
     salesPageSizeSelect.addEventListener("change", (e) => {
-      state.salesPageSize = parseInt(e.target.value) || 25;
+      state.salesPageSize = e.target.value === "virtual" ? 100000 : (parseInt(e.target.value) || 25);
       state.salesCurrentPage = 1;
       saveStateToStorage();
       if (window.supabaseClient && state.syncMode === "realtime") {
@@ -3131,12 +3315,27 @@ function initEventHandlers() {
   // Event delegation for inventory checkbox selections
   document.addEventListener("change", (e) => {
     if (e.target.classList.contains("inv-row-select")) {
+      const id = e.target.getAttribute("data-id");
+      if (e.target.checked) {
+        if (!state.selectedInventoryIds.includes(id)) {
+          state.selectedInventoryIds.push(id);
+        }
+      } else {
+        state.selectedInventoryIds = state.selectedInventoryIds.filter(x => x !== id);
+      }
       updateBulkActionsBar();
     }
     if (e.target.id === "inv-select-all") {
       const checked = e.target.checked;
+      const activeItems = state._activeRenderedItems || [];
+      if (checked) {
+        state.selectedInventoryIds = activeItems.map(item => item.id);
+      } else {
+        state.selectedInventoryIds = [];
+      }
       document.querySelectorAll(".inv-row-select").forEach(cb => {
-        cb.checked = checked;
+        const id = cb.getAttribute("data-id");
+        cb.checked = state.selectedInventoryIds.includes(id);
       });
       updateBulkActionsBar();
     }
@@ -3146,8 +3345,7 @@ function initEventHandlers() {
   const btnBulkDelete = document.getElementById("btn-bulk-delete");
   if (btnBulkDelete) {
     btnBulkDelete.addEventListener("click", () => {
-      const selectedCheckboxes = document.querySelectorAll(".inv-row-select:checked");
-      const selectedIds = Array.from(selectedCheckboxes).map(el => el.getAttribute("data-id"));
+      const selectedIds = state.selectedInventoryIds || [];
       if (selectedIds.length === 0) return;
 
       const confirmMsg = `Are you sure you want to move the ${selectedIds.length} selected key(s) to the Recycle Bin?`;
@@ -3164,6 +3362,9 @@ function initEventHandlers() {
         // Perform deletion from active state
         state.inventory = state.inventory.filter(item => !selectedIds.includes(item.id));
         state.sales = state.sales.filter(sale => !selectedIds.includes(sale.inventoryId));
+
+        // Clear selections
+        state.selectedInventoryIds = [];
 
         // Save changes
         saveStateToStorage();
@@ -3384,8 +3585,7 @@ function initEventHandlers() {
 
 // Update the floating bulk actions bar visibility and selection counters
 function updateBulkActionsBar() {
-  const selectedCheckboxes = document.querySelectorAll(".inv-row-select:checked");
-  const count = selectedCheckboxes.length;
+  const count = state.selectedInventoryIds ? state.selectedInventoryIds.length : 0;
   const bar = document.getElementById("bulk-actions-bar");
   const countText = document.getElementById("bulk-select-count");
   
@@ -3400,14 +3600,562 @@ function updateBulkActionsBar() {
 
   const selectAllCheckbox = document.getElementById("inv-select-all");
   if (selectAllCheckbox) {
-    const allCheckboxes = document.querySelectorAll(".inv-row-select");
-    selectAllCheckbox.checked = allCheckboxes.length > 0 && Array.from(allCheckboxes).every(cb => cb.checked);
+    const activeItems = state._activeRenderedItems || [];
+    selectAllCheckbox.checked = activeItems.length > 0 && activeItems.every(item => state.selectedInventoryIds.includes(item.id));
+  }
+}
+
+// Navigation helper to switch views programmatically
+function navigateToHash(targetHash) {
+  const navLinks = document.querySelectorAll(".nav-link");
+  const views = document.querySelectorAll(".content-view");
+  const sidebar = document.getElementById("app-sidebar");
+
+  let matchedLink = null;
+  navLinks.forEach(link => {
+    if (link.getAttribute("href") === targetHash) {
+      matchedLink = link;
+    }
+  });
+
+  if (matchedLink) {
+    navLinks.forEach(l => l.classList.remove("active"));
+    matchedLink.classList.add("active");
+  }
+
+  views.forEach(view => {
+    view.classList.remove("active");
+    if (`#${view.id.replace("-view", "")}` === targetHash) {
+      view.classList.add("active");
+    }
+  });
+
+  if (sidebar && sidebar.classList.contains("active")) {
+    sidebar.classList.remove("active");
+  }
+
+  try {
+    if (targetHash === "#inventory") {
+      renderInventoryTable(getFilteredInventory());
+    } else if (targetHash === "#sales") {
+      renderSalesTable(getFilteredSales());
+    } else if (targetHash === "#entries") {
+      renderEntries();
+    } else if (targetHash === "#suppliers") {
+      renderSuppliers();
+    } else if (targetHash === "#platforms") {
+      renderPlatforms();
+    } else if (targetHash === "#finance") {
+      renderFinanceView();
+    } else if (targetHash === "#recycle") {
+      renderRecycleBin();
+    } else if (targetHash === "#dashboard") {
+      updateUI();
+    }
+  } catch (err) {
+    console.error("Error rendering view on programmatic navigation:", err);
+  }
+}
+
+// Quick Actions Toolbar Visibility Application
+function applyQuickToolbarVisibility() {
+  const toolbar = document.getElementById("quick-actions-toolbar");
+  if (!toolbar) return;
+
+  if (state.showQuickToolbar) {
+    toolbar.classList.remove("hidden");
+  } else {
+    toolbar.classList.add("hidden");
+  }
+}
+
+// Initialize Quick Actions Toolbar Button Event Listeners
+function initQuickActionsToolbar() {
+  const btnSearch = document.getElementById("qa-search");
+  if (btnSearch) {
+    btnSearch.addEventListener("click", () => {
+      navigateToHash("#inventory");
+      setTimeout(() => {
+        const searchInput = document.getElementById("inv-search-input");
+        if (searchInput) {
+          searchInput.focus();
+          searchInput.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 100);
+    });
+  }
+
+  const btnAddKey = document.getElementById("qa-add-key");
+  if (btnAddKey) {
+    btnAddKey.addEventListener("click", () => {
+      openModal("add-game-modal");
+    });
+  }
+
+  const btnUndo = document.getElementById("qa-undo");
+  if (btnUndo) {
+    btnUndo.addEventListener("click", () => {
+      if (typeof handleUndo === "function") {
+        handleUndo();
+      }
+    });
+  }
+
+  const btnRedo = document.getElementById("qa-redo");
+  if (btnRedo) {
+    btnRedo.addEventListener("click", () => {
+      if (typeof handleRedo === "function") {
+        handleRedo();
+      }
+    });
+  }
+
+  const btnSync = document.getElementById("qa-sync");
+  if (btnSync) {
+    btnSync.addEventListener("click", async () => {
+      const icon = btnSync.querySelector("i");
+      if (icon) icon.classList.add("fa-spin");
+      showToast("Initializing full database synchronization...", "info");
+      
+      try {
+        if (typeof triggerScheduledSync === "function") {
+          await triggerScheduledSync();
+        } else if (typeof syncToGitHub === "function") {
+          await syncToGitHub(true);
+        }
+        showToast("Cloud synchronization completed successfully!", "success");
+      } catch (err) {
+        console.error("Sync error:", err);
+        showToast("Synchronization encountered errors.", "error");
+      } finally {
+        if (icon) icon.classList.remove("fa-spin");
+      }
+    });
+  }
+
+  const btnTheme = document.getElementById("qa-theme");
+  if (btnTheme) {
+    btnTheme.addEventListener("click", () => {
+      pushToUndoStack();
+      state.themeMode = state.themeMode === "light" ? "dark" : "light";
+      applyTheme(state.themeMode, state.themeColor);
+      updateThemeSelectionCards(state.themeMode, state.themeColor);
+      saveStateToStorage();
+      
+      if (window.supabaseClient && state.syncMode === "realtime") {
+        dbSaveSettings("themeMode", state.themeMode);
+      } else if (state.syncMode === "manual") {
+        setUnsyncedChanges(true);
+      }
+      
+      updateUI();
+      showToast(`Switched to ${state.themeMode} mode theme.`, "info");
+    });
+  }
+
+  const btnImport = document.getElementById("qa-import");
+  if (btnImport) {
+    btnImport.addEventListener("click", () => {
+      navigateToHash("#settings");
+      
+      const importZone = document.getElementById("import-drop-zone");
+      const importFileInput = document.getElementById("settings-import-file");
+      
+      if (importZone) {
+        importZone.scrollIntoView({ behavior: "smooth", block: "center" });
+        importZone.style.boxShadow = "0 0 15px var(--accent-emerald)";
+        setTimeout(() => {
+          importZone.style.boxShadow = "none";
+        }, 1500);
+      }
+      
+      if (importFileInput) {
+        setTimeout(() => {
+          importFileInput.click();
+        }, 500);
+      }
+    });
+  }
+
+  const btnHelp = document.getElementById("qa-help");
+  if (btnHelp) {
+    btnHelp.addEventListener("click", () => {
+      openModal("help-modal");
+    });
+  }
+
+  updateUndoRedoButtons();
+  initBulkActionsToolbar();
+  initBulkPriceAdjustModalForm();
+}
+
+// Initialize Bulk Actions dropdowns and button event listeners
+function initBulkActionsToolbar() {
+  const btnClear = document.getElementById("btn-bulk-clear");
+  if (btnClear) {
+    btnClear.addEventListener("click", () => {
+      state.selectedInventoryIds = [];
+      updateUI();
+    });
+  }
+
+  const statusToggle = document.getElementById("btn-bulk-status-toggle");
+  const supplierToggle = document.getElementById("btn-bulk-supplier-toggle");
+  const platformToggle = document.getElementById("btn-bulk-platform-toggle");
+
+  const statusMenu = document.getElementById("bulk-status-menu");
+  const supplierMenu = document.getElementById("bulk-supplier-menu");
+  const platformMenu = document.getElementById("bulk-platform-menu");
+
+  const closeAllBulkMenus = () => {
+    if (statusMenu) statusMenu.classList.remove("show");
+    if (supplierMenu) supplierMenu.classList.remove("show");
+    if (platformMenu) platformMenu.classList.remove("show");
+  };
+
+  if (statusToggle && statusMenu) {
+    statusToggle.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const show = !statusMenu.classList.contains("show");
+      closeAllBulkMenus();
+      if (show) statusMenu.classList.add("show");
+    });
+  }
+
+  if (supplierToggle && supplierMenu) {
+    supplierToggle.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const show = !supplierMenu.classList.contains("show");
+      closeAllBulkMenus();
+      if (show) {
+        supplierMenu.innerHTML = "";
+        state.suppliers.forEach(sup => {
+          if (!sup || sup.enabled === false) return;
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "bulk-menu-item";
+          btn.textContent = sup.name;
+          btn.addEventListener("click", () => {
+            applyBulkSupplier(sup.name);
+            closeAllBulkMenus();
+          });
+          supplierMenu.appendChild(btn);
+        });
+        if (supplierMenu.children.length === 0) {
+          supplierMenu.innerHTML = `<span style="padding: 8px 12px; font-size: 0.75rem; color: var(--text-muted);">No active suppliers</span>`;
+        }
+        supplierMenu.classList.add("show");
+      }
+    });
+  }
+
+  if (platformToggle && platformMenu) {
+    platformToggle.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const show = !platformMenu.classList.contains("show");
+      closeAllBulkMenus();
+      if (show) {
+        platformMenu.innerHTML = "";
+        state.platforms.forEach(plat => {
+          if (!plat || plat.enabled === false) return;
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "bulk-menu-item";
+          btn.textContent = plat.name;
+          btn.addEventListener("click", () => {
+            applyBulkPlatform(plat.name);
+            closeAllBulkMenus();
+          });
+          platformMenu.appendChild(btn);
+        });
+        if (platformMenu.children.length === 0) {
+          platformMenu.innerHTML = `<span style="padding: 8px 12px; font-size: 0.75rem; color: var(--text-muted);">No active platforms</span>`;
+        }
+        platformMenu.classList.add("show");
+      }
+    });
+  }
+
+  const statusItems = document.querySelectorAll("#bulk-status-menu .bulk-menu-item");
+  statusItems.forEach(item => {
+    item.addEventListener("click", () => {
+      const status = item.getAttribute("data-status");
+      if (status) {
+        applyBulkStatus(status);
+        closeAllBulkMenus();
+      }
+    });
+  });
+
+  const btnBulkPrice = document.getElementById("btn-bulk-price");
+  if (btnBulkPrice) {
+    btnBulkPrice.addEventListener("click", () => {
+      const count = state.selectedInventoryIds ? state.selectedInventoryIds.length : 0;
+      const countLabel = document.getElementById("bulk-adjust-count-label");
+      if (countLabel) countLabel.textContent = count;
+      
+      document.getElementById("bulk-cost-action").value = "none";
+      document.getElementById("bulk-cost-value-row").style.display = "none";
+      document.getElementById("bulk-cost-value").value = "";
+      document.getElementById("bulk-cost-percent").checked = false;
+
+      document.getElementById("bulk-sell-action").value = "none";
+      document.getElementById("bulk-sell-value-row").style.display = "none";
+      document.getElementById("bulk-sell-value").value = "";
+      document.getElementById("bulk-sell-percent").checked = false;
+
+      openModal("bulk-price-adjust-modal");
+    });
+  }
+
+  const btnBulkExport = document.getElementById("btn-bulk-export");
+  if (btnBulkExport) {
+    btnBulkExport.addEventListener("click", () => {
+      exportBulkInventoryToCSV();
+    });
+  }
+
+  document.addEventListener("click", () => {
+    closeAllBulkMenus();
+  });
+}
+
+// Initialize Bulk Price Adjust Modal form event listeners
+function initBulkPriceAdjustModalForm() {
+  const costAction = document.getElementById("bulk-cost-action");
+  const costValRow = document.getElementById("bulk-cost-value-row");
+  if (costAction && costValRow) {
+    costAction.addEventListener("change", (e) => {
+      if (e.target.value === "none") {
+        costValRow.style.display = "none";
+      } else {
+        costValRow.style.display = "flex";
+      }
+    });
+  }
+
+  const sellAction = document.getElementById("bulk-sell-action");
+  const sellValRow = document.getElementById("bulk-sell-value-row");
+  if (sellAction && sellValRow) {
+    sellAction.addEventListener("change", (e) => {
+      if (e.target.value === "none") {
+        sellValRow.style.display = "none";
+      } else {
+        sellValRow.style.display = "flex";
+      }
+    });
+  }
+
+  const form = document.getElementById("bulk-price-adjust-form");
+  if (form) {
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      
+      const cAction = document.getElementById("bulk-cost-action").value;
+      const cVal = document.getElementById("bulk-cost-value").value;
+      const cPercent = document.getElementById("bulk-cost-percent").checked;
+
+      const sAction = document.getElementById("bulk-sell-action").value;
+      const sVal = document.getElementById("bulk-sell-value").value;
+      const sPercent = document.getElementById("bulk-sell-percent").checked;
+
+      if (cAction === "none" && sAction === "none") {
+        showToast("No modifications selected.", "warning");
+        closeModal("bulk-price-adjust-modal");
+        return;
+      }
+
+      applyBulkPriceAdjustment(cAction, cVal, cPercent, sAction, sVal, sPercent);
+      closeModal("bulk-price-adjust-modal");
+    });
+  }
+}
+
+// Bulk status change helper
+function applyBulkStatus(newStatus) {
+  const selectedIds = state.selectedInventoryIds || [];
+  if (selectedIds.length === 0) return;
+
+  pushToUndoStack();
+
+  let modifiedCount = 0;
+  state.inventory.forEach(item => {
+    if (selectedIds.includes(item.id)) {
+      item.status = newStatus;
+      modifiedCount++;
+      if (window.supabaseClient && state.syncMode === "realtime") {
+        dbSaveInventory(item);
+      }
+    }
+  });
+
+  if (modifiedCount > 0) {
+    if (!window.supabaseClient && state.syncMode === "manual") {
+      setUnsyncedChanges(true);
+    }
+    saveStateToStorage();
+    state.selectedInventoryIds = [];
+    updateUI();
+    showToast(`Successfully updated status to "${newStatus}" for ${modifiedCount} item(s).`, "success");
+  }
+}
+
+// Bulk supplier change helper
+function applyBulkSupplier(newSupplier) {
+  const selectedIds = state.selectedInventoryIds || [];
+  if (selectedIds.length === 0) return;
+
+  pushToUndoStack();
+
+  let modifiedCount = 0;
+  state.inventory.forEach(item => {
+    if (selectedIds.includes(item.id)) {
+      item.source = newSupplier;
+      modifiedCount++;
+      if (window.supabaseClient && state.syncMode === "realtime") {
+        dbSaveInventory(item);
+      }
+    }
+  });
+
+  if (modifiedCount > 0) {
+    if (!window.supabaseClient && state.syncMode === "manual") {
+      setUnsyncedChanges(true);
+    }
+    saveStateToStorage();
+    state.selectedInventoryIds = [];
+    updateUI();
+    showToast(`Successfully updated supplier to "${newSupplier}" for ${modifiedCount} item(s).`, "success");
+  }
+}
+
+// Bulk platform change helper
+function applyBulkPlatform(newPlatform) {
+  const selectedIds = state.selectedInventoryIds || [];
+  if (selectedIds.length === 0) return;
+
+  pushToUndoStack();
+
+  let modifiedCount = 0;
+  state.inventory.forEach(item => {
+    if (selectedIds.includes(item.id)) {
+      item.platform = newPlatform;
+      modifiedCount++;
+      if (window.supabaseClient && state.syncMode === "realtime") {
+        dbSaveInventory(item);
+      }
+    }
+  });
+
+  if (modifiedCount > 0) {
+    if (!window.supabaseClient && state.syncMode === "manual") {
+      setUnsyncedChanges(true);
+    }
+    saveStateToStorage();
+    state.selectedInventoryIds = [];
+    updateUI();
+    showToast(`Successfully updated platform to "${newPlatform}" for ${modifiedCount} item(s).`, "success");
+  }
+}
+
+// Bulk selection CSV exporter
+function exportBulkInventoryToCSV() {
+  const selectedIds = state.selectedInventoryIds || [];
+  if (selectedIds.length === 0) {
+    showToast("No items selected for export.", "warning");
+    return;
+  }
+
+  const selectedItems = state.inventory.filter(item => selectedIds.includes(item.id));
+  if (selectedItems.length === 0) return;
+
+  const csvRows = [];
+  csvRows.push(["ID", "Game Title", "Platform", "Digital Key", "Acquisition Cost", "Source", "Date Added", "Status", "Notes"]);
+
+  selectedItems.forEach(item => {
+    csvRows.push([
+      item.id,
+      `"${item.title.replace(/"/g, '""')}"`,
+      item.platform,
+      item.key,
+      item.cost.toFixed(2),
+      `"${item.source.replace(/"/g, '""')}"`,
+      item.purchaseDate,
+      item.status,
+      `"${(item.notes || "").replace(/"/g, '""')}"`
+    ]);
+  });
+
+  downloadCSV(csvRows.join("\n"), "GameVault_Inventory_Selection_Export.csv");
+  showToast(`Exported ${selectedItems.length} selected key(s) to CSV!`, "success");
+}
+
+// Bulk price adjustment helper
+function applyBulkPriceAdjustment(costAction, costVal, costIsPercent, sellAction, sellVal, sellIsPercent) {
+  const selectedIds = state.selectedInventoryIds || [];
+  if (selectedIds.length === 0) return;
+
+  pushToUndoStack();
+
+  let modifiedCount = 0;
+  state.inventory.forEach(item => {
+    if (selectedIds.includes(item.id)) {
+      let changed = false;
+
+      // 1. Cost adjustment
+      if (costAction === "set") {
+        item.cost = Math.max(0, parseFloat(costVal) || 0);
+        changed = true;
+      } else if (costAction === "adjust") {
+        const val = parseFloat(costVal) || 0;
+        if (costIsPercent) {
+          item.cost = Math.max(0, item.cost * (1 + val / 100));
+        } else {
+          item.cost = Math.max(0, item.cost + val);
+        }
+        item.cost = Math.round(item.cost * 100) / 100;
+        changed = true;
+      }
+
+      // 2. Target Sell Price adjustment
+      if (sellAction === "set") {
+        item.sellPrice = Math.max(0, parseFloat(sellVal) || 0);
+        changed = true;
+      } else if (sellAction === "adjust") {
+        const val = parseFloat(sellVal) || 0;
+        const currentSell = parseFloat(item.sellPrice) || 0;
+        if (sellIsPercent) {
+          item.sellPrice = Math.max(0, currentSell * (1 + val / 100));
+        } else {
+          item.sellPrice = Math.max(0, currentSell + val);
+        }
+        item.sellPrice = Math.round(item.sellPrice * 100) / 100;
+        changed = true;
+      }
+
+      if (changed) {
+        modifiedCount++;
+        if (window.supabaseClient && state.syncMode === "realtime") {
+          dbSaveInventory(item);
+        }
+      }
+    }
+  });
+
+  if (modifiedCount > 0) {
+    if (!window.supabaseClient && state.syncMode === "manual") {
+      setUnsyncedChanges(true);
+    }
+    saveStateToStorage();
+    state.selectedInventoryIds = [];
+    updateUI();
+    showToast(`Successfully adjusted prices for ${modifiedCount} item(s).`, "success");
   }
 }
 
 // Modal helper functions
 function openModal(id) {
-  const modal = document.getElementById(id);
+  const modal = DOM[id] || document.getElementById(id);
   if (modal) {
     modal.classList.add("active");
   } else {
@@ -3416,7 +4164,7 @@ function openModal(id) {
 }
 
 function closeModal(id) {
-  const modal = document.getElementById(id);
+  const modal = DOM[id] || document.getElementById(id);
   if (modal) {
     modal.classList.remove("active");
     
@@ -3646,7 +4394,9 @@ window.triggerSellGame = function(gameId) {
 
   // Default values
   let defaultSalePrice;
-  if (state.defaultMarkupType === "percent") {
+  if (game.sellPrice !== undefined && game.sellPrice > 0) {
+    defaultSalePrice = game.sellPrice.toFixed(2);
+  } else if (state.defaultMarkupType === "percent") {
     defaultSalePrice = (game.cost * (1 + state.defaultMarkupValue / 100)).toFixed(2);
   } else {
     defaultSalePrice = (game.cost + state.defaultMarkupValue).toFixed(2);
@@ -4386,7 +5136,7 @@ function updateUI() {
 }
 
 function renderSuppliers() {
-  const tbody = document.getElementById("suppliers-table-body");
+  const tbody = DOM["suppliers-table-body"] || document.getElementById("suppliers-table-body");
   if (!tbody) return;
   tbody.innerHTML = "";
 
@@ -4413,36 +5163,50 @@ function renderSuppliers() {
       inventoryMap.set(item.id, item);
     });
 
+    // Group inventory metrics by supplier name in a single pass O(N)
+    const supplierInventoryStats = new Map();
+    state.inventory.forEach(item => {
+      const sup = item.source || "";
+      if (!supplierInventoryStats.has(sup)) {
+        supplierInventoryStats.set(sup, { totalPurchases: 0, inStock: 0, costOfInStock: 0 });
+      }
+      const stats = supplierInventoryStats.get(sup);
+      stats.totalPurchases++;
+      if (item.status !== "Sold") {
+        stats.inStock++;
+        stats.costOfInStock += item.cost;
+      }
+    });
+
+    // Group sales metrics by supplier name in a single pass O(M)
+    const supplierSalesStats = new Map();
+    state.sales.forEach(sale => {
+      const game = inventoryMap.get(sale.inventoryId);
+      if (game) {
+        const sup = game.source || "";
+        if (!supplierSalesStats.has(sup)) {
+          supplierSalesStats.set(sup, { revenue: 0, costOfSold: 0, netProfit: 0 });
+        }
+        const stats = supplierSalesStats.get(sup);
+        stats.revenue += sale.sellPrice;
+        stats.costOfSold += sale.cost;
+        stats.netProfit += sale.profit;
+      }
+    });
+
     sortedSuppliers.forEach(supplierObj => {
       const supplierName = supplierObj.name;
       
-      // Calculate total game keys purchased and currently in stock from this supplier
-      const totalPurchases = state.inventory.filter(item => item.source === supplierName).length;
-      const inStock = state.inventory.filter(item => item.source === supplierName && item.status !== "Sold").length;
+      const stats = supplierInventoryStats.get(supplierName) || { totalPurchases: 0, inStock: 0, costOfInStock: 0 };
+      const salesStats = supplierSalesStats.get(supplierName) || { revenue: 0, costOfSold: 0, netProfit: 0 };
       
-      // Calculate total cost of unsold stock for this supplier
-      let costOfInStock = 0;
-      state.inventory.forEach(item => {
-        if (item.source === supplierName && item.status !== "Sold") {
-          costOfInStock += item.cost;
-        }
-      });
-
-      // Calculate sold financial metrics
-      const supplierSales = state.sales.filter(sale => {
-        const game = inventoryMap.get(sale.inventoryId);
-        return game && game.source === supplierName;
-      });
+      const totalPurchases = stats.totalPurchases;
+      const inStock = stats.inStock;
+      const costOfInStock = stats.costOfInStock;
       
-      let revenue = 0;
-      let costOfSold = 0;
-      let netProfit = 0;
-      
-      supplierSales.forEach(sale => {
-        revenue += sale.sellPrice;
-        costOfSold += sale.cost;
-        netProfit += sale.profit;
-      });
+      const revenue = salesStats.revenue;
+      const costOfSold = salesStats.costOfSold;
+      const netProfit = salesStats.netProfit;
       
       const colorName = supplierObj.color || getSupplierColorName(supplierName);
       const colorPreset = SUPPLIER_COLORS.find(c => c.name === colorName) || SUPPLIER_COLORS[0];
@@ -4828,7 +5592,7 @@ window.triggerToggleSupplier = async function(name) {
 };
 
 function renderPlatforms() {
-  const tbody = document.getElementById("platforms-table-body");
+  const tbody = DOM["platforms-table-body"] || document.getElementById("platforms-table-body");
   if (!tbody) return;
   tbody.innerHTML = "";
 
@@ -4848,10 +5612,25 @@ function renderPlatforms() {
       sortedPlatforms.sort((a, b) => b.name.localeCompare(a.name));
     }
 
+    // Group inventory metrics by platform name in a single pass O(N)
+    const platformInventoryStats = new Map();
+    state.inventory.forEach(item => {
+      const plat = item.platform || "";
+      if (!platformInventoryStats.has(plat)) {
+        platformInventoryStats.set(plat, { totalPurchases: 0, inStock: 0 });
+      }
+      const stats = platformInventoryStats.get(plat);
+      stats.totalPurchases++;
+      if (item.status !== "Sold") {
+        stats.inStock++;
+      }
+    });
+
     sortedPlatforms.forEach(platformObj => {
       const platformName = platformObj.name;
-      const totalPurchases = state.inventory.filter(item => item.platform === platformName).length;
-      const inStock = state.inventory.filter(item => item.platform === platformName && item.status !== "Sold").length;
+      const stats = platformInventoryStats.get(platformName) || { totalPurchases: 0, inStock: 0 };
+      const totalPurchases = stats.totalPurchases;
+      const inStock = stats.inStock;
       
       const isEnabled = platformObj.enabled !== false;
       
@@ -5733,6 +6512,7 @@ function calculateSupplierMetrics() {
 // Render Table: Inventory Stock List Router
 function renderInventoryTable(itemsList) {
   try {
+    state._activeRenderedItems = itemsList;
     console.log("renderInventoryTable called with items count:", itemsList.length, "layout mode:", state.inventoryLayout);
     // Update inventory layout containers visibility
     const tableContainer = document.getElementById("inventory-table-container");
@@ -5893,6 +6673,121 @@ function formatToDDMMYYYY(dateVal) {
 }
 
 // Render layout format A: List (Table)
+function buildInventoryRowHTML(item, salesMap) {
+  // Mask key structure safely
+  const keyStr = String(item.key || "");
+  const maskedKey = keyStr.length >= 8 
+    ? `${keyStr.slice(0, 4)}-****-****-${keyStr.slice(-4)}`
+    : keyStr || "—";
+
+  // Status classes
+  let statusClass = "badge-available";
+  if (item.status === "Reserved") statusClass = "badge-reserved";
+  if (item.status === "Sold") statusClass = "badge-sold";
+  if (item.status === "Rejected") statusClass = "badge-rejected";
+
+  // Action buttons based on stock status
+  let actionButtons = "";
+  if (item.status === "Available") {
+    actionButtons = `
+      <button class="btn-action btn-action-sell" onclick="triggerSellGame('${item.id}')" title="Mark as Sold"><i class="fa-solid fa-euro-sign"></i></button>
+    `;
+  }
+  actionButtons += `
+    <button class="btn-action btn-action-edit" onclick="triggerEditGame('${item.id}')" title="Edit Game"><i class="fa-solid fa-pen"></i></button>
+    <button class="btn-action btn-action-view" onclick="triggerViewKey('${item.id}')" title="Secure View"><i class="fa-solid fa-eye"></i></button>
+    <button class="btn-action btn-action-delete" onclick="triggerDeleteGame('${item.id}')" title="Delete"><i class="fa-solid fa-trash"></i></button>
+  `;
+
+  const titleStr = String(item.title || "Untitled Game");
+  const initials = titleStr.split(" ").map(w => w ? w[0] : "").join("").slice(0, 3) || "???";
+  const titleCell = item.imageUrl 
+    ? `<div class="game-title-cell"><img src="${item.imageUrl}" class="game-thumbnail" alt="${titleStr}"><strong>${titleStr}</strong></div>`
+    : `<div class="game-title-cell"><div class="game-thumbnail-placeholder">${initials}</div><strong>${titleStr}</strong></div>`;
+
+  // Retrieve closing date if sold
+  const saleItem = salesMap.get(item.id);
+  const dateClosedCell = saleItem ? formatToDDMMYYYY(saleItem.saleDate) : `<span style="color: var(--text-muted); font-size: 0.8rem;">-</span>`;
+
+  // Calculate duration in days
+  let durationCell = "";
+  if (item.purchaseDate) {
+    const start = new Date(item.purchaseDate);
+    const end = saleItem ? new Date(saleItem.saleDate) : new Date();
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+    const diffTime = Math.max(0, end - start);
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (saleItem) {
+      durationCell = `<span class="duration-days text-success-neon" style="font-weight: 600;">${diffDays} day${diffDays === 1 ? '' : 's'}</span>`;
+    } else {
+      const agingCat = getAgingCategory(item.purchaseDate);
+      durationCell = `
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;">${diffDays} day${diffDays === 1 ? '' : 's'}</span>
+          <span class="badge ${agingCat.class}" style="font-size: 0.65rem; padding: 2px 6px; width: fit-content; text-transform: uppercase; line-height: 1;">${agingCat.name}</span>
+        </div>
+      `;
+    }
+  } else {
+    durationCell = `<span style="color: var(--text-muted); font-size: 0.8rem;">-</span>`;
+  }
+
+  const sourceStr = String(item.source || "Direct");
+  const supplierObj = state.suppliers.find(s => s.name === sourceStr);
+  const colorName = supplierObj ? (supplierObj.color || getSupplierColorName(sourceStr)) : getSupplierColorName(sourceStr);
+  const colorPreset = SUPPLIER_COLORS.find(c => c.name === colorName) || SUPPLIER_COLORS[0];
+  
+  let supplierBadge = "";
+  if (state.supplierDisplayMode === "logo") {
+    if (supplierObj && supplierObj.logo) {
+      supplierBadge = `<img src="${supplierObj.logo}" class="supplier-logo-thumbnail" style="width: 28px; height: 28px; vertical-align: middle; border-radius: 4px; object-fit: contain; background-color: var(--bg-card); border: 1px solid var(--border-color); padding: 1px;" title="${sourceStr}" alt="${sourceStr}">`;
+    } else {
+      supplierBadge = `
+        <div class="supplier-logo-placeholder" style="width: 28px; height: 28px; border-radius: 4px; background-color: ${colorPreset.value}20; color: ${colorPreset.value}; border: 1px solid ${colorPreset.value}40; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; vertical-align: middle;" title="${sourceStr}">
+          ${sourceStr.charAt(0).toUpperCase()}
+        </div>
+      `;
+    }
+  } else {
+    supplierBadge = `
+      <span class="supplier-tag" style="background-color: ${colorPreset.value}12; border-color: ${colorPreset.value}25; color: ${colorPreset.value}; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px; vertical-align: middle;">
+        <span class="supplier-dot" style="background-color: ${colorPreset.value}; width: 6px; height: 6px;"></span>
+        ${sourceStr}
+      </span>
+    `;
+  }
+  let profitCell = `<span style="color: var(--text-muted); font-size: 0.8rem;">-</span>`;
+  if (saleItem) {
+    const margin = saleItem.sellPrice > 0 ? (saleItem.profit / saleItem.sellPrice) * 100 : 0;
+    const profitClass = saleItem.profit >= 0 ? "text-success-neon" : "text-danger-soft";
+    const profitSign = saleItem.profit >= 0 ? "+" : "";
+    profitCell = `<span class="${profitClass}">${profitSign}${formatCurrency(saleItem.profit)} <span style="font-size: 0.75rem; opacity: 0.75; font-weight: normal; margin-left: 4px;">(${margin.toFixed(1)}%)</span></span>`;
+  }
+
+  const isChecked = state.selectedInventoryIds && state.selectedInventoryIds.includes(item.id) ? "checked" : "";
+
+  return `
+    <tr>
+      <td style="text-align: center; vertical-align: middle;">
+        <input type="checkbox" class="inv-row-select" data-id="${item.id}" ${isChecked} style="cursor: pointer;">
+      </td>
+      <td>${titleCell}</td>
+      <td><div class="secured-key"><code>${maskedKey}</code></div></td>
+      <td>${formatCurrency(item.cost)}</td>
+      <td>${saleItem ? formatCurrency(saleItem.sellPrice) : `<span style="color: var(--text-muted); font-size: 0.8rem;">-</span>`}</td>
+      <td>${profitCell}</td>
+      <td style="text-align: center;">${supplierBadge}</td>
+      <td>${formatToDDMMYYYY(item.purchaseDate)}</td>
+      <td>${dateClosedCell}</td>
+      <td>${durationCell}</td>
+      <td><span class="badge ${statusClass}">${item.status || "Available"}</span></td>
+      <td><div class="table-actions">${actionButtons}</div></td>
+    </tr>
+  `;
+}
+
 function renderInventoryListLayout(itemsList) {
   try {
     const tbody = document.getElementById("inventory-table-body");
@@ -5904,6 +6799,9 @@ function renderInventoryListLayout(itemsList) {
       return;
     }
 
+    const tableContainer = document.getElementById("inventory-table-container");
+    const isVirtual = state.inventoryPageSize >= 100000;
+
     const salesMap = new Map();
     state.sales.forEach(sale => {
       if (sale && sale.inventoryId) {
@@ -5911,120 +6809,78 @@ function renderInventoryListLayout(itemsList) {
       }
     });
 
-    itemsList.forEach(item => {
-      if (!item) return;
-      const tr = document.createElement("tr");
+    if (tableContainer && tableContainer._scrollListener) {
+      tableContainer.removeEventListener("scroll", tableContainer._scrollListener);
+      tableContainer._scrollListener = null;
+    }
 
-      // Mask key structure safely
-      const keyStr = String(item.key || "");
-      const maskedKey = keyStr.length >= 8 
-        ? `${keyStr.slice(0, 4)}-****-****-${keyStr.slice(-4)}`
-        : keyStr || "—";
+    if (isVirtual && tableContainer) {
+      const rowHeight = 55;
+      const containerHeight = tableContainer.clientHeight || 500;
 
-      // Status classes
-      let statusClass = "badge-available";
-      if (item.status === "Reserved") statusClass = "badge-reserved";
-      if (item.status === "Sold") statusClass = "badge-sold";
-      if (item.status === "Rejected") statusClass = "badge-rejected";
+      const renderSlice = () => {
+        const scrollTop = tableContainer.scrollTop;
+        const totalItems = itemsList.length;
 
-      // Action buttons based on stock status
-      let actionButtons = "";
-      if (item.status === "Available") {
-        actionButtons = `
-          <button class="btn-action btn-action-sell" onclick="triggerSellGame('${item.id}')" title="Mark as Sold"><i class="fa-solid fa-euro-sign"></i></button>
-        `;
-      }
-      actionButtons += `
-        <button class="btn-action btn-action-edit" onclick="triggerEditGame('${item.id}')" title="Edit Game"><i class="fa-solid fa-pen"></i></button>
-        <button class="btn-action btn-action-view" onclick="triggerViewKey('${item.id}')" title="Secure View"><i class="fa-solid fa-eye"></i></button>
-        <button class="btn-action btn-action-delete" onclick="triggerDeleteGame('${item.id}')" title="Delete"><i class="fa-solid fa-trash"></i></button>
-      `;
+        let startIndex = Math.floor(scrollTop / rowHeight);
+        let endIndex = Math.ceil((scrollTop + containerHeight) / rowHeight);
 
-      const titleStr = String(item.title || "Untitled Game");
-      const initials = titleStr.split(" ").map(w => w ? w[0] : "").join("").slice(0, 3) || "???";
-      const titleCell = item.imageUrl 
-        ? `<div class="game-title-cell"><img src="${item.imageUrl}" class="game-thumbnail" alt="${titleStr}"><strong>${titleStr}</strong></div>`
-        : `<div class="game-title-cell"><div class="game-thumbnail-placeholder">${initials}</div><strong>${titleStr}</strong></div>`;
+        startIndex = Math.max(0, startIndex - 5);
+        endIndex = Math.min(totalItems, endIndex + 5);
 
-      // Retrieve closing date if sold
-      const saleItem = salesMap.get(item.id);
-      const dateClosedCell = saleItem ? formatToDDMMYYYY(saleItem.saleDate) : `<span style="color: var(--text-muted); font-size: 0.8rem;">-</span>`;
+        const topSpacerHeight = startIndex * rowHeight;
+        const bottomSpacerHeight = (totalItems - endIndex) * rowHeight;
 
-      // Calculate duration in days
-      let durationCell = "";
-      if (item.purchaseDate) {
-        const start = new Date(item.purchaseDate);
-        const end = saleItem ? new Date(saleItem.saleDate) : new Date();
-        start.setHours(0, 0, 0, 0);
-        end.setHours(0, 0, 0, 0);
-        const diffTime = Math.max(0, end - start);
-        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-        
-        if (saleItem) {
-          durationCell = `<span class="duration-days text-success-neon" style="font-weight: 600;">${diffDays} day${diffDays === 1 ? '' : 's'}</span>`;
-        } else {
-          const agingCat = getAgingCategory(item.purchaseDate);
-          durationCell = `
-            <div style="display: flex; flex-direction: column; gap: 4px;">
-              <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;">${diffDays} day${diffDays === 1 ? '' : 's'}</span>
-              <span class="badge ${agingCat.class}" style="font-size: 0.65rem; padding: 2px 6px; width: fit-content; text-transform: uppercase; line-height: 1;">${agingCat.name}</span>
-            </div>
-          `;
+        let tbodyContent = "";
+
+        if (topSpacerHeight > 0) {
+          tbodyContent += `<tr style="height: ${topSpacerHeight}px;"><td colspan="12" style="padding: 0; border: none; height: ${topSpacerHeight}px;"></td></tr>`;
         }
-      } else {
-        durationCell = `<span style="color: var(--text-muted); font-size: 0.8rem;">-</span>`;
-      }
 
-      const sourceStr = String(item.source || "Direct");
-      const supplierObj = state.suppliers.find(s => s.name === sourceStr);
-      const colorName = supplierObj ? (supplierObj.color || getSupplierColorName(sourceStr)) : getSupplierColorName(sourceStr);
-      const colorPreset = SUPPLIER_COLORS.find(c => c.name === colorName) || SUPPLIER_COLORS[0];
-      
-      let supplierBadge = "";
-      if (state.supplierDisplayMode === "logo") {
-        if (supplierObj && supplierObj.logo) {
-          supplierBadge = `<img src="${supplierObj.logo}" class="supplier-logo-thumbnail" style="width: 28px; height: 28px; vertical-align: middle; border-radius: 4px; object-fit: contain; background-color: var(--bg-card); border: 1px solid var(--border-color); padding: 1px;" title="${sourceStr}" alt="${sourceStr}">`;
-        } else {
-          supplierBadge = `
-            <div class="supplier-logo-placeholder" style="width: 28px; height: 28px; border-radius: 4px; background-color: ${colorPreset.value}20; color: ${colorPreset.value}; border: 1px solid ${colorPreset.value}40; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; vertical-align: middle;" title="${sourceStr}">
-              ${sourceStr.charAt(0).toUpperCase()}
-            </div>
-          `;
+        const slicedItems = itemsList.slice(startIndex, endIndex);
+        slicedItems.forEach(item => {
+          if (!item) return;
+          tbodyContent += buildInventoryRowHTML(item, salesMap);
+        });
+
+        if (bottomSpacerHeight > 0) {
+          tbodyContent += `<tr style="height: ${bottomSpacerHeight}px;"><td colspan="12" style="padding: 0; border: none; height: ${bottomSpacerHeight}px;"></td></tr>`;
         }
-      } else {
-        supplierBadge = `
-          <span class="supplier-tag" style="background-color: ${colorPreset.value}12; border-color: ${colorPreset.value}25; color: ${colorPreset.value}; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px; vertical-align: middle;">
-            <span class="supplier-dot" style="background-color: ${colorPreset.value}; width: 6px; height: 6px;"></span>
-            ${sourceStr}
-          </span>
-        `;
-      }
-      let profitCell = `<span style="color: var(--text-muted); font-size: 0.8rem;">-</span>`;
-      if (saleItem) {
-        const margin = saleItem.sellPrice > 0 ? (saleItem.profit / saleItem.sellPrice) * 100 : 0;
-        const profitClass = saleItem.profit >= 0 ? "text-success-neon" : "text-danger-soft";
-        const profitSign = saleItem.profit >= 0 ? "+" : "";
-        profitCell = `<span class="${profitClass}">${profitSign}${formatCurrency(saleItem.profit)} <span style="font-size: 0.75rem; opacity: 0.75; font-weight: normal; margin-left: 4px;">(${margin.toFixed(1)}%)</span></span>`;
-      }
 
-      tr.innerHTML = `
-        <td style="text-align: center; vertical-align: middle;">
-          <input type="checkbox" class="inv-row-select" data-id="${item.id}" style="cursor: pointer;">
-        </td>
-        <td>${titleCell}</td>
-        <td><div class="secured-key"><code>${maskedKey}</code></div></td>
-        <td>${formatCurrency(item.cost)}</td>
-        <td>${saleItem ? formatCurrency(saleItem.sellPrice) : `<span style="color: var(--text-muted); font-size: 0.8rem;">-</span>`}</td>
-        <td>${profitCell}</td>
-        <td style="text-align: center;">${supplierBadge}</td>
-        <td>${formatToDDMMYYYY(item.purchaseDate)}</td>
-        <td>${dateClosedCell}</td>
-        <td>${durationCell}</td>
-        <td><span class="badge ${statusClass}">${item.status || "Available"}</span></td>
-        <td><div class="table-actions">${actionButtons}</div></td>
-      `;
-      tbody.appendChild(tr);
-    });
+        tbody.innerHTML = tbodyContent;
+
+        // Sync header select all checkbox
+        const selectAllCheckbox = document.getElementById("inv-select-all");
+        if (selectAllCheckbox) {
+          selectAllCheckbox.checked = itemsList.length > 0 && itemsList.every(item => state.selectedInventoryIds.includes(item.id));
+        }
+      };
+
+      const onScroll = () => {
+        requestAnimationFrame(renderSlice);
+      };
+
+      tableContainer.addEventListener("scroll", onScroll);
+      tableContainer._scrollListener = onScroll;
+
+      tableContainer.style.maxHeight = "65vh";
+      tableContainer.style.overflowY = "auto";
+      tableContainer.style.position = "relative";
+
+      renderSlice();
+    } else {
+      let tbodyContent = "";
+      itemsList.forEach(item => {
+        if (!item) return;
+        tbodyContent += buildInventoryRowHTML(item, salesMap);
+      });
+      tbody.innerHTML = tbodyContent;
+
+      if (tableContainer) {
+        tableContainer.style.maxHeight = "";
+        tableContainer.style.overflowY = "";
+      }
+    }
   } catch (err) {
     console.error("Error in renderInventoryListLayout:", err);
   }
@@ -6382,8 +7238,36 @@ function renderInventoryGalleryLayout(itemsList) {
 }
 
 // Render Table: Sales ledger list
+function buildSalesRowHTML(sale, inventoryMap) {
+  const initials = sale.title.split(" ").map(w => w[0]).join("").slice(0, 3);
+  const gameInInv = inventoryMap.get(sale.inventoryId);
+  const saleImgUrl = gameInInv ? gameInInv.imageUrl : null;
+  const titleCell = saleImgUrl 
+    ? `<div class="game-title-cell"><img src="${saleImgUrl}" class="game-thumbnail" alt="${sale.title}"><strong>${sale.title}</strong></div>`
+    : `<div class="game-title-cell"><div class="game-thumbnail-placeholder">${initials}</div><strong>${sale.title}</strong></div>`;
+
+  return `
+    <tr>
+      <td>${titleCell}</td>
+      <td><span class="platform-indicator"><i class="fa-solid fa-gamepad" style="font-size: 0.8rem; margin-right: 6px;"></i> ${sale.platform}</span></td>
+      <td>${formatCurrency(sale.cost)}</td>
+      <td><strong>${formatCurrency(sale.sellPrice)}</strong></td>
+      <td><span class="tag-platform-sold" style="background-color: hsla(270, 85%, 60%, 0.1); border: 1px solid hsla(270, 85%, 60%, 0.2); color: var(--accent-purple); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight:600;">${sale.platformSold}</span></td>
+      <td class="text-success-neon"><strong>${formatCurrency(sale.profit)}</strong></td>
+      <td>${formatDate(sale.saleDate)}</td>
+      <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${sale.notes || ''}">${sale.notes || '<span style="color: var(--text-muted)">-</span>'}</td>
+      <td>
+        <div class="table-actions">
+          <button class="btn-action btn-action-delete" onclick="triggerCancelSale('${sale.id}')" title="Cancel Sale (Return key to stock)"><i class="fa-solid fa-rotate-left"></i></button>
+        </div>
+      </td>
+    </tr>
+  `;
+}
+
 function renderSalesTable(salesList) {
   const tbody = document.getElementById("sales-table-body");
+  if (!tbody) return;
   tbody.innerHTML = "";
 
   if (salesList.length === 0) {
@@ -6400,53 +7284,99 @@ function renderSalesTable(salesList) {
     inventoryMap.set(item.id, item);
   });
 
-  // Pagination Logic
-  const totalPages = Math.ceil(salesList.length / state.salesPageSize) || 1;
-  if (state.salesCurrentPage > totalPages) {
-    state.salesCurrentPage = totalPages;
+  const tableContainer = document.getElementById("sales-table-container");
+  const isVirtual = state.salesPageSize >= 100000;
+
+  if (tableContainer && tableContainer._scrollListener) {
+    tableContainer.removeEventListener("scroll", tableContainer._scrollListener);
+    tableContainer._scrollListener = null;
   }
-  if (state.salesCurrentPage < 1) {
-    state.salesCurrentPage = 1;
+
+  if (isVirtual && tableContainer) {
+    const rowHeight = 55;
+    const containerHeight = tableContainer.clientHeight || 500;
+
+    const renderSlice = () => {
+      const scrollTop = tableContainer.scrollTop;
+      const totalItems = salesList.length;
+
+      let startIndex = Math.floor(scrollTop / rowHeight);
+      let endIndex = Math.ceil((scrollTop + containerHeight) / rowHeight);
+
+      startIndex = Math.max(0, startIndex - 5);
+      endIndex = Math.min(totalItems, endIndex + 5);
+
+      const topSpacerHeight = startIndex * rowHeight;
+      const bottomSpacerHeight = (totalItems - endIndex) * rowHeight;
+
+      let tbodyContent = "";
+
+      if (topSpacerHeight > 0) {
+        tbodyContent += `<tr style="height: ${topSpacerHeight}px;"><td colspan="9" style="padding: 0; border: none; height: ${topSpacerHeight}px;"></td></tr>`;
+      }
+
+      const slicedItems = salesList.slice(startIndex, endIndex);
+      slicedItems.forEach(sale => {
+        if (!sale) return;
+        tbodyContent += buildSalesRowHTML(sale, inventoryMap);
+      });
+
+      if (bottomSpacerHeight > 0) {
+        tbodyContent += `<tr style="height: ${bottomSpacerHeight}px;"><td colspan="9" style="padding: 0; border: none; height: ${bottomSpacerHeight}px;"></td></tr>`;
+      }
+
+      tbody.innerHTML = tbodyContent;
+    };
+
+    const onScroll = () => {
+      requestAnimationFrame(renderSlice);
+    };
+
+    tableContainer.addEventListener("scroll", onScroll);
+    tableContainer._scrollListener = onScroll;
+
+    tableContainer.style.maxHeight = "65vh";
+    tableContainer.style.overflowY = "auto";
+    tableContainer.style.position = "relative";
+
+    renderSlice();
+
+    document.getElementById("sales-count-text").textContent = `Showing all ${salesList.length} sales transactions (virtual scroll)`;
+    const container = document.getElementById("sales-pagination");
+    if (container) container.innerHTML = "";
+  } else {
+    // Pagination Logic
+    const totalPages = Math.ceil(salesList.length / state.salesPageSize) || 1;
+    if (state.salesCurrentPage > totalPages) {
+      state.salesCurrentPage = totalPages;
+    }
+    if (state.salesCurrentPage < 1) {
+      state.salesCurrentPage = 1;
+    }
+
+    const startIndex = (state.salesCurrentPage - 1) * state.salesPageSize;
+    const endIndex = startIndex + state.salesPageSize;
+    const paginatedSalesList = salesList.slice(startIndex, endIndex);
+
+    let tbodyContent = "";
+    paginatedSalesList.forEach(sale => {
+      if (!sale) return;
+      tbodyContent += buildSalesRowHTML(sale, inventoryMap);
+    });
+    tbody.innerHTML = tbodyContent;
+
+    if (tableContainer) {
+      tableContainer.style.maxHeight = "";
+      tableContainer.style.overflowY = "";
+    }
+
+    const showingStart = salesList.length === 0 ? 0 : startIndex + 1;
+    const showingEnd = Math.min(endIndex, salesList.length);
+    document.getElementById("sales-count-text").textContent = `Showing ${showingStart}-${showingEnd} of ${salesList.length} sales transactions`;
+
+    // Render pagination buttons
+    renderSalesPagination(salesList.length);
   }
-
-  const startIndex = (state.salesCurrentPage - 1) * state.salesPageSize;
-  const endIndex = startIndex + state.salesPageSize;
-  const paginatedSalesList = salesList.slice(startIndex, endIndex);
-
-  paginatedSalesList.forEach(sale => {
-    const tr = document.createElement("tr");
-
-    const initials = sale.title.split(" ").map(w => w[0]).join("").slice(0, 3);
-    const gameInInv = inventoryMap.get(sale.inventoryId);
-    const saleImgUrl = gameInInv ? gameInInv.imageUrl : null;
-    const titleCell = saleImgUrl 
-      ? `<div class="game-title-cell"><img src="${saleImgUrl}" class="game-thumbnail" alt="${sale.title}"><strong>${sale.title}</strong></div>`
-      : `<div class="game-title-cell"><div class="game-thumbnail-placeholder">${initials}</div><strong>${sale.title}</strong></div>`;
-
-    tr.innerHTML = `
-      <td>${titleCell}</td>
-      <td><span class="platform-indicator"><i class="fa-solid fa-gamepad" style="font-size: 0.8rem; margin-right: 6px;"></i> ${sale.platform}</span></td>
-      <td>${formatCurrency(sale.cost)}</td>
-      <td><strong>${formatCurrency(sale.sellPrice)}</strong></td>
-      <td><span class="tag-platform-sold" style="background-color: hsla(270, 85%, 60%, 0.1); border: 1px solid hsla(270, 85%, 60%, 0.2); color: var(--accent-purple); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight:600;">${sale.platformSold}</span></td>
-      <td class="text-success-neon"><strong>${formatCurrency(sale.profit)}</strong></td>
-      <td>${formatDate(sale.saleDate)}</td>
-      <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${sale.notes || ''}">${sale.notes || '<span style="color: var(--text-muted)">-</span>'}</td>
-      <td>
-        <div class="table-actions">
-          <button class="btn-action btn-action-delete" onclick="triggerCancelSale('${sale.id}')" title="Cancel Sale (Return key to stock)"><i class="fa-solid fa-rotate-left"></i></button>
-        </div>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-
-  const showingStart = salesList.length === 0 ? 0 : startIndex + 1;
-  const showingEnd = Math.min(endIndex, salesList.length);
-  document.getElementById("sales-count-text").textContent = `Showing ${showingStart}-${showingEnd} of ${salesList.length} sales transactions`;
-
-  // Render pagination buttons
-  renderSalesPagination(salesList.length);
 }
 
 // Render dynamic pagination controls for the sales ledger
@@ -7979,7 +8909,12 @@ function formatCurrency(value) {
   const val = parseFloat(value) || 0;
   const symbol = state.currency === "USD" ? "$" : "€";
   const sign = val < 0 ? "-" : "";
-  return `${sign}${symbol}${Math.abs(val).toFixed(2)}`;
+  const locale = state.currency === "USD" ? "en-US" : "de-DE";
+  const formatted = Math.abs(val).toLocaleString(locale, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+  return `${sign}${symbol}${formatted}`;
 }
 
 function updateCurrencySymbols() {
@@ -8014,12 +8949,18 @@ function updateCurrencySelectionCards(curr) {
 
 // Render dynamic Game Catalog Entries View
 function renderEntries() {
-  const tbody = document.getElementById("entries-table-body");
+  const tbody = DOM["entries-table-body"] || document.getElementById("entries-table-body");
   if (!tbody) return;
   tbody.innerHTML = "";
 
   // Get search filter value
   const searchInput = document.getElementById("entries-search-input")?.value.toLowerCase().trim() || "";
+
+  // Pre-index inventory by ID for O(1) lookup
+  const inventoryMap = new Map();
+  state.inventory.forEach(item => {
+    inventoryMap.set(item.id, item);
+  });
 
   // Group inventory and sales by unique game title
   const titleGroups = {};
@@ -8075,7 +9016,7 @@ function renderEntries() {
     titleGroups[titleKey].profit += sale.profit;
 
     // Retrieve corresponding inventory purchaseDate
-    const invItem = state.inventory.find(i => i.id === sale.inventoryId);
+    const invItem = inventoryMap.get(sale.inventoryId);
     if (invItem && invItem.purchaseDate && sale.saleDate) {
       const start = new Date(invItem.purchaseDate);
       const end = new Date(sale.saleDate);
@@ -9441,7 +10382,7 @@ function initPayouts() {
 
 // Render the registered payouts list table
 function renderPayoutsLedger() {
-  const ledgerBody = document.getElementById("payouts-ledger-body");
+  const ledgerBody = DOM["payouts-ledger-body"] || document.getElementById("payouts-ledger-body");
   if (!ledgerBody) return;
   
   state.payouts = state.payouts || [];
@@ -10166,6 +11107,11 @@ async function dbLoadState() {
           applySalesLedgerVisibility(state.showSalesLedger);
           const toggleSales = document.getElementById("toggle-show-sales-ledger");
           if (toggleSales) toggleSales.checked = state.showSalesLedger;
+        } else if (s.key === "showQuickToolbar") {
+          state.showQuickToolbar = s.value;
+          applyQuickToolbarVisibility();
+          const toggleQuick = document.getElementById("toggle-show-quick-toolbar");
+          if (toggleQuick) toggleQuick.checked = state.showQuickToolbar;
         } else if (s.key === "visibleMetrics") {
           try {
             state.visibleMetrics = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
@@ -11216,7 +12162,7 @@ function escapeHTML(str) {
 }
 
 function renderRecycleBin() {
-  const tbody = document.getElementById("recycle-table-body");
+  const tbody = DOM["recycle-table-body"] || document.getElementById("recycle-table-body");
   if (!tbody) return;
   tbody.innerHTML = "";
 
@@ -11351,9 +12297,15 @@ window.triggerPurgeGame = async function(gameId) {
 };
 
 function renderPublishersTab() {
-  const tbody = document.getElementById("publishers-table-body");
+  const tbody = DOM["publishers-table-body"] || document.getElementById("publishers-table-body");
   if (!tbody) return;
   tbody.innerHTML = "";
+
+  // Pre-index sales by inventoryId for O(1) lookups
+  const salesMap = new Map();
+  state.sales.forEach(sale => {
+    salesMap.set(sale.inventoryId, sale);
+  });
 
   // Group inventory by publisher
   const publishersMap = {};
@@ -11380,7 +12332,7 @@ function renderPublishersTab() {
     
     if (item.status === "Sold") {
       stats.sold++;
-      const sale = state.sales.find(s => s.inventoryId === item.id);
+      const sale = salesMap.get(item.id);
       if (sale) {
         stats.totalRevenue += sale.sellPrice;
         stats.totalCostOfSales += sale.cost;
@@ -11432,6 +12384,26 @@ function renderPublishersTab() {
   });
 }
 
+function ensureSheetJS(onSuccess, onError) {
+  if (window.XLSX) {
+    onSuccess();
+    return;
+  }
+  
+  showToast("Loading Excel parsing engine...", "info");
+  const script = document.createElement("script");
+  script.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
+  script.onload = () => {
+    showToast("Excel engine loaded successfully!", "success");
+    onSuccess();
+  };
+  script.onerror = () => {
+    showToast("Failed to load Excel parsing engine. Please check your internet connection.", "danger");
+    if (onError) onError();
+  };
+  document.head.appendChild(script);
+}
+
 async function importStateFromSpreadsheet(file) {
   const progressContainer = document.getElementById("import-progress-container");
   const progressBar = document.getElementById("import-progress-bar");
@@ -11439,245 +12411,246 @@ async function importStateFromSpreadsheet(file) {
   const progressStatus = document.getElementById("import-progress-status");
   const btnImportSheet = document.getElementById("btn-import-sheet");
 
-  if (progressContainer) progressContainer.classList.remove("hidden");
-  if (btnImportSheet) btnImportSheet.disabled = true;
-
-  const reader = new FileReader();
-  
-  reader.onload = async function(e) {
-    try {
-      if (progressStatus) progressStatus.textContent = "Parsing workbook data...";
-      if (progressPercent) progressPercent.textContent = "5%";
-      if (progressBar) progressBar.style.width = "5%";
-
-      const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, {type: 'array', cellDates: true});
+  ensureSheetJS(
+    () => {
+      const reader = new FileReader();
       
-      const sheetName = workbook.SheetNames.find(name => name.toLowerCase() === 'inventory') || workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const rows = XLSX.utils.sheet_to_json(worksheet, {defval: ""});
+      reader.onload = async function(e) {
+        try {
+          if (progressStatus) progressStatus.textContent = "Parsing workbook data...";
+          if (progressPercent) progressPercent.textContent = "5%";
+          if (progressBar) progressBar.style.width = "5%";
 
-      if (rows.length === 0) {
-        showToast("No data rows found in the selected sheet.", "error");
-        if (progressContainer) progressContainer.classList.add("hidden");
-        if (btnImportSheet) btnImportSheet.disabled = false;
-        return;
-      }
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, {type: 'array', cellDates: true});
+          
+          const sheetName = workbook.SheetNames.find(name => name.toLowerCase() === 'inventory') || workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const rows = XLSX.utils.sheet_to_json(worksheet, {defval: ""});
 
-      pushToUndoStack();
+          const currentSuppliers = new Set(state.suppliers.map(s => s.name.toLowerCase()));
+          const currentPlatforms = new Set(state.platforms.map(p => p.name.toLowerCase()));
+          
+          const importedGames = [];
+          const importedSales = [];
+          
+          pushToUndoStack();
 
-      if (progressStatus) progressStatus.textContent = `Analyzing ${rows.length} rows...`;
-      if (progressPercent) progressPercent.textContent = "10%";
-      if (progressBar) progressBar.style.width = "10%";
-
-      const importedGames = [];
-      const importedSales = [];
-      
-      const currentSuppliers = new Set(state.suppliers.map(s => s.name.toLowerCase()));
-      const currentPlatforms = new Set(state.platforms.map(p => p.name.toLowerCase()));
-      
-      const batchSize = 1000;
-      let rowIndex = 0;
-      
-      function processBatch() {
-        const end = Math.min(rowIndex + batchSize, rows.length);
-        
-        for (let i = rowIndex; i < end; i++) {
-          const row = rows[i];
+          let rowIndex = 0;
+          const batchSize = 100;
           
-          const title = (row.Name || row.name || row.Title || row.title || "").toString().trim();
-          if (!title) continue;
-          
-          const vendor = (row.Vendor || row.vendor || row.Supplier || row.supplier || "Direct").toString().trim();
-          const key = (row.Key || row.key || row['Activation Code'] || row['activation code'] || "").toString().trim();
-          const publisher = (row.Publisher || row.publisher || "").toString().trim();
-          
-          let cost = parseFloat(row.Cost || row.cost || row.Price || row.price || 0);
-          if (isNaN(cost)) cost = 0;
-          
-          let sellPrice = parseFloat(row.Sell || row.sell || row['Sell Price'] || row['sell price'] || 0);
-          if (isNaN(sellPrice)) sellPrice = 0;
-          
-          const purchaseDate = parseExcelDate(row['Entry Date'] || row['entry date'] || row['Purchase Date'] || row['purchase date'] || row['Date'] || row['date']) || new Date().toISOString().split('T')[0];
-          const saleDate = parseExcelDate(row['Closed Date'] || row['closed date'] || row['Sale Date'] || row['sale date'] || row['Sell Date'] || row['sell date']);
-          
-          const rawStatus = (row.Status || row.status || "Available").toString().trim().toLowerCase();
-          let status = "Available";
-          if (rawStatus.startsWith("close") || rawStatus === "sold") {
-            status = "Sold";
-          } else if (rawStatus.startsWith("reject") || rawStatus === "faulty") {
-            status = "Rejected";
-          } else if (rawStatus.startsWith("reserv")) {
-            status = "Reserved";
-          }
-          
-          const imageUrl = (row.Img || row.img || row.Image || row.image || row.Logo || row.logo || "").toString().trim();
-          
-          let notes = (row.Notes || row.notes || "").toString().trim();
-          if (row.LP === true || row.LP === "true" || row.LP === 1) {
-            notes = (notes ? notes + " " : "") + "[LP: True]";
-          }
-          
-          const gameId = "inv_imported_" + i + "_" + Math.random().toString(36).substr(2, 5);
-          const platform = "Steam";
-          
-          if (vendor && !currentSuppliers.has(vendor.toLowerCase())) {
-            state.suppliers.push({
-              name: vendor,
-              color: getSupplierColorName(vendor),
-              logo: null,
-              enabled: true,
-              dateAdded: Date.now()
-            });
-            currentSuppliers.add(vendor.toLowerCase());
-          }
-          
-          if (!currentPlatforms.has(platform.toLowerCase())) {
-            state.platforms.push({
-              name: platform,
-              logo: null,
-              enabled: true,
-              dateAdded: Date.now()
-            });
-            currentPlatforms.add(platform.toLowerCase());
-          }
-          
-          const gameItem = {
-            id: gameId,
-            title,
-            platform,
-            key: key || "NO-KEY-PROVIDED",
-            cost,
-            source: vendor,
-            purchaseDate,
-            status,
-            notes,
-            imageUrl,
-            publisher
-          };
-          
-          importedGames.push(gameItem);
-          
-          if (status === "Sold") {
-            const saleId = "sale_imported_" + i + "_" + Math.random().toString(36).substr(2, 5);
-            const profit = sellPrice - cost;
-            importedSales.push({
-              id: saleId,
-              inventoryId: gameId,
-              title,
-              platform,
-              cost,
-              sellPrice,
-              platformSold: "Other",
-              fees: 0,
-              profit,
-              saleDate: saleDate || purchaseDate,
-              notes: "Imported from spreadsheet."
-            });
-          }
-        }
-        
-        rowIndex = end;
-        
-        const percent = Math.round(10 + (rowIndex / rows.length) * 80);
-        if (progressStatus) progressStatus.textContent = `Imported ${rowIndex} / ${rows.length} rows...`;
-        if (progressPercent) progressPercent.textContent = `${percent}%`;
-        if (progressBar) progressBar.style.width = `${percent}%`;
-        
-        if (rowIndex < rows.length) {
-          setTimeout(processBatch, 0);
-        } else {
-          completeImport();
-        }
-      }
-      
-      async function completeImport() {
-        if (progressStatus) progressStatus.textContent = "Saving imported data locally...";
-        
-        state.inventory.push(...importedGames);
-        state.sales.push(...importedSales);
-        
-        saveStateToStorage();
-        
-        if (window.supabaseClient && state.syncMode !== "manual") {
-          if (progressStatus) progressStatus.textContent = "Syncing with cloud database (upserting batches)...";
-          try {
-            const syncBatchSize = 1000;
-            for (let j = 0; j < importedGames.length; j += syncBatchSize) {
-              const batch = importedGames.slice(j, j + syncBatchSize).map(item => ({
-                id: item.id,
-                title: item.title,
-                platform: item.platform,
-                key: item.key,
-                cost: item.cost,
-                source: item.source,
-                purchaseDate: item.purchaseDate,
-                imageUrl: item.imageUrl || null,
-                status: item.status,
-                notes: item.notes || null,
-                publisher: item.publisher || null
-              }));
-              const { error } = await window.supabaseClient.from('inventory').upsert(batch);
-              if (error) throw error;
+          async function processBatch() {
+            const end = Math.min(rowIndex + batchSize, rows.length);
+            
+            for (let i = rowIndex; i < end; i++) {
+              const row = rows[i];
+              
+              const title = (row["Name"] || row["Game Title"] || row["Title"] || "").toString().trim();
+              if (!title) continue;
+              
+              const key = (row["Key"] || "").toString().trim();
+              const vendor = (row["Vendor"] || row["Source"] || row["Supplier"] || "Other").toString().trim();
+              const platform = (row["Platform"] || "Other").toString().trim();
+              const cost = parseFloat(row["Cost"] || row["Buy Price"] || 0) || 0;
+              const sellPrice = parseFloat(row["Sell"] || row["Sell Price"] || 0) || 0;
+              
+              let purchaseDate = row["Entry Date"] || row["Purchase Date"] || "";
+              if (purchaseDate instanceof Date) {
+                purchaseDate = purchaseDate.toISOString().split('T')[0];
+              } else if (purchaseDate) {
+                purchaseDate = parseExcelDate(purchaseDate.toString());
+              } else {
+                purchaseDate = new Date().toISOString().split('T')[0];
+              }
+              
+              let saleDate = row["Closed Date"] || row["Sale Date"] || "";
+              if (saleDate instanceof Date) {
+                saleDate = saleDate.toISOString().split('T')[0];
+              } else if (saleDate) {
+                saleDate = parseExcelDate(saleDate.toString());
+              }
+              
+              let status = (row["Status"] || "").toString().trim();
+              if (status.toLowerCase() === "closed" || status.toLowerCase() === "sold") {
+                status = "Sold";
+              } else if (status.toLowerCase() === "rejected") {
+                status = "Rejected";
+              } else if (status.toLowerCase() === "reserved") {
+                status = "Reserved";
+              } else {
+                status = "Available";
+              }
+              
+              const notes = (row["Notes"] || "").toString().trim();
+              const imageUrl = (row["Img"] || row["ImageUrl"] || "").toString().trim();
+              const publisher = (row["Publisher"] || "").toString().trim();
+              
+              const gameId = "game_imported_" + i + "_" + Math.random().toString(36).substr(2, 5);
+              
+              if (vendor && !currentSuppliers.has(vendor.toLowerCase())) {
+                state.suppliers.push({
+                  name: vendor,
+                  color: getSupplierColorName(vendor),
+                  logo: null,
+                  enabled: true,
+                  dateAdded: Date.now()
+                });
+                currentSuppliers.add(vendor.toLowerCase());
+              }
+              
+              if (!currentPlatforms.has(platform.toLowerCase())) {
+                state.platforms.push({
+                  name: platform,
+                  logo: null,
+                  enabled: true,
+                  dateAdded: Date.now()
+                });
+                currentPlatforms.add(platform.toLowerCase());
+              }
+              
+              const gameItem = {
+                id: gameId,
+                title,
+                platform,
+                key: key || "NO-KEY-PROVIDED",
+                cost,
+                source: vendor,
+                purchaseDate,
+                status,
+                notes,
+                imageUrl,
+                publisher,
+                sellPrice: sellPrice || 0
+              };
+              
+              importedGames.push(gameItem);
+              
+              if (status === "Sold") {
+                const saleId = "sale_imported_" + i + "_" + Math.random().toString(36).substr(2, 5);
+                const profit = sellPrice - cost;
+                importedSales.push({
+                  id: saleId,
+                  inventoryId: gameId,
+                  title,
+                  platform,
+                  cost,
+                  sellPrice,
+                  platformSold: "Other",
+                  fees: 0,
+                  profit,
+                  saleDate: saleDate || purchaseDate,
+                  notes: "Imported from spreadsheet."
+                });
+              }
             }
             
-            for (let j = 0; j < importedSales.length; j += syncBatchSize) {
-              const batch = importedSales.slice(j, j + syncBatchSize).map(sale => ({
-                id: sale.id,
-                inventoryId: sale.inventoryId,
-                title: sale.title,
-                platform: sale.platform,
-                cost: sale.cost,
-                sellPrice: sale.sellPrice,
-                platformSold: sale.platformSold,
-                fees: sale.fees,
-                profit: sale.profit,
-                saleDate: sale.saleDate,
-                notes: sale.notes || null
-              }));
-              const { error } = await window.supabaseClient.from('sales').upsert(batch);
-              if (error) throw error;
+            rowIndex = end;
+            
+            const percent = Math.round(10 + (rowIndex / rows.length) * 80);
+            if (progressStatus) progressStatus.textContent = `Imported ${rowIndex} / ${rows.length} rows...`;
+            if (progressPercent) progressPercent.textContent = `${percent}%`;
+            if (progressBar) progressBar.style.width = `${percent}%`;
+            
+            if (rowIndex < rows.length) {
+              setTimeout(processBatch, 0);
+            } else {
+              completeImport();
             }
-          } catch (syncErr) {
-            console.error("Supabase bulk sync failed:", syncErr);
-            showToast("Imported successfully, but cloud database sync failed.", "warning");
           }
-        } else if (state.syncMode === "manual" || window.supabaseClient) {
-          setUnsyncedChanges(true);
-        }
-        
-        if (progressStatus) progressStatus.textContent = "Import complete!";
-        if (progressPercent) progressPercent.textContent = "100%";
-        if (progressBar) progressBar.style.width = "100%";
-        
-        setTimeout(() => {
+          
+          async function completeImport() {
+            if (progressStatus) progressStatus.textContent = "Saving imported data locally...";
+            
+            state.inventory.push(...importedGames);
+            state.sales.push(...importedSales);
+            
+            saveStateToStorage();
+            
+            if (window.supabaseClient && state.syncMode !== "manual") {
+              if (progressStatus) progressStatus.textContent = "Syncing with cloud database (upserting batches)...";
+              try {
+                const syncBatchSize = 1000;
+                for (let j = 0; j < importedGames.length; j += syncBatchSize) {
+                  const batch = importedGames.slice(j, j + syncBatchSize).map(item => ({
+                    id: item.id,
+                    title: item.title,
+                    platform: item.platform,
+                    key: item.key,
+                    cost: item.cost,
+                    source: item.source,
+                    purchaseDate: item.purchaseDate,
+                    imageUrl: item.imageUrl || null,
+                    status: item.status,
+                    notes: item.notes || null,
+                    publisher: item.publisher || null
+                  }));
+                  const { error } = await window.supabaseClient.from('inventory').upsert(batch);
+                  if (error) throw error;
+                }
+                
+                for (let j = 0; j < importedSales.length; j += syncBatchSize) {
+                  const batch = importedSales.slice(j, j + syncBatchSize).map(sale => ({
+                    id: sale.id,
+                    inventoryId: sale.inventoryId,
+                    title: sale.title,
+                    platform: sale.platform,
+                    cost: sale.cost,
+                    sellPrice: sale.sellPrice,
+                    platformSold: sale.platformSold,
+                    fees: sale.fees,
+                    profit: sale.profit,
+                    saleDate: sale.saleDate,
+                    notes: sale.notes || null
+                  }));
+                  const { error } = await window.supabaseClient.from('sales').upsert(batch);
+                  if (error) throw error;
+                }
+              } catch (syncErr) {
+                console.error("Supabase bulk sync failed:", syncErr);
+                showToast("Imported successfully, but cloud database sync failed.", "warning");
+              }
+            } else if (state.syncMode === "manual" || window.supabaseClient) {
+              setUnsyncedChanges(true);
+            }
+            
+            if (progressStatus) progressStatus.textContent = "Import complete!";
+            if (progressPercent) progressPercent.textContent = "100%";
+            if (progressBar) progressBar.style.width = "100%";
+            
+            setTimeout(() => {
+              if (progressContainer) progressContainer.classList.add("hidden");
+              if (btnImportSheet) btnImportSheet.disabled = false;
+              document.getElementById("settings-import-file").value = "";
+              document.getElementById("import-file-name").textContent = "Drag & drop your file here, or click to browse";
+            }, 1500);
+            
+            updateUI();
+            showToast(`Successfully imported ${importedGames.length} inventory keys from sheet!`, "success");
+          }
+          
+          setTimeout(processBatch, 0);
+
+        } catch (err) {
+          console.error("Error reading file:", err);
+          showToast("Failed to parse the file. Please ensure it's a valid Excel or CSV file.", "error");
           if (progressContainer) progressContainer.classList.add("hidden");
           if (btnImportSheet) btnImportSheet.disabled = false;
-          document.getElementById("settings-import-file").value = "";
-          document.getElementById("import-file-name").textContent = "Drag & drop your file here, or click to browse";
-        }, 1500);
-        
-        updateUI();
-        showToast(`Successfully imported ${importedGames.length} inventory keys from sheet!`, "success");
-      }
+        }
+      };
       
-      setTimeout(processBatch, 0);
-
-    } catch (err) {
-      console.error("Error reading file:", err);
-      showToast("Failed to parse the file. Please ensure it's a valid Excel or CSV file.", "error");
+      reader.onerror = function() {
+        showToast("Error reading file.", "error");
+        if (progressContainer) progressContainer.classList.add("hidden");
+        if (btnImportSheet) btnImportSheet.disabled = false;
+      };
+      
+      reader.readAsArrayBuffer(file);
+    },
+    () => {
       if (progressContainer) progressContainer.classList.add("hidden");
       if (btnImportSheet) btnImportSheet.disabled = false;
     }
-  };
-  
-  reader.onerror = function() {
-    showToast("Error reading file.", "error");
-    if (progressContainer) progressContainer.classList.add("hidden");
-    if (btnImportSheet) btnImportSheet.disabled = false;
-  };
-  
-  reader.readAsArrayBuffer(file);
+  );
 }
 
 function parseExcelDate(val) {

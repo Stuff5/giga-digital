@@ -660,6 +660,7 @@
                     <option value="25" selected>25</option>
                     <option value="50">50</option>
                     <option value="100">100</option>
+                    <option value="virtual">All (Virtual Scroll)</option>
                   </select>
                 </div>
                 <div class="pagination-buttons" id="inventory-pagination" style="display: flex; align-items: center; gap: 4px;">
@@ -714,7 +715,7 @@
 
           <!-- Sales Ledger Table -->
           <div class="ledger-table-card">
-            <div class="table-responsive">
+            <div class="table-responsive" id="sales-table-container">
               <table class="table" id="sales-table">
                 <thead>
                   <tr>
@@ -743,6 +744,7 @@
                     <option value="25" selected>25</option>
                     <option value="50">50</option>
                     <option value="100">100</option>
+                    <option value="virtual">All (Virtual Scroll)</option>
                   </select>
                 </div>
                 <div class="pagination-buttons" id="sales-pagination" style="display: flex; align-items: center; gap: 4px;">
@@ -1705,6 +1707,23 @@
                     <div>
                       <label class="switch-toggle" style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer; margin: 0;">
                         <input type="checkbox" id="toggle-show-sales-ledger" style="opacity: 0; width: 0; height: 0;" checked>
+                        <span class="switch-slider" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: hsla(0, 0%, 100%, 0.1); border-radius: 34px; transition: 0.3s ease;"></span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- Quick Actions Toolbar Toggle -->
+                  <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background-color: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: 0;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <i class="fa-solid fa-wand-magic-sparkles" style="font-size: 1.25rem; color: var(--accent-purple);"></i>
+                      <div style="display: flex; flex-direction: column; text-align: left;">
+                        <strong style="font-size: 0.9rem; color: var(--text-main);">Quick Actions Dock</strong>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">Show floating actions toolbar at the bottom center</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label class="switch-toggle" style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer; margin: 0;">
+                        <input type="checkbox" id="toggle-show-quick-toolbar" style="opacity: 0; width: 0; height: 0;" checked>
                         <span class="switch-slider" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: hsla(0, 0%, 100%, 0.1); border-radius: 34px; transition: 0.3s ease;"></span>
                       </label>
                     </div>
@@ -2740,12 +2759,174 @@
     </div>
   </div>
 
+  <!-- BULK PRICE ADJUSTMENT MODAL -->
+  <div class="modal hidden" id="bulk-price-adjust-modal">
+    <div class="modal-backdrop" data-close-modal="bulk-price-adjust-modal"></div>
+    <div class="modal-content modal-md">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-calculator"></i> Bulk Price Adjustment</h3>
+        <button class="modal-close-btn" data-close-modal="bulk-price-adjust-modal">&times;</button>
+      </div>
+      <form id="bulk-price-adjust-form" novalidate>
+        <div class="modal-body">
+          <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 20px;">
+            Apply modifications to the cost and sell price of <strong id="bulk-adjust-count-label">0</strong> selected inventory key(s).
+          </p>
+
+          <!-- Acquisition Cost Adjustments -->
+          <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; margin-bottom: 16px; background-color: rgba(255,255,255,0.02);">
+            <h4 style="margin-top: 0; margin-bottom: 12px; font-size: 0.95rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+              <span style="background-color: var(--accent-purple)20; color: var(--accent-purple); width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem;">1</span>
+              Acquisition Cost (Buy Price)
+            </h4>
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label for="bulk-cost-action">Modification Mode</label>
+              <select id="bulk-cost-action" class="form-control">
+                <option value="none">No Change</option>
+                <option value="set">Set Fixed Value</option>
+                <option value="adjust">Adjust (Add/Subtract)</option>
+              </select>
+            </div>
+            <div class="form-row" id="bulk-cost-value-row" style="display: none; gap: 12px;">
+              <div class="form-group" style="flex: 2; margin-bottom: 0;">
+                <label for="bulk-cost-value">Amount (<span class="currency-symbol">€</span>)</label>
+                <input type="number" id="bulk-cost-value" class="form-control" placeholder="0.00" step="0.01">
+              </div>
+              <div class="form-group" style="flex: 1; margin-bottom: 0; display: flex; align-items: flex-end;">
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-weight: 500; font-size: 0.85rem; color: var(--text-secondary);">
+                  <input type="checkbox" id="bulk-cost-percent" style="cursor: pointer; width: 16px; height: 16px;"> Percentage
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Target Sell Price Adjustments -->
+          <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; background-color: rgba(255,255,255,0.02);">
+            <h4 style="margin-top: 0; margin-bottom: 12px; font-size: 0.95rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+              <span style="background-color: var(--accent-pink)20; color: var(--accent-pink); width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem;">2</span>
+              Target Sell Price
+            </h4>
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label for="bulk-sell-action">Modification Mode</label>
+              <select id="bulk-sell-action" class="form-control">
+                <option value="none">No Change</option>
+                <option value="set">Set Fixed Value</option>
+                <option value="adjust">Adjust (Add/Subtract)</option>
+              </select>
+            </div>
+            <div class="form-row" id="bulk-sell-value-row" style="display: none; gap: 12px;">
+              <div class="form-group" style="flex: 2; margin-bottom: 0;">
+                <label for="bulk-sell-value">Amount (<span class="currency-symbol">€</span>)</label>
+                <input type="number" id="bulk-sell-value" class="form-control" placeholder="0.00" step="0.01">
+              </div>
+              <div class="form-group" style="flex: 1; margin-bottom: 0; display: flex; align-items: flex-end;">
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-weight: 500; font-size: 0.85rem; color: var(--text-secondary);">
+                  <input type="checkbox" id="bulk-sell-percent" style="cursor: pointer; width: 16px; height: 16px;"> Percentage
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close-modal="bulk-price-adjust-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Apply Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- BULK ACTIONS BAR -->
   <div id="bulk-actions-bar" class="bulk-actions-bar glass-panel hidden">
-    <span id="bulk-select-count">0 items selected</span>
+    <div class="bulk-info">
+      <span id="bulk-select-count">0 items selected</span>
+      <button type="button" class="btn-bulk-clear" id="btn-bulk-clear" title="Deselect All Items">Deselect All</button>
+    </div>
     <div class="bulk-buttons">
-      <button class="btn btn-danger btn-sm" id="btn-bulk-delete">
-        <i class="fa-solid fa-trash"></i> Delete Selected
+      <!-- Status Change -->
+      <div class="bulk-dropdown-wrapper">
+        <button type="button" class="btn btn-outline btn-sm" id="btn-bulk-status-toggle" title="Change Status">
+          <i class="fa-solid fa-tag"></i> <span>Status</span> <i class="fa-solid fa-chevron-down"></i>
+        </button>
+        <div class="bulk-dropdown-menu" id="bulk-status-menu">
+          <button type="button" class="bulk-menu-item" data-status="Available">Available</button>
+          <button type="button" class="bulk-menu-item" data-status="Reserved">Reserved</button>
+          <button type="button" class="bulk-menu-item" data-status="Rejected">Rejected</button>
+        </div>
+      </div>
+
+      <!-- Supplier Change -->
+      <div class="bulk-dropdown-wrapper">
+        <button type="button" class="btn btn-outline btn-sm" id="btn-bulk-supplier-toggle" title="Change Supplier">
+          <i class="fa-solid fa-truck"></i> <span>Supplier</span> <i class="fa-solid fa-chevron-down"></i>
+        </button>
+        <div class="bulk-dropdown-menu" id="bulk-supplier-menu">
+          <!-- Populated Dynamically -->
+        </div>
+      </div>
+
+      <!-- Platform Change -->
+      <div class="bulk-dropdown-wrapper">
+        <button type="button" class="btn btn-outline btn-sm" id="btn-bulk-platform-toggle" title="Change Platform">
+          <i class="fa-solid fa-gamepad"></i> <span>Platform</span> <i class="fa-solid fa-chevron-down"></i>
+        </button>
+        <div class="bulk-dropdown-menu" id="bulk-platform-menu">
+          <!-- Populated Dynamically -->
+        </div>
+      </div>
+
+      <!-- Adjust Price -->
+      <button type="button" class="btn btn-outline btn-sm" id="btn-bulk-price" title="Adjust Costs and Prices">
+        <i class="fa-solid fa-calculator"></i> <span>Price Adjust</span>
+      </button>
+
+      <!-- Export Selected -->
+      <button type="button" class="btn btn-outline btn-sm" id="btn-bulk-export" title="Export Selected Keys to CSV">
+        <i class="fa-solid fa-file-export"></i> <span>Export</span>
+      </button>
+
+      <!-- Delete Selected -->
+      <button type="button" class="btn btn-danger btn-sm" id="btn-bulk-delete" title="Move Selected to Recycle Bin">
+        <i class="fa-solid fa-trash"></i> <span>Delete</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- QUICK ACTIONS FLOATING TOOLBAR -->
+  <div id="quick-actions-toolbar" class="quick-actions-toolbar glass-panel hidden">
+    <div class="quick-actions-items">
+      <button class="quick-action-btn" id="qa-search" title="Quick Search (Ctrl+F equivalent)">
+        <i class="fa-solid fa-magnifying-glass text-cyan"></i>
+        <span>Search</span>
+      </button>
+      <button class="quick-action-btn" id="qa-add-key" title="Add Game Key">
+        <i class="fa-solid fa-plus text-teal"></i>
+        <span>Add Key</span>
+      </button>
+      <div class="quick-actions-divider"></div>
+      <button class="quick-action-btn" id="qa-undo" title="Undo Last Action" disabled>
+        <i class="fa-solid fa-arrow-rotate-left"></i>
+        <span>Undo</span>
+      </button>
+      <button class="quick-action-btn" id="qa-redo" title="Redo Last Action" disabled>
+        <i class="fa-solid fa-arrow-rotate-right"></i>
+        <span>Redo</span>
+      </button>
+      <div class="quick-actions-divider"></div>
+      <button class="quick-action-btn" id="qa-sync" title="Sync Database & Backups Now">
+        <i class="fa-solid fa-cloud-arrow-up text-cyan"></i>
+        <span>Sync</span>
+      </button>
+      <button class="quick-action-btn" id="qa-theme" title="Toggle Appearance Theme">
+        <i class="fa-solid fa-circle-half-stroke text-amber"></i>
+        <span>Theme</span>
+      </button>
+      <button class="quick-action-btn" id="qa-import" title="Bulk Import Excel/CSV">
+        <i class="fa-solid fa-file-import text-emerald"></i>
+        <span>Import</span>
+      </button>
+      <button class="quick-action-btn" id="qa-help" title="Open Help Center (F1)">
+        <i class="fa-solid fa-circle-question text-purple"></i>
+        <span>Help</span>
       </button>
     </div>
   </div>
@@ -2753,8 +2934,6 @@
   <!-- TOAST NOTIFICATION CONTAINER -->
   <div class="toast-container" id="toast-container"></div>
 
-  <!-- Excel Parser SheetJS -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <!-- Main JavaScript File -->
   <script src="app.js?v=2"></script>
 </body>
