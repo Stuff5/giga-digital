@@ -601,6 +601,7 @@ let financeMonthlyChartInstance = null;
 let costRevenueChartInstance = null;
 let supplierSplitChartInstance = null;
 let topBestsellersChartInstance = null;
+let supplierRoiMatrixChartInstance = null;
 
 function initDOMCache() {
   const elements = [
@@ -2600,6 +2601,13 @@ function initEventHandlers() {
   const supSupplierSelect = document.getElementById("sup-filter-supplier");
   if (supSupplierSelect) {
     supSupplierSelect.addEventListener("change", updateUI);
+  }
+
+  const leaderboardSelect = document.getElementById("leaderboard-metric-select");
+  if (leaderboardSelect) {
+    leaderboardSelect.addEventListener("change", () => {
+      renderSupplierAnalytics();
+    });
   }
 
   const supPeriodButtons = document.querySelectorAll("#sup-date-filter-group button");
@@ -5183,7 +5191,282 @@ function renderSuppliers() {
         supFilterSelect.value = "all";
       }
     }
+
+    // Render the leaderboard and ROI matrix
+    renderSupplierAnalytics();
   }
+}
+
+// Render Supplier Analytics: Leaderboard & ROI Matrix Scatter Chart
+function renderSupplierAnalytics() {
+  const container = document.getElementById("supplier-leaderboard-container");
+  if (!container) return;
+  container.innerHTML = "";
+
+  // Pre-index inventory by ID for O(1) lookups
+  const inventoryMap = new Map();
+  state.inventory.forEach(item => {
+    inventoryMap.set(item.id, item);
+  });
+
+  // Aggregate stats per supplier
+  const supplierStats = {};
+  
+  // Initialize with all suppliers
+  state.suppliers.forEach(sup => {
+    supplierStats[sup.name] = {
+      name: sup.name,
+      logo: sup.logo,
+      color: sup.color || getSupplierColorName(sup.name),
+      purchasedCount: 0,
+      inStockCount: 0,
+      soldCount: 0,
+      costOfSold: 0,
+      revenue: 0,
+      netProfit: 0
+    };
+  });
+
+  // Process inventory
+  state.inventory.forEach(item => {
+    const sup = item.source || "";
+    if (!supplierStats[sup]) {
+      supplierStats[sup] = {
+        name: sup,
+        logo: null,
+        color: getSupplierColorName(sup),
+        purchasedCount: 0,
+        inStockCount: 0,
+        soldCount: 0,
+        costOfSold: 0,
+        revenue: 0,
+        netProfit: 0
+      };
+    }
+    const s = supplierStats[sup];
+    s.purchasedCount++;
+    if (item.status !== "Sold") {
+      s.inStockCount++;
+    }
+  });
+
+  // Process sales
+  state.sales.forEach(sale => {
+    const game = inventoryMap.get(sale.inventoryId);
+    if (game) {
+      const sup = game.source || "";
+      if (!supplierStats[sup]) {
+        supplierStats[sup] = {
+          name: sup,
+          logo: null,
+          color: getSupplierColorName(sup),
+          purchasedCount: 0,
+          inStockCount: 0,
+          soldCount: 0,
+          costOfSold: 0,
+          revenue: 0,
+          netProfit: 0
+        };
+      }
+      const s = supplierStats[sup];
+      s.soldCount++;
+      s.costOfSold += sale.cost;
+      s.revenue += sale.sellPrice;
+      s.netProfit += sale.profit;
+    }
+  });
+
+  const suppliersList = Object.values(supplierStats);
+
+  // Compute ROI and STR
+  suppliersList.forEach(s => {
+    s.roi = s.costOfSold > 0 ? (s.netProfit / s.costOfSold) * 100 : 0;
+    const totalKeys = s.soldCount + s.inStockCount;
+    s.sellThrough = totalKeys > 0 ? (s.soldCount / totalKeys) * 100 : 0;
+  });
+
+  // Get active ranking metric
+  const metricSelect = document.getElementById("leaderboard-metric-select");
+  const selectedMetric = metricSelect ? metricSelect.value : "profit";
+
+  // Sort list
+  if (selectedMetric === "profit") {
+    suppliersList.sort((a, b) => b.netProfit - a.netProfit);
+  } else if (selectedMetric === "roi") {
+    suppliersList.sort((a, b) => b.roi - a.roi);
+  } else if (selectedMetric === "volume") {
+    suppliersList.sort((a, b) => b.soldCount - a.soldCount);
+  } else if (selectedMetric === "sellthrough") {
+    suppliersList.sort((a, b) => b.sellThrough - a.sellThrough);
+  }
+
+  // Take top 5 with positive volume/purchases
+  const activeSuppliers = suppliersList.filter(s => s.purchasedCount > 0 || s.soldCount > 0);
+  const topSuppliers = activeSuppliers.slice(0, 5);
+
+  if (topSuppliers.length === 0) {
+    container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 40px 0; font-size: 0.9rem;">Add suppliers and keys to view the leaderboard.</div>`;
+  } else {
+    // Find max value to scale progress bars
+    let maxValue = 1;
+    if (selectedMetric === "profit") {
+      maxValue = Math.max(...topSuppliers.map(s => s.netProfit), 1);
+    } else if (selectedMetric === "roi") {
+      maxValue = Math.max(...topSuppliers.map(s => s.roi), 1);
+    } else if (selectedMetric === "volume") {
+      maxValue = Math.max(...topSuppliers.map(s => s.soldCount), 1);
+    } else if (selectedMetric === "sellthrough") {
+      maxValue = Math.max(...topSuppliers.map(s => s.sellThrough), 1);
+    }
+
+    topSuppliers.forEach((sup, index) => {
+      const colorPreset = SUPPLIER_COLORS.find(c => c.name === sup.color) || SUPPLIER_COLORS[0];
+      
+      // Calculate display value
+      let displayVal = "";
+      let rawVal = 0;
+      if (selectedMetric === "profit") {
+        displayVal = formatCurrency(sup.netProfit);
+        rawVal = sup.netProfit;
+      } else if (selectedMetric === "roi") {
+        displayVal = `${sup.roi.toFixed(1)}%`;
+        rawVal = sup.roi;
+      } else if (selectedMetric === "volume") {
+        displayVal = `${sup.soldCount} sold`;
+        rawVal = sup.soldCount;
+      } else if (selectedMetric === "sellthrough") {
+        displayVal = `${sup.sellThrough.toFixed(1)}% STR`;
+        rawVal = sup.sellThrough;
+      }
+
+      const percent = Math.max(0, Math.min(100, (rawVal / maxValue) * 100));
+
+      // Rank circle styling
+      let rankBadge = "";
+      if (index === 0) {
+        rankBadge = `<span style="background: linear-gradient(135deg, #ffd700, #ffa500); color: #000; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);">1</span>`;
+      } else if (index === 1) {
+        rankBadge = `<span style="background: linear-gradient(135deg, #c0c0c0, #a9a9a9); color: #000; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; box-shadow: 0 0 10px rgba(192, 192, 192, 0.3);">2</span>`;
+      } else if (index === 2) {
+        rankBadge = `<span style="background: linear-gradient(135deg, #cd7f32, #8b4513); color: #fff; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; box-shadow: 0 0 10px rgba(205, 127, 50, 0.3);">3</span>`;
+      } else {
+        rankBadge = `<span style="background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-secondary); width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold;">${index + 1}</span>`;
+      }
+
+      // Logo or placeholder circle
+      const logoHtml = sup.logo
+        ? `<img src="${sup.logo}" style="width: 24px; height: 24px; border-radius: 4px; object-fit: contain; background: var(--bg-card); border: 1px solid var(--border-color); padding: 1px;">`
+        : `<span style="background-color: ${colorPreset.value}20; color: ${colorPreset.value}; width: 24px; height: 24px; border-radius: 4px; border: 1px solid ${colorPreset.value}40; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold;">${sup.name.charAt(0).toUpperCase()}</span>`;
+
+      const row = document.createElement("div");
+      row.style.display = "flex";
+      row.style.flexDirection = "column";
+      row.style.gap = "6px";
+      row.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            ${rankBadge}
+            ${logoHtml}
+            <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);">${sup.name}</span>
+          </div>
+          <span style="font-size: 0.85rem; font-weight: 700; color: ${colorPreset.value};">${displayVal}</span>
+        </div>
+        <div style="background-color: var(--bg-input); height: 6px; border-radius: 3px; overflow: hidden; position: relative;">
+          <div style="background-color: ${colorPreset.value}; width: ${percent}%; height: 100%; border-radius: 3px; transition: width 0.6s cubic-bezier(0.1, 0.8, 0.25, 1);"></div>
+        </div>
+      `;
+      container.appendChild(row);
+    });
+  }
+
+  // Now, render the ROI matrix chart!
+  renderRoiMatrixChart(activeSuppliers);
+}
+
+// Render Supplier ROI & Velocity Matrix Scatter Chart
+function renderRoiMatrixChart(activeSuppliers) {
+  if (supplierRoiMatrixChartInstance) {
+    try {
+      supplierRoiMatrixChartInstance.destroy();
+    } catch (e) {
+      console.error("Error destroying supplierRoiMatrixChartInstance:", e);
+    }
+    supplierRoiMatrixChartInstance = null;
+  }
+
+  const canvas = document.getElementById("supplier-roi-matrix-chart");
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+
+  // Retrieve theme CSS variables
+  const rootStyle = getComputedStyle(document.documentElement);
+  const textSecondaryColor = rootStyle.getPropertyValue("--text-secondary").trim() || "hsl(215, 15%, 60%)";
+  const borderColor = rootStyle.getPropertyValue("--border-color").trim() || "hsl(215, 15%, 15%)";
+
+  // Prepare scatter datasets
+  const scatterData = activeSuppliers.map(sup => {
+    return {
+      x: parseFloat(sup.sellThrough.toFixed(1)),
+      y: parseFloat(sup.roi.toFixed(1)),
+      label: sup.name,
+      color: (SUPPLIER_COLORS.find(c => c.name === sup.color) || SUPPLIER_COLORS[0]).value
+    };
+  });
+
+  supplierRoiMatrixChartInstance = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        label: 'Suppliers',
+        data: scatterData,
+        backgroundColor: scatterData.map(d => d.color),
+        borderColor: scatterData.map(d => d.color),
+        pointRadius: 8,
+        pointHoverRadius: 10
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          min: 0,
+          max: 100,
+          grid: { color: borderColor },
+          ticks: { color: textSecondaryColor, font: { family: 'Inter', size: 10 } },
+          title: {
+            display: true,
+            text: 'Sell-Through Rate (%)',
+            color: textSecondaryColor,
+            font: { family: 'Inter', size: 10, weight: 'bold' }
+          }
+        },
+        y: {
+          min: 0,
+          grid: { color: borderColor },
+          ticks: { color: textSecondaryColor, font: { family: 'Inter', size: 10 } },
+          title: {
+            display: true,
+            text: 'Return on Investment (ROI %)',
+            color: textSecondaryColor,
+            font: { family: 'Inter', size: 10, weight: 'bold' }
+          }
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const pt = context.raw;
+              return `${pt.label}: STR = ${pt.x}%, ROI = ${pt.y}%`;
+            }
+          }
+        }
+      }
+    }
+  });
 }
 
 // Initialize color swatches in Add and Edit Supplier forms
