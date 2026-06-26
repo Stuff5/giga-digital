@@ -2546,7 +2546,8 @@ function initEventHandlers() {
       handleInventoryFilterChange();
     });
   }
-  document.getElementById("inv-search-input").addEventListener("input", handleInventoryFilterChange);
+  const debouncedInventorySearch = debounce(handleInventoryFilterChange, 150);
+  document.getElementById("inv-search-input").addEventListener("input", debouncedInventorySearch);
 
   // Page Size Selector
   const invPageSizeSelect = document.getElementById("inv-page-size");
@@ -2633,7 +2634,8 @@ function initEventHandlers() {
 
   // Filters Event Listeners for Sales
   document.getElementById("sales-filter-platform").addEventListener("change", updateUI);
-  document.getElementById("sales-search-input").addEventListener("input", updateUI);
+  const debouncedSalesSearch = debounce(updateUI, 150);
+  document.getElementById("sales-search-input").addEventListener("input", debouncedSalesSearch);
   
   // Dashboard Supplier Filter Event Listener
   const dbSupplierSelect = document.getElementById("db-filter-supplier");
@@ -2671,8 +2673,8 @@ function initEventHandlers() {
   });
 
   // Global Search bar on top bar
-  document.getElementById("global-search").addEventListener("input", (e) => {
-    const val = e.target.value.toLowerCase().trim();
+  const handleGlobalSearchInput = () => {
+    const val = document.getElementById("global-search").value.toLowerCase().trim();
     // If not on inventory, sales, or entries views, redirect user to inventory to view search results
     const activeView = document.querySelector(".content-view.active");
     if (activeView.id !== "inventory-view" && activeView.id !== "sales-view" && activeView.id !== "entries-view") {
@@ -2688,15 +2690,17 @@ function initEventHandlers() {
       document.getElementById("entries-search-input").value = val;
     }
     updateUI();
-  });
+  };
+  document.getElementById("global-search").addEventListener("input", debounce(handleGlobalSearchInput, 150));
 
   // Entries search input listener
   const entriesSearch = document.getElementById("entries-search-input");
   if (entriesSearch) {
-    entriesSearch.addEventListener("input", () => {
+    const debouncedEntriesSearch = debounce(() => {
       state.entriesCurrentPage = 1;
       renderEntries();
-    });
+    }, 150);
+    entriesSearch.addEventListener("input", debouncedEntriesSearch);
   }
 
   // Suppliers Sort Listener
