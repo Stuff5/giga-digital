@@ -9173,6 +9173,7 @@ function renderEntries() {
         totalCostOfSold: 0,
         profit: 0,
         imageUrl: item.imageUrl || null,
+        publisher: null,
         sellDurations: []
       };
     }
@@ -9183,6 +9184,10 @@ function renderEntries() {
     // Update artwork to latest available image
     if (item.imageUrl) {
       titleGroups[titleKey].imageUrl = item.imageUrl;
+    }
+    // Track publisher
+    if (item.publisher && !titleGroups[titleKey].publisher) {
+      titleGroups[titleKey].publisher = item.publisher.trim();
     }
   });
 
@@ -9199,6 +9204,7 @@ function renderEntries() {
         totalCostOfSold: 0,
         profit: 0,
         imageUrl: null,
+        publisher: null,
         sellDurations: []
       };
     }
@@ -9210,16 +9216,21 @@ function renderEntries() {
     titleGroups[titleKey].totalCostOfSold += sale.cost;
     titleGroups[titleKey].profit += sale.profit;
 
-    // Retrieve corresponding inventory purchaseDate
+    // Retrieve corresponding inventory purchaseDate & publisher
     const invItem = inventoryMap.get(sale.inventoryId);
-    if (invItem && invItem.purchaseDate && sale.saleDate) {
-      const start = new Date(invItem.purchaseDate);
-      const end = new Date(sale.saleDate);
-      start.setHours(0, 0, 0, 0);
-      end.setHours(0, 0, 0, 0);
-      const diffTime = Math.max(0, end - start);
-      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-      titleGroups[titleKey].sellDurations.push(diffDays);
+    if (invItem) {
+      if (invItem.publisher && !titleGroups[titleKey].publisher) {
+        titleGroups[titleKey].publisher = invItem.publisher.trim();
+      }
+      if (invItem.purchaseDate && sale.saleDate) {
+        const start = new Date(invItem.purchaseDate);
+        const end = new Date(sale.saleDate);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(0, 0, 0, 0);
+        const diffTime = Math.max(0, end - start);
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+        titleGroups[titleKey].sellDurations.push(diffDays);
+      }
     }
   });
 
@@ -9229,7 +9240,8 @@ function renderEntries() {
   // Search filtering
   if (searchInput) {
     entriesList = entriesList.filter(entry => 
-      entry.title.toLowerCase().includes(searchInput)
+      entry.title.toLowerCase().includes(searchInput) ||
+      (entry.publisher || "").toLowerCase().includes(searchInput)
     );
   }
 
@@ -9263,9 +9275,14 @@ function renderEntries() {
     const marginPercentage = entry.totalRevenue > 0 ? (entry.profit / entry.totalRevenue) * 100 : 0;
 
     const initials = entry.title.split(" ").map(w => w[0]).join("").slice(0, 3);
+    
+    const publisherSubtitle = entry.publisher 
+      ? `<div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;"><i class="fa-solid fa-building" style="font-size: 0.7rem; opacity: 0.7; margin-right: 4px;"></i>${entry.publisher}</div>` 
+      : `<div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; font-style: italic;"><i class="fa-solid fa-building" style="font-size: 0.7rem; opacity: 0.5; margin-right: 4px;"></i>No Publisher</div>`;
+
     const titleCell = entry.imageUrl
-      ? `<div class="game-title-cell"><img src="${entry.imageUrl}" class="game-thumbnail" alt="${entry.title}"><strong>${entry.title}</strong></div>`
-      : `<div class="game-title-cell"><div class="game-thumbnail-placeholder">${initials}</div><strong>${entry.title}</strong></div>`;
+      ? `<div class="game-title-cell"><img src="${entry.imageUrl}" class="game-thumbnail" alt="${entry.title}"><div><strong>${entry.title}</strong>${publisherSubtitle}</div></div>`
+      : `<div class="game-title-cell"><div class="game-thumbnail-placeholder">${initials}</div><div><strong>${entry.title}</strong>${publisherSubtitle}</div></div>`;
 
     const safeTitle = entry.title.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
