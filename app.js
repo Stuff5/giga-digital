@@ -519,7 +519,8 @@ let state = {
   supActivePeriod: "all",
   supFilterSupplier: "all",
   inventoryLayout: "list", // "list", "grid", "gallery"
-
+  supplierDisplayMode: "name", // "name", "logo"
+  platformDisplayMode: "name", // "name", "logo"
   inventorySortBy: "date-desc", // "date-desc", "date-asc", "title-asc", "title-desc", "duration-desc", "duration-asc"
   inventoryPageSize: 25,
   inventoryCurrentPage: 1,
@@ -591,7 +592,8 @@ let state = {
   },
   autoSyncInterval: localStorage.getItem("gv_auto_sync_interval") || "off",
   autoPushGitHub: localStorage.getItem("gv_auto_push_github") === "true",
-  autoPullGitHub: localStorage.getItem("gv_auto_pull_github") === "true"
+  autoPullGitHub: localStorage.getItem("gv_auto_pull_github") === "true",
+  showQuickToolbar: localStorage.getItem("gv_show_quick_toolbar") !== "false"
 };
 
 // Charts reference objects for hot-reloading data
@@ -612,7 +614,7 @@ function initDOMCache() {
     // Main UI tables & ledger containers
     "publishers-table-body", "suppliers-table-body", "platforms-table-body", "entries-table-body", "recycle-table-body", "payouts-ledger-body",
     // Toolbars & Action Bars
-    "bulk-actions-bar", "recycle-bulk-actions", "recycle-info-text",
+    "quick-actions-toolbar", "bulk-actions-bar", "recycle-bulk-actions", "recycle-info-text",
     // Sync indicators & timers
     "sync-pending-indicator", "auto-sync-timer-countdown", "auto-sync-status-badge", "auto-sync-next-run"
   ];
@@ -645,8 +647,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Set up navigation router
     initNavigation();
 
-    // Initialize app toolbars
-    initAppToolbars();
+    // Apply quick actions toolbar visibility
+    applyQuickToolbarVisibility();
+    initQuickActionsToolbar();
 
     // Set up forms & modals event handlers
     initEventHandlers();
@@ -703,7 +706,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (nameDisplay) nameDisplay.textContent = activeUser;
     }
     
-
+    const supplierDisplayInput = document.getElementById("settings-supplier-display");
+    if (supplierDisplayInput) {
+      supplierDisplayInput.value = state.supplierDisplayMode || "name";
+    }
 
 
 
@@ -861,7 +867,18 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     }
 
-
+    const toggleQuickToolbarInput = document.getElementById("toggle-show-quick-toolbar");
+    if (toggleQuickToolbarInput) {
+      toggleQuickToolbarInput.checked = state.showQuickToolbar;
+      toggleQuickToolbarInput.addEventListener("change", (e) => {
+        state.showQuickToolbar = e.target.checked;
+        saveStateToStorage();
+        applyQuickToolbarVisibility();
+        if (window.supabaseClient) {
+          dbSaveSettings("showQuickToolbar", state.showQuickToolbar);
+        }
+      });
+    }
   } catch (err) {
     console.error("Initialization Error:", err);
   }
@@ -874,7 +891,8 @@ function loadStateFromStorage() {
       clearHistoryStacks();
     }
     state.inventoryLayout = localStorage.getItem("gv_inv_layout") || "list";
-
+    state.supplierDisplayMode = localStorage.getItem("gv_supplier_display_mode") || "name";
+    state.platformDisplayMode = localStorage.getItem("gv_platform_display_mode") || "name";
     state.inventorySortBy = localStorage.getItem("gv_inventory_sort_by") || "date-desc";
     state.inventoryPageSize = parseInt(localStorage.getItem("gv_inv_page_size")) || 25;
     state.inventoryCurrentPage = 1;
@@ -1147,7 +1165,7 @@ function loadStateFromStorage() {
     state.autoSyncInterval = localStorage.getItem("gv_auto_sync_interval") || "off";
     state.autoPushGitHub = localStorage.getItem("gv_auto_push_github") === "true";
     state.autoPullGitHub = localStorage.getItem("gv_auto_pull_github") === "true";
-
+    state.showQuickToolbar = localStorage.getItem("gv_show_quick_toolbar") !== "false";
 
     // Purge empty/invalid rows from the database state automatically
     cleanupEmptyDatabaseRows();
@@ -1206,7 +1224,8 @@ function saveStateToStorage() {
   localStorage.setItem("gv_recycle_bin" + userSuffix, JSON.stringify(state.recycleBin));
   localStorage.setItem("gv_payouts" + userSuffix, JSON.stringify(state.payouts));
   localStorage.setItem("gv_inv_layout", state.inventoryLayout);
-
+  localStorage.setItem("gv_supplier_display_mode", state.supplierDisplayMode);
+  localStorage.setItem("gv_platform_display_mode", state.platformDisplayMode);
   localStorage.setItem("gv_inventory_sort_by", state.inventorySortBy);
   localStorage.setItem("gv_inv_page_size", state.inventoryPageSize);
   localStorage.setItem("gv_sales_page_size", state.salesPageSize);
@@ -1233,7 +1252,7 @@ function saveStateToStorage() {
   localStorage.setItem("gv_auto_sync_interval", state.autoSyncInterval);
   localStorage.setItem("gv_auto_push_github", state.autoPushGitHub ? "true" : "false");
   localStorage.setItem("gv_auto_pull_github", state.autoPullGitHub ? "true" : "false");
-
+  localStorage.setItem("gv_show_quick_toolbar", state.showQuickToolbar ? "true" : "false");
   localStorage.setItem("gv_platform_fee_presets", JSON.stringify(PLATFORM_FEE_PRESETS));
   if (state.customLogo) {
     localStorage.setItem("gv_custom_logo", state.customLogo);
@@ -1281,7 +1300,14 @@ function updateUndoRedoButtons() {
     btnRedo.disabled = redoStack.length === 0;
   }
 
-
+  const qaUndo = document.getElementById("qa-undo");
+  const qaRedo = document.getElementById("qa-redo");
+  if (qaUndo) {
+    qaUndo.disabled = undoStack.length === 0;
+  }
+  if (qaRedo) {
+    qaRedo.disabled = redoStack.length === 0;
+  }
 }
 
 function restoreFromSnapshot(snapshot) {
@@ -2491,7 +2517,19 @@ function initEventHandlers() {
   if (invFilterAging) {
     invFilterAging.addEventListener("change", handleInventoryFilterChange);
   }
-
+  const supplierDisplayInput = document.getElementById("settings-supplier-display");
+  if (supplierDisplayInput) {
+    supplierDisplayInput.addEventListener("change", (e) => {
+      state.supplierDisplayMode = e.target.value;
+      saveStateToStorage();
+      if (window.supabaseClient && state.syncMode === "realtime") {
+        dbSaveSettings("supplierDisplayMode", state.supplierDisplayMode);
+      } else if (state.syncMode === "manual") {
+        setUnsyncedChanges(true);
+      }
+      handleInventoryFilterChange();
+    });
+  }
 
 
 
@@ -3633,13 +3671,139 @@ function navigateToHash(targetHash) {
   }
 }
 
-// Initialize App Toolbars & Form Listeners
-function initAppToolbars() {
+// Quick Actions Toolbar Visibility Application
+function applyQuickToolbarVisibility() {
+  const toolbar = document.getElementById("quick-actions-toolbar");
+  if (!toolbar) return;
+
+  if (state.showQuickToolbar) {
+    toolbar.classList.remove("hidden");
+  } else {
+    toolbar.classList.add("hidden");
+  }
+}
+
+// Initialize Quick Actions Toolbar Button Event Listeners
+function initQuickActionsToolbar() {
+  const btnSearch = document.getElementById("qa-search");
+  if (btnSearch) {
+    btnSearch.addEventListener("click", () => {
+      navigateToHash("#inventory");
+      setTimeout(() => {
+        const searchInput = document.getElementById("inv-search-input");
+        if (searchInput) {
+          searchInput.focus();
+          searchInput.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 100);
+    });
+  }
+
+  const btnAddKey = document.getElementById("qa-add-key");
+  if (btnAddKey) {
+    btnAddKey.addEventListener("click", () => {
+      openModal("add-game-modal");
+    });
+  }
+
+  const btnUndo = document.getElementById("qa-undo");
+  if (btnUndo) {
+    btnUndo.addEventListener("click", () => {
+      if (typeof handleUndo === "function") {
+        handleUndo();
+      }
+    });
+  }
+
+  const btnRedo = document.getElementById("qa-redo");
+  if (btnRedo) {
+    btnRedo.addEventListener("click", () => {
+      if (typeof handleRedo === "function") {
+        handleRedo();
+      }
+    });
+  }
+
+  const btnSync = document.getElementById("qa-sync");
+  if (btnSync) {
+    btnSync.addEventListener("click", async () => {
+      const icon = btnSync.querySelector("i");
+      if (icon) icon.classList.add("fa-spin");
+      showToast("Initializing full database synchronization...", "info");
+      
+      try {
+        if (typeof triggerScheduledSync === "function") {
+          await triggerScheduledSync();
+        } else if (typeof syncToGitHub === "function") {
+          await syncToGitHub(true);
+        }
+        showToast("Cloud synchronization completed successfully!", "success");
+      } catch (err) {
+        console.error("Sync error:", err);
+        showToast("Synchronization encountered errors.", "error");
+      } finally {
+        if (icon) icon.classList.remove("fa-spin");
+      }
+    });
+  }
+
+  const btnTheme = document.getElementById("qa-theme");
+  if (btnTheme) {
+    btnTheme.addEventListener("click", () => {
+      pushToUndoStack();
+      state.themeMode = state.themeMode === "light" ? "dark" : "light";
+      applyTheme(state.themeMode, state.themeColor);
+      updateThemeSelectionCards(state.themeMode, state.themeColor);
+      saveStateToStorage();
+      
+      if (window.supabaseClient && state.syncMode === "realtime") {
+        dbSaveSettings("themeMode", state.themeMode);
+      } else if (state.syncMode === "manual") {
+        setUnsyncedChanges(true);
+      }
+      
+      updateUI();
+      showToast(`Switched to ${state.themeMode} mode theme.`, "info");
+    });
+  }
+
+  const btnImport = document.getElementById("qa-import");
+  if (btnImport) {
+    btnImport.addEventListener("click", () => {
+      navigateToHash("#settings");
+      
+      const importZone = document.getElementById("import-drop-zone");
+      const importFileInput = document.getElementById("settings-import-file");
+      
+      if (importZone) {
+        importZone.scrollIntoView({ behavior: "smooth", block: "center" });
+        importZone.style.boxShadow = "0 0 15px var(--accent-emerald)";
+        setTimeout(() => {
+          importZone.style.boxShadow = "none";
+        }, 1500);
+      }
+      
+      if (importFileInput) {
+        setTimeout(() => {
+          importFileInput.click();
+        }, 500);
+      }
+    });
+  }
+
+  const btnHelp = document.getElementById("qa-help");
+  if (btnHelp) {
+    btnHelp.addEventListener("click", () => {
+      openModal("help-modal");
+    });
+  }
+
   updateUndoRedoButtons();
   initBulkActionsToolbar();
   initBulkPriceAdjustModalForm();
 }
 
+// Initialize Bulk Actions dropdowns and button event listeners
 function initBulkActionsToolbar() {
   const btnClear = document.getElementById("btn-bulk-clear");
   if (btnClear) {
@@ -6943,16 +7107,25 @@ function buildInventoryRowHTML(item, salesMap) {
   const colorName = supplierObj ? (supplierObj.color || getSupplierColorName(sourceStr)) : getSupplierColorName(sourceStr);
   const colorPreset = SUPPLIER_COLORS.find(c => c.name === colorName) || SUPPLIER_COLORS[0];
   
-  const logoHtml = supplierObj && supplierObj.logo
-    ? `<img src="${supplierObj.logo}" style="width: 16px; height: 16px; border-radius: 2px; object-fit: contain; background-color: var(--bg-card); display: inline-block; vertical-align: middle;" alt="${sourceStr}">`
-    : `<span style="background-color: ${colorPreset.value}20; width: 16px; height: 16px; border-radius: 2px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: bold; vertical-align: middle;">${sourceStr.charAt(0).toUpperCase()}</span>`;
-
-  const supplierBadge = `
-    <span class="supplier-tag" style="background-color: ${colorPreset.value}12; border-color: ${colorPreset.value}25; color: ${colorPreset.value}; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 6px; vertical-align: middle;">
-      ${logoHtml}
-      ${sourceStr}
-    </span>
-  `;
+  let supplierBadge = "";
+  if (state.supplierDisplayMode === "logo") {
+    if (supplierObj && supplierObj.logo) {
+      supplierBadge = `<img src="${supplierObj.logo}" class="supplier-logo-thumbnail" style="width: 28px; height: 28px; vertical-align: middle; border-radius: 4px; object-fit: contain; background-color: var(--bg-card); border: 1px solid var(--border-color); padding: 1px;" title="${sourceStr}" alt="${sourceStr}">`;
+    } else {
+      supplierBadge = `
+        <div class="supplier-logo-placeholder" style="width: 28px; height: 28px; border-radius: 4px; background-color: ${colorPreset.value}20; color: ${colorPreset.value}; border: 1px solid ${colorPreset.value}40; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; vertical-align: middle;" title="${sourceStr}">
+          ${sourceStr.charAt(0).toUpperCase()}
+        </div>
+      `;
+    }
+  } else {
+    supplierBadge = `
+      <span class="supplier-tag" style="background-color: ${colorPreset.value}12; border-color: ${colorPreset.value}25; color: ${colorPreset.value}; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px; vertical-align: middle;">
+        <span class="supplier-dot" style="background-color: ${colorPreset.value}; width: 6px; height: 6px;"></span>
+        ${sourceStr}
+      </span>
+    `;
+  }
   let profitCell = `<span style="color: var(--text-muted); font-size: 0.8rem;">-</span>`;
   if (saleItem) {
     const margin = saleItem.sellPrice > 0 ? (saleItem.profit / saleItem.sellPrice) * 100 : 0;
@@ -11319,7 +11492,11 @@ async function dbLoadState() {
           applySalesLedgerVisibility(state.showSalesLedger);
           const toggleSales = document.getElementById("toggle-show-sales-ledger");
           if (toggleSales) toggleSales.checked = state.showSalesLedger;
-
+        } else if (s.key === "showQuickToolbar") {
+          state.showQuickToolbar = s.value;
+          applyQuickToolbarVisibility();
+          const toggleQuick = document.getElementById("toggle-show-quick-toolbar");
+          if (toggleQuick) toggleQuick.checked = state.showQuickToolbar;
         } else if (s.key === "visibleMetrics") {
           try {
             state.visibleMetrics = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
@@ -11363,7 +11540,14 @@ async function dbLoadState() {
         } else if (s.key === "customLogo") {
           state.customLogo = s.value;
           applyLogo(state.customLogo);
-
+        } else if (s.key === "supplierDisplayMode") {
+          state.supplierDisplayMode = s.value;
+          const supplierDisplayInput = document.getElementById("settings-supplier-display");
+          if (supplierDisplayInput) {
+            supplierDisplayInput.value = state.supplierDisplayMode || "name";
+          }
+        } else if (s.key === "platformDisplayMode") {
+          state.platformDisplayMode = s.value;
         } else if (s.key === "inventorySortBy") {
           state.inventorySortBy = s.value;
           const invSortInput = document.getElementById("inv-sort-by");
@@ -11476,7 +11660,9 @@ async function dbSeedDatabase() {
       { key: "lowStockThreshold", value: state.lowStockThreshold },
       { key: "defaultMarkupType", value: state.defaultMarkupType },
       { key: "defaultMarkupValue", value: state.defaultMarkupValue },
-      { key: "syncMode", value: state.syncMode }
+      { key: "syncMode", value: state.syncMode },
+      { key: "supplierDisplayMode", value: state.supplierDisplayMode },
+      { key: "platformDisplayMode", value: state.platformDisplayMode }
     ];
     
     for (const s of settings) {
@@ -12322,6 +12508,8 @@ async function synchronizeCloudDatabase() {
       { key: "defaultMarkupType", value: state.defaultMarkupType },
       { key: "defaultMarkupValue", value: state.defaultMarkupValue },
       { key: "syncMode", value: state.syncMode },
+      { key: "supplierDisplayMode", value: state.supplierDisplayMode },
+      { key: "platformDisplayMode", value: state.platformDisplayMode },
       { key: "inventorySortBy", value: state.inventorySortBy },
       { key: "platformFeePresets", value: PLATFORM_FEE_PRESETS }
     ];
