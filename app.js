@@ -741,6 +741,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       editPlatformForm.addEventListener("submit", handleEditPlatformSubmit);
     }
 
+    // Register Edit Publisher submit handler
+    const editPublisherForm = document.getElementById("edit-publisher-form");
+    if (editPublisherForm) {
+      editPublisherForm.addEventListener("submit", handleEditPublisherSubmit);
+    }
+
     // Set initial logo and active theme cards highlight
     applyLogo(state.customLogo);
     updateThemeSelectionCards(state.themeMode, state.themeColor);
@@ -5710,6 +5716,18 @@ window.triggerToggleSupplier = async function(name) {
   showToast(`Supplier "${name}" is now ${statusStr}.`, "success");
 };
 
+window.triggerEditPublisher = function(name) {
+  const modal = document.getElementById("edit-publisher-modal");
+  const oldNameInput = document.getElementById("edit-publisher-old-name");
+  const newNameInput = document.getElementById("edit-publisher-new-name");
+  
+  if (modal && oldNameInput && newNameInput) {
+    oldNameInput.value = name;
+    newNameInput.value = name;
+    openModal("edit-publisher-modal");
+  }
+};
+
 function renderPlatforms() {
   const tbody = DOM["platforms-table-body"] || document.getElementById("platforms-table-body");
   if (!tbody) return;
@@ -5994,6 +6012,73 @@ async function handleEditPlatformSubmit(e) {
   } else {
     showToast(`Updated platform info`, "success");
   }
+}
+
+async function handleEditPublisherSubmit(e) {
+  e.preventDefault();
+  
+  const oldName = document.getElementById("edit-publisher-old-name").value;
+  const newName = document.getElementById("edit-publisher-new-name").value.trim();
+  
+  if (!newName) {
+    showToast("Publisher name cannot be empty.", "error");
+    return;
+  }
+  
+  if (oldName === newName) {
+    closeModal("edit-publisher-modal");
+    return;
+  }
+
+  pushToUndoStack();
+  
+  // Update all inventory items matching the old publisher name
+  let inventoryUpdateCount = 0;
+  state.inventory.forEach(item => {
+    if ((item.publisher || "").trim() === oldName) {
+      item.publisher = newName;
+      inventoryUpdateCount++;
+    }
+  });
+
+  saveStateToStorage();
+  
+  // Sync to Supabase in a single batch upsert
+  if (window.supabaseClient && state.syncMode === "realtime") {
+    try {
+      const updatedItems = state.inventory.filter(item => item.publisher === newName);
+      const upsertData = updatedItems.map(item => ({
+        id: item.id,
+        title: item.title,
+        platform: item.platform,
+        key: item.key,
+        cost: item.cost,
+        source: item.source,
+        purchaseDate: item.purchaseDate,
+        imageUrl: item.imageUrl || null,
+        status: item.status,
+        notes: item.notes || null,
+        publisher: item.publisher || null
+      }));
+      
+      if (upsertData.length > 0) {
+        const { error } = await window.supabaseClient
+          .from('inventory')
+          .upsert(upsertData);
+        if (error) throw error;
+      }
+    } catch (err) {
+      console.error("Error syncing renamed publisher keys to Supabase:", err);
+      showToast("Publisher renamed locally, but cloud sync failed.", "warning");
+    }
+  } else if (state.syncMode === "manual" || window.supabaseClient) {
+    setUnsyncedChanges(true);
+  }
+
+  updateUI();
+  closeModal("edit-publisher-modal");
+  
+  showToast(`Renamed publisher "${oldName}" to "${newName}" across ${inventoryUpdateCount} key(s)`, "success");
 }
 
 window.triggerDeletePlatform = async function(name) {
@@ -12452,7 +12537,7 @@ function renderPublishersTab() {
   const publishersList = Object.values(publishersMap).sort((a, b) => b.purchased - a.purchased);
 
   if (publishersList.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 20px;">No publishers data available.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 20px;">No publishers data available.</td></tr>`;
     return;
   }
 
@@ -12464,6 +12549,11 @@ function renderPublishersTab() {
     const profitClass = pub.totalNetProfit >= 0 ? "text-success-neon" : "text-danger-soft";
     const profitSign = pub.totalNetProfit > 0 ? "+" : "";
 
+    const isNoPublisher = pub.name === "No Publisher";
+    const editBtnHtml = isNoPublisher 
+      ? "" 
+      : `<button class="btn btn-outline btn-xs" onclick="triggerEditPublisher('${pub.name.replace(/'/g, "\\'")}')" style="padding: 2px 6px; font-size: 0.75rem;"><i class="fa-solid fa-pen-to-square"></i> Edit</button>`;
+
     tr.innerHTML = `
       <td><strong>${pub.name}</strong></td>
       <td>${pub.purchased}</td>
@@ -12474,6 +12564,7 @@ function renderPublishersTab() {
       <td class="${profitClass}"><strong>${profitSign}${formatCurrency(pub.totalNetProfit)}</strong></td>
       <td class="${profitClass}">${roi.toFixed(1)}%</td>
       <td>${avgDuration} ${pub.durationCount > 0 ? 'days' : ''}</td>
+      <td style="text-align: right;">${editBtnHtml}</td>
     `;
     tbody.appendChild(tr);
   });
