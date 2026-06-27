@@ -3602,50 +3602,58 @@ textarea.form-control {
   min-width: 80px;
 }
 
-/* Bestseller Card Metadata Labels (Alternative 3: On-Hover Reveal) */
+/* Bestseller Card Metadata Labels (Alternative 4: Hover-Floating Tooltip Popover) */
+.bestseller-item {
+  position: relative;
+}
 .bestseller-labels-container {
+  position: absolute;
+  bottom: 85%;
+  left: 50%;
+  transform: translate(-50%, 6px);
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  max-height: 0;
+  gap: 8px;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-color);
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md), 0 4px 15px rgba(0, 0, 0, 0.4);
   opacity: 0;
-  overflow: hidden;
-  transform: translateY(4px);
-  margin-top: 0;
-  transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-              max-height 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-              transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-              margin-top 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  z-index: 100;
+  white-space: nowrap;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+/* Tooltip Arrow */
+.bestseller-labels-container::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px;
+  border-style: solid;
+  border-color: var(--bg-input) transparent transparent transparent;
 }
 .bestseller-item:hover .bestseller-labels-container {
-  max-height: 30px;
   opacity: 1;
-  transform: translateY(0);
-  margin-top: 6px;
+  transform: translate(-50%, -4px);
 }
 .bestseller-label {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 3px 8px;
-  border-radius: 50px;
+  gap: 4px;
   font-size: 0.68rem;
   font-weight: 600;
-  white-space: nowrap;
 }
 .bestseller-label-sales {
-  background-color: hsla(145, 35%, 65%, 0.1);
-  border: 1px solid hsla(145, 35%, 65%, 0.2);
   color: hsl(145, 45%, 70%);
 }
 .bestseller-label-profit {
-  background-color: hsla(270, 35%, 70%, 0.1);
-  border: 1px solid hsla(270, 35%, 70%, 0.2);
   color: hsl(270, 45%, 75%);
 }
 .bestseller-label-margin {
-  background-color: hsla(195, 35%, 68%, 0.1);
-  border: 1px solid hsla(195, 35%, 68%, 0.2);
   color: hsl(195, 45%, 72%);
 }
 
