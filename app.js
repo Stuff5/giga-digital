@@ -7831,7 +7831,22 @@ function renderDashboardDetails(filteredSalesList, filteredInventoryList) {
   const outOfStockGames = [];
   allTitles.forEach(title => {
     if (!activeCounts[title]) {
-      outOfStockGames.push(title);
+      // Check if at least one sold key had a turnaround of < 30 days (High-Demand)
+      const hasFreshSale = state.inventory.some(item => {
+        if (item.title && item.title.trim() === title && item.status === "Sold" && item.purchaseDate && item.saleDate) {
+          const pDate = new Date(item.purchaseDate);
+          const sDate = new Date(item.saleDate);
+          pDate.setHours(0,0,0,0);
+          sDate.setHours(0,0,0,0);
+          const diffDays = Math.round((sDate - pDate) / (1000 * 60 * 60 * 24));
+          return diffDays < 30;
+        }
+        return false;
+      });
+
+      if (hasFreshSale) {
+        outOfStockGames.push(title);
+      }
     }
   });
 
