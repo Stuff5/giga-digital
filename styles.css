@@ -3156,8 +3156,8 @@ textarea.form-control {
   border-radius: 4px;
 }
 
-/* Stale Stock Alerts styles */
-.stale-stock-alert-item {
+/* Out of Stock Alerts styles */
+.out-of-stock-alert-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -3168,31 +3168,31 @@ textarea.form-control {
   margin-bottom: 8px;
 }
 
-.stale-stock-alert-item .alert-left {
+.out-of-stock-alert-item .alert-left {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.stale-stock-alert-item .alert-left i {
+.out-of-stock-alert-item .alert-left i {
   color: hsl(355, 85%, 55%);
   font-size: 1.1rem;
 }
 
-.stale-stock-alert-item .alert-left h5 {
+.out-of-stock-alert-item .alert-left h5 {
   font-size: 0.9rem;
   margin: 0;
   font-weight: 600;
   color: var(--text-main);
 }
 
-.stale-stock-alert-item .alert-left span {
+.out-of-stock-alert-item .alert-left span {
   font-size: 0.75rem;
   color: var(--text-muted);
   display: block;
 }
 
-.stale-stock-alert-item .alert-badge {
+.out-of-stock-alert-item .alert-badge {
   font-size: 0.75rem;
   font-weight: 700;
   padding: 4px 8px;

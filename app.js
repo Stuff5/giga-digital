@@ -7799,131 +7799,67 @@ function renderDashboardDetails(filteredSalesList, filteredInventoryList) {
     });
   }
 
-  // Stock summary lists
+  // 1. Render Inventory Status Overview (High-level statistics)
+  const activeCount = filteredInventoryList.filter(item => item.status === "Available" || item.status === "Reserved").length;
+  const soldCount = filteredInventoryList.filter(item => item.status === "Sold").length;
+  const recycledCount = (state.recycleBin && state.recycleBin.inventory) ? state.recycleBin.inventory.length : 0;
+
+  const activeKeysEl = document.getElementById("overview-active-keys");
+  const soldKeysEl = document.getElementById("overview-sold-keys");
+  const recycledKeysEl = document.getElementById("overview-recycled-keys");
+  if (activeKeysEl) activeKeysEl.textContent = activeCount;
+  if (soldKeysEl) soldKeysEl.textContent = soldCount;
+  if (recycledKeysEl) recycledKeysEl.textContent = recycledCount;
+
+  // 2. Render Out of Stock Alerts
   const stockSummaryList = document.getElementById("inventory-summary-list");
   stockSummaryList.innerHTML = "";
 
-  // 1. Low Stock Alerts - count active stock for games
-  const gameStockCounts = {};
-  filteredInventoryList.forEach(item => {
-    if (item.status === "Available" || item.status === "Reserved") {
+  const allTitles = new Set();
+  state.inventory.forEach(item => {
+    if (item.title) allTitles.add(item.title.trim());
+  });
+
+  const activeCounts = {};
+  state.inventory.forEach(item => {
+    if (item.title && (item.status === "Available" || item.status === "Reserved")) {
       const title = item.title.trim();
-      gameStockCounts[title] = (gameStockCounts[title] || 0) + 1;
+      activeCounts[title] = (activeCounts[title] || 0) + 1;
     }
   });
 
-  const lowStockGames = [];
-  Object.keys(gameStockCounts).forEach(title => {
-    const count = gameStockCounts[title];
-    if (count <= state.lowStockThreshold) {
-      lowStockGames.push({ title, count });
+  const outOfStockGames = [];
+  allTitles.forEach(title => {
+    if (!activeCounts[title]) {
+      outOfStockGames.push(title);
     }
   });
 
-  // Sort lowest stock first, then alphabetically
-  lowStockGames.sort((a, b) => {
-    if (a.count !== b.count) {
-      return a.count - b.count;
-    }
-    return a.title.localeCompare(b.title);
-  });
+  // Sort alphabetically
+  outOfStockGames.sort((a, b) => a.localeCompare(b));
 
-  // Render Low Stock alerts first
-  lowStockGames.forEach(game => {
-    const alertDiv = document.createElement("div");
-    alertDiv.className = "low-stock-alert-item";
-    alertDiv.innerHTML = `
-      <div class="alert-left">
-        <i class="fa-solid fa-triangle-exclamation"></i>
-        <div>
-          <h5>${game.title}</h5>
-          <span>Low Stock Alert</span>
-        </div>
+  if (outOfStockGames.length === 0) {
+    stockSummaryList.innerHTML = `
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px 0; color: var(--text-muted); font-size: 0.85rem;">
+        <i class="fa-solid fa-circle-check" style="color: var(--accent-emerald); font-size: 1.5rem; margin-bottom: 8px;"></i>
+        <span>All games are in stock!</span>
       </div>
-      <div class="alert-badge">${game.count} left</div>
     `;
-    stockSummaryList.appendChild(alertDiv);
-  });
-
-  // 2. Stale Stock Alerts - count active stock that is "Very Stale" (> 90 days)
-  const staleStockCounts = {};
-  filteredInventoryList.forEach(item => {
-    if (item.status === "Available" || item.status === "Reserved") {
-      const cat = getAgingCategory(item.purchaseDate);
-      if (cat.name === "Very Stale") {
-        const title = item.title.trim();
-        staleStockCounts[title] = (staleStockCounts[title] || 0) + 1;
-      }
-    }
-  });
-
-  const staleStockGames = [];
-  Object.keys(staleStockCounts).forEach(title => {
-    staleStockGames.push({ title, count: staleStockCounts[title] });
-  });
-
-  // Sort by count descending
-  staleStockGames.sort((a, b) => b.count - a.count);
-
-  // Render Stale Stock alerts
-  staleStockGames.forEach(game => {
-    const alertDiv = document.createElement("div");
-    alertDiv.className = "stale-stock-alert-item";
-    alertDiv.innerHTML = `
-      <div class="alert-left">
-        <i class="fa-solid fa-hourglass-half"></i>
-        <div>
-          <h5>${game.title}</h5>
-          <span>Stale Stock Alert (&gt;90d)</span>
-        </div>
-      </div>
-      <div class="alert-badge">${game.count} stale</div>
-    `;
-    stockSummaryList.appendChild(alertDiv);
-  });
-
-  // 3. Group inventory by platform
-  const platformCounts = {};
-  filteredInventoryList.forEach(item => {
-    if (item.status !== "Sold") {
-      platformCounts[item.platform] = (platformCounts[item.platform] || 0) + 1;
-    }
-  });
-
-  const platformKeys = Object.keys(platformCounts);
-  if (lowStockGames.length === 0 && staleStockGames.length === 0 && platformKeys.length === 0) {
-    stockSummaryList.innerHTML = `<p style="text-align: center; color: var(--text-muted); padding: 20px 0;">All keys sold! Stock is empty.</p>`;
   } else {
-    // Sort platforms by count descending
-    platformKeys.sort((a,b) => platformCounts[b] - platformCounts[a]);
-    
-    platformKeys.forEach(platform => {
-      const count = platformCounts[platform];
-      const div = document.createElement("div");
-      div.className = "inventory-summary-item";
-
-      // Assign icon badge classes
-      let iconClass = "fa-solid fa-steam";
-      let pClass = "Steam";
-      if (platform.includes("PlayStation")) { iconClass = "fa-brands fa-playstation"; pClass = "PSN"; }
-      if (platform.includes("Xbox")) { iconClass = "fa-brands fa-xbox"; pClass = "Xbox"; }
-      if (platform.includes("Nintendo")) { iconClass = "fa-solid fa-gamepad"; pClass = "Nintendo"; }
-
-      div.innerHTML = `
-        <div class="summary-item-left">
-          <div class="summary-platform-badge ${pClass}">
-            <i class="${iconClass}"></i>
-          </div>
-          <div class="summary-details">
-            <h5>${platform} Keys</h5>
-            <span>Digital activation codes</span>
+    outOfStockGames.forEach(title => {
+      const alertDiv = document.createElement("div");
+      alertDiv.className = "out-of-stock-alert-item";
+      alertDiv.innerHTML = `
+        <div class="alert-left">
+          <i class="fa-solid fa-circle-xmark"></i>
+          <div>
+            <h5>${title}</h5>
+            <span>Out of Stock Alert</span>
           </div>
         </div>
-        <div class="summary-item-right">
-          <span class="summary-count">${count} in stock</span>
-        </div>
+        <div class="alert-badge">0 left</div>
       `;
-      stockSummaryList.appendChild(div);
+      stockSummaryList.appendChild(alertDiv);
     });
   }
 

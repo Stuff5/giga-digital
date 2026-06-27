@@ -505,12 +505,31 @@
 
             <!-- Column 2 (Stacked smaller cards) -->
             <div style="display: flex; flex-direction: column; gap: 24px;">
-              <!-- Inventory Status Summary -->
+              <!-- Inventory Status Overview -->
               <div class="detail-card">
                 <div class="detail-card-header">
-                  <h4>Inventory Status Summary</h4>
+                  <h4>Inventory Status Overview</h4>
                   <a href="#inventory" class="view-all-link">Manage Stock</a>
                 </div>
+                
+                <!-- Inventory Overview Grid (Option 2 Counters) -->
+                <div class="inventory-overview-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;">
+                  <div class="inventory-overview-stat-card" style="background-color: var(--bg-mini-metric); padding: 12px; border-radius: var(--radius-md); text-align: center; border: 1px solid var(--border-color);">
+                    <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 4px;">Active Keys</span>
+                    <h3 id="overview-active-keys" style="margin: 0; font-size: 1.4rem; font-weight: 800; color: var(--accent-emerald);">0</h3>
+                  </div>
+                  <div class="inventory-overview-stat-card" style="background-color: var(--bg-mini-metric); padding: 12px; border-radius: var(--radius-md); text-align: center; border: 1px solid var(--border-color);">
+                    <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 4px;">Sold Keys</span>
+                    <h3 id="overview-sold-keys" style="margin: 0; font-size: 1.4rem; font-weight: 800; color: var(--accent-purple);">0</h3>
+                  </div>
+                  <div class="inventory-overview-stat-card" style="background-color: var(--bg-mini-metric); padding: 12px; border-radius: var(--radius-md); text-align: center; border: 1px solid var(--border-color);">
+                    <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 4px;">Recycle Bin</span>
+                    <h3 id="overview-recycled-keys" style="margin: 0; font-size: 1.4rem; font-weight: 800; color: var(--accent-pink);">0</h3>
+                  </div>
+                </div>
+
+                <h5 style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Out of Stock Alerts</h5>
+
                 <div class="inventory-summary-list" id="inventory-summary-list">
                   <!-- Injected by JavaScript -->
                 </div>
