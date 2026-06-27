@@ -7833,13 +7833,19 @@ function renderDashboardDetails(filteredSalesList, filteredInventoryList) {
     if (!activeCounts[title]) {
       // Check if at least one sold key had a turnaround of < 30 days (High-Demand)
       const hasFreshSale = state.inventory.some(item => {
-        if (item.title && item.title.trim() === title && item.status === "Sold" && item.purchaseDate && item.saleDate) {
-          const pDate = new Date(item.purchaseDate);
-          const sDate = new Date(item.saleDate);
-          pDate.setHours(0,0,0,0);
-          sDate.setHours(0,0,0,0);
-          const diffDays = Math.round((sDate - pDate) / (1000 * 60 * 60 * 24));
-          return diffDays < 30;
+        if (item.title && item.title.trim() === title && item.status === "Sold") {
+          // Look up corresponding sale record from state.sales or fall back to item.saleDate
+          const sale = state.sales.find(s => s.inventoryId === item.id);
+          const saleDateStr = sale ? sale.saleDate : item.saleDate;
+          
+          if (item.purchaseDate && saleDateStr) {
+            const pDate = new Date(item.purchaseDate);
+            const sDate = new Date(saleDateStr);
+            pDate.setHours(0, 0, 0, 0);
+            sDate.setHours(0, 0, 0, 0);
+            const diffDays = Math.round((sDate - pDate) / (1000 * 60 * 60 * 24));
+            return diffDays < 30;
+          }
         }
         return false;
       });
