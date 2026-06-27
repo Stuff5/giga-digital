@@ -592,8 +592,7 @@ let state = {
   },
   autoSyncInterval: localStorage.getItem("gv_auto_sync_interval") || "off",
   autoPushGitHub: localStorage.getItem("gv_auto_push_github") === "true",
-  autoPullGitHub: localStorage.getItem("gv_auto_pull_github") === "true",
-  showQuickToolbar: localStorage.getItem("gv_show_quick_toolbar") !== "false"
+  autoPullGitHub: localStorage.getItem("gv_auto_pull_github") === "true"
 };
 
 // Charts reference objects for hot-reloading data
@@ -614,7 +613,7 @@ function initDOMCache() {
     // Main UI tables & ledger containers
     "publishers-table-body", "suppliers-table-body", "platforms-table-body", "entries-table-body", "recycle-table-body", "payouts-ledger-body",
     // Toolbars & Action Bars
-    "quick-actions-toolbar", "bulk-actions-bar", "recycle-bulk-actions", "recycle-info-text",
+    "bulk-actions-bar", "recycle-bulk-actions", "recycle-info-text",
     // Sync indicators & timers
     "sync-pending-indicator", "auto-sync-timer-countdown", "auto-sync-status-badge", "auto-sync-next-run"
   ];
@@ -647,9 +646,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Set up navigation router
     initNavigation();
 
-    // Apply quick actions toolbar visibility
-    applyQuickToolbarVisibility();
-    initQuickActionsToolbar();
+    // Initialize bulk actions & bulk price adjusts
+    updateUndoRedoButtons();
+    initBulkActionsToolbar();
+    initBulkPriceAdjustModalForm();
 
     // Set up forms & modals event handlers
     initEventHandlers();
@@ -867,18 +867,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     }
 
-    const toggleQuickToolbarInput = document.getElementById("toggle-show-quick-toolbar");
-    if (toggleQuickToolbarInput) {
-      toggleQuickToolbarInput.checked = state.showQuickToolbar;
-      toggleQuickToolbarInput.addEventListener("change", (e) => {
-        state.showQuickToolbar = e.target.checked;
-        saveStateToStorage();
-        applyQuickToolbarVisibility();
-        if (window.supabaseClient) {
-          dbSaveSettings("showQuickToolbar", state.showQuickToolbar);
-        }
-      });
-    }
+
   } catch (err) {
     console.error("Initialization Error:", err);
   }
@@ -1165,7 +1154,6 @@ function loadStateFromStorage() {
     state.autoSyncInterval = localStorage.getItem("gv_auto_sync_interval") || "off";
     state.autoPushGitHub = localStorage.getItem("gv_auto_push_github") === "true";
     state.autoPullGitHub = localStorage.getItem("gv_auto_pull_github") === "true";
-    state.showQuickToolbar = localStorage.getItem("gv_show_quick_toolbar") !== "false";
 
     // Purge empty/invalid rows from the database state automatically
     cleanupEmptyDatabaseRows();
@@ -1252,7 +1240,6 @@ function saveStateToStorage() {
   localStorage.setItem("gv_auto_sync_interval", state.autoSyncInterval);
   localStorage.setItem("gv_auto_push_github", state.autoPushGitHub ? "true" : "false");
   localStorage.setItem("gv_auto_pull_github", state.autoPullGitHub ? "true" : "false");
-  localStorage.setItem("gv_show_quick_toolbar", state.showQuickToolbar ? "true" : "false");
   localStorage.setItem("gv_platform_fee_presets", JSON.stringify(PLATFORM_FEE_PRESETS));
   if (state.customLogo) {
     localStorage.setItem("gv_custom_logo", state.customLogo);
@@ -1300,14 +1287,7 @@ function updateUndoRedoButtons() {
     btnRedo.disabled = redoStack.length === 0;
   }
 
-  const qaUndo = document.getElementById("qa-undo");
-  const qaRedo = document.getElementById("qa-redo");
-  if (qaUndo) {
-    qaUndo.disabled = undoStack.length === 0;
-  }
-  if (qaRedo) {
-    qaRedo.disabled = redoStack.length === 0;
-  }
+
 }
 
 function restoreFromSnapshot(snapshot) {
@@ -3675,137 +3655,7 @@ function navigateToHash(targetHash) {
   }
 }
 
-// Quick Actions Toolbar Visibility Application
-function applyQuickToolbarVisibility() {
-  const toolbar = document.getElementById("quick-actions-toolbar");
-  if (!toolbar) return;
 
-  if (state.showQuickToolbar) {
-    toolbar.classList.remove("hidden");
-  } else {
-    toolbar.classList.add("hidden");
-  }
-}
-
-// Initialize Quick Actions Toolbar Button Event Listeners
-function initQuickActionsToolbar() {
-  const btnSearch = document.getElementById("qa-search");
-  if (btnSearch) {
-    btnSearch.addEventListener("click", () => {
-      navigateToHash("#inventory");
-      setTimeout(() => {
-        const searchInput = document.getElementById("inv-search-input");
-        if (searchInput) {
-          searchInput.focus();
-          searchInput.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-      }, 100);
-    });
-  }
-
-  const btnAddKey = document.getElementById("qa-add-key");
-  if (btnAddKey) {
-    btnAddKey.addEventListener("click", () => {
-      openModal("add-game-modal");
-    });
-  }
-
-  const btnUndo = document.getElementById("qa-undo");
-  if (btnUndo) {
-    btnUndo.addEventListener("click", () => {
-      if (typeof handleUndo === "function") {
-        handleUndo();
-      }
-    });
-  }
-
-  const btnRedo = document.getElementById("qa-redo");
-  if (btnRedo) {
-    btnRedo.addEventListener("click", () => {
-      if (typeof handleRedo === "function") {
-        handleRedo();
-      }
-    });
-  }
-
-  const btnSync = document.getElementById("qa-sync");
-  if (btnSync) {
-    btnSync.addEventListener("click", async () => {
-      const icon = btnSync.querySelector("i");
-      if (icon) icon.classList.add("fa-spin");
-      showToast("Initializing full database synchronization...", "info");
-      
-      try {
-        if (typeof triggerScheduledSync === "function") {
-          await triggerScheduledSync();
-        } else if (typeof syncToGitHub === "function") {
-          await syncToGitHub(true);
-        }
-        showToast("Cloud synchronization completed successfully!", "success");
-      } catch (err) {
-        console.error("Sync error:", err);
-        showToast("Synchronization encountered errors.", "error");
-      } finally {
-        if (icon) icon.classList.remove("fa-spin");
-      }
-    });
-  }
-
-  const btnTheme = document.getElementById("qa-theme");
-  if (btnTheme) {
-    btnTheme.addEventListener("click", () => {
-      pushToUndoStack();
-      state.themeMode = state.themeMode === "light" ? "dark" : "light";
-      applyTheme(state.themeMode, state.themeColor);
-      updateThemeSelectionCards(state.themeMode, state.themeColor);
-      saveStateToStorage();
-      
-      if (window.supabaseClient && state.syncMode === "realtime") {
-        dbSaveSettings("themeMode", state.themeMode);
-      } else if (state.syncMode === "manual") {
-        setUnsyncedChanges(true);
-      }
-      
-      updateUI();
-      showToast(`Switched to ${state.themeMode} mode theme.`, "info");
-    });
-  }
-
-  const btnImport = document.getElementById("qa-import");
-  if (btnImport) {
-    btnImport.addEventListener("click", () => {
-      navigateToHash("#settings");
-      
-      const importZone = document.getElementById("import-drop-zone");
-      const importFileInput = document.getElementById("settings-import-file");
-      
-      if (importZone) {
-        importZone.scrollIntoView({ behavior: "smooth", block: "center" });
-        importZone.style.boxShadow = "0 0 15px var(--accent-emerald)";
-        setTimeout(() => {
-          importZone.style.boxShadow = "none";
-        }, 1500);
-      }
-      
-      if (importFileInput) {
-        setTimeout(() => {
-          importFileInput.click();
-        }, 500);
-      }
-    });
-  }
-
-  const btnHelp = document.getElementById("qa-help");
-  if (btnHelp) {
-    btnHelp.addEventListener("click", () => {
-      openModal("help-modal");
-    });
-  }
-
-  updateUndoRedoButtons();
-  initBulkActionsToolbar();
-  initBulkPriceAdjustModalForm();
-}
 
 // Initialize Bulk Actions dropdowns and button event listeners
 function initBulkActionsToolbar() {
@@ -11524,11 +11374,7 @@ async function dbLoadState() {
           applySalesLedgerVisibility(state.showSalesLedger);
           const toggleSales = document.getElementById("toggle-show-sales-ledger");
           if (toggleSales) toggleSales.checked = state.showSalesLedger;
-        } else if (s.key === "showQuickToolbar") {
-          state.showQuickToolbar = s.value;
-          applyQuickToolbarVisibility();
-          const toggleQuick = document.getElementById("toggle-show-quick-toolbar");
-          if (toggleQuick) toggleQuick.checked = state.showQuickToolbar;
+
         } else if (s.key === "visibleMetrics") {
           try {
             state.visibleMetrics = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
