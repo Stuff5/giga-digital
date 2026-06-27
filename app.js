@@ -3,6 +3,16 @@
  * Main Application Script (app.js)
  */
 
+// Generic debounce helper function
+function debounce(func, wait) {
+  let timeout;
+  return function(...args) {
+    const context = this;
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(context, args), wait);
+  };
+}
+
 // IndexedDB low-level asynchronous storage layer
 const indexedDBStorage = (() => {
   const DB_NAME = "GameVaultDB";
@@ -592,8 +602,7 @@ let state = {
   },
   autoSyncInterval: localStorage.getItem("gv_auto_sync_interval") || "off",
   autoPushGitHub: localStorage.getItem("gv_auto_push_github") === "true",
-  autoPullGitHub: localStorage.getItem("gv_auto_pull_github") === "true",
-  showQuickToolbar: localStorage.getItem("gv_show_quick_toolbar") !== "false"
+  autoPullGitHub: localStorage.getItem("gv_auto_pull_github") === "true"
 };
 
 // Charts reference objects for hot-reloading data
@@ -603,6 +612,7 @@ let financeMonthlyChartInstance = null;
 let costRevenueChartInstance = null;
 let supplierSplitChartInstance = null;
 let topBestsellersChartInstance = null;
+let supplierRoiMatrixChartInstance = null;
 
 function initDOMCache() {
   const elements = [
@@ -613,7 +623,7 @@ function initDOMCache() {
     // Main UI tables & ledger containers
     "publishers-table-body", "suppliers-table-body", "platforms-table-body", "entries-table-body", "recycle-table-body", "payouts-ledger-body",
     // Toolbars & Action Bars
-    "quick-actions-toolbar", "bulk-actions-bar", "recycle-bulk-actions", "recycle-info-text",
+    "bulk-actions-bar", "recycle-bulk-actions", "recycle-info-text",
     // Sync indicators & timers
     "sync-pending-indicator", "auto-sync-timer-countdown", "auto-sync-status-badge", "auto-sync-next-run"
   ];
@@ -646,9 +656,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Set up navigation router
     initNavigation();
 
-    // Apply quick actions toolbar visibility
-    applyQuickToolbarVisibility();
-    initQuickActionsToolbar();
+    // Initialize bulk actions & bulk price adjusts
+    updateUndoRedoButtons();
+    initBulkActionsToolbar();
+    initBulkPriceAdjustModalForm();
 
     // Set up forms & modals event handlers
     initEventHandlers();
@@ -744,6 +755,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     const editPlatformForm = document.getElementById("edit-platform-form");
     if (editPlatformForm) {
       editPlatformForm.addEventListener("submit", handleEditPlatformSubmit);
+    }
+
+    // Register Edit Publisher submit handler
+    const editPublisherForm = document.getElementById("edit-publisher-form");
+    if (editPublisherForm) {
+      editPublisherForm.addEventListener("submit", handleEditPublisherSubmit);
     }
 
     // Set initial logo and active theme cards highlight
@@ -860,18 +877,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     }
 
-    const toggleQuickToolbarInput = document.getElementById("toggle-show-quick-toolbar");
-    if (toggleQuickToolbarInput) {
-      toggleQuickToolbarInput.checked = state.showQuickToolbar;
-      toggleQuickToolbarInput.addEventListener("change", (e) => {
-        state.showQuickToolbar = e.target.checked;
-        saveStateToStorage();
-        applyQuickToolbarVisibility();
-        if (window.supabaseClient) {
-          dbSaveSettings("showQuickToolbar", state.showQuickToolbar);
-        }
-      });
-    }
+
   } catch (err) {
     console.error("Initialization Error:", err);
   }
@@ -1158,7 +1164,6 @@ function loadStateFromStorage() {
     state.autoSyncInterval = localStorage.getItem("gv_auto_sync_interval") || "off";
     state.autoPushGitHub = localStorage.getItem("gv_auto_push_github") === "true";
     state.autoPullGitHub = localStorage.getItem("gv_auto_pull_github") === "true";
-    state.showQuickToolbar = localStorage.getItem("gv_show_quick_toolbar") !== "false";
 
     // Purge empty/invalid rows from the database state automatically
     cleanupEmptyDatabaseRows();
@@ -1245,7 +1250,6 @@ function saveStateToStorage() {
   localStorage.setItem("gv_auto_sync_interval", state.autoSyncInterval);
   localStorage.setItem("gv_auto_push_github", state.autoPushGitHub ? "true" : "false");
   localStorage.setItem("gv_auto_pull_github", state.autoPullGitHub ? "true" : "false");
-  localStorage.setItem("gv_show_quick_toolbar", state.showQuickToolbar ? "true" : "false");
   localStorage.setItem("gv_platform_fee_presets", JSON.stringify(PLATFORM_FEE_PRESETS));
   if (state.customLogo) {
     localStorage.setItem("gv_custom_logo", state.customLogo);
@@ -1293,14 +1297,7 @@ function updateUndoRedoButtons() {
     btnRedo.disabled = redoStack.length === 0;
   }
 
-  const qaUndo = document.getElementById("qa-undo");
-  const qaRedo = document.getElementById("qa-redo");
-  if (qaUndo) {
-    qaUndo.disabled = undoStack.length === 0;
-  }
-  if (qaRedo) {
-    qaRedo.disabled = redoStack.length === 0;
-  }
+
 }
 
 function restoreFromSnapshot(snapshot) {
@@ -2539,7 +2536,8 @@ function initEventHandlers() {
       handleInventoryFilterChange();
     });
   }
-  document.getElementById("inv-search-input").addEventListener("input", handleInventoryFilterChange);
+  const debouncedInventorySearch = debounce(handleInventoryFilterChange, 150);
+  document.getElementById("inv-search-input").addEventListener("input", debouncedInventorySearch);
 
   // Page Size Selector
   const invPageSizeSelect = document.getElementById("inv-page-size");
@@ -2626,7 +2624,8 @@ function initEventHandlers() {
 
   // Filters Event Listeners for Sales
   document.getElementById("sales-filter-platform").addEventListener("change", updateUI);
-  document.getElementById("sales-search-input").addEventListener("input", updateUI);
+  const debouncedSalesSearch = debounce(updateUI, 150);
+  document.getElementById("sales-search-input").addEventListener("input", debouncedSalesSearch);
   
   // Dashboard Supplier Filter Event Listener
   const dbSupplierSelect = document.getElementById("db-filter-supplier");
@@ -2638,6 +2637,13 @@ function initEventHandlers() {
   const supSupplierSelect = document.getElementById("sup-filter-supplier");
   if (supSupplierSelect) {
     supSupplierSelect.addEventListener("change", updateUI);
+  }
+
+  const leaderboardSelect = document.getElementById("leaderboard-metric-select");
+  if (leaderboardSelect) {
+    leaderboardSelect.addEventListener("change", () => {
+      renderSupplierAnalytics();
+    });
   }
 
   const supPeriodButtons = document.querySelectorAll("#sup-date-filter-group button");
@@ -2657,8 +2663,8 @@ function initEventHandlers() {
   });
 
   // Global Search bar on top bar
-  document.getElementById("global-search").addEventListener("input", (e) => {
-    const val = e.target.value.toLowerCase().trim();
+  const handleGlobalSearchInput = () => {
+    const val = document.getElementById("global-search").value.toLowerCase().trim();
     // If not on inventory, sales, or entries views, redirect user to inventory to view search results
     const activeView = document.querySelector(".content-view.active");
     if (activeView.id !== "inventory-view" && activeView.id !== "sales-view" && activeView.id !== "entries-view") {
@@ -2674,15 +2680,17 @@ function initEventHandlers() {
       document.getElementById("entries-search-input").value = val;
     }
     updateUI();
-  });
+  };
+  document.getElementById("global-search").addEventListener("input", debounce(handleGlobalSearchInput, 150));
 
   // Entries search input listener
   const entriesSearch = document.getElementById("entries-search-input");
   if (entriesSearch) {
-    entriesSearch.addEventListener("input", () => {
+    const debouncedEntriesSearch = debounce(() => {
       state.entriesCurrentPage = 1;
       renderEntries();
-    });
+    }, 150);
+    entriesSearch.addEventListener("input", debouncedEntriesSearch);
   }
 
   // Suppliers Sort Listener
@@ -3657,137 +3665,7 @@ function navigateToHash(targetHash) {
   }
 }
 
-// Quick Actions Toolbar Visibility Application
-function applyQuickToolbarVisibility() {
-  const toolbar = document.getElementById("quick-actions-toolbar");
-  if (!toolbar) return;
 
-  if (state.showQuickToolbar) {
-    toolbar.classList.remove("hidden");
-  } else {
-    toolbar.classList.add("hidden");
-  }
-}
-
-// Initialize Quick Actions Toolbar Button Event Listeners
-function initQuickActionsToolbar() {
-  const btnSearch = document.getElementById("qa-search");
-  if (btnSearch) {
-    btnSearch.addEventListener("click", () => {
-      navigateToHash("#inventory");
-      setTimeout(() => {
-        const searchInput = document.getElementById("inv-search-input");
-        if (searchInput) {
-          searchInput.focus();
-          searchInput.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-      }, 100);
-    });
-  }
-
-  const btnAddKey = document.getElementById("qa-add-key");
-  if (btnAddKey) {
-    btnAddKey.addEventListener("click", () => {
-      openModal("add-game-modal");
-    });
-  }
-
-  const btnUndo = document.getElementById("qa-undo");
-  if (btnUndo) {
-    btnUndo.addEventListener("click", () => {
-      if (typeof handleUndo === "function") {
-        handleUndo();
-      }
-    });
-  }
-
-  const btnRedo = document.getElementById("qa-redo");
-  if (btnRedo) {
-    btnRedo.addEventListener("click", () => {
-      if (typeof handleRedo === "function") {
-        handleRedo();
-      }
-    });
-  }
-
-  const btnSync = document.getElementById("qa-sync");
-  if (btnSync) {
-    btnSync.addEventListener("click", async () => {
-      const icon = btnSync.querySelector("i");
-      if (icon) icon.classList.add("fa-spin");
-      showToast("Initializing full database synchronization...", "info");
-      
-      try {
-        if (typeof triggerScheduledSync === "function") {
-          await triggerScheduledSync();
-        } else if (typeof syncToGitHub === "function") {
-          await syncToGitHub(true);
-        }
-        showToast("Cloud synchronization completed successfully!", "success");
-      } catch (err) {
-        console.error("Sync error:", err);
-        showToast("Synchronization encountered errors.", "error");
-      } finally {
-        if (icon) icon.classList.remove("fa-spin");
-      }
-    });
-  }
-
-  const btnTheme = document.getElementById("qa-theme");
-  if (btnTheme) {
-    btnTheme.addEventListener("click", () => {
-      pushToUndoStack();
-      state.themeMode = state.themeMode === "light" ? "dark" : "light";
-      applyTheme(state.themeMode, state.themeColor);
-      updateThemeSelectionCards(state.themeMode, state.themeColor);
-      saveStateToStorage();
-      
-      if (window.supabaseClient && state.syncMode === "realtime") {
-        dbSaveSettings("themeMode", state.themeMode);
-      } else if (state.syncMode === "manual") {
-        setUnsyncedChanges(true);
-      }
-      
-      updateUI();
-      showToast(`Switched to ${state.themeMode} mode theme.`, "info");
-    });
-  }
-
-  const btnImport = document.getElementById("qa-import");
-  if (btnImport) {
-    btnImport.addEventListener("click", () => {
-      navigateToHash("#settings");
-      
-      const importZone = document.getElementById("import-drop-zone");
-      const importFileInput = document.getElementById("settings-import-file");
-      
-      if (importZone) {
-        importZone.scrollIntoView({ behavior: "smooth", block: "center" });
-        importZone.style.boxShadow = "0 0 15px var(--accent-emerald)";
-        setTimeout(() => {
-          importZone.style.boxShadow = "none";
-        }, 1500);
-      }
-      
-      if (importFileInput) {
-        setTimeout(() => {
-          importFileInput.click();
-        }, 500);
-      }
-    });
-  }
-
-  const btnHelp = document.getElementById("qa-help");
-  if (btnHelp) {
-    btnHelp.addEventListener("click", () => {
-      openModal("help-modal");
-    });
-  }
-
-  updateUndoRedoButtons();
-  initBulkActionsToolbar();
-  initBulkPriceAdjustModalForm();
-}
 
 // Initialize Bulk Actions dropdowns and button event listeners
 function initBulkActionsToolbar() {
@@ -4733,8 +4611,34 @@ window.triggerEditCatalogEntry = function(title) {
   const currentTitle = invMatch ? invMatch.title : (saleMatch ? saleMatch.title : title);
   const currentImgUrl = invMatch ? invMatch.imageUrl : (saleMatch ? saleMatch.imageUrl : "");
 
+  // Find current publisher for this game
+  const matchWithPublisher = state.inventory.find(item => 
+    item.title.trim().toLowerCase() === title.trim().toLowerCase() && 
+    item.publisher
+  );
+  const currentPublisher = matchWithPublisher ? String(matchWithPublisher.publisher).trim() : "";
+
+  // Populate unique publishers datalist
+  const publishers = new Set();
+  state.inventory.forEach(item => {
+    if (item.publisher) {
+      publishers.add(String(item.publisher).trim());
+    }
+  });
+
+  const datalist = document.getElementById("edit-entry-publisher-list");
+  if (datalist) {
+    datalist.innerHTML = "";
+    Array.from(publishers).sort().forEach(pub => {
+      const option = document.createElement("option");
+      option.value = pub;
+      datalist.appendChild(option);
+    });
+  }
+
   document.getElementById("edit-entry-old-title").value = currentTitle;
   document.getElementById("edit-entry-title").value = currentTitle;
+  document.getElementById("edit-entry-publisher").value = currentPublisher;
   document.getElementById("edit-entry-image-url").value = currentImgUrl || "";
   document.getElementById("edit-entry-image-file").value = "";
 
@@ -4992,6 +4896,7 @@ async function handleEditCatalogEntrySubmit(e) {
 
   const oldTitle = document.getElementById("edit-entry-old-title").value.trim();
   const newTitle = document.getElementById("edit-entry-title").value.trim();
+  const newPublisher = document.getElementById("edit-entry-publisher").value.trim();
   let imageUrl = document.getElementById("edit-entry-image-url").value.trim();
   const fileInput = document.getElementById("edit-entry-image-file");
 
@@ -5015,6 +4920,7 @@ async function handleEditCatalogEntrySubmit(e) {
       if (imageUrl !== undefined && imageUrl !== "") {
         item.imageUrl = imageUrl;
       }
+      item.publisher = newPublisher;
       updatedCount++;
     }
   });
@@ -5347,7 +5253,282 @@ function renderSuppliers() {
         supFilterSelect.value = "all";
       }
     }
+
+    // Render the leaderboard and ROI matrix
+    renderSupplierAnalytics();
   }
+}
+
+// Render Supplier Analytics: Leaderboard & ROI Matrix Scatter Chart
+function renderSupplierAnalytics() {
+  const container = document.getElementById("supplier-leaderboard-container");
+  if (!container) return;
+  container.innerHTML = "";
+
+  // Pre-index inventory by ID for O(1) lookups
+  const inventoryMap = new Map();
+  state.inventory.forEach(item => {
+    inventoryMap.set(item.id, item);
+  });
+
+  // Aggregate stats per supplier
+  const supplierStats = {};
+  
+  // Initialize with all suppliers
+  state.suppliers.forEach(sup => {
+    supplierStats[sup.name] = {
+      name: sup.name,
+      logo: sup.logo,
+      color: sup.color || getSupplierColorName(sup.name),
+      purchasedCount: 0,
+      inStockCount: 0,
+      soldCount: 0,
+      costOfSold: 0,
+      revenue: 0,
+      netProfit: 0
+    };
+  });
+
+  // Process inventory
+  state.inventory.forEach(item => {
+    const sup = item.source || "";
+    if (!supplierStats[sup]) {
+      supplierStats[sup] = {
+        name: sup,
+        logo: null,
+        color: getSupplierColorName(sup),
+        purchasedCount: 0,
+        inStockCount: 0,
+        soldCount: 0,
+        costOfSold: 0,
+        revenue: 0,
+        netProfit: 0
+      };
+    }
+    const s = supplierStats[sup];
+    s.purchasedCount++;
+    if (item.status !== "Sold") {
+      s.inStockCount++;
+    }
+  });
+
+  // Process sales
+  state.sales.forEach(sale => {
+    const game = inventoryMap.get(sale.inventoryId);
+    if (game) {
+      const sup = game.source || "";
+      if (!supplierStats[sup]) {
+        supplierStats[sup] = {
+          name: sup,
+          logo: null,
+          color: getSupplierColorName(sup),
+          purchasedCount: 0,
+          inStockCount: 0,
+          soldCount: 0,
+          costOfSold: 0,
+          revenue: 0,
+          netProfit: 0
+        };
+      }
+      const s = supplierStats[sup];
+      s.soldCount++;
+      s.costOfSold += sale.cost;
+      s.revenue += sale.sellPrice;
+      s.netProfit += sale.profit;
+    }
+  });
+
+  const suppliersList = Object.values(supplierStats);
+
+  // Compute ROI and STR
+  suppliersList.forEach(s => {
+    s.roi = s.costOfSold > 0 ? (s.netProfit / s.costOfSold) * 100 : 0;
+    const totalKeys = s.soldCount + s.inStockCount;
+    s.sellThrough = totalKeys > 0 ? (s.soldCount / totalKeys) * 100 : 0;
+  });
+
+  // Get active ranking metric
+  const metricSelect = document.getElementById("leaderboard-metric-select");
+  const selectedMetric = metricSelect ? metricSelect.value : "profit";
+
+  // Sort list
+  if (selectedMetric === "profit") {
+    suppliersList.sort((a, b) => b.netProfit - a.netProfit);
+  } else if (selectedMetric === "roi") {
+    suppliersList.sort((a, b) => b.roi - a.roi);
+  } else if (selectedMetric === "volume") {
+    suppliersList.sort((a, b) => b.soldCount - a.soldCount);
+  } else if (selectedMetric === "sellthrough") {
+    suppliersList.sort((a, b) => b.sellThrough - a.sellThrough);
+  }
+
+  // Take top 5 with positive volume/purchases
+  const activeSuppliers = suppliersList.filter(s => s.purchasedCount > 0 || s.soldCount > 0);
+  const topSuppliers = activeSuppliers.slice(0, 5);
+
+  if (topSuppliers.length === 0) {
+    container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 40px 0; font-size: 0.9rem;">Add suppliers and keys to view the leaderboard.</div>`;
+  } else {
+    // Find max value to scale progress bars
+    let maxValue = 1;
+    if (selectedMetric === "profit") {
+      maxValue = Math.max(...topSuppliers.map(s => s.netProfit), 1);
+    } else if (selectedMetric === "roi") {
+      maxValue = Math.max(...topSuppliers.map(s => s.roi), 1);
+    } else if (selectedMetric === "volume") {
+      maxValue = Math.max(...topSuppliers.map(s => s.soldCount), 1);
+    } else if (selectedMetric === "sellthrough") {
+      maxValue = Math.max(...topSuppliers.map(s => s.sellThrough), 1);
+    }
+
+    topSuppliers.forEach((sup, index) => {
+      const colorPreset = SUPPLIER_COLORS.find(c => c.name === sup.color) || SUPPLIER_COLORS[0];
+      
+      // Calculate display value
+      let displayVal = "";
+      let rawVal = 0;
+      if (selectedMetric === "profit") {
+        displayVal = formatCurrency(sup.netProfit);
+        rawVal = sup.netProfit;
+      } else if (selectedMetric === "roi") {
+        displayVal = `${sup.roi.toFixed(1)}%`;
+        rawVal = sup.roi;
+      } else if (selectedMetric === "volume") {
+        displayVal = `${sup.soldCount} sold`;
+        rawVal = sup.soldCount;
+      } else if (selectedMetric === "sellthrough") {
+        displayVal = `${sup.sellThrough.toFixed(1)}% STR`;
+        rawVal = sup.sellThrough;
+      }
+
+      const percent = Math.max(0, Math.min(100, (rawVal / maxValue) * 100));
+
+      // Rank circle styling
+      let rankBadge = "";
+      if (index === 0) {
+        rankBadge = `<span style="background: linear-gradient(135deg, #ffd700, #ffa500); color: #000; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);">1</span>`;
+      } else if (index === 1) {
+        rankBadge = `<span style="background: linear-gradient(135deg, #c0c0c0, #a9a9a9); color: #000; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; box-shadow: 0 0 10px rgba(192, 192, 192, 0.3);">2</span>`;
+      } else if (index === 2) {
+        rankBadge = `<span style="background: linear-gradient(135deg, #cd7f32, #8b4513); color: #fff; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; box-shadow: 0 0 10px rgba(205, 127, 50, 0.3);">3</span>`;
+      } else {
+        rankBadge = `<span style="background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-secondary); width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold;">${index + 1}</span>`;
+      }
+
+      // Logo or placeholder circle
+      const logoHtml = sup.logo
+        ? `<img src="${sup.logo}" style="width: 24px; height: 24px; border-radius: 4px; object-fit: contain; background: var(--bg-card); border: 1px solid var(--border-color); padding: 1px;">`
+        : `<span style="background-color: ${colorPreset.value}20; color: ${colorPreset.value}; width: 24px; height: 24px; border-radius: 4px; border: 1px solid ${colorPreset.value}40; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold;">${sup.name.charAt(0).toUpperCase()}</span>`;
+
+      const row = document.createElement("div");
+      row.style.display = "flex";
+      row.style.flexDirection = "column";
+      row.style.gap = "6px";
+      row.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            ${rankBadge}
+            ${logoHtml}
+            <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);">${sup.name}</span>
+          </div>
+          <span style="font-size: 0.85rem; font-weight: 700; color: ${colorPreset.value};">${displayVal}</span>
+        </div>
+        <div style="background-color: var(--bg-input); height: 6px; border-radius: 3px; overflow: hidden; position: relative;">
+          <div style="background-color: ${colorPreset.value}; width: ${percent}%; height: 100%; border-radius: 3px; transition: width 0.6s cubic-bezier(0.1, 0.8, 0.25, 1);"></div>
+        </div>
+      `;
+      container.appendChild(row);
+    });
+  }
+
+  // Now, render the ROI matrix chart!
+  renderRoiMatrixChart(activeSuppliers);
+}
+
+// Render Supplier ROI & Velocity Matrix Scatter Chart
+function renderRoiMatrixChart(activeSuppliers) {
+  if (supplierRoiMatrixChartInstance) {
+    try {
+      supplierRoiMatrixChartInstance.destroy();
+    } catch (e) {
+      console.error("Error destroying supplierRoiMatrixChartInstance:", e);
+    }
+    supplierRoiMatrixChartInstance = null;
+  }
+
+  const canvas = document.getElementById("supplier-roi-matrix-chart");
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+
+  // Retrieve theme CSS variables
+  const rootStyle = getComputedStyle(document.documentElement);
+  const textSecondaryColor = rootStyle.getPropertyValue("--text-secondary").trim() || "hsl(215, 15%, 60%)";
+  const borderColor = rootStyle.getPropertyValue("--border-color").trim() || "hsl(215, 15%, 15%)";
+
+  // Prepare scatter datasets
+  const scatterData = activeSuppliers.map(sup => {
+    return {
+      x: parseFloat(sup.sellThrough.toFixed(1)),
+      y: parseFloat(sup.roi.toFixed(1)),
+      label: sup.name,
+      color: (SUPPLIER_COLORS.find(c => c.name === sup.color) || SUPPLIER_COLORS[0]).value
+    };
+  });
+
+  supplierRoiMatrixChartInstance = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        label: 'Suppliers',
+        data: scatterData,
+        backgroundColor: scatterData.map(d => d.color),
+        borderColor: scatterData.map(d => d.color),
+        pointRadius: 8,
+        pointHoverRadius: 10
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          min: 0,
+          max: 100,
+          grid: { color: borderColor },
+          ticks: { color: textSecondaryColor, font: { family: 'Inter', size: 10 } },
+          title: {
+            display: true,
+            text: 'Sell-Through Rate (%)',
+            color: textSecondaryColor,
+            font: { family: 'Inter', size: 10, weight: 'bold' }
+          }
+        },
+        y: {
+          min: 0,
+          grid: { color: borderColor },
+          ticks: { color: textSecondaryColor, font: { family: 'Inter', size: 10 } },
+          title: {
+            display: true,
+            text: 'Return on Investment (ROI %)',
+            color: textSecondaryColor,
+            font: { family: 'Inter', size: 10, weight: 'bold' }
+          }
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const pt = context.raw;
+              return `${pt.label}: STR = ${pt.x}%, ROI = ${pt.y}%`;
+            }
+          }
+        }
+      }
+    }
+  });
 }
 
 // Initialize color swatches in Add and Edit Supplier forms
@@ -5589,6 +5770,18 @@ window.triggerToggleSupplier = async function(name) {
   
   const statusStr = supplierObj.enabled !== false ? "Enabled" : "Disabled";
   showToast(`Supplier "${name}" is now ${statusStr}.`, "success");
+};
+
+window.triggerEditPublisher = function(name) {
+  const modal = document.getElementById("edit-publisher-modal");
+  const oldNameInput = document.getElementById("edit-publisher-old-name");
+  const newNameInput = document.getElementById("edit-publisher-new-name");
+  
+  if (modal && oldNameInput && newNameInput) {
+    oldNameInput.value = name;
+    newNameInput.value = name;
+    openModal("edit-publisher-modal");
+  }
 };
 
 function renderPlatforms() {
@@ -5875,6 +6068,73 @@ async function handleEditPlatformSubmit(e) {
   } else {
     showToast(`Updated platform info`, "success");
   }
+}
+
+async function handleEditPublisherSubmit(e) {
+  e.preventDefault();
+  
+  const oldName = document.getElementById("edit-publisher-old-name").value;
+  const newName = document.getElementById("edit-publisher-new-name").value.trim();
+  
+  if (!newName) {
+    showToast("Publisher name cannot be empty.", "error");
+    return;
+  }
+  
+  if (oldName === newName) {
+    closeModal("edit-publisher-modal");
+    return;
+  }
+
+  pushToUndoStack();
+  
+  // Update all inventory items matching the old publisher name
+  let inventoryUpdateCount = 0;
+  state.inventory.forEach(item => {
+    if (String(item.publisher || "").trim() === oldName) {
+      item.publisher = newName;
+      inventoryUpdateCount++;
+    }
+  });
+
+  saveStateToStorage();
+  
+  // Sync to Supabase in a single batch upsert
+  if (window.supabaseClient && state.syncMode === "realtime") {
+    try {
+      const updatedItems = state.inventory.filter(item => item.publisher === newName);
+      const upsertData = updatedItems.map(item => ({
+        id: item.id,
+        title: item.title,
+        platform: item.platform,
+        key: item.key,
+        cost: item.cost,
+        source: item.source,
+        purchaseDate: item.purchaseDate,
+        imageUrl: item.imageUrl || null,
+        status: item.status,
+        notes: item.notes || null,
+        publisher: item.publisher || null
+      }));
+      
+      if (upsertData.length > 0) {
+        const { error } = await window.supabaseClient
+          .from('inventory')
+          .upsert(upsertData);
+        if (error) throw error;
+      }
+    } catch (err) {
+      console.error("Error syncing renamed publisher keys to Supabase:", err);
+      showToast("Publisher renamed locally, but cloud sync failed.", "warning");
+    }
+  } else if (state.syncMode === "manual" || window.supabaseClient) {
+    setUnsyncedChanges(true);
+  }
+
+  updateUI();
+  closeModal("edit-publisher-modal");
+  
+  showToast(`Renamed publisher "${oldName}" to "${newName}" across ${inventoryUpdateCount} key(s)`, "success");
 }
 
 window.triggerDeletePlatform = async function(name) {
@@ -8978,6 +9238,7 @@ function renderEntries() {
         totalCostOfSold: 0,
         profit: 0,
         imageUrl: item.imageUrl || null,
+        publisher: null,
         sellDurations: []
       };
     }
@@ -8988,6 +9249,10 @@ function renderEntries() {
     // Update artwork to latest available image
     if (item.imageUrl) {
       titleGroups[titleKey].imageUrl = item.imageUrl;
+    }
+    // Track publisher
+    if (item.publisher && !titleGroups[titleKey].publisher) {
+      titleGroups[titleKey].publisher = String(item.publisher).trim();
     }
   });
 
@@ -9004,6 +9269,7 @@ function renderEntries() {
         totalCostOfSold: 0,
         profit: 0,
         imageUrl: null,
+        publisher: null,
         sellDurations: []
       };
     }
@@ -9015,16 +9281,21 @@ function renderEntries() {
     titleGroups[titleKey].totalCostOfSold += sale.cost;
     titleGroups[titleKey].profit += sale.profit;
 
-    // Retrieve corresponding inventory purchaseDate
+    // Retrieve corresponding inventory purchaseDate & publisher
     const invItem = inventoryMap.get(sale.inventoryId);
-    if (invItem && invItem.purchaseDate && sale.saleDate) {
-      const start = new Date(invItem.purchaseDate);
-      const end = new Date(sale.saleDate);
-      start.setHours(0, 0, 0, 0);
-      end.setHours(0, 0, 0, 0);
-      const diffTime = Math.max(0, end - start);
-      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-      titleGroups[titleKey].sellDurations.push(diffDays);
+    if (invItem) {
+      if (invItem.publisher && !titleGroups[titleKey].publisher) {
+        titleGroups[titleKey].publisher = String(invItem.publisher).trim();
+      }
+      if (invItem.purchaseDate && sale.saleDate) {
+        const start = new Date(invItem.purchaseDate);
+        const end = new Date(sale.saleDate);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(0, 0, 0, 0);
+        const diffTime = Math.max(0, end - start);
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+        titleGroups[titleKey].sellDurations.push(diffDays);
+      }
     }
   });
 
@@ -9034,7 +9305,8 @@ function renderEntries() {
   // Search filtering
   if (searchInput) {
     entriesList = entriesList.filter(entry => 
-      entry.title.toLowerCase().includes(searchInput)
+      entry.title.toLowerCase().includes(searchInput) ||
+      String(entry.publisher || "").toLowerCase().includes(searchInput)
     );
   }
 
@@ -9068,9 +9340,14 @@ function renderEntries() {
     const marginPercentage = entry.totalRevenue > 0 ? (entry.profit / entry.totalRevenue) * 100 : 0;
 
     const initials = entry.title.split(" ").map(w => w[0]).join("").slice(0, 3);
+    
+    const publisherSubtitle = entry.publisher 
+      ? `<div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;"><i class="fa-solid fa-building" style="font-size: 0.7rem; opacity: 0.7; margin-right: 4px;"></i>${entry.publisher}</div>` 
+      : `<div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; font-style: italic;"><i class="fa-solid fa-building" style="font-size: 0.7rem; opacity: 0.5; margin-right: 4px;"></i>No Publisher</div>`;
+
     const titleCell = entry.imageUrl
-      ? `<div class="game-title-cell"><img src="${entry.imageUrl}" class="game-thumbnail" alt="${entry.title}"><strong>${entry.title}</strong></div>`
-      : `<div class="game-title-cell"><div class="game-thumbnail-placeholder">${initials}</div><strong>${entry.title}</strong></div>`;
+      ? `<div class="game-title-cell"><img src="${entry.imageUrl}" class="game-thumbnail" alt="${entry.title}"><div><strong>${entry.title}</strong>${publisherSubtitle}</div></div>`
+      : `<div class="game-title-cell"><div class="game-thumbnail-placeholder">${initials}</div><div><strong>${entry.title}</strong>${publisherSubtitle}</div></div>`;
 
     const safeTitle = entry.title.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
@@ -11107,11 +11384,7 @@ async function dbLoadState() {
           applySalesLedgerVisibility(state.showSalesLedger);
           const toggleSales = document.getElementById("toggle-show-sales-ledger");
           if (toggleSales) toggleSales.checked = state.showSalesLedger;
-        } else if (s.key === "showQuickToolbar") {
-          state.showQuickToolbar = s.value;
-          applyQuickToolbarVisibility();
-          const toggleQuick = document.getElementById("toggle-show-quick-toolbar");
-          if (toggleQuick) toggleQuick.checked = state.showQuickToolbar;
+
         } else if (s.key === "visibleMetrics") {
           try {
             state.visibleMetrics = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
@@ -12310,7 +12583,7 @@ function renderPublishersTab() {
   // Group inventory by publisher
   const publishersMap = {};
   state.inventory.forEach(item => {
-    const pub = (item.publisher || "").trim() || "No Publisher";
+    const pub = String(item.publisher || "").trim() || "No Publisher";
     if (!publishersMap[pub]) {
       publishersMap[pub] = {
         name: pub,
@@ -12357,7 +12630,7 @@ function renderPublishersTab() {
   const publishersList = Object.values(publishersMap).sort((a, b) => b.purchased - a.purchased);
 
   if (publishersList.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 20px;">No publishers data available.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 20px;">No publishers data available.</td></tr>`;
     return;
   }
 
@@ -12369,6 +12642,11 @@ function renderPublishersTab() {
     const profitClass = pub.totalNetProfit >= 0 ? "text-success-neon" : "text-danger-soft";
     const profitSign = pub.totalNetProfit > 0 ? "+" : "";
 
+    const isNoPublisher = pub.name === "No Publisher";
+    const editBtnHtml = isNoPublisher 
+      ? "" 
+      : `<button class="btn btn-outline btn-xs" onclick="triggerEditPublisher('${pub.name.replace(/'/g, "\\'")}')" style="padding: 2px 6px; font-size: 0.75rem;"><i class="fa-solid fa-pen-to-square"></i> Edit</button>`;
+
     tr.innerHTML = `
       <td><strong>${pub.name}</strong></td>
       <td>${pub.purchased}</td>
@@ -12379,6 +12657,7 @@ function renderPublishersTab() {
       <td class="${profitClass}"><strong>${profitSign}${formatCurrency(pub.totalNetProfit)}</strong></td>
       <td class="${profitClass}">${roi.toFixed(1)}%</td>
       <td>${avgDuration} ${pub.durationCount > 0 ? 'days' : ''}</td>
+      <td style="text-align: right;">${editBtnHtml}</td>
     `;
     tbody.appendChild(tr);
   });
