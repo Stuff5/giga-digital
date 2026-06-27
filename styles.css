@@ -3602,58 +3602,46 @@ textarea.form-control {
   min-width: 80px;
 }
 
-/* Bestseller Card Metadata Labels (Alternative 4: Hover-Floating Tooltip Popover) */
-.bestseller-item {
-  position: relative;
-}
+/* Bestseller Card Metadata Labels (Alternative 1: Clean Minimalist) */
 .bestseller-labels-container {
-  position: absolute;
-  bottom: 85%;
-  left: 50%;
-  transform: translate(-50%, 6px);
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
-  background-color: var(--bg-input);
-  border: 1px solid var(--border-color);
-  padding: 6px 12px;
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md), 0 4px 15px rgba(0, 0, 0, 0.4);
-  opacity: 0;
-  pointer-events: none;
-  z-index: 100;
-  white-space: nowrap;
-  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-              transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-/* Tooltip Arrow */
-.bestseller-labels-container::after {
-  content: "";
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border-width: 6px;
-  border-style: solid;
-  border-color: var(--bg-input) transparent transparent transparent;
-}
-.bestseller-item:hover .bestseller-labels-container {
-  opacity: 1;
-  transform: translate(-50%, -4px);
+  margin-top: 4px;
 }
 .bestseller-label {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.68rem;
-  font-weight: 600;
+  font-size: 0.72rem;
+  font-weight: 500;
+  white-space: nowrap;
 }
+.bestseller-label:not(:last-child) {
+  border-right: 1px solid var(--border-color);
+  padding-right: 8px;
+}
+
+/* Default / Dark Theme Colors (Pastel, desaturated colors to prevent eye strain) */
 .bestseller-label-sales {
-  color: hsl(145, 45%, 70%);
+  color: hsl(145, 55%, 65%);
 }
 .bestseller-label-profit {
-  color: hsl(270, 45%, 75%);
+  color: hsl(270, 55%, 75%);
 }
 .bestseller-label-margin {
-  color: hsl(195, 45%, 72%);
+  color: hsl(195, 60%, 70%);
+}
+
+/* Light Theme Color Overrides (Darker, high-contrast colors for white backgrounds) */
+[data-theme-mode="light"] .bestseller-label-sales {
+  color: hsl(145, 70%, 32%);
+}
+[data-theme-mode="light"] .bestseller-label-profit {
+  color: hsl(270, 60%, 45%);
+}
+[data-theme-mode="light"] .bestseller-label-margin {
+  color: hsl(195, 80%, 35%);
 }
 
