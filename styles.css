@@ -3607,34 +3607,35 @@ textarea.form-control {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 4px;
+  margin-top: 6px;
 }
 .bestseller-label {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 0.7rem;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: 50px;
+  font-size: 0.72rem;
   font-weight: 600;
   background-color: var(--bg-input);
   border: 1px solid var(--border-color);
   color: var(--text-secondary);
   white-space: nowrap;
+  transition: all 0.2s ease;
 }
 .bestseller-label-sales {
-  background-color: hsla(145, 80%, 40%, 0.08);
-  border-color: hsla(145, 80%, 40%, 0.2);
+  background-color: hsla(145, 80%, 40%, 0.12);
+  border-color: hsla(145, 80%, 40%, 0.25);
   color: var(--accent-emerald);
 }
 .bestseller-label-profit {
-  background-color: hsla(270, 80%, 60%, 0.08);
-  border-color: hsla(270, 80%, 60%, 0.2);
+  background-color: hsla(270, 80%, 60%, 0.12);
+  border-color: hsla(270, 80%, 60%, 0.25);
   color: var(--accent-purple);
 }
 .bestseller-label-margin {
-  background-color: hsla(185, 80%, 45%, 0.08);
-  border-color: hsla(185, 80%, 45%, 0.2);
+  background-color: hsla(185, 80%, 45%, 0.12);
+  border-color: hsla(185, 80%, 45%, 0.25);
   color: var(--accent-cyan);
 }
 
