@@ -602,7 +602,9 @@ let state = {
   },
   autoSyncInterval: localStorage.getItem("gv_auto_sync_interval") || "off",
   autoPushGitHub: localStorage.getItem("gv_auto_push_github") === "true",
-  autoPullGitHub: localStorage.getItem("gv_auto_pull_github") === "true"
+  autoPullGitHub: localStorage.getItem("gv_auto_pull_github") === "true",
+  bestsellersLimit: parseInt(localStorage.getItem("gv_bestsellers_limit")) || 5,
+  bestsellersMetric: localStorage.getItem("gv_bestsellers_metric") || "profit"
 };
 
 // Charts reference objects for hot-reloading data
@@ -1164,6 +1166,8 @@ function loadStateFromStorage() {
     state.autoSyncInterval = localStorage.getItem("gv_auto_sync_interval") || "off";
     state.autoPushGitHub = localStorage.getItem("gv_auto_push_github") === "true";
     state.autoPullGitHub = localStorage.getItem("gv_auto_pull_github") === "true";
+    state.bestsellersLimit = parseInt(localStorage.getItem("gv_bestsellers_limit")) || 5;
+    state.bestsellersMetric = localStorage.getItem("gv_bestsellers_metric") || "profit";
 
     // Purge empty/invalid rows from the database state automatically
     cleanupEmptyDatabaseRows();
@@ -1251,6 +1255,8 @@ function saveStateToStorage() {
   localStorage.setItem("gv_auto_push_github", state.autoPushGitHub ? "true" : "false");
   localStorage.setItem("gv_auto_pull_github", state.autoPullGitHub ? "true" : "false");
   localStorage.setItem("gv_platform_fee_presets", JSON.stringify(PLATFORM_FEE_PRESETS));
+  localStorage.setItem("gv_bestsellers_limit", state.bestsellersLimit);
+  localStorage.setItem("gv_bestsellers_metric", state.bestsellersMetric);
   if (state.customLogo) {
     localStorage.setItem("gv_custom_logo", state.customLogo);
   } else {
@@ -3318,6 +3324,24 @@ function initEventHandlers() {
         });
       }
     });
+  }
+
+  // Bestsellers Customizer Event Listeners
+  const bestsellersLimitSelect = document.getElementById("bestsellers-limit-select");
+  const bestsellersMetricSelect = document.getElementById("bestsellers-metric-select");
+  if (bestsellersLimitSelect && bestsellersMetricSelect) {
+    bestsellersLimitSelect.value = state.bestsellersLimit;
+    bestsellersMetricSelect.value = state.bestsellersMetric;
+    
+    const handleBestsellersChange = () => {
+      state.bestsellersLimit = parseInt(bestsellersLimitSelect.value) || 5;
+      state.bestsellersMetric = bestsellersMetricSelect.value || "profit";
+      saveStateToStorage();
+      updateUI();
+    };
+    
+    bestsellersLimitSelect.addEventListener("change", handleBestsellersChange);
+    bestsellersMetricSelect.addEventListener("change", handleBestsellersChange);
   }
 
   // Event delegation for inventory checkbox selections
@@ -8322,21 +8346,33 @@ function renderTopBestsellersChart(filteredSalesList) {
     }
   }
 
-  // Calculate net profit per game title
-  const gameProfits = {};
+  // Get current configurations
+  const metric = state.bestsellersMetric || "profit";
+  const limit = state.bestsellersLimit || 5;
+
+  // Calculate metrics per game title
+  const gameMetrics = {};
   filteredSalesList.forEach(sale => {
     const title = sale.gameTitle || "Unknown Game";
-    gameProfits[title] = (gameProfits[title] || 0) + sale.profit;
+    if (!gameMetrics[title]) {
+      gameMetrics[title] = { profit: 0, revenue: 0, sales: 0 };
+    }
+    gameMetrics[title].profit += sale.profit || 0;
+    gameMetrics[title].revenue += sale.sellPrice || 0;
+    gameMetrics[title].sales += 1;
   });
 
-  // Sort and pick top 5
-  const sortedGames = Object.keys(gameProfits)
-    .map(title => ({ title: title, profit: gameProfits[title] }))
-    .sort((a, b) => b.profit - a.profit)
-    .slice(0, 5);
+  // Sort and pick top N
+  const sortedGames = Object.keys(gameMetrics)
+    .map(title => ({
+      title: title,
+      value: gameMetrics[title][metric]
+    }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, limit);
 
   const labels = sortedGames.map(g => g.title);
-  const data = sortedGames.map(g => g.profit);
+  const data = sortedGames.map(g => g.value);
 
   if (labels.length === 0) {
     labels.push("No Sales");
@@ -8348,16 +8384,35 @@ function renderTopBestsellersChart(filteredSalesList) {
   const borderColor = rootStyle.getPropertyValue('--border-color').trim() || 'hsla(224, 20%, 25%, 0.15)';
   const tooltipBg = rootStyle.getPropertyValue('--bg-sidebar').trim() || 'hsl(224, 25%, 10%)';
 
-  const accentPurple = rootStyle.getPropertyValue('--accent-purple').trim() || 'hsl(270, 85%, 60%)';
+  // Choose colors and labels based on metric
+  let datasetLabel = 'Net Profit';
+  let barColor = rootStyle.getPropertyValue('--accent-purple').trim() || 'hsl(270, 85%, 60%)';
+  let valueFormatter = (val) => `$${val.toFixed(2)}`;
+
+  if (metric === 'revenue') {
+    datasetLabel = 'Revenue';
+    barColor = rootStyle.getPropertyValue('--accent-cyan').trim() || 'hsl(180, 85%, 50%)';
+  } else if (metric === 'sales') {
+    datasetLabel = 'Keys Sold';
+    barColor = rootStyle.getPropertyValue('--accent-emerald').trim() || 'hsl(150, 85%, 40%)';
+    valueFormatter = (val) => `${val} unit(s)`;
+  }
+
+  // Update card header title dynamically
+  const cardTitle = document.getElementById("bestsellers-chart-title");
+  if (cardTitle) {
+    const metricLabel = metric === 'profit' ? 'Net Profit' : (metric === 'revenue' ? 'Revenue' : 'Sales Volume');
+    cardTitle.textContent = `Top ${limit} Bestselling Games by ${metricLabel}`;
+  }
 
   topBestsellersChartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: labels,
       datasets: [{
-        label: 'Net Profit',
+        label: datasetLabel,
         data: data,
-        backgroundColor: accentPurple,
+        backgroundColor: barColor,
         borderRadius: 4
       }]
     },
@@ -8365,24 +8420,39 @@ function renderTopBestsellersChart(filteredSalesList) {
       indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: false,
-      scales: {
-        x: {
-          grid: { color: borderColor },
-          ticks: { color: textSecondaryColor, font: { family: 'Inter', size: 10 } }
-        },
-        y: {
-          grid: { display: false },
-          ticks: { color: textSecondaryColor, font: { family: 'Inter', size: 10 } }
-        }
-      },
       plugins: {
         legend: { display: false },
         tooltip: {
           backgroundColor: tooltipBg,
-          titleColor: state.themeMode !== "light" ? "#fff" : "#000",
-          bodyColor: state.themeMode !== "light" ? "#fff" : "#000",
+          titleColor: '#fff',
+          bodyColor: '#fff',
           borderColor: borderColor,
-          borderWidth: 1
+          borderWidth: 1,
+          callbacks: {
+            label: function(context) {
+              return ` ${context.dataset.label}: ${valueFormatter(context.raw)}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: borderColor },
+          ticks: {
+            color: textSecondaryColor,
+            font: { family: 'Inter', size: 10 },
+            callback: function(value) {
+              if (metric === 'sales') return value;
+              return '$' + value;
+            }
+          }
+        },
+        y: {
+          grid: { display: false },
+          ticks: {
+            color: textSecondaryColor,
+            font: { family: 'Inter', size: 10 }
+          }
         }
       }
     }
