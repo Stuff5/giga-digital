@@ -813,6 +813,23 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     }
 
+    // Bind Theme Toggle Element
+    const btnThemeToggle = document.getElementById("btn-theme-toggle");
+    if (btnThemeToggle) {
+      btnThemeToggle.addEventListener("click", () => {
+        const nextMode = state.themeMode === "light" ? "dark" : "light";
+        state.themeMode = nextMode;
+        saveStateToStorage();
+        applyTheme(state.themeMode, state.themeColor);
+        updateThemeSelectionCards(state.themeMode, state.themeColor);
+        if (window.supabaseClient) {
+          dbSaveSettings("themeMode", state.themeMode);
+        }
+        updateUI();
+        showToast(`Switched to ${nextMode === "light" ? "Light Mode" : "Dark Mode"}`, "info");
+      });
+    }
+
     // Tab switcher in help modal
     const helpTabs = document.querySelectorAll(".help-tab-btn");
     const helpPanes = document.querySelectorAll(".help-tab-pane");
