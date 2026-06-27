@@ -8420,7 +8420,7 @@ function renderTopBestsellersChart(filteredSalesList) {
 
   // Color the progress bars based on the metric
   let barColor = 'var(--accent-purple)';
-  let valueFormatter = (val) => `$${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  let valueFormatter = (val) => `€${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   if (metric === 'revenue') {
     barColor = 'var(--accent-cyan)';
@@ -8457,7 +8457,7 @@ function renderTopBestsellersChart(filteredSalesList) {
           <div class="bestseller-title-wrap" style="min-width: 0; display: flex; flex-direction: column; gap: 2px;">
             <span class="bestseller-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;" title="${game.title}">${game.title}</span>
             <span class="bestseller-subtitle" style="font-size: 0.75rem; color: var(--text-muted);">
-              ${game.salesCount} unit${game.salesCount === 1 ? '' : 's'} sold &middot; Avg. Profit: $${game.avgProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ${game.salesCount} unit${game.salesCount === 1 ? '' : 's'} sold &middot; Avg. Profit: €${game.avgProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
         </div>
