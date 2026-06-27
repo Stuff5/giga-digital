@@ -8337,23 +8337,45 @@ function renderTopBestsellersChart(filteredSalesList) {
   const metric = state.bestsellersMetric || "profit";
   const limit = state.bestsellersLimit || 5;
 
+  // Build lookup maps for images from inventory
+  const imgUrlByTitle = {};
+  const imgUrlById = {};
+  if (state.inventory && Array.isArray(state.inventory)) {
+    state.inventory.forEach(item => {
+      if (item.imageUrl) {
+        if (item.id) imgUrlById[item.id] = item.imageUrl;
+        if (item.title) imgUrlByTitle[item.title.trim().toLowerCase()] = item.imageUrl;
+      }
+    });
+  }
+
   // Calculate metrics per game title
   const gameMetrics = {};
   filteredSalesList.forEach(sale => {
     const title = sale.title || "Unknown Game";
     if (!gameMetrics[title]) {
-      gameMetrics[title] = { profit: 0, revenue: 0, sales: 0 };
+      gameMetrics[title] = { profit: 0, revenue: 0, sales: 0, imageUrl: null };
     }
     gameMetrics[title].profit += sale.profit || 0;
     gameMetrics[title].revenue += sale.sellPrice || 0;
     gameMetrics[title].sales += 1;
+
+    // Assign imageUrl if not already set
+    if (!gameMetrics[title].imageUrl) {
+      if (sale.inventoryId && imgUrlById[sale.inventoryId]) {
+        gameMetrics[title].imageUrl = imgUrlById[sale.inventoryId];
+      } else if (imgUrlByTitle[title.trim().toLowerCase()]) {
+        gameMetrics[title].imageUrl = imgUrlByTitle[title.trim().toLowerCase()];
+      }
+    }
   });
 
   // Sort and pick top N
   const sortedGames = Object.keys(gameMetrics)
     .map(title => ({
       title: title,
-      value: gameMetrics[title][metric]
+      value: gameMetrics[title][metric],
+      imageUrl: gameMetrics[title].imageUrl
     }))
     .sort((a, b) => b.value - a.value)
     .slice(0, limit);
@@ -8394,21 +8416,31 @@ function renderTopBestsellersChart(filteredSalesList) {
     // Calculate percentage relative to the best game
     const pct = Math.max(2, Math.round((game.value / maxVal) * 100));
 
+    // Generate initials for placeholder
+    const initials = game.title.split(" ").map(w => w[0]).join("").slice(0, 3).toUpperCase();
+    const imageHTML = game.imageUrl 
+      ? `<img src="${game.imageUrl}" class="game-thumbnail" alt="${game.title}" style="width: 32px; height: 32px; min-width: 32px; border-radius: var(--radius-sm); object-fit: cover; border: 1px solid var(--border-color); background-color: var(--bg-input);">`
+      : `<div class="game-thumbnail-placeholder" style="width: 32px; height: 32px; min-width: 32px; border-radius: var(--radius-sm); font-size: 0.75rem; background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan)); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff;">${initials}</div>`;
+
     html += `
       <div class="bestseller-item">
-        <div class="bestseller-rank-badge ${rankClass}">
-          ${rank <= 3 ? `<i class="fa-solid fa-trophy" style="font-size: 0.75rem;"></i>` : rank}
+        <!-- Left Side: Rank, Logo/Placeholder, and Title -->
+        <div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1;">
+          <div class="bestseller-rank-badge ${rankClass}">
+            ${rank <= 3 ? `<i class="fa-solid fa-trophy" style="font-size: 0.75rem;"></i>` : rank}
+          </div>
+          ${imageHTML}
+          <div class="bestseller-title-wrap" style="min-width: 0;">
+            <span class="bestseller-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;" title="${game.title}">${game.title}</span>
+          </div>
         </div>
-        <div class="bestseller-info">
-          <div class="bestseller-title-wrap">
-            <span class="bestseller-title">${game.title}</span>
+
+        <!-- Right Side: Progress Bar and Value -->
+        <div class="bestseller-progress-container" style="flex-shrink: 0; display: flex; align-items: center; gap: 12px;">
+          <div class="bestseller-progress-bg">
+            <div class="bestseller-progress-fill" style="width: ${pct}%; background-color: ${barColor};"></div>
           </div>
-          <div class="bestseller-progress-container">
-            <div class="bestseller-progress-bg">
-              <div class="bestseller-progress-fill" style="width: ${pct}%; background-color: ${barColor};"></div>
-            </div>
-            <span class="bestseller-metric-val">${valueFormatter(game.value)}</span>
-          </div>
+          <span class="bestseller-metric-val">${valueFormatter(game.value)}</span>
         </div>
       </div>
     `;
