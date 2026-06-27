@@ -4751,8 +4751,34 @@ window.triggerEditCatalogEntry = function(title) {
   const currentTitle = invMatch ? invMatch.title : (saleMatch ? saleMatch.title : title);
   const currentImgUrl = invMatch ? invMatch.imageUrl : (saleMatch ? saleMatch.imageUrl : "");
 
+  // Find current publisher for this game
+  const matchWithPublisher = state.inventory.find(item => 
+    item.title.trim().toLowerCase() === title.trim().toLowerCase() && 
+    item.publisher
+  );
+  const currentPublisher = matchWithPublisher ? String(matchWithPublisher.publisher).trim() : "";
+
+  // Populate unique publishers datalist
+  const publishers = new Set();
+  state.inventory.forEach(item => {
+    if (item.publisher) {
+      publishers.add(String(item.publisher).trim());
+    }
+  });
+
+  const datalist = document.getElementById("edit-entry-publisher-list");
+  if (datalist) {
+    datalist.innerHTML = "";
+    Array.from(publishers).sort().forEach(pub => {
+      const option = document.createElement("option");
+      option.value = pub;
+      datalist.appendChild(option);
+    });
+  }
+
   document.getElementById("edit-entry-old-title").value = currentTitle;
   document.getElementById("edit-entry-title").value = currentTitle;
+  document.getElementById("edit-entry-publisher").value = currentPublisher;
   document.getElementById("edit-entry-image-url").value = currentImgUrl || "";
   document.getElementById("edit-entry-image-file").value = "";
 
@@ -5010,6 +5036,7 @@ async function handleEditCatalogEntrySubmit(e) {
 
   const oldTitle = document.getElementById("edit-entry-old-title").value.trim();
   const newTitle = document.getElementById("edit-entry-title").value.trim();
+  const newPublisher = document.getElementById("edit-entry-publisher").value.trim();
   let imageUrl = document.getElementById("edit-entry-image-url").value.trim();
   const fileInput = document.getElementById("edit-entry-image-file");
 
@@ -5033,6 +5060,7 @@ async function handleEditCatalogEntrySubmit(e) {
       if (imageUrl !== undefined && imageUrl !== "") {
         item.imageUrl = imageUrl;
       }
+      item.publisher = newPublisher;
       updatedCount++;
     }
   });
