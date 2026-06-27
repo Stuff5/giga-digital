@@ -7803,7 +7803,7 @@ function renderDashboardDetails(filteredSalesList, filteredInventoryList) {
   const stockSummaryList = document.getElementById("inventory-summary-list");
   stockSummaryList.innerHTML = "";
 
-  // Low Stock Alerts - count active stock for games
+  // 1. Low Stock Alerts - count active stock for games
   const gameStockCounts = {};
   filteredInventoryList.forEach(item => {
     if (item.status === "Available" || item.status === "Reserved") {
@@ -7845,7 +7845,44 @@ function renderDashboardDetails(filteredSalesList, filteredInventoryList) {
     stockSummaryList.appendChild(alertDiv);
   });
 
-  // Group inventory by platform
+  // 2. Stale Stock Alerts - count active stock that is "Very Stale" (> 90 days)
+  const staleStockCounts = {};
+  filteredInventoryList.forEach(item => {
+    if (item.status === "Available" || item.status === "Reserved") {
+      const cat = getAgingCategory(item.purchaseDate);
+      if (cat.name === "Very Stale") {
+        const title = item.title.trim();
+        staleStockCounts[title] = (staleStockCounts[title] || 0) + 1;
+      }
+    }
+  });
+
+  const staleStockGames = [];
+  Object.keys(staleStockCounts).forEach(title => {
+    staleStockGames.push({ title, count: staleStockCounts[title] });
+  });
+
+  // Sort by count descending
+  staleStockGames.sort((a, b) => b.count - a.count);
+
+  // Render Stale Stock alerts
+  staleStockGames.forEach(game => {
+    const alertDiv = document.createElement("div");
+    alertDiv.className = "stale-stock-alert-item";
+    alertDiv.innerHTML = `
+      <div class="alert-left">
+        <i class="fa-solid fa-hourglass-half"></i>
+        <div>
+          <h5>${game.title}</h5>
+          <span>Stale Stock Alert (&gt;90d)</span>
+        </div>
+      </div>
+      <div class="alert-badge">${game.count} stale</div>
+    `;
+    stockSummaryList.appendChild(alertDiv);
+  });
+
+  // 3. Group inventory by platform
   const platformCounts = {};
   filteredInventoryList.forEach(item => {
     if (item.status !== "Sold") {
@@ -7854,7 +7891,7 @@ function renderDashboardDetails(filteredSalesList, filteredInventoryList) {
   });
 
   const platformKeys = Object.keys(platformCounts);
-  if (platformKeys.length === 0) {
+  if (lowStockGames.length === 0 && staleStockGames.length === 0 && platformKeys.length === 0) {
     stockSummaryList.innerHTML = `<p style="text-align: center; color: var(--text-muted); padding: 20px 0;">All keys sold! Stock is empty.</p>`;
   } else {
     // Sort platforms by count descending
@@ -7886,6 +7923,7 @@ function renderDashboardDetails(filteredSalesList, filteredInventoryList) {
           <span class="summary-count">${count} in stock</span>
         </div>
       `;
+      stockSummaryList.appendChild(div);
     });
   }
 
