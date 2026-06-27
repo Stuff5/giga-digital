@@ -8372,11 +8372,18 @@ function renderTopBestsellersChart(filteredSalesList) {
 
   // Sort and pick top N
   const sortedGames = Object.keys(gameMetrics)
-    .map(title => ({
-      title: title,
-      value: gameMetrics[title][metric],
-      imageUrl: gameMetrics[title].imageUrl
-    }))
+    .map(title => {
+      const salesCount = gameMetrics[title].sales;
+      const totalProfit = gameMetrics[title].profit;
+      const avgProfit = salesCount > 0 ? (totalProfit / salesCount) : 0;
+      return {
+        title: title,
+        value: gameMetrics[title][metric],
+        imageUrl: gameMetrics[title].imageUrl,
+        salesCount: salesCount,
+        avgProfit: avgProfit
+      };
+    })
     .sort((a, b) => b.value - a.value)
     .slice(0, limit);
 
@@ -8430,8 +8437,11 @@ function renderTopBestsellersChart(filteredSalesList) {
             ${rank <= 3 ? `<i class="fa-solid fa-trophy" style="font-size: 0.75rem;"></i>` : rank}
           </div>
           ${imageHTML}
-          <div class="bestseller-title-wrap" style="min-width: 0;">
+          <div class="bestseller-title-wrap" style="min-width: 0; display: flex; flex-direction: column; gap: 2px;">
             <span class="bestseller-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;" title="${game.title}">${game.title}</span>
+            <span class="bestseller-subtitle" style="font-size: 0.75rem; color: var(--text-muted);">
+              ${game.salesCount} unit${game.salesCount === 1 ? '' : 's'} sold &middot; Avg. Profit: $${game.avgProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
           </div>
         </div>
 
