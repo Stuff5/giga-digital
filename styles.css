@@ -3602,3 +3602,39 @@ textarea.form-control {
   min-width: 80px;
 }
 
+/* Bestseller Card Metadata Labels */
+.bestseller-labels-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.bestseller-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.bestseller-label-sales {
+  background-color: hsla(145, 80%, 40%, 0.08);
+  border-color: hsla(145, 80%, 40%, 0.2);
+  color: var(--accent-emerald);
+}
+.bestseller-label-profit {
+  background-color: hsla(270, 80%, 60%, 0.08);
+  border-color: hsla(270, 80%, 60%, 0.2);
+  color: var(--accent-purple);
+}
+.bestseller-label-margin {
+  background-color: hsla(185, 80%, 45%, 0.08);
+  border-color: hsla(185, 80%, 45%, 0.2);
+  color: var(--accent-cyan);
+}
+

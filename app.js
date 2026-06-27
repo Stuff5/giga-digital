@@ -8459,9 +8459,20 @@ function renderTopBestsellersChart(filteredSalesList) {
           ${imageHTML}
           <div class="bestseller-title-wrap" style="min-width: 0; display: flex; flex-direction: column; gap: 2px;">
             <span class="bestseller-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;" title="${game.title}">${game.title}</span>
-            <span class="bestseller-subtitle" style="font-size: 0.75rem; color: var(--text-muted);">
-              ${game.salesCount} unit${game.salesCount === 1 ? '' : 's'} sold &middot; Avg. Profit: €${game.avgProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (Margin: ${game.avgMargin.toFixed(1)}%)
-            </span>
+            <div class="bestseller-labels-container">
+              <span class="bestseller-label bestseller-label-sales">
+                <i class="fa-solid fa-cart-shopping" style="font-size: 0.65rem;"></i>
+                ${game.salesCount} sold
+              </span>
+              <span class="bestseller-label bestseller-label-profit">
+                <i class="fa-solid fa-coins" style="font-size: 0.65rem;"></i>
+                Avg. Profit: €${game.avgProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+              <span class="bestseller-label bestseller-label-margin">
+                <i class="fa-solid fa-chart-line" style="font-size: 0.65rem;"></i>
+                Margin: ${game.avgMargin.toFixed(1)}%
+              </span>
+            </div>
           </div>
         </div>
 
