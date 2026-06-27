@@ -3602,33 +3602,42 @@ textarea.form-control {
   min-width: 80px;
 }
 
-/* Bestseller Card Metadata Labels (Alternative 1: Clean Minimalist) */
+/* Bestseller Card Metadata Labels (Alternative 2: Structured Metric Grid) */
 .bestseller-labels-container {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-top: 4px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-top: 8px;
+  width: 100%;
 }
 .bestseller-label {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 0.72rem;
-  font-weight: 500;
+  justify-content: center;
+  gap: 6px;
+  padding: 5px 4px;
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-weight: 600;
   white-space: nowrap;
+  transition: transform 0.2s ease;
 }
-.bestseller-label:not(:last-child) {
-  border-right: 1px solid var(--border-color);
-  padding-right: 8px;
+.bestseller-label:hover {
+  transform: translateY(-1px);
 }
 .bestseller-label-sales {
+  background-color: hsla(145, 35%, 65%, 0.08);
+  border: 1px solid hsla(145, 35%, 65%, 0.18);
   color: hsl(145, 45%, 70%);
 }
 .bestseller-label-profit {
+  background-color: hsla(270, 35%, 70%, 0.08);
+  border: 1px solid hsla(270, 35%, 70%, 0.18);
   color: hsl(270, 45%, 75%);
 }
 .bestseller-label-margin {
+  background-color: hsla(195, 35%, 68%, 0.08);
+  border: 1px solid hsla(195, 35%, 68%, 0.18);
   color: hsl(195, 45%, 72%);
 }
 
