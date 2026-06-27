@@ -6203,7 +6203,7 @@ async function handleEditPublisherSubmit(e) {
   // Update all inventory items matching the old publisher name
   let inventoryUpdateCount = 0;
   state.inventory.forEach(item => {
-    if ((item.publisher || "").trim() === oldName) {
+    if (String(item.publisher || "").trim() === oldName) {
       item.publisher = newName;
       inventoryUpdateCount++;
     }
@@ -9364,7 +9364,7 @@ function renderEntries() {
     }
     // Track publisher
     if (item.publisher && !titleGroups[titleKey].publisher) {
-      titleGroups[titleKey].publisher = item.publisher.trim();
+      titleGroups[titleKey].publisher = String(item.publisher).trim();
     }
   });
 
@@ -9397,7 +9397,7 @@ function renderEntries() {
     const invItem = inventoryMap.get(sale.inventoryId);
     if (invItem) {
       if (invItem.publisher && !titleGroups[titleKey].publisher) {
-        titleGroups[titleKey].publisher = invItem.publisher.trim();
+        titleGroups[titleKey].publisher = String(invItem.publisher).trim();
       }
       if (invItem.purchaseDate && sale.saleDate) {
         const start = new Date(invItem.purchaseDate);
@@ -9418,7 +9418,7 @@ function renderEntries() {
   if (searchInput) {
     entriesList = entriesList.filter(entry => 
       entry.title.toLowerCase().includes(searchInput) ||
-      (entry.publisher || "").toLowerCase().includes(searchInput)
+      String(entry.publisher || "").toLowerCase().includes(searchInput)
     );
   }
 
@@ -12699,7 +12699,7 @@ function renderPublishersTab() {
   // Group inventory by publisher
   const publishersMap = {};
   state.inventory.forEach(item => {
-    const pub = (item.publisher || "").trim() || "No Publisher";
+    const pub = String(item.publisher || "").trim() || "No Publisher";
     if (!publishersMap[pub]) {
       publishersMap[pub] = {
         name: pub,
