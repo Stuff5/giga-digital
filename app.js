@@ -3,6 +3,16 @@
  * Main Application Script (app.js)
  */
 
+// Generic debounce helper function
+function debounce(func, wait) {
+  let timeout;
+  return function(...args) {
+    const context = this;
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(context, args), wait);
+  };
+}
+
 // IndexedDB low-level asynchronous storage layer
 const indexedDBStorage = (() => {
   const DB_NAME = "GameVaultDB";
