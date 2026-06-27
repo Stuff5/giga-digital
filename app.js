@@ -8327,23 +8327,10 @@ function renderSupplierSplitChart(filteredInventoryList) {
 
 // Render top bestselling games horizontal bar chart
 function renderTopBestsellersChart(filteredSalesList) {
-  if (typeof Chart === 'undefined') {
-    console.warn("Chart.js is not loaded. Skipping bestsellers chart rendering.");
+  const container = document.getElementById("top-bestsellers-list");
+  if (!container) {
+    console.warn("top-bestsellers-list container not found. Skipping list rendering.");
     return;
-  }
-  const canvas = document.getElementById("topBestsellersChart");
-  if (!canvas) {
-    console.warn("topBestsellersChart canvas not found. Skipping chart rendering.");
-    return;
-  }
-  const ctx = canvas.getContext("2d");
-
-  if (topBestsellersChartInstance) {
-    try {
-      topBestsellersChartInstance.destroy();
-    } catch (e) {
-      console.error("Error destroying topBestsellersChartInstance:", e);
-    }
   }
 
   // Get current configurations
@@ -8353,7 +8340,7 @@ function renderTopBestsellersChart(filteredSalesList) {
   // Calculate metrics per game title
   const gameMetrics = {};
   filteredSalesList.forEach(sale => {
-    const title = sale.gameTitle || "Unknown Game";
+    const title = sale.title || "Unknown Game";
     if (!gameMetrics[title]) {
       gameMetrics[title] = { profit: 0, revenue: 0, sales: 0 };
     }
@@ -8371,33 +8358,6 @@ function renderTopBestsellersChart(filteredSalesList) {
     .sort((a, b) => b.value - a.value)
     .slice(0, limit);
 
-  const labels = sortedGames.map(g => g.title);
-  const data = sortedGames.map(g => g.value);
-
-  if (labels.length === 0) {
-    labels.push("No Sales");
-    data.push(0);
-  }
-
-  const rootStyle = getComputedStyle(document.documentElement);
-  const textSecondaryColor = rootStyle.getPropertyValue('--text-secondary').trim() || 'hsl(220, 12%, 65%)';
-  const borderColor = rootStyle.getPropertyValue('--border-color').trim() || 'hsla(224, 20%, 25%, 0.15)';
-  const tooltipBg = rootStyle.getPropertyValue('--bg-sidebar').trim() || 'hsl(224, 25%, 10%)';
-
-  // Choose colors and labels based on metric
-  let datasetLabel = 'Net Profit';
-  let barColor = rootStyle.getPropertyValue('--accent-purple').trim() || 'hsl(270, 85%, 60%)';
-  let valueFormatter = (val) => `$${val.toFixed(2)}`;
-
-  if (metric === 'revenue') {
-    datasetLabel = 'Revenue';
-    barColor = rootStyle.getPropertyValue('--accent-cyan').trim() || 'hsl(180, 85%, 50%)';
-  } else if (metric === 'sales') {
-    datasetLabel = 'Keys Sold';
-    barColor = rootStyle.getPropertyValue('--accent-emerald').trim() || 'hsl(150, 85%, 40%)';
-    valueFormatter = (val) => `${val} unit(s)`;
-  }
-
   // Update card header title dynamically
   const cardTitle = document.getElementById("bestsellers-chart-title");
   if (cardTitle) {
@@ -8405,58 +8365,56 @@ function renderTopBestsellersChart(filteredSalesList) {
     cardTitle.textContent = `Top ${limit} Bestselling Games by ${metricLabel}`;
   }
 
-  topBestsellersChartInstance = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: datasetLabel,
-        data: data,
-        backgroundColor: barColor,
-        borderRadius: 4
-      }]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: tooltipBg,
-          titleColor: '#fff',
-          bodyColor: '#fff',
-          borderColor: borderColor,
-          borderWidth: 1,
-          callbacks: {
-            label: function(context) {
-              return ` ${context.dataset.label}: ${valueFormatter(context.raw)}`;
-            }
-          }
-        }
-      },
-      scales: {
-        x: {
-          grid: { color: borderColor },
-          ticks: {
-            color: textSecondaryColor,
-            font: { family: 'Inter', size: 10 },
-            callback: function(value) {
-              if (metric === 'sales') return value;
-              return '$' + value;
-            }
-          }
-        },
-        y: {
-          grid: { display: false },
-          ticks: {
-            color: textSecondaryColor,
-            font: { family: 'Inter', size: 10 }
-          }
-        }
-      }
-    }
+  if (sortedGames.length === 0) {
+    container.innerHTML = `<div class="text-muted text-center" style="padding: 24px;">No sales recorded for the selected filters.</div>`;
+    return;
+  }
+
+  const maxVal = sortedGames[0].value || 1; // Prevent division by zero
+
+  // Color the progress bars based on the metric
+  let barColor = 'var(--accent-purple)';
+  let valueFormatter = (val) => `$${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  if (metric === 'revenue') {
+    barColor = 'var(--accent-cyan)';
+  } else if (metric === 'sales') {
+    barColor = 'var(--accent-emerald)';
+    valueFormatter = (val) => `${val} unit${val === 1 ? '' : 's'}`;
+  }
+
+  let html = '';
+  sortedGames.forEach((game, index) => {
+    const rank = index + 1;
+    let rankClass = '';
+    if (rank === 1) rankClass = 'rank-1';
+    else if (rank === 2) rankClass = 'rank-2';
+    else if (rank === 3) rankClass = 'rank-3';
+
+    // Calculate percentage relative to the best game
+    const pct = Math.max(2, Math.round((game.value / maxVal) * 100));
+
+    html += `
+      <div class="bestseller-item">
+        <div class="bestseller-rank-badge ${rankClass}">
+          ${rank <= 3 ? `<i class="fa-solid fa-trophy" style="font-size: 0.75rem;"></i>` : rank}
+        </div>
+        <div class="bestseller-info">
+          <div class="bestseller-title-wrap">
+            <span class="bestseller-title">${game.title}</span>
+          </div>
+          <div class="bestseller-progress-container">
+            <div class="bestseller-progress-bg">
+              <div class="bestseller-progress-fill" style="width: ${pct}%; background-color: ${barColor};"></div>
+            </div>
+            <span class="bestseller-metric-val">${valueFormatter(game.value)}</span>
+          </div>
+        </div>
+      </div>
+    `;
   });
+
+  container.innerHTML = html;
 }
 
 // ==========================================================================
