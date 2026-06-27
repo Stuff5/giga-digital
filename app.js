@@ -602,7 +602,9 @@ let state = {
   },
   autoSyncInterval: localStorage.getItem("gv_auto_sync_interval") || "off",
   autoPushGitHub: localStorage.getItem("gv_auto_push_github") === "true",
-  autoPullGitHub: localStorage.getItem("gv_auto_pull_github") === "true"
+  autoPullGitHub: localStorage.getItem("gv_auto_pull_github") === "true",
+  bestsellersLimit: parseInt(localStorage.getItem("gv_bestsellers_limit")) || 5,
+  bestsellersMetric: localStorage.getItem("gv_bestsellers_metric") || "profit"
 };
 
 // Charts reference objects for hot-reloading data
@@ -808,6 +810,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (btnOpenHelp) {
       btnOpenHelp.addEventListener("click", () => {
         openModal("help-modal");
+      });
+    }
+
+    // Bind Theme Toggle Element
+    const btnThemeToggle = document.getElementById("btn-theme-toggle");
+    if (btnThemeToggle) {
+      btnThemeToggle.addEventListener("click", () => {
+        const nextMode = state.themeMode === "light" ? "dark" : "light";
+        state.themeMode = nextMode;
+        saveStateToStorage();
+        applyTheme(state.themeMode, state.themeColor);
+        updateThemeSelectionCards(state.themeMode, state.themeColor);
+        if (window.supabaseClient) {
+          dbSaveSettings("themeMode", state.themeMode);
+        }
+        updateUI();
+        showToast(`Switched to ${nextMode === "light" ? "Light Mode" : "Dark Mode"}`, "info");
       });
     }
 
@@ -1164,6 +1183,8 @@ function loadStateFromStorage() {
     state.autoSyncInterval = localStorage.getItem("gv_auto_sync_interval") || "off";
     state.autoPushGitHub = localStorage.getItem("gv_auto_push_github") === "true";
     state.autoPullGitHub = localStorage.getItem("gv_auto_pull_github") === "true";
+    state.bestsellersLimit = parseInt(localStorage.getItem("gv_bestsellers_limit")) || 5;
+    state.bestsellersMetric = localStorage.getItem("gv_bestsellers_metric") || "profit";
 
     // Purge empty/invalid rows from the database state automatically
     cleanupEmptyDatabaseRows();
@@ -1251,6 +1272,8 @@ function saveStateToStorage() {
   localStorage.setItem("gv_auto_push_github", state.autoPushGitHub ? "true" : "false");
   localStorage.setItem("gv_auto_pull_github", state.autoPullGitHub ? "true" : "false");
   localStorage.setItem("gv_platform_fee_presets", JSON.stringify(PLATFORM_FEE_PRESETS));
+  localStorage.setItem("gv_bestsellers_limit", state.bestsellersLimit);
+  localStorage.setItem("gv_bestsellers_metric", state.bestsellersMetric);
   if (state.customLogo) {
     localStorage.setItem("gv_custom_logo", state.customLogo);
   } else {
@@ -3318,6 +3341,24 @@ function initEventHandlers() {
         });
       }
     });
+  }
+
+  // Bestsellers Customizer Event Listeners
+  const bestsellersLimitSelect = document.getElementById("bestsellers-limit-select");
+  const bestsellersMetricSelect = document.getElementById("bestsellers-metric-select");
+  if (bestsellersLimitSelect && bestsellersMetricSelect) {
+    bestsellersLimitSelect.value = state.bestsellersLimit;
+    bestsellersMetricSelect.value = state.bestsellersMetric;
+    
+    const handleBestsellersChange = () => {
+      state.bestsellersLimit = parseInt(bestsellersLimitSelect.value) || 5;
+      state.bestsellersMetric = bestsellersMetricSelect.value || "profit";
+      saveStateToStorage();
+      updateUI();
+    };
+    
+    bestsellersLimitSelect.addEventListener("change", handleBestsellersChange);
+    bestsellersMetricSelect.addEventListener("change", handleBestsellersChange);
   }
 
   // Event delegation for inventory checkbox selections
@@ -8303,90 +8344,150 @@ function renderSupplierSplitChart(filteredInventoryList) {
 
 // Render top bestselling games horizontal bar chart
 function renderTopBestsellersChart(filteredSalesList) {
-  if (typeof Chart === 'undefined') {
-    console.warn("Chart.js is not loaded. Skipping bestsellers chart rendering.");
+  const container = document.getElementById("top-bestsellers-list");
+  if (!container) {
+    console.warn("top-bestsellers-list container not found. Skipping list rendering.");
     return;
   }
-  const canvas = document.getElementById("topBestsellersChart");
-  if (!canvas) {
-    console.warn("topBestsellersChart canvas not found. Skipping chart rendering.");
-    return;
-  }
-  const ctx = canvas.getContext("2d");
 
-  if (topBestsellersChartInstance) {
-    try {
-      topBestsellersChartInstance.destroy();
-    } catch (e) {
-      console.error("Error destroying topBestsellersChartInstance:", e);
-    }
+  // Get current configurations
+  const metric = state.bestsellersMetric || "profit";
+  const limit = state.bestsellersLimit || 5;
+
+  // Build lookup maps for images from inventory
+  const imgUrlByTitle = {};
+  const imgUrlById = {};
+  if (state.inventory && Array.isArray(state.inventory)) {
+    state.inventory.forEach(item => {
+      if (item.imageUrl) {
+        if (item.id) imgUrlById[item.id] = item.imageUrl;
+        if (item.title) imgUrlByTitle[item.title.trim().toLowerCase()] = item.imageUrl;
+      }
+    });
   }
 
-  // Calculate net profit per game title
-  const gameProfits = {};
+  // Calculate metrics per game title
+  const gameMetrics = {};
   filteredSalesList.forEach(sale => {
-    const title = sale.gameTitle || "Unknown Game";
-    gameProfits[title] = (gameProfits[title] || 0) + sale.profit;
-  });
+    const title = sale.title || "Unknown Game";
+    if (!gameMetrics[title]) {
+      gameMetrics[title] = { profit: 0, revenue: 0, sales: 0, imageUrl: null };
+    }
+    gameMetrics[title].profit += sale.profit || 0;
+    gameMetrics[title].revenue += sale.sellPrice || 0;
+    gameMetrics[title].sales += 1;
 
-  // Sort and pick top 5
-  const sortedGames = Object.keys(gameProfits)
-    .map(title => ({ title: title, profit: gameProfits[title] }))
-    .sort((a, b) => b.profit - a.profit)
-    .slice(0, 5);
-
-  const labels = sortedGames.map(g => g.title);
-  const data = sortedGames.map(g => g.profit);
-
-  if (labels.length === 0) {
-    labels.push("No Sales");
-    data.push(0);
-  }
-
-  const rootStyle = getComputedStyle(document.documentElement);
-  const textSecondaryColor = rootStyle.getPropertyValue('--text-secondary').trim() || 'hsl(220, 12%, 65%)';
-  const borderColor = rootStyle.getPropertyValue('--border-color').trim() || 'hsla(224, 20%, 25%, 0.15)';
-  const tooltipBg = rootStyle.getPropertyValue('--bg-sidebar').trim() || 'hsl(224, 25%, 10%)';
-
-  const accentPurple = rootStyle.getPropertyValue('--accent-purple').trim() || 'hsl(270, 85%, 60%)';
-
-  topBestsellersChartInstance = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'Net Profit',
-        data: data,
-        backgroundColor: accentPurple,
-        borderRadius: 4
-      }]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        x: {
-          grid: { color: borderColor },
-          ticks: { color: textSecondaryColor, font: { family: 'Inter', size: 10 } }
-        },
-        y: {
-          grid: { display: false },
-          ticks: { color: textSecondaryColor, font: { family: 'Inter', size: 10 } }
-        }
-      },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: tooltipBg,
-          titleColor: state.themeMode !== "light" ? "#fff" : "#000",
-          bodyColor: state.themeMode !== "light" ? "#fff" : "#000",
-          borderColor: borderColor,
-          borderWidth: 1
-        }
+    // Assign imageUrl if not already set
+    if (!gameMetrics[title].imageUrl) {
+      if (sale.inventoryId && imgUrlById[sale.inventoryId]) {
+        gameMetrics[title].imageUrl = imgUrlById[sale.inventoryId];
+      } else if (imgUrlByTitle[title.trim().toLowerCase()]) {
+        gameMetrics[title].imageUrl = imgUrlByTitle[title.trim().toLowerCase()];
       }
     }
   });
+
+  // Sort and pick top N
+  const sortedGames = Object.keys(gameMetrics)
+    .map(title => {
+      const salesCount = gameMetrics[title].sales;
+      const totalProfit = gameMetrics[title].profit;
+      const totalRevenue = gameMetrics[title].revenue;
+      const avgProfit = salesCount > 0 ? (totalProfit / salesCount) : 0;
+      const avgMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+      return {
+        title: title,
+        value: gameMetrics[title][metric],
+        imageUrl: gameMetrics[title].imageUrl,
+        salesCount: salesCount,
+        avgProfit: avgProfit,
+        avgMargin: avgMargin
+      };
+    })
+    .sort((a, b) => b.value - a.value)
+    .slice(0, limit);
+
+  // Update card header title dynamically
+  const cardTitle = document.getElementById("bestsellers-chart-title");
+  if (cardTitle) {
+    const metricLabel = metric === 'profit' ? 'Net Profit' : (metric === 'revenue' ? 'Revenue' : 'Sales Volume');
+    cardTitle.textContent = `Top ${limit} Bestselling Games by ${metricLabel}`;
+  }
+
+  if (sortedGames.length === 0) {
+    container.innerHTML = `<div class="text-muted text-center" style="padding: 24px;">No sales recorded for the selected filters.</div>`;
+    return;
+  }
+
+  const maxVal = sortedGames[0].value || 1; // Prevent division by zero
+
+  // Color the progress bars based on the metric
+  let barColor = 'var(--accent-purple)';
+  let valueFormatter = (val) => `€${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  if (metric === 'revenue') {
+    barColor = 'var(--accent-cyan)';
+  } else if (metric === 'sales') {
+    barColor = 'var(--accent-emerald)';
+    valueFormatter = (val) => `${val} unit${val === 1 ? '' : 's'}`;
+  }
+
+  let html = '';
+  sortedGames.forEach((game, index) => {
+    const rank = index + 1;
+    let rankClass = '';
+    if (rank === 1) rankClass = 'rank-1';
+    else if (rank === 2) rankClass = 'rank-2';
+    else if (rank === 3) rankClass = 'rank-3';
+
+    // Calculate percentage relative to the best game
+    const pct = Math.max(2, Math.round((game.value / maxVal) * 100));
+
+    // Generate initials for placeholder
+    const initials = game.title.split(" ").map(w => w[0]).join("").slice(0, 3).toUpperCase();
+    const imageHTML = game.imageUrl 
+      ? `<img src="${game.imageUrl}" class="game-thumbnail" alt="${game.title}" style="width: 32px; height: 32px; min-width: 32px; border-radius: var(--radius-sm); object-fit: cover; border: 1px solid var(--border-color); background-color: var(--bg-input);">`
+      : `<div class="game-thumbnail-placeholder" style="width: 32px; height: 32px; min-width: 32px; border-radius: var(--radius-sm); font-size: 0.75rem; background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan)); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff;">${initials}</div>`;
+
+    html += `
+      <div class="bestseller-item">
+        <!-- Left Side: Rank, Logo/Placeholder, and Title -->
+        <div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1;">
+          <div class="bestseller-rank-badge ${rankClass}">
+            ${rank <= 3 ? `<i class="fa-solid fa-trophy" style="font-size: 0.75rem;"></i>` : rank}
+          </div>
+          ${imageHTML}
+          <div class="bestseller-title-wrap" style="min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+            <span class="bestseller-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;" title="${game.title}">${game.title}</span>
+            <div class="bestseller-labels-container">
+              <span class="bestseller-label bestseller-label-sales">
+                <i class="fa-solid fa-cart-shopping" style="font-size: 0.65rem;"></i>
+                ${game.salesCount} sold
+              </span>
+              <span class="bestseller-label bestseller-label-profit">
+                <i class="fa-solid fa-coins" style="font-size: 0.65rem;"></i>
+                Avg. Profit: €${game.avgProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+              <span class="bestseller-label bestseller-label-margin">
+                <i class="fa-solid fa-chart-line" style="font-size: 0.65rem;"></i>
+                Margin: ${game.avgMargin.toFixed(1)}%
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Side: Progress Bar and Value -->
+        <div class="bestseller-progress-container" style="flex-shrink: 0; display: flex; align-items: center; gap: 12px;">
+          <div class="bestseller-progress-bg">
+            <div class="bestseller-progress-fill" style="width: ${pct}%; background-color: ${barColor};"></div>
+          </div>
+          <span class="bestseller-metric-val">${valueFormatter(game.value)}</span>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
 }
 
 // ==========================================================================
