@@ -575,7 +575,8 @@ let state = {
     platformSplit: true,
     costRevenue: true,
     supplierSplit: true,
-    topBestsellers: true
+    topBestsellers: true,
+    dailyProfitMonth: true
   },
   metricOrder: [],
   supMetricOrder: [],
@@ -586,6 +587,7 @@ let state = {
     sales: "fa-receipt",
     finance: "fa-coins",
     suppliers: "fa-truck-ramp-box",
+    platforms: "fa-gamepad",
     entries: "fa-tags",
     recycle: "fa-trash-can",
     settings: "fa-gear"
@@ -596,16 +598,71 @@ let state = {
     sales: "Sales Ledger",
     finance: "Finance",
     suppliers: "Suppliers",
+    platforms: "Platforms",
     entries: "Entries",
     recycle: "Recycle Bin",
     settings: "Settings"
+  },
+  menuVisibility: {
+    dashboard: true,
+    inventory: true,
+    sales: true,
+    finance: true,
+    suppliers: true,
+    platforms: true,
+    entries: true,
+    recycle: true,
+    settings: true
   },
   autoSyncInterval: localStorage.getItem("gv_auto_sync_interval") || "off",
   autoPushGitHub: localStorage.getItem("gv_auto_push_github") === "true",
   autoPullGitHub: localStorage.getItem("gv_auto_pull_github") === "true",
   bestsellersLimit: parseInt(localStorage.getItem("gv_bestsellers_limit")) || 5,
-  bestsellersMetric: localStorage.getItem("gv_bestsellers_metric") || "profit"
+  bestsellersMetric: localStorage.getItem("gv_bestsellers_metric") || "profit",
+  expenseCategories: [],
+  payouts: [],
+  menuOrder: ["dashboard", "inventory", "sales", "finance", "suppliers", "platforms", "entries", "recycle", "settings"],
+  dashboardOrder: [
+    "salesProfit", "platformSplit", "costRevenue", "supplierSplit", "topBestsellers", "dailyProfitMonth",
+    "stockSpeed", "salesFeed", "financeTracker", "markupAnalysis", "stockTurnover"
+  ],
+  dashboardSpans: {
+    salesProfit: 2,
+    platformSplit: 1,
+    costRevenue: 2,
+    supplierSplit: 1,
+    topBestsellers: 3,
+    dailyProfitMonth: 3,
+    stockSpeed: 1,
+    salesFeed: 2,
+    financeTracker: 1,
+    markupAnalysis: 2,
+    stockTurnover: 3
+  },
+  widgetSettings: {
+    salesProfit: { visible: true, collapsed: false, chartType: 'line', timeframe: 'global' },
+    platformSplit: { visible: true, collapsed: false, chartType: 'doughnut', timeframe: 'global' },
+    costRevenue: { visible: true, collapsed: false, chartType: 'bar', timeframe: 'global' },
+    supplierSplit: { visible: true, collapsed: false, chartType: 'doughnut', timeframe: 'global' },
+    topBestsellers: { visible: true, collapsed: false, limit: 5, metric: 'profit', timeframe: 'global' },
+    dailyProfitMonth: { visible: true, collapsed: false, chartType: 'bar', timeframe: 'global' },
+    stockSpeed: { visible: true, collapsed: false, chartType: 'doughnut', timeframe: 'global' },
+    salesFeed: { visible: true, collapsed: false, limit: 5, timeframe: 'global' },
+    financeTracker: { visible: true, collapsed: false, timeframe: 'global' },
+    markupAnalysis: { visible: true, collapsed: false, chartType: 'bar', groupBy: 'publisher', timeframe: 'global' },
+    stockTurnover: { visible: true, collapsed: false, chartType: 'line', timeframe: 'global' }
+  }
 };
+
+const DEFAULT_EXPENSE_CATEGORIES = [
+  "PayPal / Payment Gateway Fee",
+  "Platform Commission",
+  "Overhead / Server Cost",
+  "Software Subscription",
+  "Marketing / Ads",
+  "Monthly Salary / Payout",
+  "Miscellaneous Expense"
+];
 
 // Charts reference objects for hot-reloading data
 let salesProfitChartInstance = null;
@@ -615,13 +672,17 @@ let costRevenueChartInstance = null;
 let supplierSplitChartInstance = null;
 let topBestsellersChartInstance = null;
 let supplierRoiMatrixChartInstance = null;
+let dailyProfitMonthChartInstance = null;
+let stockSpeedChartInstance = null;
+let markupAnalysisChartInstance = null;
+let stockTurnoverChartInstance = null;
 
 function initDOMCache() {
   const elements = [
     // Views
     "dashboard-view", "inventory-view", "sales-view", "finance-view", "suppliers-view", "settings-view", "recycle-view", "entries-view",
     // Modals
-    "add-game-modal", "edit-game-modal", "sell-game-modal", "help-modal", "view-key-modal", "catalog-keys-modal",
+    "add-game-modal", "edit-game-modal", "sell-game-modal", "help-modal", "view-key-modal", "catalog-keys-modal", "payout-categories-modal",
     // Main UI tables & ledger containers
     "publishers-table-body", "suppliers-table-body", "platforms-table-body", "entries-table-body", "recycle-table-body", "payouts-ledger-body",
     // Toolbars & Action Bars
@@ -779,6 +840,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     applyMetricOrder();
     applySupplierMetricOrder();
     initDragAndDrop();
+    bindDashboardDragAndDrop();
+    bindDashboardCardActions();
+    applyWidgetVisibility();
+    bindWidgetControls();
     applyMenuIcons();
     applyMenuTitles();
     renderSidebarCustomizationSettings();
@@ -807,8 +872,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Bind Help Modal Elements
     const btnOpenHelp = document.getElementById("btn-open-help");
     const helpModal = document.getElementById("help-modal");
+    const helpSearchInput = document.getElementById("help-search-input");
+    const helpTabs = document.querySelectorAll(".help-tab-btn");
+    const helpPanes = document.querySelectorAll(".help-tab-pane");
+
     if (btnOpenHelp) {
       btnOpenHelp.addEventListener("click", () => {
+        if (helpSearchInput) {
+          helpSearchInput.value = "";
+          helpTabs.forEach(t => t.style.display = "");
+        }
         openModal("help-modal");
       });
     }
@@ -831,8 +904,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // Tab switcher in help modal
-    const helpTabs = document.querySelectorAll(".help-tab-btn");
-    const helpPanes = document.querySelectorAll(".help-tab-pane");
     helpTabs.forEach(tab => {
       tab.addEventListener("click", () => {
         const targetPaneId = tab.getAttribute("data-help-tab");
@@ -856,6 +927,38 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     });
 
+    // Interactive search query filtering in help modal
+    if (helpSearchInput) {
+      helpSearchInput.addEventListener("input", (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        let firstVisibleTab = null;
+        let activeTabVisible = false;
+
+        helpTabs.forEach(tab => {
+          const targetPaneId = tab.getAttribute("data-help-tab");
+          const pane = document.getElementById(targetPaneId);
+          if (!pane) return;
+
+          const tabText = tab.textContent.toLowerCase();
+          const paneText = pane.textContent.toLowerCase();
+
+          const isMatch = tabText.includes(query) || paneText.includes(query);
+          if (isMatch) {
+            tab.style.display = "";
+            if (!firstVisibleTab) firstVisibleTab = tab;
+            if (tab.classList.contains("active")) activeTabVisible = true;
+          } else {
+            tab.style.display = "none";
+          }
+        });
+
+        // Switch active tab if current active tab button is hidden
+        if (!activeTabVisible && firstVisibleTab) {
+          firstVisibleTab.click();
+        }
+      });
+    }
+
     // Keyboard Shortcuts (F1, ?, Escape)
     window.addEventListener("keydown", (e) => {
       // Avoid triggering when user is typing inside text inputs or textareas
@@ -873,6 +976,10 @@ document.addEventListener("DOMContentLoaded", async () => {
           if (helpModal.classList.contains("active")) {
             closeModal("help-modal");
           } else {
+            if (helpSearchInput) {
+              helpSearchInput.value = "";
+              helpTabs.forEach(t => t.style.display = "");
+            }
             openModal("help-modal");
           }
         }
@@ -1010,6 +1117,7 @@ function loadStateFromStorage() {
           costRevenue: true,
           supplierSplit: true,
           topBestsellers: true,
+          dailyProfitMonth: true,
           ...parsed
         };
       } catch (e) {
@@ -1021,7 +1129,8 @@ function loadStateFromStorage() {
         platformSplit: true,
         costRevenue: true,
         supplierSplit: true,
-        topBestsellers: true
+        topBestsellers: true,
+        dailyProfitMonth: true
       };
     }
 
@@ -1161,6 +1270,57 @@ function loadStateFromStorage() {
       }
     }
 
+    const storedVisibility = localStorage.getItem("gv_menu_visibility");
+    if (storedVisibility) {
+      try {
+        state.menuVisibility = { ...state.menuVisibility, ...JSON.parse(storedVisibility) };
+        // Force settings menu item to always be visible
+        state.menuVisibility.settings = true;
+        if (state.menuVisibility.sales !== undefined) {
+          state.showSalesLedger = state.menuVisibility.sales;
+        }
+      } catch (e) {
+        console.error("Error parsing menu visibility, using defaults:", e);
+      }
+    } else {
+      state.menuVisibility.sales = state.showSalesLedger;
+      state.menuVisibility.settings = true;
+    }
+
+    const storedDashboardOrder = localStorage.getItem("gv_dashboard_order");
+    if (storedDashboardOrder) {
+      try {
+        state.dashboardOrder = JSON.parse(storedDashboardOrder);
+        const expectedKeys = ["salesProfit", "platformSplit", "costRevenue", "supplierSplit", "topBestsellers", "dailyProfitMonth"];
+        state.dashboardOrder = state.dashboardOrder.filter(k => expectedKeys.includes(k));
+        expectedKeys.forEach(k => {
+          if (!state.dashboardOrder.includes(k)) {
+            state.dashboardOrder.push(k);
+          }
+        });
+      } catch (e) {
+        console.error("Error parsing dashboard order, using defaults:", e);
+      }
+    }
+
+    const storedDashboardSpans = localStorage.getItem("gv_dashboard_spans");
+    if (storedDashboardSpans) {
+      try {
+        state.dashboardSpans = { ...state.dashboardSpans, ...JSON.parse(storedDashboardSpans) };
+      } catch (e) {
+        console.error("Error parsing dashboard spans, using defaults:", e);
+      }
+    }
+
+    const storedWidgetSettings = localStorage.getItem("gv_widget_settings");
+    if (storedWidgetSettings) {
+      try {
+        state.widgetSettings = { ...state.widgetSettings, ...JSON.parse(storedWidgetSettings) };
+      } catch (e) {
+        console.error("Error parsing widget settings, using defaults:", e);
+      }
+    }
+
     try {
       const storedRecycle = localStorage.getItem("gv_recycle_bin" + userSuffix);
       state.recycleBin = storedRecycle ? JSON.parse(storedRecycle) : { inventory: [], sales: [] };
@@ -1178,6 +1338,37 @@ function loadStateFromStorage() {
     } catch (e) {
       console.error("Error parsing payouts data, resetting to empty:", e);
       state.payouts = [];
+    }
+
+    try {
+      const storedCategories = localStorage.getItem("gv_expense_categories" + userSuffix);
+      state.expenseCategories = storedCategories ? JSON.parse(storedCategories) : [...DEFAULT_EXPENSE_CATEGORIES];
+      if (!Array.isArray(state.expenseCategories)) {
+        state.expenseCategories = [...DEFAULT_EXPENSE_CATEGORIES];
+      }
+    } catch (e) {
+      console.error("Error parsing expense categories, using defaults:", e);
+      state.expenseCategories = [...DEFAULT_EXPENSE_CATEGORIES];
+    }
+
+    try {
+      const storedMenuOrder = localStorage.getItem("gv_menu_order");
+      state.menuOrder = storedMenuOrder ? JSON.parse(storedMenuOrder) : ["dashboard", "inventory", "sales", "finance", "suppliers", "platforms", "entries", "recycle", "settings"];
+      if (!Array.isArray(state.menuOrder)) {
+        state.menuOrder = ["dashboard", "inventory", "sales", "finance", "suppliers", "platforms", "entries", "recycle", "settings"];
+      } else {
+        const defaults = ["dashboard", "inventory", "sales", "finance", "suppliers", "platforms", "entries", "recycle", "settings"];
+        defaults.forEach(item => {
+          if (!state.menuOrder.includes(item)) {
+            state.menuOrder.push(item);
+          }
+        });
+        // Filter out any invalid items
+        state.menuOrder = state.menuOrder.filter(item => defaults.includes(item));
+      }
+    } catch (e) {
+      console.error("Error parsing menu order, using defaults:", e);
+      state.menuOrder = ["dashboard", "inventory", "sales", "finance", "suppliers", "platforms", "entries", "recycle", "settings"];
     }
 
     state.autoSyncInterval = localStorage.getItem("gv_auto_sync_interval") || "off";
@@ -1242,6 +1433,7 @@ function saveStateToStorage() {
   localStorage.setItem("gv_platforms" + userSuffix, JSON.stringify(state.platforms));
   localStorage.setItem("gv_recycle_bin" + userSuffix, JSON.stringify(state.recycleBin));
   localStorage.setItem("gv_payouts" + userSuffix, JSON.stringify(state.payouts));
+  localStorage.setItem("gv_expense_categories" + userSuffix, JSON.stringify(state.expenseCategories));
   localStorage.setItem("gv_inv_layout", state.inventoryLayout);
   localStorage.setItem("gv_supplier_display_mode", state.supplierDisplayMode);
   localStorage.setItem("gv_platform_display_mode", state.platformDisplayMode);
@@ -1263,6 +1455,7 @@ function saveStateToStorage() {
   localStorage.setItem("gv_visible_figures", JSON.stringify(state.visibleFigures));
   localStorage.setItem("gv_metric_order", JSON.stringify(state.metricOrder));
   localStorage.setItem("gv_sup_metric_order", JSON.stringify(state.supMetricOrder));
+  localStorage.setItem("gv_menu_order", JSON.stringify(state.menuOrder));
   localStorage.setItem("gv_font_size", state.fontSize);
   localStorage.setItem("gv_low_stock_threshold", state.lowStockThreshold);
   localStorage.setItem("gv_default_markup_type", state.defaultMarkupType);
@@ -1274,6 +1467,12 @@ function saveStateToStorage() {
   localStorage.setItem("gv_platform_fee_presets", JSON.stringify(PLATFORM_FEE_PRESETS));
   localStorage.setItem("gv_bestsellers_limit", state.bestsellersLimit);
   localStorage.setItem("gv_bestsellers_metric", state.bestsellersMetric);
+  localStorage.setItem("gv_menu_icons", JSON.stringify(state.menuIcons));
+  localStorage.setItem("gv_menu_titles", JSON.stringify(state.menuTitles));
+  localStorage.setItem("gv_menu_visibility", JSON.stringify(state.menuVisibility));
+  localStorage.setItem("gv_dashboard_order", JSON.stringify(state.dashboardOrder));
+  localStorage.setItem("gv_dashboard_spans", JSON.stringify(state.dashboardSpans));
+  localStorage.setItem("gv_widget_settings", JSON.stringify(state.widgetSettings));
   if (state.customLogo) {
     localStorage.setItem("gv_custom_logo", state.customLogo);
   } else {
@@ -1299,7 +1498,8 @@ function pushToUndoStack() {
     suppliers: JSON.parse(JSON.stringify(state.suppliers || [])),
     platforms: JSON.parse(JSON.stringify(state.platforms || [])),
     recycleBin: JSON.parse(JSON.stringify(state.recycleBin || { inventory: [], sales: [] })),
-    payouts: JSON.parse(JSON.stringify(state.payouts || []))
+    payouts: JSON.parse(JSON.stringify(state.payouts || [])),
+    expenseCategories: JSON.parse(JSON.stringify(state.expenseCategories || []))
   };
   
   undoStack.push(snapshot);
@@ -1330,6 +1530,9 @@ function restoreFromSnapshot(snapshot) {
   state.platforms = JSON.parse(JSON.stringify(snapshot.platforms));
   state.recycleBin = JSON.parse(JSON.stringify(snapshot.recycleBin));
   state.payouts = JSON.parse(JSON.stringify(snapshot.payouts));
+  if (snapshot.expenseCategories) {
+    state.expenseCategories = JSON.parse(JSON.stringify(snapshot.expenseCategories));
+  }
   
   saveStateToStorage();
   
@@ -1342,6 +1545,8 @@ function restoreFromSnapshot(snapshot) {
     }
   }
   
+  populateCategoryDropdown();
+  renderPayoutCategoriesList();
   updateUI();
   updateUndoRedoButtons();
 }
@@ -1355,7 +1560,8 @@ window.handleUndo = function() {
     suppliers: JSON.parse(JSON.stringify(state.suppliers || [])),
     platforms: JSON.parse(JSON.stringify(state.platforms || [])),
     recycleBin: JSON.parse(JSON.stringify(state.recycleBin || { inventory: [], sales: [] })),
-    payouts: JSON.parse(JSON.stringify(state.payouts || []))
+    payouts: JSON.parse(JSON.stringify(state.payouts || [])),
+    expenseCategories: JSON.parse(JSON.stringify(state.expenseCategories || []))
   };
   redoStack.push(currentSnapshot);
   if (redoStack.length > MAX_HISTORY_LIMIT) {
@@ -1376,7 +1582,8 @@ window.handleRedo = function() {
     suppliers: JSON.parse(JSON.stringify(state.suppliers || [])),
     platforms: JSON.parse(JSON.stringify(state.platforms || [])),
     recycleBin: JSON.parse(JSON.stringify(state.recycleBin || { inventory: [], sales: [] })),
-    payouts: JSON.parse(JSON.stringify(state.payouts || []))
+    payouts: JSON.parse(JSON.stringify(state.payouts || [])),
+    expenseCategories: JSON.parse(JSON.stringify(state.expenseCategories || []))
   };
   undoStack.push(currentSnapshot);
   if (undoStack.length > MAX_HISTORY_LIMIT) {
@@ -1781,6 +1988,7 @@ function handleAdminCreateUser(e) {
     localStorage.setItem(`gv_platforms_${username}`, JSON.stringify([]));
     localStorage.setItem(`gv_recycle_bin_${username}`, JSON.stringify({ inventory: [], sales: [] }));
     localStorage.setItem(`gv_payouts_${username}`, JSON.stringify([]));
+    localStorage.setItem(`gv_expense_categories_${username}`, JSON.stringify(DEFAULT_EXPENSE_CATEGORIES));
 
     showToast(`User '${username}' created successfully!`, "success");
 
@@ -1816,6 +2024,7 @@ window.deleteUser = function(username) {
     localStorage.removeItem(`gv_platforms_${username}`);
     localStorage.removeItem(`gv_recycle_bin_${username}`);
     localStorage.removeItem(`gv_payouts_${username}`);
+    localStorage.removeItem(`gv_expense_categories_${username}`);
 
     showToast(`User '${username}' deleted successfully.`, "success");
     renderAdminUsers();
@@ -1922,6 +2131,7 @@ function handleEditUserSubmit(e) {
       migrateKey(`gv_platforms_${originalUsername}`, `gv_platforms_${newUsername}`);
       migrateKey(`gv_recycle_bin_${originalUsername}`, `gv_recycle_bin_${newUsername}`);
       migrateKey(`gv_payouts_${originalUsername}`, `gv_payouts_${newUsername}`);
+      migrateKey(`gv_expense_categories_${originalUsername}`, `gv_expense_categories_${newUsername}`);
     }
 
     // If this is the current active session user, update session state!
@@ -2100,24 +2310,12 @@ function formatDate(dateStr) {
 
 // Apply Sidebar Icons dynamically
 function applyMenuIcons() {
-  const menus = ["dashboard", "inventory", "sales", "finance", "suppliers", "entries", "recycle", "settings"];
-  menus.forEach(m => {
-    const sidebarIcon = document.getElementById(`sidebar-icon-${m}`);
-    if (sidebarIcon && state.menuIcons[m]) {
-      sidebarIcon.className = `fa-solid ${state.menuIcons[m]}`;
-    }
-  });
+  renderSidebarMenu();
 }
 
 // Apply Sidebar Titles dynamically
 function applyMenuTitles() {
-  const menus = ["dashboard", "inventory", "sales", "finance", "suppliers", "entries", "recycle", "settings"];
-  menus.forEach(m => {
-    const sidebarText = document.getElementById(`sidebar-text-${m}`);
-    if (sidebarText && state.menuTitles[m]) {
-      sidebarText.textContent = state.menuTitles[m];
-    }
-  });
+  renderSidebarMenu();
 }
 
 // Render Settings sidebar customization panel (icons and titles)
@@ -2127,16 +2325,17 @@ function renderSidebarCustomizationSettings() {
 
   listContainer.innerHTML = "";
 
-  const menus = [
-    { key: "dashboard", label: "Dashboard" },
-    { key: "inventory", label: "Inventory" },
-    { key: "sales", label: "Sales Ledger" },
-    { key: "finance", label: "Finance" },
-    { key: "suppliers", label: "Suppliers" },
-    { key: "entries", label: "Entries" },
-    { key: "recycle", label: "Recycle Bin" },
-    { key: "settings", label: "Settings" }
-  ];
+  const defaultMenus = {
+    dashboard: { label: "Dashboard" },
+    inventory: { label: "Inventory" },
+    sales: { label: "Sales Ledger" },
+    finance: { label: "Finance" },
+    suppliers: { label: "Suppliers" },
+    platforms: { label: "Platforms" },
+    entries: { label: "Entries" },
+    recycle: { label: "Recycle Bin" },
+    settings: { label: "Settings" }
+  };
 
   const availableIcons = [
     { value: "fa-gauge", label: "Gauge" },
@@ -2169,68 +2368,243 @@ function renderSidebarCustomizationSettings() {
     { value: "fa-circle-question", label: "Question" }
   ];
 
-  menus.forEach(m => {
+  state.menuOrder.forEach((key, idx) => {
+    const m = defaultMenus[key];
+    if (!m) return;
+
     const rowDiv = document.createElement("div");
     rowDiv.className = "menu-icon-row";
+    rowDiv.setAttribute("draggable", "true");
+    rowDiv.setAttribute("data-key", key);
+    rowDiv.setAttribute("data-index", idx);
 
-    const currentIcon = state.menuIcons[m.key] || "fa-gear";
-    const currentTitle = state.menuTitles[m.key] || m.label;
+    const currentIcon = state.menuIcons[key] || "fa-gear";
+    const currentTitle = state.menuTitles[key] || m.label;
 
     const optionsHtml = availableIcons.map(icon => 
-      `<option value="${icon.value}" ${icon.value === currentIcon ? 'selected' : ''}>${icon.label}</option>`
+      `<button type="button" class="icon-option ${icon.value === currentIcon ? 'selected' : ''}" data-icon="${icon.value}" title="${icon.label}"><i class="fa-solid ${icon.value}"></i></button>`
     ).join("");
 
     rowDiv.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
-        <span class="icon-preview-box" id="preview-icon-box-${m.key}">
-          <i class="fa-solid ${currentIcon}"></i>
-        </span>
-        <input type="text" class="form-control form-control-sm menu-title-input" data-menu="${m.key}" value="${currentTitle}" placeholder="${m.label}" style="background-color: var(--bg-card); font-weight: 500;">
+      <div class="menu-icon-drag-handle" title="Drag to reorder">
+        <i class="fa-solid fa-grip-vertical"></i>
       </div>
-      <div style="margin-left: 12px; flex-shrink: 0;">
-        <select class="form-control form-control-sm icon-selector" data-menu="${m.key}" style="width: 110px;">
+      <div class="icon-picker-dropdown">
+        <button type="button" class="btn-icon-picker" id="picker-btn-${key}" title="Change Icon">
+          <i class="fa-solid ${currentIcon}"></i>
+          <i class="fa-solid fa-chevron-down icon-picker-chevron"></i>
+        </button>
+        <div class="icon-picker-menu" id="picker-menu-${key}">
           ${optionsHtml}
-        </select>
+        </div>
+      </div>
+      <input type="text" class="form-control form-control-sm menu-title-input" data-menu="${key}" value="${currentTitle}" placeholder="${m.label}" style="background-color: var(--bg-card); font-weight: 500; flex: 1; min-width: 0;">
+      
+      <div style="display: flex; align-items: center; margin-left: 8px; margin-right: 4px; flex-shrink: 0;" title="${key === 'settings' ? 'Settings visibility cannot be disabled' : 'Toggle Visibility'}">
+        <label class="switch-toggle" style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: ${key === 'settings' ? 'not-allowed' : 'pointer'}; margin: 0; ${key === 'settings' ? 'opacity: 0.5;' : ''}">
+          <input type="checkbox" class="menu-visibility-toggle" data-menu="${key}" style="opacity: 0; width: 0; height: 0;" ${state.menuVisibility[key] !== false ? 'checked' : ''} ${key === 'settings' ? 'disabled' : ''}>
+          <span class="switch-slider" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: hsla(0, 0%, 100%, 0.1); border-radius: 34px; transition: 0.3s ease;"></span>
+        </label>
+      </div>
+
+      <div class="menu-reorder-btn-group">
+        <button type="button" class="btn-reorder btn-reorder-up" title="Move Up" ${idx === 0 ? 'disabled' : ''}>
+          <i class="fa-solid fa-chevron-up"></i>
+        </button>
+        <button type="button" class="btn-reorder btn-reorder-down" title="Move Down" ${idx === state.menuOrder.length - 1 ? 'disabled' : ''}>
+          <i class="fa-solid fa-chevron-down"></i>
+        </button>
       </div>
     `;
 
-    const selectEl = rowDiv.querySelector("select");
-    selectEl.addEventListener("change", (e) => {
-      const newIcon = e.target.value;
-      state.menuIcons[m.key] = newIcon;
-      saveStateToStorage();
-      
-      const previewBox = document.getElementById(`preview-icon-box-${m.key}`);
-      if (previewBox) {
-        const iEl = previewBox.querySelector("i");
-        if (iEl) iEl.className = `fa-solid ${newIcon}`;
-      }
+    // HTML5 Drag and Drop Event Listeners
+    rowDiv.addEventListener("dragstart", (e) => {
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", idx);
+      rowDiv.classList.add("dragging");
+    });
 
-      const sidebarIcon = document.getElementById(`sidebar-icon-${m.key}`);
-      if (sidebarIcon) {
-        sidebarIcon.className = `fa-solid ${newIcon}`;
-      }
+    rowDiv.addEventListener("dragend", () => {
+      rowDiv.classList.remove("dragging");
+      listContainer.querySelectorAll(".menu-icon-row").forEach(row => {
+        row.classList.remove("drag-over");
+      });
+    });
 
-      showToast(`Updated icon for "${state.menuTitles[m.key] || m.label}".`, "success");
-      if (window.supabaseClient) {
-        dbSaveCustomization(m.key, state.menuTitles[m.key] || m.label, newIcon);
+    rowDiv.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+    });
+
+    rowDiv.addEventListener("dragenter", () => {
+      if (!rowDiv.classList.contains("dragging")) {
+        rowDiv.classList.add("drag-over");
       }
     });
 
-    const inputEl = rowDiv.querySelector("input");
+    rowDiv.addEventListener("dragleave", () => {
+      rowDiv.classList.remove("drag-over");
+    });
+
+    rowDiv.addEventListener("drop", (e) => {
+      e.preventDefault();
+      rowDiv.classList.remove("drag-over");
+      
+      const fromIndex = parseInt(e.dataTransfer.getData("text/plain"), 10);
+      const toIndex = idx;
+      
+      if (isNaN(fromIndex) || fromIndex === toIndex) return;
+
+      const tempOrder = [...state.menuOrder];
+      const draggedKey = tempOrder[fromIndex];
+      tempOrder.splice(fromIndex, 1);
+      tempOrder.splice(toIndex, 0, draggedKey);
+      
+      state.menuOrder = tempOrder;
+      saveStateToStorage();
+      
+      renderSidebarMenu();
+      renderSidebarCustomizationSettings();
+      
+      showToast("Sidebar menu order updated.", "success");
+      
+      if (window.supabaseClient) {
+        dbSaveSettings("menuOrder", state.menuOrder);
+      }
+    });
+
+    // Icon Picker Event Listeners
+    const pickerBtn = rowDiv.querySelector(".btn-icon-picker");
+    const pickerMenu = rowDiv.querySelector(".icon-picker-menu");
+    
+    pickerBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      document.querySelectorAll(".icon-picker-menu").forEach(menu => {
+        if (menu !== pickerMenu) menu.classList.remove("active");
+      });
+      pickerMenu.classList.toggle("active");
+    });
+
+    const iconOptions = rowDiv.querySelectorAll(".icon-option");
+    iconOptions.forEach(opt => {
+      opt.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const newIcon = opt.getAttribute("data-icon");
+        state.menuIcons[key] = newIcon;
+        saveStateToStorage();
+
+        // Update selected class
+        iconOptions.forEach(o => o.classList.remove("selected"));
+        opt.classList.add("selected");
+
+        // Update picker button icon
+        const btnIcon = pickerBtn.querySelector(".fa-solid:first-child");
+        if (btnIcon) {
+          btnIcon.className = `fa-solid ${newIcon}`;
+        }
+
+        // Update sidebar icon
+        const sidebarIcon = document.getElementById(`sidebar-icon-${key}`);
+        if (sidebarIcon) {
+          sidebarIcon.className = `fa-solid ${newIcon}`;
+        }
+
+        // Close menu
+        pickerMenu.classList.remove("active");
+
+        showToast(`Updated icon for "${state.menuTitles[key] || m.label}".`, "success");
+        if (window.supabaseClient) {
+          dbSaveCustomization(key, state.menuTitles[key] || m.label, newIcon);
+        }
+      });
+    });
+
+    // Input element event listener (title change)
+    const inputEl = rowDiv.querySelector("input.menu-title-input");
     inputEl.addEventListener("input", (e) => {
       const newTitle = e.target.value.trim() || m.label;
-      state.menuTitles[m.key] = newTitle;
+      state.menuTitles[key] = newTitle;
       saveStateToStorage();
 
-      const sidebarText = document.getElementById(`sidebar-text-${m.key}`);
+      const sidebarText = document.getElementById(`sidebar-text-${key}`);
       if (sidebarText) {
         sidebarText.textContent = newTitle;
       }
       if (window.supabaseClient) {
-        dbSaveCustomization(m.key, newTitle, state.menuIcons[m.key] || "fa-gear");
+        dbSaveCustomization(key, newTitle, state.menuIcons[key] || "fa-gear");
       }
     });
+
+    // Visibility toggle event listener
+    const toggleEl = rowDiv.querySelector(".menu-visibility-toggle");
+    if (toggleEl) {
+      toggleEl.addEventListener("change", (e) => {
+        const isVisible = e.target.checked;
+        state.menuVisibility[key] = isVisible;
+        
+        // Sync legacy showSalesLedger if the menu is 'sales'
+        if (key === "sales") {
+          state.showSalesLedger = isVisible;
+          applySalesLedgerVisibility(isVisible);
+          if (window.supabaseClient) {
+            dbSaveSettings("showSalesLedger", isVisible);
+          }
+        }
+        
+        saveStateToStorage();
+        renderSidebarMenu();
+        
+        showToast(`${isVisible ? 'Shown' : 'Hidden'} "${state.menuTitles[key] || m.label}" in the sidebar.`, "success");
+        if (window.supabaseClient) {
+          dbSaveSettings("menuVisibility", state.menuVisibility);
+        }
+      });
+    }
+
+    // Up / Down Button Event Listeners
+    const btnUp = rowDiv.querySelector(".btn-reorder-up");
+    if (btnUp) {
+      btnUp.addEventListener("click", () => {
+        if (idx === 0) return;
+        const tempOrder = [...state.menuOrder];
+        const temp = tempOrder[idx];
+        tempOrder[idx] = tempOrder[idx - 1];
+        tempOrder[idx - 1] = temp;
+        
+        state.menuOrder = tempOrder;
+        saveStateToStorage();
+        
+        renderSidebarMenu();
+        renderSidebarCustomizationSettings();
+        
+        showToast("Moved menu item up.", "success");
+        if (window.supabaseClient) {
+          dbSaveSettings("menuOrder", state.menuOrder);
+        }
+      });
+    }
+
+    const btnDown = rowDiv.querySelector(".btn-reorder-down");
+    if (btnDown) {
+      btnDown.addEventListener("click", () => {
+        if (idx === state.menuOrder.length - 1) return;
+        const tempOrder = [...state.menuOrder];
+        const temp = tempOrder[idx];
+        tempOrder[idx] = tempOrder[idx + 1];
+        tempOrder[idx + 1] = temp;
+        
+        state.menuOrder = tempOrder;
+        saveStateToStorage();
+        
+        renderSidebarMenu();
+        renderSidebarCustomizationSettings();
+        
+        showToast("Moved menu item down.", "success");
+        if (window.supabaseClient) {
+          dbSaveSettings("menuOrder", state.menuOrder);
+        }
+      });
+    }
 
     listContainer.appendChild(rowDiv);
   });
@@ -2242,18 +2616,87 @@ function renderMenuIconsSettings() {
 }
 
 // ==========================================================================
-// NAVIGATION & GENERAL ROUTING
+// DYNAMIC SIDEBAR MENU
 // ==========================================================================
-function initNavigation() {
+function renderSidebarMenu() {
+  const menuList = document.getElementById("sidebar-menu-list");
+  if (!menuList) return;
+
+  const currentHash = window.location.hash || "#dashboard";
+  const activeKey = currentHash.replace("#", "");
+
+  // If the active menu is hidden, redirect to the first visible one
+  if (state.menuVisibility[activeKey] === false) {
+    const firstVisible = state.menuOrder.find(k => state.menuVisibility[k] !== false);
+    if (firstVisible) {
+      window.location.hash = `#${firstVisible}`;
+      setTimeout(() => {
+        const link = document.getElementById(`nav-${firstVisible}`);
+        if (link) link.click();
+      }, 0);
+      return;
+    }
+  }
+
+  let html = "";
+
+  state.menuOrder.forEach(key => {
+    if (state.menuVisibility[key] === false) return;
+
+    const iconClass = state.menuIcons[key] || "fa-gear";
+    const titleText = state.menuTitles[key] || key;
+    const isActive = (currentHash === `#${key}`);
+    const activeClass = isActive ? "active" : "";
+
+    html += `
+      <li>
+        <a href="#${key}" class="nav-link ${activeClass}" id="nav-${key}">
+          <i class="fa-solid ${iconClass}" id="sidebar-icon-${key}"></i>
+          <span id="sidebar-text-${key}">${titleText}</span>
+        </a>
+      </li>
+    `;
+  });
+
+  // Append Collapse Menu at the end
+  const isCollapsed = state.sidebarCollapsed;
+  const collapseTitle = isCollapsed ? "Expand Sidebar" : "Collapse Sidebar";
+  const collapseIcon = isCollapsed ? "fa-circle-chevron-right" : "fa-circle-chevron-left";
+  html += `
+    <li>
+      <a href="#" class="nav-link" id="nav-collapse-sidebar" title="${collapseTitle}">
+        <i class="fa-solid ${collapseIcon}" id="collapse-icon"></i>
+        <span>Collapse Menu</span>
+      </a>
+    </li>
+  `;
+
+  menuList.innerHTML = html;
+  bindSidebarEvents();
+  
+  // Re-apply visibility settings
+  if (typeof applySalesLedgerVisibility === "function") {
+    applySalesLedgerVisibility(state.showSalesLedger);
+  }
+  if (typeof applySidebarState === "function") {
+    applySidebarState(state.sidebarCollapsed);
+  }
+}
+
+function bindSidebarEvents() {
   const navLinks = document.querySelectorAll(".nav-link");
   const views = document.querySelectorAll(".content-view");
   const sidebar = document.getElementById("app-sidebar");
-  const sidebarToggle = document.getElementById("sidebar-toggle");
 
-  // Router based on nav links
   navLinks.forEach(link => {
     link.addEventListener("click", (e) => {
-      if (link.id === "nav-collapse-sidebar") return;
+      if (link.id === "nav-collapse-sidebar") {
+        e.preventDefault();
+        state.sidebarCollapsed = !state.sidebarCollapsed;
+        saveStateToStorage();
+        applySidebarState(state.sidebarCollapsed);
+        return;
+      }
       e.preventDefault();
       
       const targetHash = link.getAttribute("href");
@@ -2271,9 +2714,12 @@ function initNavigation() {
       });
 
       // Close mobile sidebar on link click
-      if (sidebar.classList.contains("active")) {
+      if (sidebar && sidebar.classList.contains("active")) {
         sidebar.classList.remove("active");
       }
+
+      // Update hash in URL
+      window.location.hash = targetHash;
 
       // Trigger target route rendering sequence
       try {
@@ -2293,17 +2739,33 @@ function initNavigation() {
           renderRecycleBin();
         } else if (targetHash === "#dashboard") {
           updateUI();
+        } else if (targetHash === "#settings") {
+          renderSidebarCustomizationSettings();
         }
       } catch (err) {
         console.error("Error rendering view on navigation:", err);
       }
     });
   });
+}
+
+// ==========================================================================
+// NAVIGATION & GENERAL ROUTING
+// ==========================================================================
+function initNavigation() {
+  // Render sidebar menu dynamically on launch
+  renderSidebarMenu();
+
+  // Query elements now that they are rendered
+  const sidebar = document.getElementById("app-sidebar");
+  const sidebarToggle = document.getElementById("sidebar-toggle");
 
   // Mobile sidebar toggle
-  sidebarToggle.addEventListener("click", () => {
-    sidebar.classList.toggle("active");
-  });
+  if (sidebarToggle && sidebar) {
+    sidebarToggle.addEventListener("click", () => {
+      sidebar.classList.toggle("active");
+    });
+  }
 
   // Handle date filters on Dashboard
   const periodButtons = document.querySelectorAll(".date-filter-group:not(#sup-date-filter-group) button");
@@ -2350,6 +2812,7 @@ function initNavigation() {
 
   // Trigger initial routing check based on URL hash if present
   try {
+    const navLinks = document.querySelectorAll(".nav-link");
     const currentHash = window.location.hash || "#dashboard";
     const matchedLink = Array.from(navLinks).find(l => l.getAttribute("href") === currentHash);
     if (matchedLink) {
@@ -3230,23 +3693,15 @@ function initEventHandlers() {
     });
   }
 
-  // Sidebar collapse toggle click handler
-  const collapseBtn = document.getElementById("nav-collapse-sidebar");
-  if (collapseBtn) {
-    collapseBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      state.sidebarCollapsed = !state.sidebarCollapsed;
-      saveStateToStorage();
-      applySidebarState(state.sidebarCollapsed);
-    });
-  }
+  // Sidebar collapse is now dynamically handled inside bindSidebarEvents()
 
   // Metrics Customizer Event Listeners
   const btnToggleMetrics = document.getElementById("btn-toggle-metrics-panel");
   const metricsPanel = document.getElementById("metrics-customize-panel");
   
   if (btnToggleMetrics && metricsPanel) {
-    btnToggleMetrics.addEventListener("click", () => {
+    btnToggleMetrics.addEventListener("click", (e) => {
+      e.stopPropagation();
       metricsPanel.classList.toggle("active");
     });
     
@@ -3280,7 +3735,8 @@ function initEventHandlers() {
   const supMetricsPanel = document.getElementById("sup-metrics-customize-panel");
   
   if (btnToggleSupMetrics && supMetricsPanel) {
-    btnToggleSupMetrics.addEventListener("click", () => {
+    btnToggleSupMetrics.addEventListener("click", (e) => {
+      e.stopPropagation();
       supMetricsPanel.classList.toggle("active");
     });
     
@@ -3314,7 +3770,8 @@ function initEventHandlers() {
   const figuresPanel = document.getElementById("figures-customize-panel");
   
   if (btnToggleFigures && figuresPanel) {
-    btnToggleFigures.addEventListener("click", () => {
+    btnToggleFigures.addEventListener("click", (e) => {
+      e.stopPropagation();
       figuresPanel.classList.toggle("active");
     });
     
@@ -3326,17 +3783,22 @@ function initEventHandlers() {
       }
     });
     
-    // Bind figure checkboxes
-    const figureKeys = ["salesProfit", "platformSplit", "costRevenue", "supplierSplit", "topBestsellers"];
+    // Bind figure checkboxes (synced with widget settings)
+    const figureKeys = ["salesProfit", "platformSplit", "costRevenue", "supplierSplit", "topBestsellers", "dailyProfitMonth"];
     figureKeys.forEach(key => {
       const checkbox = document.getElementById(`toggle-figure-${key}`);
       if (checkbox) {
         checkbox.addEventListener("change", (e) => {
           state.visibleFigures[key] = e.target.checked;
+          if (state.widgetSettings && state.widgetSettings[key]) {
+            state.widgetSettings[key].visible = e.target.checked;
+          }
           saveStateToStorage();
+          applyWidgetVisibility();
           updateUI(); // Re-render charts and apply layout resizing safely
           if (window.supabaseClient) {
             dbSaveSettings("visibleFigures", state.visibleFigures);
+            dbSaveSettings("widgetSettings", state.widgetSettings);
           }
         });
       }
@@ -3630,6 +4092,35 @@ function initEventHandlers() {
   if (typeof initCSVImportWizard === "function") {
     initCSVImportWizard();
   }
+
+  // Dashboard tabs click listener
+  document.querySelectorAll(".dashboard-tab-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      const tabName = btn.getAttribute("data-tab");
+      
+      // Update active tab button style
+      document.querySelectorAll(".dashboard-tab-btn").forEach(b => {
+        b.classList.remove("active");
+        b.style.color = "var(--text-muted)";
+        b.style.borderBottomColor = "transparent";
+      });
+      btn.classList.add("active");
+      btn.style.color = "var(--text-main)";
+      btn.style.borderBottomColor = "var(--accent-cyan)";
+      
+      // Update active panel visibility
+      const panels = document.querySelectorAll(".dashboard-tab-content .tab-panel");
+      panels.forEach(panel => {
+        if (panel.id === `tab-panel-${tabName}`) {
+          panel.style.display = "block";
+          panel.classList.add("active");
+        } else {
+          panel.style.display = "none";
+          panel.classList.remove("active");
+        }
+      });
+    });
+  });
 }
 
 // Update the floating bulk actions bar visibility and selection counters
@@ -5022,7 +5513,9 @@ function updateUI() {
   renderPeriodSummary(dbFilteredSales, dbFilteredInventory);
 
   // 2b. Apply figures visibility first so that shown canvases have layout dimensions
+  renderDashboardCardsOrder();
   applyFiguresVisibility();
+  applyDashboardSpans();
 
   // 3. Render Charts
   renderSalesTrendChart(dbFilteredSales);
@@ -5030,6 +5523,12 @@ function updateUI() {
   renderCostRevenueChart(dbFilteredSales);
   renderSupplierSplitChart(dbFilteredInventory);
   renderTopBestsellersChart(dbFilteredSales);
+  renderDailyProfitMonthChart(dbFilteredSales);
+  renderStockSpeedChart(dbFilteredInventory, dbFilteredSales);
+  renderSalesFeedWidget(dbFilteredSales);
+  renderFinanceTrackerWidget(dbFilteredSales);
+  renderMarkupAnalysisChart(dbFilteredInventory);
+  renderStockTurnoverChart(dbFilteredInventory, dbFilteredSales);
 
   // 4. Render Tables
   renderInventoryTable(filteredInventory);
@@ -5080,6 +5579,10 @@ function updateUI() {
 
   // 11. Render admin users
   renderAdminUsers();
+
+  // 12. Sync and Render operational expense categories & ledger
+  populateCategoryDropdown();
+  renderPayoutsLedger();
 }
 
 function renderSuppliers() {
@@ -7799,95 +8302,7 @@ function renderDashboardDetails(filteredSalesList, filteredInventoryList) {
     });
   }
 
-  // Stock summary lists
-  const stockSummaryList = document.getElementById("inventory-summary-list");
-  stockSummaryList.innerHTML = "";
 
-  // Low Stock Alerts - count active stock for games
-  const gameStockCounts = {};
-  filteredInventoryList.forEach(item => {
-    if (item.status === "Available" || item.status === "Reserved") {
-      const title = item.title.trim();
-      gameStockCounts[title] = (gameStockCounts[title] || 0) + 1;
-    }
-  });
-
-  const lowStockGames = [];
-  Object.keys(gameStockCounts).forEach(title => {
-    const count = gameStockCounts[title];
-    if (count <= state.lowStockThreshold) {
-      lowStockGames.push({ title, count });
-    }
-  });
-
-  // Sort lowest stock first, then alphabetically
-  lowStockGames.sort((a, b) => {
-    if (a.count !== b.count) {
-      return a.count - b.count;
-    }
-    return a.title.localeCompare(b.title);
-  });
-
-  // Render Low Stock alerts first
-  lowStockGames.forEach(game => {
-    const alertDiv = document.createElement("div");
-    alertDiv.className = "low-stock-alert-item";
-    alertDiv.innerHTML = `
-      <div class="alert-left">
-        <i class="fa-solid fa-triangle-exclamation"></i>
-        <div>
-          <h5>${game.title}</h5>
-          <span>Low Stock Alert</span>
-        </div>
-      </div>
-      <div class="alert-badge">${game.count} left</div>
-    `;
-    stockSummaryList.appendChild(alertDiv);
-  });
-
-  // Group inventory by platform
-  const platformCounts = {};
-  filteredInventoryList.forEach(item => {
-    if (item.status !== "Sold") {
-      platformCounts[item.platform] = (platformCounts[item.platform] || 0) + 1;
-    }
-  });
-
-  const platformKeys = Object.keys(platformCounts);
-  if (platformKeys.length === 0) {
-    stockSummaryList.innerHTML = `<p style="text-align: center; color: var(--text-muted); padding: 20px 0;">All keys sold! Stock is empty.</p>`;
-  } else {
-    // Sort platforms by count descending
-    platformKeys.sort((a,b) => platformCounts[b] - platformCounts[a]);
-    
-    platformKeys.forEach(platform => {
-      const count = platformCounts[platform];
-      const div = document.createElement("div");
-      div.className = "inventory-summary-item";
-
-      // Assign icon badge classes
-      let iconClass = "fa-solid fa-steam";
-      let pClass = "Steam";
-      if (platform.includes("PlayStation")) { iconClass = "fa-brands fa-playstation"; pClass = "PSN"; }
-      if (platform.includes("Xbox")) { iconClass = "fa-brands fa-xbox"; pClass = "Xbox"; }
-      if (platform.includes("Nintendo")) { iconClass = "fa-solid fa-gamepad"; pClass = "Nintendo"; }
-
-      div.innerHTML = `
-        <div class="summary-item-left">
-          <div class="summary-platform-badge ${pClass}">
-            <i class="${iconClass}"></i>
-          </div>
-          <div class="summary-details">
-            <h5>${platform} Keys</h5>
-            <span>Digital activation codes</span>
-          </div>
-        </div>
-        <div class="summary-item-right">
-          <span class="summary-count">${count} in stock</span>
-        </div>
-      `;
-    });
-  }
 
   // Inventory Aging Summary calculation
   const agingStats = {
@@ -7948,9 +8363,11 @@ function renderSalesTrendChart(filteredSalesList) {
     }
   }
 
+  const wSales = getWidgetFilteredSales("salesProfit", filteredSalesList);
+
   // Group sales by Date
   const salesByDate = {};
-  filteredSalesList.forEach(sale => {
+  wSales.forEach(sale => {
     const dateStr = sale.saleDate;
     if (!salesByDate[dateStr]) {
       salesByDate[dateStr] = { revenue: 0, profit: 0 };
@@ -7987,8 +8404,9 @@ function renderSalesTrendChart(filteredSalesList) {
   const accentTeal = rootStyle.getPropertyValue('--accent-teal').trim() || 'hsl(175, 90%, 48%)';
   const accentTealGlow = rootStyle.getPropertyValue('--accent-teal-glow').trim() || 'hsla(175, 90%, 48%, 0.1)';
 
+  const wType = (state.widgetSettings && state.widgetSettings.salesProfit && state.widgetSettings.salesProfit.chartType) || 'line';
   salesProfitChartInstance = new Chart(ctx, {
-    type: 'line',
+    type: wType,
     data: {
       labels: labels,
       datasets: [
@@ -8037,7 +8455,158 @@ function renderSalesTrendChart(filteredSalesList) {
       scales: {
         x: {
           grid: { color: borderColor },
+          ticks: { 
+            color: textSecondaryColor,
+            autoSkip: true,
+            maxTicksLimit: 8
+          }
+        },
+        y: {
+          grid: { color: borderColor },
           ticks: { color: textSecondaryColor }
+        }
+      }
+    }
+  });
+}
+
+function renderDailyProfitMonthChart(filteredSalesList) {
+  if (typeof Chart === 'undefined') {
+    console.warn("Chart.js is not loaded. Skipping daily profit month chart rendering.");
+    return;
+  }
+  const canvas = document.getElementById("dailyProfitMonthChart");
+  if (!canvas) {
+    console.warn("dailyProfitMonthChart canvas not found. Skipping chart rendering.");
+    return;
+  }
+  const ctx = canvas.getContext("2d");
+
+  // Destroy previous instance to avoid hover flickering errors
+  if (dailyProfitMonthChartInstance) {
+    try {
+      dailyProfitMonthChartInstance.destroy();
+    } catch (e) {
+      console.error("Error destroying dailyProfitMonthChartInstance:", e);
+    }
+  }
+
+  const wSales = getWidgetFilteredSales("dailyProfitMonth", filteredSalesList);
+
+  // Determine current/active month and year
+  let year = new Date().getFullYear();
+  let month = new Date().getMonth(); // 0-indexed
+
+  if (wSales.length > 0) {
+    // Find the month of the most recent sale in the list
+    let mostRecentDate = new Date(0);
+    wSales.forEach(s => {
+      if (s.saleDate) {
+        const d = new Date(s.saleDate);
+        if (d > mostRecentDate) mostRecentDate = d;
+      }
+    });
+    if (mostRecentDate.getTime() > 0) {
+      year = mostRecentDate.getFullYear();
+      month = mostRecentDate.getMonth();
+    }
+  }
+
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  const monthName = months[month];
+
+  // Update card title
+  const titleEl = document.querySelector("#card-chart-dailyProfitMonth h4");
+  if (titleEl) {
+    titleEl.textContent = `Daily Profit — ${monthName} ${year}`;
+  }
+
+  // Calculate days in the month
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const labels = [];
+  const dailyProfitMap = {};
+  for (let i = 1; i <= daysInMonth; i++) {
+    labels.push(`${i}`);
+    dailyProfitMap[i] = 0;
+  }
+
+  // Aggregate profits timezone-safely using string splitting
+  wSales.forEach(sale => {
+    if (!sale.saleDate) return;
+    const parts = sale.saleDate.split("-");
+    if (parts.length === 3) {
+      const sYear = parseInt(parts[0], 10);
+      const sMonth = parseInt(parts[1], 10) - 1; // Convert 1-12 to 0-11
+      const sDay = parseInt(parts[2], 10);
+      
+      if (sYear === year && sMonth === month) {
+        dailyProfitMap[sDay] += sale.profit;
+      }
+    }
+  });
+
+  const profitData = [];
+  for (let i = 1; i <= daysInMonth; i++) {
+    profitData.push(dailyProfitMap[i]);
+  }
+
+  const rootStyle = getComputedStyle(document.documentElement);
+  const textSecondaryColor = rootStyle.getPropertyValue('--text-secondary').trim() || 'hsl(220, 12%, 65%)';
+  const borderColor = rootStyle.getPropertyValue('--border-color').trim() || 'hsla(224, 20%, 25%, 0.15)';
+  const tooltipBg = rootStyle.getPropertyValue('--bg-sidebar').trim() || 'hsl(224, 25%, 10%)';
+
+  const accentTeal = rootStyle.getPropertyValue('--accent-teal').trim() || 'hsl(175, 90%, 48%)';
+  const accentTealGlow = rootStyle.getPropertyValue('--accent-teal-glow').trim() || 'hsla(175, 90%, 48%, 0.2)';
+
+  const wType = (state.widgetSettings && state.widgetSettings.dailyProfitMonth && state.widgetSettings.dailyProfitMonth.chartType) || 'bar';
+  dailyProfitMonthChartInstance = new Chart(ctx, {
+    type: wType,
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: `Daily Profit (${state.currency === 'USD' ? '$' : '€'})`,
+          data: profitData,
+          backgroundColor: accentTealGlow,
+          borderColor: accentTeal,
+          borderWidth: 1.5,
+          borderRadius: 4,
+          hoverBackgroundColor: accentTeal
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          backgroundColor: tooltipBg,
+          titleColor: state.theme !== "light" ? "#fff" : "#000",
+          bodyColor: state.theme !== "light" ? "#fff" : "#000",
+          borderColor: borderColor,
+          borderWidth: 1,
+          callbacks: {
+            title: function(context) {
+              return `${monthName} ${context[0].label}, ${year}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { 
+            color: textSecondaryColor,
+            autoSkip: true,
+            maxTicksLimit: 8
+          }
         },
         y: {
           grid: { color: borderColor },
@@ -8068,9 +8637,11 @@ function renderPlatformSplitChart(filteredSalesList) {
     }
   }
 
+  const wSales = getWidgetFilteredSales("platformSplit", filteredSalesList);
+
   // Count sales per selling platform
   const platformCounts = {};
-  filteredSalesList.forEach(sale => {
+  wSales.forEach(sale => {
     const platform = sale.platformSold;
     platformCounts[platform] = (platformCounts[platform] || 0) + 1;
   });
@@ -8106,8 +8677,39 @@ function renderPlatformSplitChart(filteredSalesList) {
     accentDanger
   ];
 
+  const wType = (state.widgetSettings && state.widgetSettings.platformSplit && state.widgetSettings.platformSplit.chartType) || 'doughnut';
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          color: textSecondaryColor,
+          font: { family: 'Inter', size: 10 },
+          boxWidth: 12
+        }
+      },
+      tooltip: {
+        backgroundColor: tooltipBg,
+        titleColor: state.theme !== "light" ? "#fff" : "#000",
+        bodyColor: state.theme !== "light" ? "#fff" : "#000",
+        borderColor: borderColor,
+        borderWidth: 1
+      }
+    }
+  };
+
+  if (wType === 'bar') {
+    options.scales = {
+      x: { grid: { display: false }, ticks: { color: textSecondaryColor } },
+      y: { grid: { color: borderColor }, ticks: { color: textSecondaryColor, beginAtZero: true } }
+    };
+  }
+
   platformSplitChartInstance = new Chart(ctx, {
-    type: 'doughnut',
+    type: wType,
     data: {
       labels: labels,
       datasets: [{
@@ -8118,27 +8720,7 @@ function renderPlatformSplitChart(filteredSalesList) {
         hoverOffset: 4
       }]
     },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: {
-            color: textSecondaryColor,
-            font: { family: 'Inter', size: 10 },
-            boxWidth: 12
-          }
-        },
-        tooltip: {
-          backgroundColor: tooltipBg,
-          titleColor: state.theme !== "light" ? "#fff" : "#000",
-          bodyColor: state.theme !== "light" ? "#fff" : "#000",
-          borderColor: borderColor,
-          borderWidth: 1
-        }
-      }
-    }
+    options: options
   });
 }
 
@@ -8163,9 +8745,11 @@ function renderCostRevenueChart(filteredSalesList) {
     }
   }
 
+  const wSales = getWidgetFilteredSales("costRevenue", filteredSalesList);
+
   // Group sales by Date
   const salesByDate = {};
-  filteredSalesList.forEach(sale => {
+  wSales.forEach(sale => {
     const dateStr = sale.saleDate;
     if (!salesByDate[dateStr]) {
       salesByDate[dateStr] = { revenue: 0, cost: 0 };
@@ -8197,8 +8781,9 @@ function renderCostRevenueChart(filteredSalesList) {
   const accentPink = rootStyle.getPropertyValue('--accent-pink').trim() || 'hsl(330, 95%, 60%)';
   const accentCyan = rootStyle.getPropertyValue('--accent-cyan').trim() || 'hsl(195, 90%, 50%)';
 
+  const wType = (state.widgetSettings && state.widgetSettings.costRevenue && state.widgetSettings.costRevenue.chartType) || 'bar';
   costRevenueChartInstance = new Chart(ctx, {
-    type: 'bar',
+    type: wType,
     data: {
       labels: labels,
       datasets: [
@@ -8222,7 +8807,12 @@ function renderCostRevenueChart(filteredSalesList) {
       scales: {
         x: {
           grid: { display: false },
-          ticks: { color: textSecondaryColor, font: { family: 'Inter', size: 10 } }
+          ticks: { 
+            color: textSecondaryColor, 
+            font: { family: 'Inter', size: 10 },
+            autoSkip: true,
+            maxTicksLimit: 8
+          }
         },
         y: {
           grid: { color: borderColor },
@@ -8267,9 +8857,11 @@ function renderSupplierSplitChart(filteredInventoryList) {
     }
   }
 
+  const wInventory = getWidgetFilteredInventory("supplierSplit", filteredInventoryList);
+
   // Count unsold stock per supplier
   const supplierCounts = {};
-  filteredInventoryList.forEach(item => {
+  wInventory.forEach(item => {
     if (item.status !== "Sold") {
       const supplier = item.source || "Unknown";
       supplierCounts[supplier] = (supplierCounts[supplier] || 0) + 1;
@@ -8306,8 +8898,39 @@ function renderSupplierSplitChart(filteredInventoryList) {
     accentDanger
   ];
 
+  const wType = (state.widgetSettings && state.widgetSettings.supplierSplit && state.widgetSettings.supplierSplit.chartType) || 'doughnut';
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          color: textSecondaryColor,
+          font: { family: 'Inter', size: 10 },
+          boxWidth: 12
+        }
+      },
+      tooltip: {
+        backgroundColor: tooltipBg,
+        titleColor: state.themeMode !== "light" ? "#fff" : "#000",
+        bodyColor: state.themeMode !== "light" ? "#fff" : "#000",
+        borderColor: borderColor,
+        borderWidth: 1
+      }
+    }
+  };
+
+  if (wType === 'bar') {
+    options.scales = {
+      x: { grid: { display: false }, ticks: { color: textSecondaryColor } },
+      y: { grid: { color: borderColor }, ticks: { color: textSecondaryColor, beginAtZero: true } }
+    };
+  }
+
   supplierSplitChartInstance = new Chart(ctx, {
-    type: 'doughnut',
+    type: wType,
     data: {
       labels: labels,
       datasets: [{
@@ -8318,27 +8941,7 @@ function renderSupplierSplitChart(filteredInventoryList) {
         hoverOffset: 4
       }]
     },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: {
-            color: textSecondaryColor,
-            font: { family: 'Inter', size: 10 },
-            boxWidth: 12
-          }
-        },
-        tooltip: {
-          backgroundColor: tooltipBg,
-          titleColor: state.themeMode !== "light" ? "#fff" : "#000",
-          bodyColor: state.themeMode !== "light" ? "#fff" : "#000",
-          borderColor: borderColor,
-          borderWidth: 1
-        }
-      }
-    }
+    options: options
   });
 }
 
@@ -8351,8 +8954,11 @@ function renderTopBestsellersChart(filteredSalesList) {
   }
 
   // Get current configurations
-  const metric = state.bestsellersMetric || "profit";
-  const limit = state.bestsellersLimit || 5;
+  const cfg = state.widgetSettings ? state.widgetSettings.topBestsellers : null;
+  const metric = cfg ? cfg.metric : (state.bestsellersMetric || "profit");
+  const limit = cfg ? cfg.limit : (state.bestsellersLimit || 5);
+
+  const wSales = getWidgetFilteredSales("topBestsellers", filteredSalesList);
 
   // Build lookup maps for images from inventory
   const imgUrlByTitle = {};
@@ -8368,7 +8974,7 @@ function renderTopBestsellersChart(filteredSalesList) {
 
   // Calculate metrics per game title
   const gameMetrics = {};
-  filteredSalesList.forEach(sale => {
+  wSales.forEach(sale => {
     const title = sale.title || "Unknown Game";
     if (!gameMetrics[title]) {
       gameMetrics[title] = { profit: 0, revenue: 0, sales: 0, imageUrl: null };
@@ -8488,6 +9094,545 @@ function renderTopBestsellersChart(filteredSalesList) {
   });
 
   container.innerHTML = html;
+}
+
+function renderStockSpeedChart(filteredInventoryList, filteredSalesList) {
+  if (typeof Chart === 'undefined') return;
+  const canvas = document.getElementById("stockSpeedChart");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+
+  if (stockSpeedChartInstance) {
+    try { stockSpeedChartInstance.destroy(); } catch (e) { console.error(e); }
+  }
+
+  const wSales = getWidgetFilteredSales("stockSpeed", filteredSalesList);
+
+  // Group sold items by how fast they sold
+  const invMap = new Map();
+  state.inventory.forEach(item => {
+    if (item.id) invMap.set(item.id, item.purchaseDate);
+  });
+
+  let fast = 0; // < 7 days
+  let moderate = 0; // 7-30 days
+  let slow = 0; // 30-90 days
+  let stale = 0; // 90+ days
+
+  wSales.forEach(sale => {
+    const purchaseDateStr = invMap.get(sale.inventoryId);
+    if (purchaseDateStr && sale.saleDate) {
+      const pDate = new Date(purchaseDateStr);
+      const sDate = new Date(sale.saleDate);
+      pDate.setHours(0,0,0,0);
+      sDate.setHours(0,0,0,0);
+      const diffTime = Math.max(0, sDate - pDate);
+      const days = Math.round(diffTime / (1000 * 60 * 60 * 24));
+      if (days < 7) fast++;
+      else if (days <= 30) moderate++;
+      else if (days <= 90) slow++;
+      else stale++;
+    }
+  });
+
+  const labels = ["Fast (< 7 days)", "Moderate (7-30 days)", "Slow (30-90 days)", "Stale (90+ days)"];
+  const data = [fast, moderate, slow, stale];
+
+  const rootStyle = getComputedStyle(document.documentElement);
+  const textSecondaryColor = rootStyle.getPropertyValue('--text-secondary').trim() || 'hsl(220, 12%, 65%)';
+  const bgCardColor = rootStyle.getPropertyValue('--bg-card').trim() || 'hsl(224, 22%, 12%)';
+  const borderColor = rootStyle.getPropertyValue('--border-color').trim() || 'hsla(224, 20%, 30%, 0.5)';
+  const tooltipBg = rootStyle.getPropertyValue('--bg-sidebar').trim() || 'hsl(224, 25%, 10%)';
+
+  const accentTeal = rootStyle.getPropertyValue('--accent-teal').trim() || 'hsl(175, 90%, 48%)';
+  const accentCyan = rootStyle.getPropertyValue('--accent-cyan').trim() || 'hsl(195, 90%, 50%)';
+  const accentWarning = rootStyle.getPropertyValue('--accent-warning').trim() || 'hsl(40, 95%, 55%)';
+  const accentDanger = rootStyle.getPropertyValue('--accent-danger').trim() || 'hsl(355, 85%, 55%)';
+
+  const backgroundColors = [accentTeal, accentCyan, accentWarning, accentDanger];
+
+  const wType = (state.widgetSettings && state.widgetSettings.stockSpeed && state.widgetSettings.stockSpeed.chartType) || 'doughnut';
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          color: textSecondaryColor,
+          font: { family: 'Inter', size: 10 },
+          boxWidth: 12
+        }
+      },
+      tooltip: {
+        backgroundColor: tooltipBg,
+        titleColor: state.themeMode !== "light" ? "#fff" : "#000",
+        bodyColor: state.themeMode !== "light" ? "#fff" : "#000",
+        borderColor: borderColor,
+        borderWidth: 1
+      }
+    }
+  };
+
+  if (wType === 'bar') {
+    options.scales = {
+      x: { grid: { display: false }, ticks: { color: textSecondaryColor } },
+      y: { grid: { color: borderColor }, ticks: { color: textSecondaryColor, beginAtZero: true } }
+    };
+  }
+
+  stockSpeedChartInstance = new Chart(ctx, {
+    type: wType,
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data,
+        backgroundColor: backgroundColors,
+        borderWidth: 2,
+        borderColor: bgCardColor,
+        hoverOffset: 4
+      }]
+    },
+    options: options
+  });
+}
+
+function renderSalesFeedWidget(filteredSalesList) {
+  const container = document.getElementById("sales-feed-list");
+  if (!container) return;
+
+  const cfg = state.widgetSettings ? state.widgetSettings.salesFeed : null;
+  const limit = cfg ? parseInt(cfg.limit) : 5;
+  const wSales = getWidgetFilteredSales("salesFeed", filteredSalesList);
+
+  const sortedSales = [...wSales].sort((a, b) => new Date(b.saleDate || 0) - new Date(a.saleDate || 0)).slice(0, limit);
+
+  if (sortedSales.length === 0) {
+    container.innerHTML = `<div class="text-muted text-center" style="padding: 24px;">No recent sales transactions.</div>`;
+    return;
+  }
+
+  const imgUrlByTitle = {};
+  state.inventory.forEach(item => {
+    if (item.imageUrl && item.title) {
+      imgUrlByTitle[item.title.trim().toLowerCase()] = item.imageUrl;
+    }
+  });
+
+  let html = '';
+  sortedSales.forEach(sale => {
+    const title = sale.title || "Unknown Game";
+    const imageUrl = sale.imageUrl || imgUrlByTitle[title.trim().toLowerCase()];
+    const profitStr = formatCurrency(sale.profit);
+    const profitClass = sale.profit >= 0 ? "text-success-neon" : "text-danger-soft";
+    
+    const initials = title.split(" ").map(w => w[0]).join("").slice(0, 3).toUpperCase();
+    const thumbHTML = imageUrl
+      ? `<img src="${escapeHTML(imageUrl)}" class="sales-feed-thumb" alt="${escapeHTML(title)}">`
+      : `<div class="sales-feed-thumb-placeholder">${escapeHTML(initials)}</div>`;
+
+    const formattedDate = sale.saleDate ? new Date(sale.saleDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : "-";
+
+    html += `
+      <div class="sales-feed-item">
+        ${thumbHTML}
+        <div class="sales-feed-info">
+          <span class="sales-feed-title" title="${escapeHTML(title)}">${escapeHTML(title)}</span>
+          <div class="sales-feed-meta">
+            <span class="sales-feed-platform"><i class="fa-solid fa-gamepad"></i> ${escapeHTML(sale.platformSold || "Store")}</span>
+            <span>•</span>
+            <span>${formattedDate}</span>
+          </div>
+        </div>
+        <div class="sales-feed-pricing">
+          <span class="sales-feed-price">${formatCurrency(sale.sellPrice)}</span>
+          <span class="sales-feed-profit ${profitClass}">${sale.profit >= 0 ? '+' : ''}${profitStr}</span>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+function renderFinanceTrackerWidget(filteredSalesList) {
+  const container = document.getElementById("finance-tracker-card");
+  if (!container) return;
+
+  const wSales = getWidgetFilteredSales("financeTracker", filteredSalesList);
+
+  const now = new Date();
+  const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  
+  const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const prevMonthStr = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, '0')}`;
+
+  let curRevenue = 0, curCost = 0, curProfit = 0, curSales = 0;
+  let prevRevenue = 0, prevCost = 0, prevProfit = 0, prevSales = 0;
+
+  wSales.forEach(sale => {
+    if (!sale.saleDate) return;
+    const month = sale.saleDate.substring(0, 7);
+    if (month === currentMonthStr) {
+      curRevenue += sale.sellPrice;
+      curCost += sale.cost;
+      curProfit += sale.profit;
+      curSales++;
+    } else if (month === prevMonthStr) {
+      prevRevenue += sale.sellPrice;
+      prevCost += sale.cost;
+      prevProfit += sale.profit;
+      prevSales++;
+    }
+  });
+
+  let curPayouts = 0;
+  let prevPayouts = 0;
+  if (state.payouts && Array.isArray(state.payouts)) {
+    state.payouts.forEach(p => {
+      if (!p.date) return;
+      const month = p.date.substring(0, 7);
+      const amt = parseFloat(p.amount) || 0;
+      if (month === currentMonthStr) {
+        curPayouts += amt;
+      } else if (month === prevMonthStr) {
+        prevPayouts += amt;
+      }
+    });
+  }
+
+  let curExpenses = curCost;
+  let prevExpenses = prevCost;
+  
+  if (state.expenses && Array.isArray(state.expenses)) {
+    state.expenses.forEach(e => {
+      if (!e.date) return;
+      const month = e.date.substring(0, 7);
+      const amt = parseFloat(e.amount) || 0;
+      if (month === currentMonthStr) {
+        curExpenses += amt;
+        curProfit -= amt;
+      } else if (month === prevMonthStr) {
+        prevExpenses += amt;
+        prevProfit -= amt;
+      }
+    });
+  }
+
+  const curMargin = curRevenue > 0 ? (curProfit / curRevenue) * 100 : 0;
+  const prevMargin = prevRevenue > 0 ? (prevProfit / prevRevenue) * 100 : 0;
+
+  const formatTrend = (cur, prev, isCurrency = true) => {
+    const diff = cur - prev;
+    if (diff === 0) return `<span class="finance-trend-indicator text-muted">-</span>`;
+    const label = isCurrency ? formatCurrency(Math.abs(diff)) : `${Math.abs(diff).toFixed(1)}%`;
+    if (diff > 0) {
+      return `<span class="finance-trend-indicator finance-trend-up"><i class="fa-solid fa-arrow-up"></i> ${label}</span>`;
+    } else {
+      return `<span class="finance-trend-indicator finance-trend-down"><i class="fa-solid fa-arrow-down"></i> ${label}</span>`;
+    }
+  };
+
+  const currentMonthName = now.toLocaleString('en-US', { month: 'long' });
+
+  container.innerHTML = `
+    <table class="finance-tracker-table">
+      <thead>
+        <tr>
+          <th>Metric (${now.getFullYear()})</th>
+          <th>${currentMonthName.slice(0,3)}</th>
+          <th>Trend vs Prev</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Gross Revenue</strong></td>
+          <td>${formatCurrency(curRevenue)}</td>
+          <td>${formatTrend(curRevenue, prevRevenue)}</td>
+        </tr>
+        <tr>
+          <td><strong>Total Costs/Fees</strong></td>
+          <td>${formatCurrency(curExpenses)}</td>
+          <td>${formatTrend(curExpenses, prevExpenses)}</td>
+        </tr>
+        <tr>
+          <td><strong>Net Net Profit</strong></td>
+          <td class="${curProfit >= 0 ? 'text-success-neon' : 'text-danger-soft'}"><strong>${formatCurrency(curProfit)}</strong></td>
+          <td>${formatTrend(curProfit, prevProfit)}</td>
+        </tr>
+        <tr>
+          <td><strong>Net Margin %</strong></td>
+          <td><span class="finance-margin-badge">${curMargin.toFixed(1)}%</span></td>
+          <td>${formatTrend(curMargin, prevMargin, false)}</td>
+        </tr>
+        <tr>
+          <td><strong>Payouts Collected</strong></td>
+          <td>${formatCurrency(curPayouts)}</td>
+          <td>${formatTrend(curPayouts, prevPayouts)}</td>
+        </tr>
+      </tbody>
+    </table>
+  `;
+}
+
+function renderMarkupAnalysisChart(filteredInventoryList) {
+  if (typeof Chart === 'undefined') return;
+  const canvas = document.getElementById("markupAnalysisChart");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+
+  if (markupAnalysisChartInstance) {
+    try { markupAnalysisChartInstance.destroy(); } catch (e) { console.error(e); }
+  }
+
+  const wInventory = getWidgetFilteredInventory("markupAnalysis", filteredInventoryList);
+
+  const cfg = state.widgetSettings ? state.widgetSettings.markupAnalysis : null;
+  const groupBy = cfg ? cfg.groupBy : "publisher";
+
+  const groups = {};
+
+  const salesMap = new Map();
+  state.sales.forEach(sale => {
+    if (sale.inventoryId) {
+      salesMap.set(sale.inventoryId, sale.sellPrice);
+    }
+  });
+
+  wInventory.forEach(item => {
+    const keyVal = (groupBy === "publisher" ? (item.publisher || "No Publisher") : (item.source || "No Supplier")).trim();
+    if (!groups[keyVal]) {
+      groups[keyVal] = { totalCost: 0, totalSell: 0, count: 0 };
+    }
+
+    const cost = item.cost || 0;
+    const sellPrice = salesMap.has(item.id) ? salesMap.get(item.id) : (cost * 1.3);
+
+    groups[keyVal].totalCost += cost;
+    groups[keyVal].totalSell += sellPrice;
+    groups[keyVal].count++;
+  });
+
+  const sortedKeys = Object.keys(groups)
+    .sort((a, b) => groups[b].count - groups[a].count)
+    .slice(0, 6);
+
+  const labels = [];
+  const avgCostData = [];
+  const avgSellData = [];
+  const avgMarkupData = [];
+
+  sortedKeys.forEach(k => {
+    const g = groups[k];
+    const avgCost = g.count > 0 ? (g.totalCost / g.count) : 0;
+    const avgSell = g.count > 0 ? (g.totalSell / g.count) : 0;
+    const markup = avgCost > 0 ? ((avgSell - avgCost) / avgCost) * 100 : 0;
+
+    labels.push(k.length > 15 ? k.slice(0, 15) + "..." : k);
+    avgCostData.push(avgCost);
+    avgSellData.push(avgSell);
+    avgMarkupData.push(markup);
+  });
+
+  if (labels.length === 0) {
+    labels.push("No Data");
+    avgCostData.push(0);
+    avgSellData.push(0);
+    avgMarkupData.push(0);
+  }
+
+  const rootStyle = getComputedStyle(document.documentElement);
+  const textSecondaryColor = rootStyle.getPropertyValue('--text-secondary').trim() || 'hsl(220, 12%, 65%)';
+  const borderColor = rootStyle.getPropertyValue('--border-color').trim() || 'hsla(224, 20%, 25%, 0.15)';
+  const tooltipBg = rootStyle.getPropertyValue('--bg-sidebar').trim() || 'hsl(224, 25%, 10%)';
+
+  const accentPink = rootStyle.getPropertyValue('--accent-pink').trim() || 'hsl(330, 95%, 60%)';
+  const accentTeal = rootStyle.getPropertyValue('--accent-teal').trim() || 'hsl(175, 90%, 48%)';
+  const accentCyan = rootStyle.getPropertyValue('--accent-cyan').trim() || 'hsl(195, 90%, 50%)';
+
+  const wType = (cfg && cfg.chartType) || "bar";
+
+  markupAnalysisChartInstance = new Chart(ctx, {
+    type: wType,
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Avg. Cost',
+          data: avgCostData,
+          backgroundColor: 'hsla(330, 95%, 60%, 0.25)',
+          borderColor: accentPink,
+          borderWidth: 1.5,
+          yAxisID: 'y'
+        },
+        {
+          label: 'Avg. List Price',
+          data: avgSellData,
+          backgroundColor: 'hsla(175, 90%, 48%, 0.25)',
+          borderColor: accentTeal,
+          borderWidth: 1.5,
+          yAxisID: 'y'
+        },
+        {
+          label: 'Avg. Markup %',
+          data: avgMarkupData,
+          backgroundColor: 'hsla(195, 90%, 50%, 0.1)',
+          borderColor: accentCyan,
+          borderWidth: 2,
+          type: 'line',
+          tension: 0.3,
+          yAxisID: 'yPercentage'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: textSecondaryColor, font: { family: 'Inter', size: 10 } }
+        },
+        tooltip: {
+          backgroundColor: tooltipBg,
+          titleColor: state.themeMode !== "light" ? "#fff" : "#000",
+          bodyColor: state.themeMode !== "light" ? "#fff" : "#000",
+          borderColor: borderColor,
+          borderWidth: 1
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: textSecondaryColor } },
+        y: {
+          position: 'left',
+          grid: { color: borderColor },
+          ticks: {
+            color: textSecondaryColor,
+            callback: function(value) { return (state.currency === 'USD' ? '$' : '€') + value; }
+          }
+        },
+        yPercentage: {
+          position: 'right',
+          grid: { drawOnChartArea: false },
+          ticks: {
+            color: textSecondaryColor,
+            callback: function(value) { return value + '%'; }
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderStockTurnoverChart(filteredInventoryList, filteredSalesList) {
+  if (typeof Chart === 'undefined') return;
+  const canvas = document.getElementById("stockTurnoverChart");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+
+  if (stockTurnoverChartInstance) {
+    try { stockTurnoverChartInstance.destroy(); } catch (e) { console.error(e); }
+  }
+
+  const wSales = getWidgetFilteredSales("stockTurnover", filteredSalesList);
+  const wInventory = getWidgetFilteredInventory("stockTurnover", filteredInventoryList);
+
+  const activityByDate = {};
+
+  wInventory.forEach(item => {
+    if (!item.dateAdded) return;
+    const dateStr = item.dateAdded.substring(0, 10);
+    if (!activityByDate[dateStr]) {
+      activityByDate[dateStr] = { bought: 0, sold: 0 };
+    }
+    activityByDate[dateStr].bought++;
+  });
+
+  wSales.forEach(sale => {
+    if (!sale.saleDate) return;
+    const dateStr = sale.saleDate.substring(0, 10);
+    if (!activityByDate[dateStr]) {
+      activityByDate[dateStr] = { bought: 0, sold: 0 };
+    }
+    activityByDate[dateStr].sold++;
+  });
+
+  const sortedDates = Object.keys(activityByDate).sort((a, b) => new Date(a) - new Date(b));
+
+  const labels = sortedDates.map(d => {
+    const opt = { month: 'short', day: 'numeric' };
+    return new Date(d).toLocaleDateString('en-US', opt);
+  });
+  const boughtData = sortedDates.map(d => activityByDate[d].bought);
+  const soldData = sortedDates.map(d => activityByDate[d].sold);
+
+  if (sortedDates.length === 0) {
+    labels.push("No Activity");
+    boughtData.push(0);
+    soldData.push(0);
+  }
+
+  const rootStyle = getComputedStyle(document.documentElement);
+  const textSecondaryColor = rootStyle.getPropertyValue('--text-secondary').trim() || 'hsl(220, 12%, 65%)';
+  const borderColor = rootStyle.getPropertyValue('--border-color').trim() || 'hsla(224, 20%, 25%, 0.15)';
+  const tooltipBg = rootStyle.getPropertyValue('--bg-sidebar').trim() || 'hsl(224, 25%, 10%)';
+
+  const accentCyan = rootStyle.getPropertyValue('--accent-cyan').trim() || 'hsl(195, 90%, 50%)';
+  const accentTeal = rootStyle.getPropertyValue('--accent-teal').trim() || 'hsl(175, 90%, 48%)';
+
+  const wType = (state.widgetSettings && state.widgetSettings.stockTurnover && state.widgetSettings.stockTurnover.chartType) || 'line';
+
+  stockTurnoverChartInstance = new Chart(ctx, {
+    type: wType,
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Keys Purchased',
+          data: boughtData,
+          borderColor: accentCyan,
+          backgroundColor: 'hsla(195, 90%, 50%, 0.15)',
+          borderWidth: 2.5,
+          tension: 0.35,
+          fill: true
+        },
+        {
+          label: 'Keys Sold',
+          data: soldData,
+          borderColor: accentTeal,
+          backgroundColor: 'hsla(175, 90%, 48%, 0.15)',
+          borderWidth: 2.5,
+          tension: 0.35,
+          fill: true
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: textSecondaryColor, font: { family: 'Inter', size: 10 } }
+        },
+        tooltip: {
+          backgroundColor: tooltipBg,
+          titleColor: state.themeMode !== "light" ? "#fff" : "#000",
+          bodyColor: state.themeMode !== "light" ? "#fff" : "#000",
+          borderColor: borderColor,
+          borderWidth: 1
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: textSecondaryColor } },
+        y: {
+          grid: { color: borderColor },
+          ticks: { color: textSecondaryColor, stepSize: 1, beginAtZero: true }
+        }
+      }
+    }
+  });
 }
 
 // ==========================================================================
@@ -9690,7 +10835,8 @@ function applyFiguresVisibility() {
     platformSplit: document.getElementById("card-chart-platformSplit"),
     costRevenue: document.getElementById("card-chart-costRevenue"),
     supplierSplit: document.getElementById("card-chart-supplierSplit"),
-    topBestsellers: document.getElementById("card-chart-topBestsellers")
+    topBestsellers: document.getElementById("card-chart-topBestsellers"),
+    dailyProfitMonth: document.getElementById("card-chart-dailyProfitMonth")
   };
   
   Object.keys(cards).forEach(key => {
@@ -9709,32 +10855,587 @@ function applyFiguresVisibility() {
       checkbox.checked = !!(state.visibleFigures && state.visibleFigures[key]);
     }
   });
+}
 
-  // Toggle grid rows
-  const row1 = document.getElementById("charts-grid-row-1");
-  if (row1) {
-    const showRow1 = !!(state.visibleFigures && (state.visibleFigures.salesProfit || state.visibleFigures.platformSplit));
-    row1.style.display = showRow1 ? "" : "none";
-    if (showRow1) {
-      const bothShown = !!(state.visibleFigures.salesProfit && state.visibleFigures.platformSplit);
-      row1.style.gridTemplateColumns = bothShown ? "" : "minmax(0, 1fr)";
+function renderDashboardCardsOrder() {
+  const container = document.getElementById("dashboard-charts-container");
+  if (!container) return;
+  
+  state.dashboardOrder.forEach(key => {
+    const card = document.getElementById(`card-chart-${key}`);
+    if (card) {
+      container.appendChild(card);
+    }
+  });
+}
+
+function bindDashboardDragAndDrop() {
+  const container = document.getElementById("dashboard-charts-container");
+  if (!container) return;
+  
+  const cards = container.querySelectorAll(".chart-card");
+  
+  cards.forEach(card => {
+    const header = card.querySelector(".chart-card-header");
+    if (!header) return;
+    
+    // Set headers draggable
+    header.setAttribute("draggable", "true");
+    
+    header.addEventListener("dragstart", (e) => {
+      const figureKey = card.getAttribute("data-figure");
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", figureKey);
+      card.classList.add("dragging");
+    });
+    
+    header.addEventListener("dragend", () => {
+      card.classList.remove("dragging");
+      cards.forEach(c => c.classList.remove("drag-over"));
+    });
+    
+    card.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+    });
+    
+    card.addEventListener("dragenter", (e) => {
+      const draggingCard = container.querySelector(".chart-card.dragging");
+      if (draggingCard && draggingCard !== card) {
+        card.classList.add("drag-over");
+      }
+    });
+    
+    card.addEventListener("dragleave", () => {
+      card.classList.remove("drag-over");
+    });
+    
+    card.addEventListener("drop", (e) => {
+      e.preventDefault();
+      card.classList.remove("drag-over");
+      
+      const fromKey = e.dataTransfer.getData("text/plain");
+      const toKey = card.getAttribute("data-figure");
+      
+      if (!fromKey || !toKey || fromKey === toKey) return;
+      
+      const fromIndex = state.dashboardOrder.indexOf(fromKey);
+      const toIndex = state.dashboardOrder.indexOf(toKey);
+      
+      if (fromIndex !== -1 && toIndex !== -1) {
+        // Swap visual and state order
+        state.dashboardOrder[fromIndex] = toKey;
+        state.dashboardOrder[toIndex] = fromKey;
+        
+        saveStateToStorage();
+        renderDashboardCardsOrder();
+        
+        showToast("Rearranged dashboard figures layout.", "success");
+        
+        if (window.supabaseClient) {
+          dbSaveSettings("dashboardOrder", state.dashboardOrder);
+        }
+      }
+    });
+  });
+}
+
+function applyDashboardSpans() {
+  const container = document.getElementById("dashboard-charts-container");
+  if (!container) return;
+  
+  Object.keys(state.dashboardSpans).forEach(key => {
+    const card = document.getElementById(`card-chart-${key}`);
+    if (card) {
+      card.classList.remove("span-1", "span-2", "span-3");
+      const spanVal = state.dashboardSpans[key] || 1;
+      card.classList.add(`span-${spanVal}`);
+      
+      const menu = card.querySelector(".card-actions-menu");
+      if (menu) {
+        const items = menu.querySelectorAll(".card-actions-item");
+        items.forEach(item => {
+          const dataSpan = parseInt(item.getAttribute("data-span"));
+          if (dataSpan === spanVal) {
+            item.classList.add("selected");
+          } else {
+            item.classList.remove("selected");
+          }
+        });
+      }
+    }
+  });
+}
+
+function bindDashboardCardActions() {
+  const container = document.getElementById("dashboard-charts-container");
+  const overlay = document.getElementById("widget-fullscreen-overlay");
+  if (!container) return;
+  
+  // Close menus when clicking outside
+  document.addEventListener("click", (e) => {
+    const dropdown = e.target.closest(".card-actions-dropdown");
+    if (!dropdown) {
+      const menus = document.querySelectorAll(".card-actions-menu");
+      menus.forEach(m => m.classList.remove("active"));
+    }
+  });
+  
+  const handleCardActionClick = (e) => {
+    const btn = e.target.closest(".btn-card-actions");
+    if (btn) {
+      e.stopPropagation();
+      const dropdown = btn.closest(".card-actions-dropdown");
+      const menu = dropdown ? dropdown.querySelector(".card-actions-menu") : null;
+      
+      const allMenus = document.querySelectorAll(".card-actions-menu");
+      allMenus.forEach(m => {
+        if (m !== menu) m.classList.remove("active");
+      });
+      
+      if (menu) {
+        menu.classList.toggle("active");
+      }
+      return;
+    }
+    
+    const item = e.target.closest(".card-actions-item");
+    if (item) {
+      e.stopPropagation();
+      const card = item.closest(".chart-card");
+      const figureKey = card ? card.getAttribute("data-figure") : null;
+      const spanVal = parseInt(item.getAttribute("data-span"));
+      
+      if (figureKey && !isNaN(spanVal)) {
+        state.dashboardSpans[figureKey] = spanVal;
+        saveStateToStorage();
+        applyDashboardSpans();
+        
+        const menu = item.closest(".card-actions-menu");
+        if (menu) menu.classList.remove("active");
+        
+        showToast("Adjusted card width.", "success");
+        window.dispatchEvent(new Event("resize"));
+        
+        if (window.supabaseClient) {
+          dbSaveSettings("dashboardSpans", state.dashboardSpans);
+        }
+      }
+    }
+  };
+
+  container.addEventListener("click", handleCardActionClick);
+  if (overlay) {
+    overlay.addEventListener("click", handleCardActionClick);
+  }
+}
+
+function getWidgetFilteredSales(widgetKey, globalSalesList) {
+  const cfg = state.widgetSettings ? state.widgetSettings[widgetKey] : null;
+  if (!cfg || cfg.timeframe === "global") {
+    return globalSalesList;
+  }
+  
+  const now = new Date();
+  let cutoffDate = null;
+  
+  if (cfg.timeframe === "30") {
+    cutoffDate = new Date();
+    cutoffDate.setDate(now.getDate() - 30);
+  } else if (cfg.timeframe === "90") {
+    cutoffDate = new Date();
+    cutoffDate.setDate(now.getDate() - 90);
+  } else if (cfg.timeframe === "year") {
+    cutoffDate = new Date(now.getFullYear(), 0, 1);
+  }
+  
+  if (!cutoffDate) return globalSalesList;
+  
+  return state.sales.filter(sale => {
+    if (!sale.saleDate) return false;
+    const sDate = new Date(sale.saleDate);
+    return sDate >= cutoffDate;
+  });
+}
+
+function getWidgetFilteredInventory(widgetKey, globalInventoryList) {
+  const cfg = state.widgetSettings ? state.widgetSettings[widgetKey] : null;
+  if (!cfg || cfg.timeframe === "global") {
+    return globalInventoryList;
+  }
+  
+  const now = new Date();
+  let cutoffDate = null;
+  
+  if (cfg.timeframe === "30") {
+    cutoffDate = new Date();
+    cutoffDate.setDate(now.getDate() - 30);
+  } else if (cfg.timeframe === "90") {
+    cutoffDate = new Date();
+    cutoffDate.setDate(now.getDate() - 90);
+  } else if (cfg.timeframe === "year") {
+    cutoffDate = new Date(now.getFullYear(), 0, 1);
+  }
+  
+  if (!cutoffDate) return globalInventoryList;
+  
+  return state.inventory.filter(item => {
+    if (!item.dateAdded) return false;
+    const iDate = new Date(item.dateAdded);
+    return iDate >= cutoffDate;
+  });
+}
+
+let fullscreenOriginalParent = null;
+let fullscreenOriginalSibling = null;
+
+function enterWidgetFullscreen(cardElement) {
+  const overlay = document.getElementById("widget-fullscreen-overlay");
+  if (!overlay || !cardElement) return;
+  
+  fullscreenOriginalParent = cardElement.parentNode;
+  fullscreenOriginalSibling = cardElement.nextSibling;
+  
+  cardElement.classList.remove("flipped");
+  
+  overlay.appendChild(cardElement);
+  overlay.classList.add("active");
+  document.body.style.overflow = "hidden";
+  
+  const maxIcon = cardElement.querySelector(".btn-widget-maximize");
+  if (maxIcon) {
+    maxIcon.className = "fa-solid fa-compress btn-widget-maximize";
+    maxIcon.title = "Exit fullscreen";
+  }
+  
+  window.dispatchEvent(new Event("resize"));
+}
+
+function exitWidgetFullscreen() {
+  const overlay = document.getElementById("widget-fullscreen-overlay");
+  if (!overlay) return;
+  
+  const cardElement = overlay.querySelector(".chart-card");
+  if (cardElement && fullscreenOriginalParent) {
+    if (fullscreenOriginalSibling) {
+      fullscreenOriginalParent.insertBefore(cardElement, fullscreenOriginalSibling);
+    } else {
+      fullscreenOriginalParent.appendChild(cardElement);
+    }
+    
+    const maxIcon = cardElement.querySelector(".btn-widget-maximize");
+    if (maxIcon) {
+      maxIcon.className = "fa-solid fa-expand btn-widget-maximize";
+      maxIcon.title = "Maximize widget";
     }
   }
+  
+  overlay.classList.remove("active");
+  document.body.style.overflow = "";
+  window.dispatchEvent(new Event("resize"));
+}
 
-  const row2 = document.getElementById("charts-grid-row-2");
-  if (row2) {
-    const showRow2 = !!(state.visibleFigures && (state.visibleFigures.costRevenue || state.visibleFigures.supplierSplit));
-    row2.style.display = showRow2 ? "" : "none";
-    if (showRow2) {
-      const bothShown = !!(state.visibleFigures.costRevenue && state.visibleFigures.supplierSplit);
-      row2.style.gridTemplateColumns = bothShown ? "" : "minmax(0, 1fr)";
+function applyWidgetVisibility() {
+  Object.keys(state.widgetSettings).forEach(key => {
+    const card = document.getElementById(`card-chart-${key}`);
+    if (card) {
+      const cfg = state.widgetSettings[key];
+      if (cfg.visible) {
+        card.style.display = "";
+      } else {
+        card.style.setProperty("display", "none", "important");
+      }
+      
+      // Synchronize checkbox state in the Figures panel
+      const checkbox = document.getElementById(`toggle-figure-${key}`);
+      if (checkbox) {
+        checkbox.checked = !!cfg.visible;
+      }
+      if (state.visibleFigures) {
+        state.visibleFigures[key] = !!cfg.visible;
+      }
+      
+      if (cfg.collapsed) {
+        card.classList.add("minimized");
+        const icon = card.querySelector(".btn-widget-minimize");
+        if (icon) {
+          icon.className = "fa-solid fa-chevron-up btn-widget-minimize";
+          icon.title = "Expand widget";
+        }
+      } else {
+        card.classList.remove("minimized");
+        const icon = card.querySelector(".btn-widget-minimize");
+        if (icon) {
+          icon.className = "fa-solid fa-chevron-down btn-widget-minimize";
+          icon.title = "Minimize widget";
+        }
+      }
     }
-  }
+  });
+}
 
-  const row3 = document.getElementById("charts-grid-row-3");
-  if (row3) {
-    const showRow3 = !!(state.visibleFigures && state.visibleFigures.topBestsellers);
-    row3.style.display = showRow3 ? "" : "none";
+function renderWidgetGallery() {
+  const galleryList = document.getElementById("widget-gallery-list");
+  if (!galleryList) return;
+  
+  const widgetMeta = {
+    salesProfit: { title: "Sales vs Profit Trend", desc: "Line/Bar chart showing net sales vs profit over time." },
+    platformSplit: { title: "Platform Sales Split", desc: "Doughnut/Pie chart illustrating sales distribution by platform." },
+    costRevenue: { title: "Cost vs Revenue Comparison", desc: "Comparison of key purchase cost vs sales revenue." },
+    supplierSplit: { title: "Supplier Stock Distribution", desc: "Stock count distribution mapped by supplier source." },
+    topBestsellers: { title: "Top Bestselling Games", desc: "Leaderboard listing top grossing games by metrics." },
+    dailyProfitMonth: { title: "Daily Profit of the Month", desc: "Daily net profit tracking bar chart for active month." },
+    stockSpeed: { title: "Stock Speed & Aging Analytics", desc: "Doughnut/Pie/Bar chart tracking shelf-life of sold keys." },
+    salesFeed: { title: "Recent Sales Activity Feed", desc: "Visual feed of the latest game key sales transactions." },
+    financeTracker: { title: "Monthly Finance & Payouts", desc: "Ledger comparison table of revenue, margins, and payouts." },
+    markupAnalysis: { title: "Markup & Pricing Analysis", desc: "Cost vs price vs markup comparison grouped by publisher/supplier." },
+    stockTurnover: { title: "Stock Turnover Timeline", desc: "Dual timeline chart of key purchases vs keys sold over time." }
+  };
+  
+  let html = "";
+  let inactiveCount = 0;
+  
+  Object.keys(state.widgetSettings).forEach(key => {
+    const cfg = state.widgetSettings[key];
+    if (!cfg.visible) {
+      inactiveCount++;
+      const meta = widgetMeta[key];
+      html += `
+        <div class="gallery-item" data-widget="${key}">
+          <div class="gallery-item-info">
+            <span class="gallery-item-title">${meta.title}</span>
+            <span class="gallery-item-desc">${meta.desc}</span>
+          </div>
+          <i class="fa-solid fa-circle-plus gallery-item-add-btn" title="Add to dashboard"></i>
+        </div>
+      `;
+    }
+  });
+  
+  if (inactiveCount === 0) {
+    html = `<div class="text-muted text-center" style="padding: 24px; font-size: 0.85rem;">All widgets are currently active on your dashboard!</div>`;
+  }
+  
+  galleryList.innerHTML = html;
+}
+
+function bindWidgetControls() {
+  const btnOpenGallery = document.getElementById("btn-open-widget-gallery");
+  const drawer = document.getElementById("widget-gallery-drawer");
+  const btnCloseDrawer = document.getElementById("btn-close-widget-gallery-drawer");
+  
+  if (btnOpenGallery && drawer) {
+    btnOpenGallery.addEventListener("click", () => {
+      renderWidgetGallery();
+      drawer.classList.add("open");
+    });
+  }
+  if (btnCloseDrawer && drawer) {
+    btnCloseDrawer.addEventListener("click", () => {
+      drawer.classList.remove("open");
+    });
+  }
+  
+  const galleryList = document.getElementById("widget-gallery-list");
+  if (galleryList && drawer) {
+    galleryList.addEventListener("click", (e) => {
+      const item = e.target.closest(".gallery-item");
+      if (item) {
+        const widgetKey = item.getAttribute("data-widget");
+        if (widgetKey && state.widgetSettings[widgetKey]) {
+          state.widgetSettings[widgetKey].visible = true;
+          saveStateToStorage();
+          applyWidgetVisibility();
+          renderWidgetGallery();
+          updateUI();
+          showToast("Added widget to dashboard.", "success");
+          
+          if (window.supabaseClient) {
+            dbSaveSettings("widgetSettings", state.widgetSettings);
+          }
+        }
+      }
+    });
+  }
+  
+  const overlay = document.getElementById("widget-fullscreen-overlay");
+  if (overlay) {
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) {
+        exitWidgetFullscreen();
+      }
+    });
+  }
+  
+  const container = document.getElementById("dashboard-charts-container");
+  if (!container) return;
+  
+  const populateFormConfig = (widgetKey) => {
+    const card = document.getElementById(`card-chart-${widgetKey}`);
+    if (!card) return;
+    const cfg = state.widgetSettings[widgetKey];
+    
+    const selectChart = document.getElementById(`config-${widgetKey}-chartType`);
+    if (selectChart) selectChart.value = cfg.chartType || selectChart.options[0].value;
+    
+    const selectTime = document.getElementById(`config-${widgetKey}-timeframe`);
+    if (selectTime) selectTime.value = cfg.timeframe || "global";
+    
+    if (widgetKey === "topBestsellers") {
+      const selectLimit = document.getElementById("config-topBestsellers-limit");
+      if (selectLimit) selectLimit.value = cfg.limit || 5;
+      const selectMetric = document.getElementById("config-topBestsellers-metric");
+      if (selectMetric) selectMetric.value = cfg.metric || "profit";
+    } else if (widgetKey === "salesFeed") {
+      const selectLimit = document.getElementById("config-salesFeed-limit");
+      if (selectLimit) selectLimit.value = cfg.limit || 5;
+    } else if (widgetKey === "markupAnalysis") {
+      const selectGroupBy = document.getElementById("config-markupAnalysis-groupBy");
+      if (selectGroupBy) selectGroupBy.value = cfg.groupBy || "publisher";
+    }
+  };
+  
+  const handleWidgetClick = (e) => {
+    const btnMinimize = e.target.closest(".btn-widget-minimize");
+    if (btnMinimize) {
+      e.stopPropagation();
+      const card = btnMinimize.closest(".chart-card");
+      const key = card ? card.getAttribute("data-figure") : null;
+      if (key && state.widgetSettings[key]) {
+        const cfg = state.widgetSettings[key];
+        cfg.collapsed = !cfg.collapsed;
+        
+        // If minimized while inside fullscreen overlay, exit fullscreen first
+        const isOverlay = card.parentNode.id === "widget-fullscreen-overlay";
+        if (isOverlay && cfg.collapsed) {
+          exitWidgetFullscreen();
+        }
+        
+        saveStateToStorage();
+        applyWidgetVisibility();
+        if (!cfg.collapsed) {
+          window.dispatchEvent(new Event("resize"));
+        }
+        if (window.supabaseClient) {
+          dbSaveSettings("widgetSettings", state.widgetSettings);
+        }
+      }
+      return;
+    }
+    
+    const btnMaximize = e.target.closest(".btn-widget-maximize");
+    if (btnMaximize) {
+      e.stopPropagation();
+      const card = btnMaximize.closest(".chart-card");
+      if (card) {
+        const isOverlay = card.parentNode.id === "widget-fullscreen-overlay";
+        if (isOverlay) {
+          exitWidgetFullscreen();
+        } else {
+          enterWidgetFullscreen(card);
+        }
+      }
+      return;
+    }
+    
+    const btnConfig = e.target.closest(".btn-widget-configure");
+    if (btnConfig) {
+      e.stopPropagation();
+      const card = btnConfig.closest(".chart-card");
+      const key = card ? card.getAttribute("data-figure") : null;
+      if (card && key) {
+        populateFormConfig(key);
+        card.classList.add("flipped");
+        
+        const menu = btnConfig.closest(".card-actions-menu");
+        if (menu) menu.classList.remove("active");
+      }
+      return;
+    }
+    
+    const btnCancelFlip = e.target.closest(".btn-widget-flip-cancel");
+    if (btnCancelFlip) {
+      e.stopPropagation();
+      const card = btnCancelFlip.closest(".chart-card");
+      if (card) {
+        card.classList.remove("flipped");
+      }
+      return;
+    }
+    
+    const btnRemove = e.target.closest(".btn-widget-remove");
+    if (btnRemove) {
+      e.stopPropagation();
+      const card = btnRemove.closest(".chart-card");
+      const key = card ? card.getAttribute("data-figure") : null;
+      if (key && state.widgetSettings[key]) {
+        // Exit fullscreen if removing from fullscreen
+        const isOverlay = card.parentNode.id === "widget-fullscreen-overlay";
+        if (isOverlay) {
+          exitWidgetFullscreen();
+        }
+        
+        state.widgetSettings[key].visible = false;
+        saveStateToStorage();
+        applyWidgetVisibility();
+        showToast("Removed widget from dashboard.", "info");
+        
+        const menu = btnRemove.closest(".card-actions-menu");
+        if (menu) menu.classList.remove("active");
+        
+        if (window.supabaseClient) {
+          dbSaveSettings("widgetSettings", state.widgetSettings);
+        }
+      }
+      return;
+    }
+  };
+  
+  const handleWidgetSubmit = (e) => {
+    const form = e.target.closest(".widget-config-form");
+    if (form) {
+      e.preventDefault();
+      const widgetKey = form.getAttribute("data-widget");
+      const card = form.closest(".chart-card");
+      if (widgetKey && state.widgetSettings[widgetKey] && card) {
+        const cfg = state.widgetSettings[widgetKey];
+        
+        const selectChart = document.getElementById(`config-${widgetKey}-chartType`);
+        if (selectChart) cfg.chartType = selectChart.value;
+        
+        const selectTime = document.getElementById(`config-${widgetKey}-timeframe`);
+        if (selectTime) cfg.timeframe = selectTime.value;
+        
+        if (widgetKey === "topBestsellers") {
+          const selectLimit = document.getElementById("config-topBestsellers-limit");
+          if (selectLimit) cfg.limit = parseInt(selectLimit.value);
+          const selectMetric = document.getElementById("config-topBestsellers-metric");
+          if (selectMetric) cfg.metric = selectMetric.value;
+        } else if (widgetKey === "salesFeed") {
+          const selectLimit = document.getElementById("config-salesFeed-limit");
+          if (selectLimit) cfg.limit = parseInt(selectLimit.value);
+        } else if (widgetKey === "markupAnalysis") {
+          const selectGroupBy = document.getElementById("config-markupAnalysis-groupBy");
+          if (selectGroupBy) cfg.groupBy = selectGroupBy.value;
+        }
+        
+        saveStateToStorage();
+        card.classList.remove("flipped");
+        updateUI();
+        showToast("Widget settings saved.", "success");
+        
+        if (window.supabaseClient) {
+          dbSaveSettings("widgetSettings", state.widgetSettings);
+        }
+      }
+    }
+  };
+
+  container.addEventListener("click", handleWidgetClick);
+  container.addEventListener("submit", handleWidgetSubmit);
+  if (overlay) {
+    overlay.addEventListener("click", handleWidgetClick);
+    overlay.addEventListener("submit", handleWidgetSubmit);
   }
 }
 
@@ -10675,34 +12376,79 @@ function renderFinanceView() {
 
 // Initialize Payouts & Fees Ledger Controls
 function initPayouts() {
-  const form = document.getElementById("form-add-payout");
+  let form = document.getElementById("form-add-payout");
+  if (form) {
+    const newForm = form.cloneNode(true);
+    form.parentNode.replaceChild(newForm, form);
+    form = newForm;
+  }
+
   const dateInput = document.getElementById("payout-date");
   if (dateInput) {
     dateInput.value = new Date().toISOString().slice(0, 10);
   }
 
+  // Populate category dropdown
+  populateCategoryDropdown();
+
+  // Bind Manage Categories button
+  const btnManageCategories = document.getElementById("btn-manage-categories");
+  if (btnManageCategories) {
+    btnManageCategories.addEventListener("click", () => {
+      renderPayoutCategoriesList();
+      openModal("payout-categories-modal");
+    });
+  }
+
+  // Bind Add Category form
+  const formAddCategory = document.getElementById("form-add-payout-category");
+  if (formAddCategory) {
+    const newFormAddCategory = formAddCategory.cloneNode(true);
+    formAddCategory.parentNode.replaceChild(newFormAddCategory, formAddCategory);
+    newFormAddCategory.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const input = document.getElementById("new-payout-category-name");
+      const name = input ? input.value.trim() : "";
+      if (!name) return;
+
+      if (state.expenseCategories.some(c => c.toLowerCase() === name.toLowerCase())) {
+        showToast("Category name already exists.", "error");
+        return;
+      }
+
+      pushToUndoStack();
+      state.expenseCategories.push(name);
+      saveStateToStorage();
+      input.value = "";
+      renderPayoutCategoriesList();
+      populateCategoryDropdown();
+      showToast("Category created successfully!", "success");
+    });
+  }
+
   if (form) {
-    const newForm = form.cloneNode(true);
-    form.parentNode.replaceChild(newForm, form);
-    newForm.addEventListener("submit", (e) => {
+    form.addEventListener("submit", (e) => {
       e.preventDefault();
       
       const date = document.getElementById("payout-date").value;
+      const category = document.getElementById("payout-category").value;
       const description = document.getElementById("payout-description").value.trim();
       const amount = parseFloat(document.getElementById("payout-amount").value);
       
-      if (!date || !description || isNaN(amount) || amount < 0) {
-        showToast("Please enter valid payout details.", "error");
+      if (!date || !category || isNaN(amount) || amount < 0) {
+        showToast("Please enter valid details.", "error");
         return;
       }
       
       const newPayout = {
         id: "payout_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9),
         date,
+        category,
         description,
         amount
       };
       
+      pushToUndoStack();
       state.payouts = state.payouts || [];
       state.payouts.push(newPayout);
       
@@ -10721,7 +12467,7 @@ function initPayouts() {
       
       renderPayoutsLedger();
       renderFinanceView();
-      showToast("Payout/Fee logged successfully!", "success");
+      showToast("Expense/Fee logged successfully!", "success");
     });
   }
 
@@ -10729,11 +12475,12 @@ function initPayouts() {
   if (ledgerBody) {
     const newLedgerBody = ledgerBody.cloneNode(true);
     ledgerBody.parentNode.replaceChild(newLedgerBody, ledgerBody);
+    DOM["payouts-ledger-body"] = newLedgerBody;
     newLedgerBody.addEventListener("click", (e) => {
       const btn = e.target.closest(".btn-delete-payout");
       if (btn) {
         const id = btn.getAttribute("data-id");
-        if (!confirm("Are you sure you want to delete this payout/fee record?")) {
+        if (!confirm("Are you sure you want to delete this record?")) {
           return;
         }
         
@@ -10750,7 +12497,7 @@ function initPayouts() {
         
         renderPayoutsLedger();
         renderFinanceView();
-        showToast("Payout/Fee record deleted.", "success");
+        showToast("Expense record deleted.", "success");
       }
     });
   }
@@ -10758,9 +12505,140 @@ function initPayouts() {
   renderPayoutsLedger();
 }
 
+// Populate the Category dropdown in form
+function populateCategoryDropdown() {
+  const dropdown = document.getElementById("payout-category");
+  if (!dropdown) return;
+  
+  const currentVal = dropdown.value;
+  dropdown.innerHTML = "";
+  
+  state.expenseCategories.forEach(cat => {
+    const opt = document.createElement("option");
+    opt.value = cat;
+    opt.textContent = cat;
+    dropdown.appendChild(opt);
+  });
+  
+  if (state.expenseCategories.includes(currentVal)) {
+    dropdown.value = currentVal;
+  }
+}
+
+// Render categories manage list inside modal
+function renderPayoutCategoriesList() {
+  const listContainer = document.getElementById("payout-categories-list");
+  if (!listContainer) return;
+  
+  listContainer.innerHTML = "";
+  
+  state.expenseCategories.forEach((cat, index) => {
+    const li = document.createElement("li");
+    li.style.display = "flex";
+    li.style.alignItems = "center";
+    li.style.justifyContent = "space-between";
+    li.style.padding = "10px 14px";
+    li.style.borderBottom = index < state.expenseCategories.length - 1 ? "1px solid var(--border-color)" : "none";
+    
+    li.innerHTML = `
+      <div class="category-display-mode" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+        <span class="category-name-text" style="font-weight: 500; color: var(--text-main);">${escapeHTML(cat)}</span>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn btn-outline btn-xs btn-edit-category" data-index="${index}" style="padding: 2px 6px; font-size: 0.75rem;"><i class="fa-solid fa-pen"></i></button>
+          <button type="button" class="btn btn-outline btn-xs btn-delete-category" data-index="${index}" style="padding: 2px 6px; font-size: 0.75rem; color: var(--accent-danger); border-color: var(--accent-danger);"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      </div>
+      <div class="category-edit-mode hidden" style="display: flex; align-items: center; gap: 8px; width: 100%;">
+        <input type="text" class="form-control edit-category-input" value="${escapeHTML(cat)}" style="flex-grow: 1; padding: 4px 8px; font-size: 0.85rem;">
+        <button type="button" class="btn btn-success btn-xs btn-save-category" data-index="${index}" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-check"></i></button>
+        <button type="button" class="btn btn-outline btn-xs btn-cancel-category" style="padding: 4px 8px; font-size: 0.75rem;"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+    `;
+    
+    // Bind inline edit/save/cancel events
+    const displayDiv = li.querySelector(".category-display-mode");
+    const editDiv = li.querySelector(".category-edit-mode");
+    const editInput = li.querySelector(".edit-category-input");
+    
+    li.querySelector(".btn-edit-category").addEventListener("click", () => {
+      displayDiv.classList.add("hidden");
+      editDiv.classList.remove("hidden");
+      editInput.focus();
+    });
+    
+    li.querySelector(".btn-cancel-category").addEventListener("click", () => {
+      displayDiv.classList.remove("hidden");
+      editDiv.classList.add("hidden");
+      editInput.value = cat;
+    });
+    
+    li.querySelector(".btn-save-category").addEventListener("click", () => {
+      const newName = editInput.value.trim();
+      if (!newName) {
+        showToast("Category name cannot be empty.", "error");
+        return;
+      }
+      if (newName.toLowerCase() !== cat.toLowerCase() && state.expenseCategories.some(c => c.toLowerCase() === newName.toLowerCase())) {
+        showToast("Category already exists.", "error");
+        return;
+      }
+      
+      pushToUndoStack();
+      const oldName = state.expenseCategories[index];
+      state.expenseCategories[index] = newName;
+      
+      // Update existing payouts' categories
+      state.payouts.forEach(p => {
+        if (p.category === oldName) p.category = newName;
+      });
+      
+      saveStateToStorage();
+      renderPayoutCategoriesList();
+      populateCategoryDropdown();
+      renderPayoutsLedger();
+      updateUI();
+      showToast("Category updated successfully!", "success");
+    });
+    
+    li.querySelector(".btn-delete-category").addEventListener("click", () => {
+      if (state.expenseCategories.length <= 1) {
+        showToast("You must keep at least one category.", "error");
+        return;
+      }
+      
+      const oldName = state.expenseCategories[index];
+      const count = state.payouts.filter(p => p.category === oldName).length;
+      let confirmMsg = `Are you sure you want to delete category "${oldName}"?`;
+      if (count > 0) {
+        confirmMsg = `Category "${oldName}" is currently used by ${count} logged expense record(s). Deleting it will re-assign them to miscellaneous expenses. Continue?`;
+      }
+      
+      if (confirm(confirmMsg)) {
+        pushToUndoStack();
+        state.expenseCategories.splice(index, 1);
+        
+        // Re-assign category to fallback
+        const fallback = state.expenseCategories[0];
+        state.payouts.forEach(p => {
+          if (p.category === oldName) p.category = fallback;
+        });
+        
+        saveStateToStorage();
+        renderPayoutCategoriesList();
+        populateCategoryDropdown();
+        renderPayoutsLedger();
+        updateUI();
+        showToast("Category deleted.", "success");
+      }
+    });
+    
+    listContainer.appendChild(li);
+  });
+}
+
 // Render the registered payouts list table
 function renderPayoutsLedger() {
-  const ledgerBody = DOM["payouts-ledger-body"] || document.getElementById("payouts-ledger-body");
+  const ledgerBody = document.getElementById("payouts-ledger-body");
   if (!ledgerBody) return;
   
   state.payouts = state.payouts || [];
@@ -10768,8 +12646,8 @@ function renderPayoutsLedger() {
   if (state.payouts.length === 0) {
     ledgerBody.innerHTML = `
       <tr>
-        <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 16px;">
-          No operational payouts or fees recorded yet.
+        <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 16px;">
+          No operational expenses or fees recorded yet.
         </td>
       </tr>
     `;
@@ -10777,13 +12655,21 @@ function renderPayoutsLedger() {
   }
   
   // Sort payouts by date descending
-  const sorted = [...state.payouts].sort((a, b) => b.date.localeCompare(a.date));
+  const sorted = [...state.payouts].sort((a, b) => {
+    const dateA = a && typeof a.date === "string" ? a.date : "";
+    const dateB = b && typeof b.date === "string" ? b.date : "";
+    return dateB.localeCompare(dateA);
+  });
   
   ledgerBody.innerHTML = sorted.map(p => {
+    const categoryLabel = p.category 
+      ? `<span class="badge" style="background-color: var(--bg-mini-metric); border: 1px solid var(--border-color); color: var(--text-secondary); font-size: 0.72rem; padding: 2px 6px; border-radius: 4px;">${escapeHTML(p.category)}</span>` 
+      : `<span class="badge" style="background-color: var(--bg-mini-metric); border: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.72rem; padding: 2px 6px; border-radius: 4px;">Uncategorized</span>`;
     return `
       <tr style="border-bottom: 1px solid var(--border-color);">
-        <td style="font-size: 0.85rem; font-weight: 500;">${p.date}</td>
-        <td style="font-size: 0.85rem; color: var(--text-main); font-weight: 500;">${p.description}</td>
+        <td style="font-size: 0.85rem; font-weight: 500; white-space: nowrap;">${p.date}</td>
+        <td style="font-size: 0.85rem;">${categoryLabel}</td>
+        <td style="font-size: 0.85rem; color: var(--text-main); font-weight: 500;">${escapeHTML(p.description || "-")}</td>
         <td style="font-size: 0.85rem; font-weight: 600; text-align: right; color: var(--accent-pink);">${formatCurrency(p.amount)}</td>
         <td style="text-align: center;">
           <button type="button" class="btn btn-outline btn-xs btn-delete-payout" data-id="${p.id}" style="padding: 2px 6px; color: var(--accent-danger); border-color: var(--accent-danger); cursor: pointer;" title="Delete Record">
@@ -11485,6 +13371,18 @@ async function dbLoadState() {
           applySalesLedgerVisibility(state.showSalesLedger);
           const toggleSales = document.getElementById("toggle-show-sales-ledger");
           if (toggleSales) toggleSales.checked = state.showSalesLedger;
+        } else if (s.key === "menuVisibility") {
+          try {
+            state.menuVisibility = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+            if (state.menuVisibility.sales !== undefined) {
+              state.showSalesLedger = state.menuVisibility.sales;
+              applySalesLedgerVisibility(state.showSalesLedger);
+            }
+            renderSidebarMenu();
+            renderSidebarCustomizationSettings();
+          } catch (e) {
+            console.error("Error parsing menuVisibility from database sync:", e);
+          }
 
         } else if (s.key === "visibleMetrics") {
           try {
@@ -11518,6 +13416,35 @@ async function dbLoadState() {
             state.metricOrder = s.value;
           }
           applyMetricOrder();
+        } else if (s.key === "dashboardOrder") {
+          try {
+            state.dashboardOrder = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+            const expectedKeys = ["salesProfit", "platformSplit", "costRevenue", "supplierSplit", "topBestsellers", "dailyProfitMonth"];
+            state.dashboardOrder = state.dashboardOrder.filter(k => expectedKeys.includes(k));
+            expectedKeys.forEach(k => {
+              if (!state.dashboardOrder.includes(k)) {
+                state.dashboardOrder.push(k);
+              }
+            });
+            renderDashboardCardsOrder();
+          } catch(e) {
+            console.error("Error parsing dashboardOrder:", e);
+          }
+        } else if (s.key === "dashboardSpans") {
+          try {
+            state.dashboardSpans = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+            applyDashboardSpans();
+          } catch(e) {
+            console.error("Error parsing dashboardSpans from database sync:", e);
+          }
+        } else if (s.key === "widgetSettings") {
+          try {
+            state.widgetSettings = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+            applyWidgetVisibility();
+            applyDashboardSpans();
+          } catch(e) {
+            console.error("Error parsing widgetSettings from database sync:", e);
+          }
         } else if (s.key === "supMetricOrder") {
           try {
             state.supMetricOrder = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
@@ -11651,7 +13578,10 @@ async function dbSeedDatabase() {
       { key: "defaultMarkupValue", value: state.defaultMarkupValue },
       { key: "syncMode", value: state.syncMode },
       { key: "supplierDisplayMode", value: state.supplierDisplayMode },
-      { key: "platformDisplayMode", value: state.platformDisplayMode }
+      { key: "platformDisplayMode", value: state.platformDisplayMode },
+      { key: "dashboardOrder", value: state.dashboardOrder },
+      { key: "dashboardSpans", value: state.dashboardSpans },
+      { key: "widgetSettings", value: state.widgetSettings }
     ];
     
     for (const s of settings) {
@@ -12245,10 +14175,10 @@ function getBackupPayloadJSON() {
     "gv_inventory", "gv_sales", "gv_suppliers", "gv_platforms",
     "gv_inv_layout", "gv_supplier_display_mode", "gv_platform_display_mode", "gv_inventory_sort_by", "gv_inv_page_size", "gv_entries_page_size", "gv_catalog_keys_page_size", "gv_theme", "gv_theme_mode", "gv_theme_color", "gv_currency", "gv_date_format",
     "gv_sidebar_collapsed", "gv_show_sales_ledger",
-    "gv_visible_metrics", "gv_sup_visible_metrics", "gv_visible_figures", "gv_metric_order", "gv_sup_metric_order", "gv_font_size", "gv_menu_icons",
-    "gv_menu_titles", "gv_custom_logo", "gv_low_stock_threshold",
+    "gv_visible_metrics", "gv_sup_visible_metrics", "gv_visible_figures", "gv_metric_order", "gv_sup_metric_order", "gv_menu_order", "gv_font_size", "gv_menu_icons",
+    "gv_menu_titles", "gv_menu_visibility", "gv_dashboard_order", "gv_dashboard_spans", "gv_widget_settings", "gv_custom_logo", "gv_low_stock_threshold",
     "gv_default_markup_type", "gv_default_markup_value",
-    "gv_platform_fee_presets", "gv_sync_mode", "gv_recycle_bin", "gv_payouts"
+    "gv_platform_fee_presets", "gv_sync_mode", "gv_recycle_bin", "gv_payouts", "gv_expense_categories"
   ];
   
   keys.forEach(k => {
@@ -13051,7 +14981,7 @@ function parseExcelDate(val) {
     if (!isNaN(d.getTime())) {
       return d.toISOString().split('T')[0];
     }
-    const parts = val.split(/[-/]/);
+    const parts = val.split(/[-\/]/);
     if (parts.length === 3) {
       if (parts[0].length === 4) {
         return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
@@ -13060,3 +14990,12 @@ function parseExcelDate(val) {
   }
   return "";
 }
+
+// Close custom icon picker menus when clicking outside
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".icon-picker-dropdown")) {
+    document.querySelectorAll(".icon-picker-menu").forEach(menu => {
+      menu.classList.remove("active");
+    });
+  }
+});

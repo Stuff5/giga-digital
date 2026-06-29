@@ -45,7 +45,7 @@
       </div>
       
       <nav class="sidebar-nav">
-        <ul>
+        <ul id="sidebar-menu-list">
           <li>
             <a href="#dashboard" class="nav-link active" id="nav-dashboard">
               <i class="fa-solid fa-chart-line" id="sidebar-icon-dashboard"></i>
@@ -187,6 +187,10 @@
             </div>
             <div class="header-controls">
 
+              <!-- Add Widget Gallery Drawer Button -->
+              <button class="btn btn-primary btn-sm" id="btn-open-widget-gallery" title="Add new widgets to dashboard" style="display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-plus"></i> <span>Add Widget</span>
+              </button>
 
               <!-- Customize Figures Dropdown -->
               <div class="dropdown-container" id="figures-customize-dropdown">
@@ -214,6 +218,30 @@
                   <label class="checkbox-container">
                     <input type="checkbox" id="toggle-figure-topBestsellers" checked>
                     <span class="checkbox-label">Top Bestsellers</span>
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="toggle-figure-dailyProfitMonth" checked>
+                    <span class="checkbox-label">Daily Profit of Month</span>
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="toggle-figure-stockSpeed" checked>
+                    <span class="checkbox-label">Stock Speed & Aging</span>
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="toggle-figure-salesFeed" checked>
+                    <span class="checkbox-label">Recent Sales Feed</span>
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="toggle-figure-financeTracker" checked>
+                    <span class="checkbox-label">Monthly Finance Summary</span>
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="toggle-figure-markupAnalysis" checked>
+                    <span class="checkbox-label">Markup & Pricing</span>
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="toggle-figure-stockTurnover" checked>
+                    <span class="checkbox-label">Stock Turnover Timeline</span>
                   </label>
                 </div>
               </div>
@@ -404,80 +432,779 @@
 
 
 
-          <!-- Charts Grid -->
-          <div class="charts-grid" id="charts-grid-row-1">
-            <div class="chart-card large-chart" id="card-chart-salesProfit">
-              <div class="chart-card-header">
-                <h4>Sales vs Profit Trend</h4>
-                <i class="fa-solid fa-ellipsis-vertical"></i>
-              </div>
-              <div class="chart-body">
-                <canvas id="salesProfitChart"></canvas>
-              </div>
-            </div>
-
-            <div class="chart-card small-chart" id="card-chart-platformSplit">
-              <div class="chart-card-header">
-                <h4>Platform Sales Split</h4>
-                <i class="fa-solid fa-ellipsis-vertical"></i>
-              </div>
-              <div class="chart-body doughnut-container">
-                <canvas id="platformSplitChart"></canvas>
-              </div>
-            </div>
-          </div>
-
-          <!-- Charts Grid Row 2 -->
-          <div class="charts-grid" id="charts-grid-row-2">
-            <div class="chart-card large-chart" id="card-chart-costRevenue">
-              <div class="chart-card-header">
-                <h4>Monthly Cost vs Revenue Comparison</h4>
-                <i class="fa-solid fa-ellipsis-vertical"></i>
-              </div>
-              <div class="chart-body">
-                <canvas id="costRevenueChart"></canvas>
-              </div>
-            </div>
-
-            <div class="chart-card small-chart" id="card-chart-supplierSplit">
-              <div class="chart-card-header">
-                <h4>Supplier Stock Distribution</h4>
-                <i class="fa-solid fa-ellipsis-vertical"></i>
-              </div>
-              <div class="chart-body doughnut-container">
-                <canvas id="supplierSplitChart"></canvas>
-              </div>
-            </div>
-          </div>
-
-          <!-- Charts Grid Row 3 (Full Width) -->
-          <div class="charts-grid" id="charts-grid-row-3">
-            <div class="chart-card large-chart" id="card-chart-topBestsellers" style="grid-column: 1 / -1;">
-              <div class="chart-card-header" style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                <h4 id="bestsellers-chart-title">Top 5 Bestselling Games by Net Profit</h4>
-                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                  <select id="bestsellers-limit-select" class="form-control form-control-sm" style="width: auto; height: 32px; padding: 2px 8px; margin: 0; font-size: 0.8rem; background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
-                    <option value="5">Top 5</option>
-                    <option value="10">Top 10</option>
-                    <option value="20">Top 20</option>
-                  </select>
-                  <select id="bestsellers-metric-select" class="form-control form-control-sm" style="width: auto; height: 32px; padding: 2px 8px; margin: 0; font-size: 0.8rem; background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
-                    <option value="profit">By Net Profit</option>
-                    <option value="revenue">By Revenue</option>
-                    <option value="sales">By Sales Volume</option>
-                  </select>
+          <!-- Dashboard Unified Charts Container (Draggable) -->
+          <div id="dashboard-charts-container">
+            
+            <div class="chart-card" id="card-chart-salesProfit" data-figure="salesProfit">
+              <div class="card-inner">
+                <div class="card-front">
+                  <div class="chart-card-header">
+                    <h4>Sales vs Profit Trend</h4>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                      <div class="card-actions-dropdown">
+                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
+                        <div class="card-actions-menu">
+                          <button type="button" class="card-actions-item btn-widget-configure">
+                            <i class="fa-solid fa-sliders"></i> Configure
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-remove">
+                            <i class="fa-solid fa-trash-can"></i> Remove Widget
+                          </button>
+                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                          <button type="button" class="card-actions-item" data-span="1">
+                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="2">
+                            <i class="fa-solid fa-table-columns"></i> 2 Columns
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="3">
+                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chart-body">
+                    <canvas id="salesProfitChart"></canvas>
+                  </div>
+                </div>
+                <div class="card-back">
+                  <form class="widget-config-form" data-widget="salesProfit">
+                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
+                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
+                    </div>
+                    <div class="config-form-body">
+                      <div class="config-field-group">
+                        <label for="config-salesProfit-chartType">Chart Type</label>
+                        <select id="config-salesProfit-chartType" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="line">Line Chart</option>
+                          <option value="bar">Bar Chart</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-salesProfit-timeframe">Time Period</label>
+                        <select id="config-salesProfit-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="global">Global Dashboard Filter</option>
+                          <option value="30">Last 30 Days</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="year">This Year</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="config-form-actions">
+                      <button type="submit" class="btn-widget-save">Save Changes</button>
+                      <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
+                    </div>
+                  </form>
                 </div>
               </div>
-              <div class="chart-body" style="min-height: auto; max-height: none;">
-                <div id="top-bestsellers-list" class="bestsellers-list"></div>
+            </div>
+
+            <div class="chart-card" id="card-chart-platformSplit" data-figure="platformSplit">
+              <div class="card-inner">
+                <div class="card-front">
+                  <div class="chart-card-header">
+                    <h4>Platform Sales Split</h4>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                      <div class="card-actions-dropdown">
+                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
+                        <div class="card-actions-menu">
+                          <button type="button" class="card-actions-item btn-widget-configure">
+                            <i class="fa-solid fa-sliders"></i> Configure
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-remove">
+                            <i class="fa-solid fa-trash-can"></i> Remove Widget
+                          </button>
+                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                          <button type="button" class="card-actions-item" data-span="1">
+                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="2">
+                            <i class="fa-solid fa-table-columns"></i> 2 Columns
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="3">
+                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chart-body doughnut-container">
+                    <canvas id="platformSplitChart"></canvas>
+                  </div>
+                </div>
+                <div class="card-back">
+                  <form class="widget-config-form" data-widget="platformSplit">
+                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
+                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
+                    </div>
+                    <div class="config-form-body">
+                      <div class="config-field-group">
+                        <label for="config-platformSplit-chartType">Chart Style</label>
+                        <select id="config-platformSplit-chartType" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="doughnut">Doughnut Chart</option>
+                          <option value="pie">Pie Chart</option>
+                          <option value="polarArea">Polar Area Chart</option>
+                          <option value="bar">Bar Chart</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-platformSplit-timeframe">Time Period</label>
+                        <select id="config-platformSplit-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="global">Global Dashboard Filter</option>
+                          <option value="30">Last 30 Days</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="year">This Year</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="config-form-actions">
+                      <button type="submit" class="btn-widget-save">Save Changes</button>
+                      <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
+                    </div>
+                  </form>
+                </div>
               </div>
             </div>
+
+            <div class="chart-card" id="card-chart-costRevenue" data-figure="costRevenue">
+              <div class="card-inner">
+                <div class="card-front">
+                  <div class="chart-card-header">
+                    <h4>Monthly Cost vs Revenue Comparison</h4>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                      <div class="card-actions-dropdown">
+                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
+                        <div class="card-actions-menu">
+                          <button type="button" class="card-actions-item btn-widget-configure">
+                            <i class="fa-solid fa-sliders"></i> Configure
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-remove">
+                            <i class="fa-solid fa-trash-can"></i> Remove Widget
+                          </button>
+                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                          <button type="button" class="card-actions-item" data-span="1">
+                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="2">
+                            <i class="fa-solid fa-table-columns"></i> 2 Columns
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="3">
+                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chart-body">
+                    <canvas id="costRevenueChart"></canvas>
+                  </div>
+                </div>
+                <div class="card-back">
+                  <form class="widget-config-form" data-widget="costRevenue">
+                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
+                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
+                    </div>
+                    <div class="config-form-body">
+                      <div class="config-field-group">
+                        <label for="config-costRevenue-chartType">Chart Type</label>
+                        <select id="config-costRevenue-chartType" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="bar">Bar Chart</option>
+                          <option value="line">Line Chart</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-costRevenue-timeframe">Time Period</label>
+                        <select id="config-costRevenue-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="global">Global Dashboard Filter</option>
+                          <option value="30">Last 30 Days</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="year">This Year</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="config-form-actions">
+                      <button type="submit" class="btn-widget-save">Save Changes</button>
+                      <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <div class="chart-card" id="card-chart-supplierSplit" data-figure="supplierSplit">
+              <div class="card-inner">
+                <div class="card-front">
+                  <div class="chart-card-header">
+                    <h4>Supplier Stock Distribution</h4>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                      <div class="card-actions-dropdown">
+                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
+                        <div class="card-actions-menu">
+                          <button type="button" class="card-actions-item btn-widget-configure">
+                            <i class="fa-solid fa-sliders"></i> Configure
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-remove">
+                            <i class="fa-solid fa-trash-can"></i> Remove Widget
+                          </button>
+                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                          <button type="button" class="card-actions-item" data-span="1">
+                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="2">
+                            <i class="fa-solid fa-table-columns"></i> 2 Columns
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="3">
+                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chart-body doughnut-container">
+                    <canvas id="supplierSplitChart"></canvas>
+                  </div>
+                </div>
+                <div class="card-back">
+                  <form class="widget-config-form" data-widget="supplierSplit">
+                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
+                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
+                    </div>
+                    <div class="config-form-body">
+                      <div class="config-field-group">
+                        <label for="config-supplierSplit-chartType">Chart Style</label>
+                        <select id="config-supplierSplit-chartType" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="doughnut">Doughnut Chart</option>
+                          <option value="pie">Pie Chart</option>
+                          <option value="polarArea">Polar Area Chart</option>
+                          <option value="bar">Bar Chart</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-supplierSplit-timeframe">Time Period</label>
+                        <select id="config-supplierSplit-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="global">Global Dashboard Filter</option>
+                          <option value="30">Last 30 Days</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="year">This Year</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="config-form-actions">
+                      <button type="submit" class="btn-widget-save">Save Changes</button>
+                      <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <div class="chart-card" id="card-chart-topBestsellers" data-figure="topBestsellers">
+              <div class="card-inner">
+                <div class="card-front">
+                  <div class="chart-card-header">
+                    <h4 id="bestsellers-chart-title">Top Bestselling Games</h4>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                      <div class="card-actions-dropdown">
+                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
+                        <div class="card-actions-menu">
+                          <button type="button" class="card-actions-item btn-widget-configure">
+                            <i class="fa-solid fa-sliders"></i> Configure
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-remove">
+                            <i class="fa-solid fa-trash-can"></i> Remove Widget
+                          </button>
+                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                          <button type="button" class="card-actions-item" data-span="1">
+                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="2">
+                            <i class="fa-solid fa-table-columns"></i> 2 Columns
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="3">
+                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chart-body" style="min-height: auto; max-height: none; overflow-y: auto;">
+                    <div id="top-bestsellers-list" class="bestsellers-list"></div>
+                  </div>
+                </div>
+                <div class="card-back">
+                  <form class="widget-config-form" data-widget="topBestsellers">
+                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
+                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
+                    </div>
+                    <div class="config-form-body">
+                      <div class="config-field-group">
+                        <label for="config-topBestsellers-limit">Show Quantity</label>
+                        <select id="config-topBestsellers-limit" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="5">Top 5 Games</option>
+                          <option value="10">Top 10 Games</option>
+                          <option value="20">Top 20 Games</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-topBestsellers-metric">Ranking Metric</label>
+                        <select id="config-topBestsellers-metric" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="profit">By Net Profit</option>
+                          <option value="revenue">By Revenue</option>
+                          <option value="sales">By Sales Volume</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-topBestsellers-timeframe">Time Period</label>
+                        <select id="config-topBestsellers-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="global">Global Dashboard Filter</option>
+                          <option value="30">Last 30 Days</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="year">This Year</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="config-form-actions">
+                      <button type="submit" class="btn-widget-save">Save Changes</button>
+                      <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <div class="chart-card" id="card-chart-dailyProfitMonth" data-figure="dailyProfitMonth">
+              <div class="card-inner">
+                <div class="card-front">
+                  <div class="chart-card-header">
+                    <h4>Daily Profit of the Month</h4>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                      <div class="card-actions-dropdown">
+                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
+                        <div class="card-actions-menu">
+                          <button type="button" class="card-actions-item btn-widget-configure">
+                            <i class="fa-solid fa-sliders"></i> Configure
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-remove">
+                            <i class="fa-solid fa-trash-can"></i> Remove Widget
+                          </button>
+                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                          <button type="button" class="card-actions-item" data-span="1">
+                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="2">
+                            <i class="fa-solid fa-table-columns"></i> 2 Columns
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="3">
+                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chart-body">
+                    <canvas id="dailyProfitMonthChart"></canvas>
+                  </div>
+                </div>
+                <div class="card-back">
+                  <form class="widget-config-form" data-widget="dailyProfitMonth">
+                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
+                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
+                    </div>
+                    <div class="config-form-body">
+                      <div class="config-field-group">
+                        <label for="config-dailyProfitMonth-chartType">Chart Type</label>
+                        <select id="config-dailyProfitMonth-chartType" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="bar">Bar Chart</option>
+                          <option value="line">Line Chart</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-dailyProfitMonth-timeframe">Time Period</label>
+                        <select id="config-dailyProfitMonth-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="global">Global Dashboard Filter</option>
+                          <option value="30">Last 30 Days</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="year">This Year</option>
+                        </select>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <!-- Widget 7: Stock Speed & Aging Analytics -->
+            <div class="chart-card" id="card-chart-stockSpeed" data-figure="stockSpeed">
+              <div class="card-inner">
+                <div class="card-front">
+                  <div class="chart-card-header">
+                    <h4>Stock Speed & Aging Analytics</h4>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                      <div class="card-actions-dropdown">
+                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
+                        <div class="card-actions-menu">
+                          <button type="button" class="card-actions-item btn-widget-configure">
+                            <i class="fa-solid fa-sliders"></i> Configure
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-remove">
+                            <i class="fa-solid fa-trash-can"></i> Remove Widget
+                          </button>
+                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                          <button type="button" class="card-actions-item" data-span="1">
+                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="2">
+                            <i class="fa-solid fa-table-columns"></i> 2 Columns
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="3">
+                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chart-body doughnut-container">
+                    <canvas id="stockSpeedChart"></canvas>
+                  </div>
+                </div>
+                <div class="card-back">
+                  <form class="widget-config-form" data-widget="stockSpeed">
+                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
+                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
+                    </div>
+                    <div class="config-form-body">
+                      <div class="config-field-group">
+                        <label for="config-stockSpeed-chartType">Chart Style</label>
+                        <select id="config-stockSpeed-chartType" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="doughnut">Doughnut Chart</option>
+                          <option value="pie">Pie Chart</option>
+                          <option value="bar">Bar Chart</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-stockSpeed-timeframe">Time Period</label>
+                        <select id="config-stockSpeed-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="global">Global Dashboard Filter</option>
+                          <option value="30">Last 30 Days</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="year">This Year</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="config-form-actions">
+                      <button type="submit" class="btn-widget-save">Save Changes</button>
+                      <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <!-- Widget 8: Recent Sales Activity Feed -->
+            <div class="chart-card" id="card-chart-salesFeed" data-figure="salesFeed">
+              <div class="card-inner">
+                <div class="card-front">
+                  <div class="chart-card-header">
+                    <h4>Recent Sales Activity Feed</h4>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                      <div class="card-actions-dropdown">
+                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
+                        <div class="card-actions-menu">
+                          <button type="button" class="card-actions-item btn-widget-configure">
+                            <i class="fa-solid fa-sliders"></i> Configure
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-remove">
+                            <i class="fa-solid fa-trash-can"></i> Remove Widget
+                          </button>
+                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                          <button type="button" class="card-actions-item" data-span="1">
+                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="2">
+                            <i class="fa-solid fa-table-columns"></i> 2 Columns
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="3">
+                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chart-body" style="min-height: auto; max-height: none; overflow-y: auto; padding: 4px 8px;">
+                    <div id="sales-feed-list" class="sales-feed-list"></div>
+                  </div>
+                </div>
+                <div class="card-back">
+                  <form class="widget-config-form" data-widget="salesFeed">
+                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
+                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
+                    </div>
+                    <div class="config-form-body">
+                      <div class="config-field-group">
+                        <label for="config-salesFeed-limit">Show Quantity</label>
+                        <select id="config-salesFeed-limit" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="3">Latest 3 Sales</option>
+                          <option value="5">Latest 5 Sales</option>
+                          <option value="10">Latest 10 Sales</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-salesFeed-timeframe">Time Period</label>
+                        <select id="config-salesFeed-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="global">Global Dashboard Filter</option>
+                          <option value="30">Last 30 Days</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="year">This Year</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="config-form-actions">
+                      <button type="submit" class="btn-widget-save">Save Changes</button>
+                      <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <!-- Widget 9: Monthly Finance & Payouts Tracker -->
+            <div class="chart-card" id="card-chart-financeTracker" data-figure="financeTracker">
+              <div class="card-inner">
+                <div class="card-front">
+                  <div class="chart-card-header">
+                    <h4>Monthly Finance & Payouts</h4>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                      <div class="card-actions-dropdown">
+                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
+                        <div class="card-actions-menu">
+                          <button type="button" class="card-actions-item btn-widget-configure">
+                            <i class="fa-solid fa-sliders"></i> Configure
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-remove">
+                            <i class="fa-solid fa-trash-can"></i> Remove Widget
+                          </button>
+                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                          <button type="button" class="card-actions-item" data-span="1">
+                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="2">
+                            <i class="fa-solid fa-table-columns"></i> 2 Columns
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="3">
+                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chart-body" style="min-height: auto; max-height: none; overflow-y: auto; padding: 4px 8px;">
+                    <div id="finance-tracker-card" class="finance-tracker-card"></div>
+                  </div>
+                </div>
+                <div class="card-back">
+                  <form class="widget-config-form" data-widget="financeTracker">
+                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
+                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
+                    </div>
+                    <div class="config-form-body">
+                      <div class="config-field-group">
+                        <label for="config-financeTracker-timeframe">Time Period</label>
+                        <select id="config-financeTracker-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="global">Global Dashboard Filter</option>
+                          <option value="30">Last 30 Days</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="year">This Year</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="config-form-actions">
+                      <button type="submit" class="btn-widget-save">Save Changes</button>
+                      <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <!-- Widget 10: Markup & Pricing Analysis Chart -->
+            <div class="chart-card" id="card-chart-markupAnalysis" data-figure="markupAnalysis">
+              <div class="card-inner">
+                <div class="card-front">
+                  <div class="chart-card-header">
+                    <h4>Markup & Pricing Analysis</h4>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                      <div class="card-actions-dropdown">
+                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
+                        <div class="card-actions-menu">
+                          <button type="button" class="card-actions-item btn-widget-configure">
+                            <i class="fa-solid fa-sliders"></i> Configure
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-remove">
+                            <i class="fa-solid fa-trash-can"></i> Remove Widget
+                          </button>
+                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                          <button type="button" class="card-actions-item" data-span="1">
+                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="2">
+                            <i class="fa-solid fa-table-columns"></i> 2 Columns
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="3">
+                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chart-body">
+                    <canvas id="markupAnalysisChart"></canvas>
+                  </div>
+                </div>
+                <div class="card-back">
+                  <form class="widget-config-form" data-widget="markupAnalysis">
+                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
+                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
+                    </div>
+                    <div class="config-form-body">
+                      <div class="config-field-group">
+                        <label for="config-markupAnalysis-chartType">Chart Type</label>
+                        <select id="config-markupAnalysis-chartType" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="bar">Bar Chart</option>
+                          <option value="line">Line Chart</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-markupAnalysis-groupBy">Group Analysis By</label>
+                        <select id="config-markupAnalysis-groupBy" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="publisher">By Game Publisher</option>
+                          <option value="supplier">By Stock Supplier</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-markupAnalysis-timeframe">Time Period</label>
+                        <select id="config-markupAnalysis-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="global">Global Dashboard Filter</option>
+                          <option value="30">Last 30 Days</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="year">This Year</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="config-form-actions">
+                      <button type="submit" class="btn-widget-save">Save Changes</button>
+                      <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <!-- Widget 11: Inventory Stock Turnover Timeline -->
+            <div class="chart-card" id="card-chart-stockTurnover" data-figure="stockTurnover">
+              <div class="card-inner">
+                <div class="card-front">
+                  <div class="chart-card-header">
+                    <h4>Stock Turnover Timeline</h4>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                      <div class="card-actions-dropdown">
+                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
+                        <div class="card-actions-menu">
+                          <button type="button" class="card-actions-item btn-widget-configure">
+                            <i class="fa-solid fa-sliders"></i> Configure
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-remove">
+                            <i class="fa-solid fa-trash-can"></i> Remove Widget
+                          </button>
+                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                          <button type="button" class="card-actions-item" data-span="1">
+                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="2">
+                            <i class="fa-solid fa-table-columns"></i> 2 Columns
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="3">
+                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chart-body">
+                    <canvas id="stockTurnoverChart"></canvas>
+                  </div>
+                </div>
+                <div class="card-back">
+                  <form class="widget-config-form" data-widget="stockTurnover">
+                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
+                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
+                    </div>
+                    <div class="config-form-body">
+                      <div class="config-field-group">
+                        <label for="config-stockTurnover-chartType">Chart Type</label>
+                        <select id="config-stockTurnover-chartType" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="line">Line Chart</option>
+                          <option value="bar">Bar Chart</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-stockTurnover-timeframe">Time Period</label>
+                        <select id="config-stockTurnover-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="global">Global Dashboard Filter</option>
+                          <option value="30">Last 30 Days</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="year">This Year</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="config-form-actions">
+                      <button type="submit" class="btn-widget-save">Save Changes</button>
+                      <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
           </div>
 
 
 
           <!-- Dashboard Subsections -->
-          <div class="dashboard-details-grid">
+          <div style="margin-bottom: 24px;">
             <!-- Recent Activity Table -->
             <div class="detail-card">
               <div class="detail-card-header">
@@ -500,20 +1227,6 @@
                     <!-- Injected by JavaScript -->
                   </tbody>
                 </table>
-              </div>
-            </div>
-
-            <!-- Column 2 (Stacked smaller cards) -->
-            <div style="display: flex; flex-direction: column; gap: 24px;">
-              <!-- Inventory Status Summary -->
-              <div class="detail-card">
-                <div class="detail-card-header">
-                  <h4>Inventory Status Summary</h4>
-                  <a href="#inventory" class="view-all-link">Manage Stock</a>
-                </div>
-                <div class="inventory-summary-list" id="inventory-summary-list">
-                  <!-- Injected by JavaScript -->
-                </div>
               </div>
             </div>
           </div>
@@ -1237,10 +1950,10 @@
             <!-- Payouts & Fees Section -->
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
               <!-- Log New Payout / Fee Form -->
-              <div class="detail-card">
+              <div class="detail-card" style="height: 420px;">
                 <div class="detail-card-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
                   <h4 style="margin: 0; display: flex; align-items: center; gap: 8px;">
-                    <i class="fa-solid fa-file-invoice-dollar" style="color: var(--accent-purple);"></i> Record Monthly Payout / Fee
+                    <i class="fa-solid fa-file-invoice-dollar" style="color: var(--accent-purple);"></i> Record Expense
                   </h4>
                 </div>
                 <form id="form-add-payout" style="display: flex; flex-direction: column; gap: 12px;">
@@ -1249,8 +1962,19 @@
                     <input type="date" id="payout-date" class="form-control" required style="width: 100%;">
                   </div>
                   <div class="form-group">
-                    <label for="payout-description">Description / Type</label>
-                    <input type="text" id="payout-description" class="form-control" placeholder="e.g. PayPal Fee, Overhead Expenses" required style="width: 100%;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                      <label for="payout-category" style="margin: 0;">Expense Category</label>
+                      <button type="button" class="btn btn-outline btn-xs" id="btn-manage-categories" style="padding: 2px 6px; font-size: 0.72rem; display: flex; align-items: center; gap: 4px;">
+                        <i class="fa-solid fa-gear"></i> Manage
+                      </button>
+                    </div>
+                    <select id="payout-category" class="form-control" required style="width: 100%;">
+                      <!-- Dynamically Populated -->
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="payout-description">Description / Notes</label>
+                    <input type="text" id="payout-description" class="form-control" placeholder="e.g. PayPal Fee transaction, server host overhead" style="width: 100%;">
                   </div>
                   <div class="form-group">
                     <label for="payout-amount">Amount</label>
@@ -1263,17 +1987,18 @@
               </div>
 
               <!-- Payouts & Fees Ledger Table -->
-              <div class="detail-card">
+              <div class="detail-card" style="display: flex; flex-direction: column; height: 420px;">
                 <div class="detail-card-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
                   <h4 style="margin: 0; display: flex; align-items: center; gap: 8px;">
-                    <i class="fa-solid fa-list-check" style="color: var(--accent-cyan);"></i> Registered Monthly Payouts & Fees
+                    <i class="fa-solid fa-list-check" style="color: var(--accent-cyan);"></i> Operational Expenses Ledger
                   </h4>
                 </div>
-                <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                <div class="table-responsive" style="flex-grow: 1; overflow-y: auto;">
                   <table class="table" id="payouts-ledger-table">
                     <thead>
                       <tr>
                         <th>Date</th>
+                        <th>Category</th>
                         <th>Description</th>
                         <th style="text-align: right;">Amount</th>
                         <th style="text-align: center; width: 60px;">Action</th>
@@ -1736,31 +2461,6 @@
                   </button>
                 </div>
 
-                <!-- Feature Visibility Settings Card -->
-                <div class="calc-card">
-                  <h3>Menu Visibility</h3>
-                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
-                    Customize sidebar navigation menus.
-                  </p>
-                  
-                  <!-- Sales Ledger Toggle -->
-                  <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background-color: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: 12px;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                      <i class="fa-solid fa-receipt" style="font-size: 1.25rem; color: var(--accent-cyan);"></i>
-                      <div style="display: flex; flex-direction: column; text-align: left;">
-                        <strong style="font-size: 0.9rem; color: var(--text-main);">Sales Ledger</strong>
-                        <span style="font-size: 0.75rem; color: var(--text-muted);">Enable transaction records log</span>
-                      </div>
-                    </div>
-                    <div>
-                      <label class="switch-toggle" style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer; margin: 0;">
-                        <input type="checkbox" id="toggle-show-sales-ledger" style="opacity: 0; width: 0; height: 0;" checked>
-                        <span class="switch-slider" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: hsla(0, 0%, 100%, 0.1); border-radius: 34px; transition: 0.3s ease;"></span>
-                      </label>
-                    </div>
-                  </div>
-
-                </div>
 
                 <!-- Inventory Display Preferences Card -->
                 <div class="calc-card">
@@ -2659,17 +3359,27 @@
         <button class="modal-close-btn" data-close-modal="help-modal">&times;</button>
       </div>
       <div class="modal-body" style="padding: 20px; overflow-y: hidden;">
-        <div style="display: grid; grid-template-columns: 200px 1fr; gap: 24px; min-height: 400px;">
+        <div style="display: grid; grid-template-columns: 220px 1fr; gap: 24px; min-height: 420px;">
           <!-- Sidebar tabs -->
           <div style="display: flex; flex-direction: column; gap: 6px; border-right: 1px solid var(--border-color); padding-right: 16px;">
+            <div style="position: relative; margin-bottom: 8px;">
+              <input type="text" id="help-search-input" placeholder="Search docs..." style="width: 100%; padding: 8px 12px 8px 30px; font-size: 0.8rem; background-color: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-main);">
+              <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 10px; top: 11px; font-size: 0.75rem; color: var(--text-muted);"></i>
+            </div>
             <button type="button" class="btn btn-outline btn-sm help-tab-btn active" data-help-tab="help-tab-general" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background-color: var(--bg-input); color: var(--text-main); width: 100%;">
               <i class="fa-solid fa-book" style="margin-right: 8px; width: 16px; color: var(--accent-cyan);"></i> General Guide
+            </button>
+            <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-widgets" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
+              <i class="fa-solid fa-square-poll-vertical" style="margin-right: 8px; width: 16px; color: var(--accent-purple);"></i> Widget Console
             </button>
             <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-import" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
               <i class="fa-solid fa-file-excel" style="margin-right: 8px; width: 16px; color: var(--accent-emerald);"></i> Bulk Import Tips
             </button>
             <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-sync" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
-              <i class="fa-solid fa-arrows-rotate" style="margin-right: 8px; width: 16px; color: var(--accent-purple);"></i> Cloud & Auto-Sync
+              <i class="fa-solid fa-arrows-rotate" style="margin-right: 8px; width: 16px; color: var(--accent-teal);"></i> Cloud & Auto-Sync
+            </button>
+            <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-business-math" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
+              <i class="fa-solid fa-calculator" style="margin-right: 8px; width: 16px; color: var(--accent-warning);"></i> Formulas & Logic
             </button>
             <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-shortcuts" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
               <i class="fa-solid fa-keyboard" style="margin-right: 8px; width: 16px; color: var(--accent-pink);"></i> Keyboard Hotkeys
@@ -2702,6 +3412,24 @@
                 <span class="badge badge-age-stale" style="display: inline-block;">Stale</span> (90-180 days), and 
                 <span class="badge badge-age-verystale" style="display: inline-block;">Very Stale</span> (180+ days).
               </p>
+            </div>
+
+            <!-- Pane Widgets: Widget Console -->
+            <div id="help-tab-widgets" class="help-tab-pane hidden">
+              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Dashboard Widget Console</h4>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                Customize your analytical workflow by transforming the charts layout into an interactive grid of modular widgets.
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Interactive Features</h5>
+              <ul style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.6; padding-left: 20px; margin-bottom: 16px;">
+                <li><strong>Drag-and-Drop Order:</strong> Click and drag any card header to swap visual positions on the grid. Custom positions are saved instantly.</li>
+                <li><strong>Variable Width Spans:</strong> Click the card options menu <i class="fa-solid fa-ellipsis-vertical"></i> and select 1, 2, or 3 columns to scale the card width dynamically.</li>
+                <li><strong>Minimize/Expand:</strong> Click <i class="fa-solid fa-chevron-down"></i> to collapse the chart body down to a clean header, or click <i class="fa-solid fa-chevron-up"></i> to restore it.</li>
+                <li><strong>Fullscreen Focus Overlay:</strong> Click <i class="fa-solid fa-expand"></i> to pop the widget into a maximized glassmorphic overlay for detailed focus views.</li>
+                <li><strong>3D Config Card Flip:</strong> Click **Configure** in options to rotate the card in 3D. Setup custom timeframe overrides (e.g. Last 30 Days, This Year) or change chart styles on the fly.</li>
+                <li><strong>Widget Gallery Drawer:</strong> Click **Remove Widget** in options to hide a card. Open the sidebar **+ Add Widget** gallery drawer to place inactive widgets back in real-time.</li>
+              </ul>
             </div>
 
             <!-- Pane 2: Import -->
@@ -2774,7 +3502,50 @@
               
               <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">GitHub Repositories Sync</h5>
               <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 0;">
-                Configure a Personal Access Token (PAT) to commit your database backups directly to your GitHub repo as a JSON file. Use **Auto-Push on Change** to sync silently in the background, or **Auto-Pull on Startup** to download the latest state automatically.
+                Configure a Personal Access Token (PAT) to commit your database backups directly to your GitHub repo as a JSON file. Use **Auto-Push on Change** to sync silently in the background, or **Auto-Push on Startup** to download the latest state automatically.
+              </p>
+            </div>
+
+            <!-- Pane Business Math: Formulas & Logic -->
+            <div id="help-tab-business-math" class="help-tab-pane hidden">
+              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Formulas & Business Logic</h4>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                Review how analytical metrics are calculated inside Key Merchant Pro:
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">1. Gross Revenue</h5>
+              <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 12px;">
+                The sum of listing prices for all keys sold in the active filters period:
+                <br>
+                <code style="font-family: monospace; color: var(--accent-cyan);">Gross Revenue = Sum(Sale Price)</code>
+              </p>
+
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">2. Net Net Profit</h5>
+              <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 12px;">
+                Calculated by subtracting acquisition costs, platform commission fees, payment processor charges, and other overhead expenses:
+                <br>
+                <code style="font-family: monospace; color: var(--accent-purple);">Net Profit = Revenue - Cost - Commission Fees - Overhead Expenses</code>
+              </p>
+
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">3. Return on Investment (ROI)</h5>
+              <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 12px;">
+                Measures the percentage yield relative to capital spent:
+                <br>
+                <code style="font-family: monospace; color: var(--accent-teal);">ROI % = (Net Profit / Total Expense Costs) * 100</code>
+              </p>
+
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">4. Sell-Through Rate (STR)</h5>
+              <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 12px;">
+                The velocity proportion of total inventory that has successfully been sold:
+                <br>
+                <code style="font-family: monospace; color: var(--accent-pink);">STR % = (Total Sold Keys / Total Added Keys) * 100</code>
+              </p>
+
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">5. Stock Speed / Shelf-life Aging</h5>
+              <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 0;">
+                Calculated per key as the duration between when a key is added and when it is marked sold:
+                <br>
+                <code style="font-family: monospace; color: var(--accent-warning);">Days to Sell = Sale Date - Purchase Date</code>
               </p>
             </div>
 
@@ -2823,9 +3594,9 @@
   </div>
 
   <!-- BULK PRICE ADJUSTMENT MODAL -->
-  <div class="modal hidden" id="bulk-price-adjust-modal">
-    <div class="modal-backdrop" data-close-modal="bulk-price-adjust-modal"></div>
-    <div class="modal-content modal-md">
+  <!-- BULK PRICE ADJUSTMENT MODAL -->
+  <div class="modal-backdrop" id="bulk-price-adjust-modal">
+    <div class="modal-card" style="max-width: 520px; width: 95%;">
       <div class="modal-header">
         <h3><i class="fa-solid fa-calculator"></i> Bulk Price Adjustment</h3>
         <button class="modal-close-btn" data-close-modal="bulk-price-adjust-modal">&times;</button>
@@ -2890,11 +3661,38 @@
             </div>
           </div>
         </div>
-        <div class="modal-footer">
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid var(--border-color); padding: 16px 24px; background: var(--bg-modal-footer);">
           <button type="button" class="btn btn-outline" data-close-modal="bulk-price-adjust-modal">Cancel</button>
           <button type="submit" class="btn btn-primary">Apply Changes</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MANAGE EXPENSE CATEGORIES MODAL -->
+  <div class="modal-backdrop" id="payout-categories-modal">
+    <div class="modal-card" style="max-width: 450px; width: 95%;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-tags text-purple"></i> Manage Expense Categories</h3>
+        <button class="modal-close-btn" data-close-modal="payout-categories-modal">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 20px;">
+        <form id="form-add-payout-category" style="display: flex; gap: 8px; margin-bottom: 16px;">
+          <input type="text" id="new-payout-category-name" class="form-control" placeholder="New category name..." required style="flex-grow: 1;">
+          <button type="submit" class="btn btn-primary" style="padding: 8px 16px; display: flex; align-items: center; gap: 4px;">
+            <i class="fa-solid fa-plus"></i> Add
+          </button>
+        </form>
+        
+        <div style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); background-color: var(--bg-input);">
+          <ul id="payout-categories-list" style="list-style: none; padding: 0; margin: 0;">
+            <!-- Injected dynamically by JavaScript -->
+          </ul>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; padding: 12px 20px; border-top: 1px solid var(--border-color); background: var(--bg-modal-footer);">
+        <button type="button" class="btn btn-outline" data-close-modal="payout-categories-modal">Close</button>
+      </div>
     </div>
   </div>
 
@@ -2956,6 +3754,22 @@
 
   <!-- TOAST NOTIFICATION CONTAINER -->
   <div class="toast-container" id="toast-container"></div>
+
+  <!-- WIDGET SIDEBAR GALLERY DRAWER -->
+  <div class="widget-gallery-drawer" id="widget-gallery-drawer">
+    <div class="drawer-header">
+      <h3>Add Dashboard Widgets</h3>
+      <button type="button" class="btn-close-drawer" id="btn-close-widget-gallery-drawer">&times;</button>
+    </div>
+    <div class="drawer-body" id="widget-gallery-list">
+      <!-- Injected dynamically by JavaScript -->
+    </div>
+  </div>
+
+  <!-- WIDGET FULLSCREEN OVERLAY FOCUS MODE -->
+  <div class="widget-fullscreen-overlay" id="widget-fullscreen-overlay">
+    <!-- Focussed widget is appended here dynamically -->
+  </div>
 
   <!-- Main JavaScript File -->
   <script src="app.js?v=3"></script>
