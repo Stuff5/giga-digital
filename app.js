@@ -504,6 +504,8 @@ function getSupplierColorName(supplierName) {
 // ==========================================================================
 let state = {
   currentUser: null,
+  favoriteGames: [],
+  entriesFilterFav: false,
   suppliersActiveTab: "supplier",
   lowStockThreshold: 5,
   defaultMarkupType: "percent",
@@ -1155,6 +1157,15 @@ function loadStateFromStorage() {
     // User-specific data loading (supports isolated storage namespaces)
     const userSuffix = (state.currentUser && state.currentUser !== "guest") ? `_${state.currentUser}` : "";
     
+    try {
+      const storedFavs = localStorage.getItem("gv_favorite_games" + userSuffix);
+      state.favoriteGames = storedFavs ? JSON.parse(storedFavs) : [];
+      if (!Array.isArray(state.favoriteGames)) state.favoriteGames = [];
+    } catch (e) {
+      console.error("Error loading favorite games:", e);
+      state.favoriteGames = [];
+    }
+    
     const storedInventory = localStorage.getItem("gv_inventory" + userSuffix);
     const storedSales = localStorage.getItem("gv_sales" + userSuffix);
     const storedSuppliers = localStorage.getItem("gv_suppliers" + userSuffix);
@@ -1428,6 +1439,7 @@ function cleanupEmptyDatabaseRows() {
 function saveStateToStorage() {
   const userSuffix = (state.currentUser && state.currentUser !== "guest") ? `_${state.currentUser}` : "";
   localStorage.setItem("gv_inventory" + userSuffix, JSON.stringify(state.inventory));
+  localStorage.setItem("gv_favorite_games" + userSuffix, JSON.stringify(state.favoriteGames || []));
   localStorage.setItem("gv_sales" + userSuffix, JSON.stringify(state.sales));
   localStorage.setItem("gv_suppliers" + userSuffix, JSON.stringify(state.suppliers));
   localStorage.setItem("gv_platforms" + userSuffix, JSON.stringify(state.platforms));
@@ -3179,6 +3191,30 @@ function initEventHandlers() {
     entriesSearch.addEventListener("input", debouncedEntriesSearch);
   }
 
+  // Entries Favorites toggle filter listener
+  const btnFavFilter = document.getElementById("btn-entries-fav-filter");
+  if (btnFavFilter) {
+    btnFavFilter.addEventListener("click", () => {
+      state.entriesFilterFav = !state.entriesFilterFav;
+      const icon = document.getElementById("entries-fav-filter-icon");
+      if (state.entriesFilterFav) {
+        btnFavFilter.classList.add("btn-fav-active");
+        btnFavFilter.classList.remove("btn-outline");
+        if (icon) {
+          icon.className = "fa-solid fa-star";
+        }
+      } else {
+        btnFavFilter.classList.add("btn-outline");
+        btnFavFilter.classList.remove("btn-fav-active");
+        if (icon) {
+          icon.className = "fa-regular fa-star";
+        }
+      }
+      state.entriesCurrentPage = 1;
+      renderEntries();
+    });
+  }
+
   // Suppliers Sort Listener
   const suppliersSort = document.getElementById("suppliers-sort");
   if (suppliersSort) {
@@ -4826,18 +4862,18 @@ window.triggerViewKey = function(gameId) {
   const initials = game.title.split(" ").map(w => w[0]).join("").slice(0, 3);
   if (game.imageUrl) {
     artworkRow.innerHTML = `
-      <img src="${game.imageUrl}" class="view-modal-thumbnail" alt="${game.title}">
+      <img src="${escapeHTML(game.imageUrl)}" class="view-modal-thumbnail" alt="${escapeHTML(game.title)}">
       <div>
         <span class="key-label" style="margin-bottom: 2px;">Game Title</span>
-        <h4 id="view-modal-title" style="font-size: 1.15rem; color: #fff;">${game.title}</h4>
+        <h4 id="view-modal-title" style="font-size: 1.15rem; color: #fff;">${escapeHTML(game.title)}</h4>
       </div>
     `;
   } else {
     artworkRow.innerHTML = `
-      <div class="view-modal-thumbnail-placeholder">${initials}</div>
+      <div class="view-modal-thumbnail-placeholder">${escapeHTML(initials)}</div>
       <div>
         <span class="key-label" style="margin-bottom: 2px;">Game Title</span>
-        <h4 id="view-modal-title" style="font-size: 1.15rem; color: #fff;">${game.title}</h4>
+        <h4 id="view-modal-title" style="font-size: 1.15rem; color: #fff;">${escapeHTML(game.title)}</h4>
       </div>
     `;
   }
@@ -4852,7 +4888,7 @@ window.triggerViewKey = function(gameId) {
     viewModalSource.innerHTML = `
       <span class="supplier-tag" style="background-color: ${colorPreset.value}12; border-color: ${colorPreset.value}25; color: ${colorPreset.value}; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px; vertical-align: middle;">
         <span class="supplier-dot" style="background-color: ${colorPreset.value}; width: 6px; height: 6px;"></span>
-        ${game.source}
+        ${escapeHTML(game.source)}
       </span>
     `;
   }
@@ -5135,6 +5171,23 @@ async function handleEditGameSubmit(e) {
 
   showToast(`Updated game metadata for "${title}"`, "success");
 }
+
+window.toggleFavoriteGame = function(gameTitle) {
+  if (!state.favoriteGames) state.favoriteGames = [];
+  const idx = state.favoriteGames.indexOf(gameTitle);
+  if (idx > -1) {
+    state.favoriteGames.splice(idx, 1);
+    showToast(`Removed "${gameTitle}" from Favorites.`, "info");
+  } else {
+    state.favoriteGames.push(gameTitle);
+    showToast(`Added "${gameTitle}" to Favorites.`, "success");
+  }
+  saveStateToStorage();
+  renderEntries();
+  if (window.supabaseClient) {
+    dbSaveSettings("favoriteGames", state.favoriteGames);
+  }
+};
 
 window.triggerEditCatalogEntry = function(title) {
   const invMatch = state.inventory.find(item => item.title.trim().toLowerCase() === title.trim().toLowerCase());
@@ -5662,9 +5715,10 @@ function renderSuppliers() {
       const colorPreset = SUPPLIER_COLORS.find(c => c.name === colorName) || SUPPLIER_COLORS[0];
       const isEnabled = supplierObj.enabled !== false;
       
+      const escapedNameForJS = supplierName.replace(/'/g, "\\'").replace(/"/g, "&quot;");
       const statusBtn = `
         <button class="btn" 
-                onclick="triggerToggleSupplier('${supplierName.replace(/'/g, "\\'")}')" 
+                onclick="triggerToggleSupplier('${escapeHTML(escapedNameForJS)}')" 
                 style="padding: 4px 10px; font-size: 0.75rem; border-radius: var(--radius-sm); font-weight: 600; cursor: pointer; transition: all 0.2s ease; ${
                   isEnabled 
                     ? 'background-color: hsla(175, 90%, 48%, 0.1); border: 1px solid var(--accent-teal); color: var(--accent-teal);' 
@@ -5676,7 +5730,7 @@ function renderSuppliers() {
       `;
 
       const logoHtml = supplierObj.logo
-        ? `<img src="${supplierObj.logo}" class="supplier-logo-thumbnail" alt="${supplierName}">`
+        ? `<img src="${escapeHTML(supplierObj.logo)}" class="supplier-logo-thumbnail" alt="${escapeHTML(supplierName)}">`
         : `<div class="supplier-logo-placeholder" style="background-color: ${colorPreset.value}20; color: ${colorPreset.value}; border: 1px solid ${colorPreset.value}40;"><i class="fa-solid fa-truck-ramp-box"></i></div>`;
 
       const tr = document.createElement("tr");
@@ -5685,7 +5739,7 @@ function renderSuppliers() {
           <div style="display: flex; align-items: center; gap: 12px;">
             ${logoHtml}
             <div style="display: flex; flex-direction: column;">
-              <strong>${supplierName}</strong>
+              <strong>${escapeHTML(supplierName)}</strong>
               <span style="font-size: 0.72rem; color: var(--text-muted);">Added: ${new Date(supplierObj.dateAdded).toLocaleDateString(undefined, { dateStyle: 'medium' })}</span>
             </div>
           </div>
@@ -5718,10 +5772,10 @@ function renderSuppliers() {
           ${statusBtn}
         </td>
         <td style="text-align: right;">
-          <button class="btn-action btn-action-edit" onclick="triggerEditSupplier('${supplierName.replace(/'/g, "\\'")}')" title="Edit Supplier">
+          <button class="btn-action btn-action-edit" onclick="triggerEditSupplier('${escapeHTML(escapedNameForJS)}')" title="Edit Supplier">
             <i class="fa-solid fa-pen"></i>
           </button>
-          <button class="btn-action btn-action-delete" onclick="triggerDeleteSupplier('${supplierName.replace(/'/g, "\\'")}')" title="Delete Supplier">
+          <button class="btn-action btn-action-delete" onclick="triggerDeleteSupplier('${escapeHTML(escapedNameForJS)}')" title="Delete Supplier">
             <i class="fa-solid fa-trash"></i>
           </button>
         </td>
@@ -6371,9 +6425,10 @@ function renderPlatforms() {
       
       const isEnabled = platformObj.enabled !== false;
       
+      const escapedNameForJS = platformName.replace(/'/g, "\\'").replace(/"/g, "&quot;");
       const statusBtn = `
         <button class="btn" 
-                onclick="triggerTogglePlatform('${platformName.replace(/'/g, "\\'")}')" 
+                onclick="triggerTogglePlatform('${escapeHTML(escapedNameForJS)}')" 
                 style="padding: 4px 10px; font-size: 0.75rem; border-radius: var(--radius-sm); font-weight: 600; cursor: pointer; transition: all 0.2s ease; ${
                   isEnabled 
                     ? 'background-color: hsla(175, 90%, 48%, 0.1); border: 1px solid var(--accent-teal); color: var(--accent-teal);' 
@@ -6385,7 +6440,7 @@ function renderPlatforms() {
       `;
 
       const logoHtml = platformObj.logo
-        ? `<img src="${platformObj.logo}" class="supplier-logo-thumbnail" alt="${platformName}">`
+        ? `<img src="${escapeHTML(platformObj.logo)}" class="supplier-logo-thumbnail" alt="${escapeHTML(platformName)}">`
         : `<div class="supplier-logo-placeholder" style="background-color: var(--border-color); color: var(--text-secondary); border: 1px solid var(--border-color);"><i class="fa-solid fa-gamepad"></i></div>`;
 
       const tr = document.createElement("tr");
@@ -6394,7 +6449,7 @@ function renderPlatforms() {
           <div style="display: flex; align-items: center; gap: 12px;">
             ${logoHtml}
             <div style="display: flex; flex-direction: column;">
-              <strong>${platformName}</strong>
+              <strong>${escapeHTML(platformName)}</strong>
               <span style="font-size: 0.72rem; color: var(--text-muted);">Added: ${new Date(platformObj.dateAdded).toLocaleDateString(undefined, { dateStyle: 'medium' })}</span>
             </div>
           </div>
@@ -6413,10 +6468,10 @@ function renderPlatforms() {
           ${statusBtn}
         </td>
         <td style="text-align: right;">
-          <button class="btn-action btn-action-edit" onclick="triggerEditPlatform('${platformName.replace(/'/g, "\\'")}')" title="Edit Platform">
+          <button class="btn-action btn-action-edit" onclick="triggerEditPlatform('${escapeHTML(escapedNameForJS)}')" title="Edit Platform">
             <i class="fa-solid fa-pen"></i>
           </button>
-          <button class="btn-action btn-action-delete" onclick="triggerDeletePlatform('${platformName.replace(/'/g, "\\'")}')" title="Delete Platform">
+          <button class="btn-action btn-action-delete" onclick="triggerDeletePlatform('${escapeHTML(escapedNameForJS)}')" title="Delete Platform">
             <i class="fa-solid fa-trash"></i>
           </button>
         </td>
@@ -7506,8 +7561,8 @@ function buildInventoryRowHTML(item, salesMap) {
   const titleStr = String(item.title || "Untitled Game");
   const initials = titleStr.split(" ").map(w => w ? w[0] : "").join("").slice(0, 3) || "???";
   const titleCell = item.imageUrl 
-    ? `<div class="game-title-cell"><img src="${item.imageUrl}" class="game-thumbnail" alt="${titleStr}"><strong>${titleStr}</strong></div>`
-    : `<div class="game-title-cell"><div class="game-thumbnail-placeholder">${initials}</div><strong>${titleStr}</strong></div>`;
+    ? `<div class="game-title-cell"><img src="${escapeHTML(item.imageUrl)}" class="game-thumbnail" alt="${escapeHTML(titleStr)}"><strong>${escapeHTML(titleStr)}</strong></div>`
+    : `<div class="game-title-cell"><div class="game-thumbnail-placeholder">${escapeHTML(initials)}</div><strong>${escapeHTML(titleStr)}</strong></div>`;
 
   // Retrieve closing date if sold
   const saleItem = salesMap.get(item.id);
@@ -7546,11 +7601,11 @@ function buildInventoryRowHTML(item, salesMap) {
   let supplierBadge = "";
   if (state.supplierDisplayMode === "logo") {
     if (supplierObj && supplierObj.logo) {
-      supplierBadge = `<img src="${supplierObj.logo}" class="supplier-logo-thumbnail" style="width: 28px; height: 28px; vertical-align: middle; border-radius: 4px; object-fit: contain; background-color: var(--bg-card); border: 1px solid var(--border-color); padding: 1px;" title="${sourceStr}" alt="${sourceStr}">`;
+      supplierBadge = `<img src="${escapeHTML(supplierObj.logo)}" class="supplier-logo-thumbnail" style="width: 28px; height: 28px; vertical-align: middle; border-radius: 4px; object-fit: contain; background-color: var(--bg-card); border: 1px solid var(--border-color); padding: 1px;" title="${escapeHTML(sourceStr)}" alt="${escapeHTML(sourceStr)}">`;
     } else {
       supplierBadge = `
-        <div class="supplier-logo-placeholder" style="width: 28px; height: 28px; border-radius: 4px; background-color: ${colorPreset.value}20; color: ${colorPreset.value}; border: 1px solid ${colorPreset.value}40; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; vertical-align: middle;" title="${sourceStr}">
-          ${sourceStr.charAt(0).toUpperCase()}
+        <div class="supplier-logo-placeholder" style="width: 28px; height: 28px; border-radius: 4px; background-color: ${colorPreset.value}20; color: ${colorPreset.value}; border: 1px solid ${colorPreset.value}40; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; vertical-align: middle;" title="${escapeHTML(sourceStr)}">
+          ${escapeHTML(sourceStr.charAt(0).toUpperCase())}
         </div>
       `;
     }
@@ -7558,7 +7613,7 @@ function buildInventoryRowHTML(item, salesMap) {
     supplierBadge = `
       <span class="supplier-tag" style="background-color: ${colorPreset.value}12; border-color: ${colorPreset.value}25; color: ${colorPreset.value}; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px; vertical-align: middle;">
         <span class="supplier-dot" style="background-color: ${colorPreset.value}; width: 6px; height: 6px;"></span>
-        ${sourceStr}
+        ${escapeHTML(sourceStr)}
       </span>
     `;
   }
@@ -7722,15 +7777,15 @@ function renderInventoryGridLayout(itemsList) {
       const supplierBadge = `
         <strong style="color: ${colorPreset.value}; display: inline-flex; align-items: center; gap: 5px;">
           <span class="supplier-dot" style="background-color: ${colorPreset.value}; width: 6px; height: 6px;"></span>
-          ${sourceStr}
+          ${escapeHTML(sourceStr)}
         </strong>
       `;
 
       const titleStr = String(item.title || "Untitled Game");
       const initials = titleStr.split(" ").map(w => w ? w[0] : "").join("").slice(0, 3) || "???";
       const bannerHtml = item.imageUrl
-        ? `<img src="${item.imageUrl}" class="grid-card-img" alt="${titleStr}" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('loading');" onerror="this.parentElement.classList.remove('loading');">`
-        : `<div class="grid-card-placeholder">${initials}</div>`;
+        ? `<img src="${escapeHTML(item.imageUrl)}" class="grid-card-img" alt="${escapeHTML(titleStr)}" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('loading');" onerror="this.parentElement.classList.remove('loading');">`
+        : `<div class="grid-card-placeholder">${escapeHTML(initials)}</div>`;
       const bannerClass = item.imageUrl ? "grid-card-banner loading" : "grid-card-banner";
 
       // Platform icon classes
@@ -7838,11 +7893,11 @@ function renderInventoryGridLayout(itemsList) {
       card.innerHTML = `
         <div class="${bannerClass}">
           ${bannerHtml}
-          <span class="grid-card-platform"><i class="${platformIcon}"></i> ${platformStr}</span>
+          <span class="grid-card-platform"><i class="${platformIcon}"></i> ${escapeHTML(platformStr)}</span>
           <span class="badge ${statusClass} grid-card-status">${item.status || "Available"}</span>
         </div>
         <div class="grid-card-body">
-          <h4 class="grid-card-title" title="${titleStr}">${titleStr}</h4>
+          <h4 class="grid-card-title" title="${escapeHTML(titleStr)}">${escapeHTML(titleStr)}</h4>
           ${metaBlockHtml}
           <div class="grid-card-key">
             <div class="secured-key" style="justify-content: center; width: 100%;">
@@ -7904,15 +7959,15 @@ function renderInventoryGalleryLayout(itemsList) {
       const supplierBadge = `
         <strong style="color: ${colorPreset.value}; display: inline-flex; align-items: center; gap: 5px;">
           <span class="supplier-dot" style="background-color: ${colorPreset.value}; width: 6px; height: 6px;"></span>
-          ${sourceStr}
+          ${escapeHTML(sourceStr)}
         </strong>
       `;
 
       const titleStr = String(item.title || "Untitled Game");
       const initials = titleStr.split(" ").map(w => w ? w[0] : "").join("").slice(0, 3) || "???";
       const imageHtml = item.imageUrl
-        ? `<img src="${item.imageUrl}" class="gallery-card-img" alt="${titleStr}">`
-        : `<div class="gallery-card-placeholder">${initials}</div>`;
+        ? `<img src="${escapeHTML(item.imageUrl)}" class="gallery-card-img" alt="${escapeHTML(titleStr)}">`
+        : `<div class="gallery-card-placeholder">${escapeHTML(initials)}</div>`;
 
       // Platform icon classes
       const platformStr = String(item.platform || "PC");
@@ -7978,21 +8033,21 @@ function renderInventoryGalleryLayout(itemsList) {
           ${imageHtml}
         </div>
         <div class="gallery-card-overlay">
-          <h4 class="gallery-card-title" title="${titleStr}">${titleStr}</h4>
+          <h4 class="gallery-card-title" title="${escapeHTML(titleStr)}">${escapeHTML(titleStr)}</h4>
           <div class="gallery-card-subtitle">
-            <span><i class="${platformIcon}"></i> ${platformStr}</span>
+            <span><i class="${platformIcon}"></i> ${escapeHTML(platformStr)}</span>
             <span class="badge ${statusClass}">${item.status || "Available"}</span>
           </div>
         </div>
         <div class="gallery-card-hover-details">
           <div class="gallery-card-hover-header">
-            <h4 title="${titleStr}">${titleStr}</h4>
+            <h4 title="${escapeHTML(titleStr)}">${escapeHTML(titleStr)}</h4>
             <span class="badge ${statusClass}">${item.status || "Available"}</span>
           </div>
           <div class="gallery-card-hover-meta">
             <div class="gallery-card-hover-meta-item">
               <span>Platform:</span>
-              <strong>${platformStr}</strong>
+              <strong>${escapeHTML(platformStr)}</strong>
             </div>
             <div class="gallery-card-hover-meta-item">
               <span>Cost:</span>
@@ -8047,19 +8102,19 @@ function buildSalesRowHTML(sale, inventoryMap) {
   const gameInInv = inventoryMap.get(sale.inventoryId);
   const saleImgUrl = gameInInv ? gameInInv.imageUrl : null;
   const titleCell = saleImgUrl 
-    ? `<div class="game-title-cell"><img src="${saleImgUrl}" class="game-thumbnail" alt="${sale.title}"><strong>${sale.title}</strong></div>`
-    : `<div class="game-title-cell"><div class="game-thumbnail-placeholder">${initials}</div><strong>${sale.title}</strong></div>`;
+    ? `<div class="game-title-cell"><img src="${escapeHTML(saleImgUrl)}" class="game-thumbnail" alt="${escapeHTML(sale.title)}"><strong>${escapeHTML(sale.title)}</strong></div>`
+    : `<div class="game-title-cell"><div class="game-thumbnail-placeholder">${escapeHTML(initials)}</div><strong>${escapeHTML(sale.title)}</strong></div>`;
 
   return `
     <tr>
       <td>${titleCell}</td>
-      <td><span class="platform-indicator"><i class="fa-solid fa-gamepad" style="font-size: 0.8rem; margin-right: 6px;"></i> ${sale.platform}</span></td>
+      <td><span class="platform-indicator"><i class="fa-solid fa-gamepad" style="font-size: 0.8rem; margin-right: 6px;"></i> ${escapeHTML(sale.platform)}</span></td>
       <td>${formatCurrency(sale.cost)}</td>
       <td><strong>${formatCurrency(sale.sellPrice)}</strong></td>
-      <td><span class="tag-platform-sold" style="background-color: hsla(270, 85%, 60%, 0.1); border: 1px solid hsla(270, 85%, 60%, 0.2); color: var(--accent-purple); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight:600;">${sale.platformSold}</span></td>
+      <td><span class="tag-platform-sold" style="background-color: hsla(270, 85%, 60%, 0.1); border: 1px solid hsla(270, 85%, 60%, 0.2); color: var(--accent-purple); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight:600;">${escapeHTML(sale.platformSold)}</span></td>
       <td class="text-success-neon"><strong>${formatCurrency(sale.profit)}</strong></td>
       <td>${formatDate(sale.saleDate)}</td>
-      <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${sale.notes || ''}">${sale.notes || '<span style="color: var(--text-muted)">-</span>'}</td>
+      <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHTML(sale.notes || '')}">${sale.notes ? escapeHTML(sale.notes) : '<span style="color: var(--text-muted)">-</span>'}</td>
       <td>
         <div class="table-actions">
           <button class="btn-action btn-action-delete" onclick="triggerCancelSale('${sale.id}')" title="Cancel Sale (Return key to stock)"><i class="fa-solid fa-rotate-left"></i></button>
@@ -10459,6 +10514,21 @@ function renderEntries() {
   if (!tbody) return;
   tbody.innerHTML = "";
 
+  // Sync Favorite Filter Button UI state
+  const btnFavFilter = document.getElementById("btn-entries-fav-filter");
+  const favIcon = document.getElementById("entries-fav-filter-icon");
+  if (btnFavFilter) {
+    if (state.entriesFilterFav) {
+      btnFavFilter.classList.add("btn-fav-active");
+      btnFavFilter.classList.remove("btn-outline");
+      if (favIcon) favIcon.className = "fa-solid fa-star";
+    } else {
+      btnFavFilter.classList.add("btn-outline");
+      btnFavFilter.classList.remove("btn-fav-active");
+      if (favIcon) favIcon.className = "fa-regular fa-star";
+    }
+  }
+
   // Get search filter value
   const searchInput = document.getElementById("entries-search-input")?.value.toLowerCase().trim() || "";
 
@@ -10556,8 +10626,21 @@ function renderEntries() {
     );
   }
 
-  // Sort alphabetically
-  entriesList.sort((a, b) => a.title.localeCompare(b.title));
+  // Favorites filtering
+  if (state.entriesFilterFav) {
+    entriesList = entriesList.filter(entry => 
+      state.favoriteGames && state.favoriteGames.includes(entry.title)
+    );
+  }
+
+  // Sort alphabetically (prioritize favorites to the top)
+  entriesList.sort((a, b) => {
+    const aFav = state.favoriteGames && state.favoriteGames.includes(a.title);
+    const bFav = state.favoriteGames && state.favoriteGames.includes(b.title);
+    if (aFav && !bFav) return -1;
+    if (!aFav && bFav) return 1;
+    return a.title.localeCompare(b.title);
+  });
 
   // Pagination Logic for Entries
   const totalPages = Math.ceil(entriesList.length / state.entriesPageSize) || 1;
@@ -10588,14 +10671,22 @@ function renderEntries() {
     const initials = entry.title.split(" ").map(w => w[0]).join("").slice(0, 3);
     
     const publisherSubtitle = entry.publisher 
-      ? `<div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;"><i class="fa-solid fa-building" style="font-size: 0.7rem; opacity: 0.7; margin-right: 4px;"></i>${entry.publisher}</div>` 
+      ? `<div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;"><i class="fa-solid fa-building" style="font-size: 0.7rem; opacity: 0.7; margin-right: 4px;"></i>${escapeHTML(entry.publisher)}</div>` 
       : `<div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; font-style: italic;"><i class="fa-solid fa-building" style="font-size: 0.7rem; opacity: 0.5; margin-right: 4px;"></i>No Publisher</div>`;
 
-    const titleCell = entry.imageUrl
-      ? `<div class="game-title-cell"><img src="${entry.imageUrl}" class="game-thumbnail" alt="${entry.title}"><div><strong>${entry.title}</strong>${publisherSubtitle}</div></div>`
-      : `<div class="game-title-cell"><div class="game-thumbnail-placeholder">${initials}</div><div><strong>${entry.title}</strong>${publisherSubtitle}</div></div>`;
+    const safeTitle = entry.title.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    const isFav = state.favoriteGames && state.favoriteGames.includes(entry.title);
+    const starColor = isFav ? "var(--accent-warning)" : "var(--text-muted)";
+    const starIconClass = isFav ? "fa-solid fa-star" : "fa-regular fa-star";
+    const starBtn = `
+      <button class="btn-fav" onclick="event.stopPropagation(); toggleFavoriteGame('${safeTitle}')" style="background: none; border: none; cursor: pointer; color: ${starColor}; font-size: 0.9rem; padding: 2px 4px; display: inline-flex; align-items: center; justify-content: center; transition: transform 0.15s ease;" title="${isFav ? 'Remove from Favorites' : 'Add to Favorites'}">
+        <i class="${starIconClass}"></i>
+      </button>
+    `;
 
-    const safeTitle = entry.title.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    const titleCell = entry.imageUrl
+      ? `<div class="game-title-cell"><img src="${escapeHTML(entry.imageUrl)}" class="game-thumbnail" alt="${escapeHTML(entry.title)}"><div><div style="display: flex; align-items: center; gap: 4px;"><strong>${escapeHTML(entry.title)}</strong>${starBtn}</div>${publisherSubtitle}</div></div>`
+      : `<div class="game-title-cell"><div class="game-thumbnail-placeholder">${escapeHTML(initials)}</div><div><div style="display: flex; align-items: center; gap: 4px;"><strong>${escapeHTML(entry.title)}</strong>${starBtn}</div>${publisherSubtitle}</div></div>`;
 
     // Calculate Average Days to Sell
     const durations = entry.sellDurations || [];
@@ -10630,10 +10721,10 @@ function renderEntries() {
       <td class="${marginPercentage >= 0 ? 'text-success-neon' : 'text-danger-soft'}">${marginPercentage.toFixed(1)}%</td>
       <td style="text-align: right;">
         <div style="display: inline-flex; gap: 8px; justify-content: flex-end; width: 100%;">
-          <button class="btn btn-outline btn-sm" onclick="triggerEditCatalogEntry('${safeTitle}')" title="Edit Catalog Entry">
+          <button class="btn btn-outline btn-sm" onclick="triggerEditCatalogEntry('${escapeHTML(safeTitle)}')" title="Edit Catalog Entry">
             <i class="fa-solid fa-pen"></i> Edit
           </button>
-          <button class="btn btn-outline btn-sm" onclick="triggerDeleteCatalogEntry('${safeTitle}')" title="Delete Catalog Entry" style="color: var(--accent-danger); border-color: var(--accent-danger);">
+          <button class="btn btn-outline btn-sm" onclick="triggerDeleteCatalogEntry('${escapeHTML(safeTitle)}')" title="Delete Catalog Entry" style="color: var(--accent-danger); border-color: var(--accent-danger);">
             <i class="fa-solid fa-trash"></i> Delete
           </button>
         </div>
@@ -12830,6 +12921,195 @@ function initSupabaseConnection() {
   }
 }
 
+const SUPABASE_SETUP_SQL = `-- ==========================================================================
+-- GAMEVAULT DATABASE SETUP SCHEMA
+-- Copy and run this script in your Supabase SQL Editor.
+-- ==========================================================================
+
+-- 1. Create suppliers table
+CREATE TABLE IF NOT EXISTS suppliers (
+  name TEXT PRIMARY KEY,
+  "dateAdded" NUMERIC NOT NULL,
+  color TEXT,
+  enabled BOOLEAN NOT NULL DEFAULT true
+);
+
+-- 2. Create platforms table
+CREATE TABLE IF NOT EXISTS platforms (
+  name TEXT PRIMARY KEY,
+  "dateAdded" NUMERIC NOT NULL,
+  enabled BOOLEAN NOT NULL DEFAULT true
+);
+
+-- 3. Create inventory table
+CREATE TABLE IF NOT EXISTS inventory (
+  id UUID PRIMARY KEY,
+  title TEXT NOT NULL,
+  platform TEXT NOT NULL,
+  key TEXT NOT NULL,
+  cost NUMERIC(10, 2) NOT NULL,
+  source TEXT NOT NULL,
+  "purchaseDate" TEXT NOT NULL,
+  "imageUrl" TEXT,
+  status TEXT NOT NULL DEFAULT 'Available',
+  notes TEXT
+);
+
+-- 4. Create sales table
+CREATE TABLE IF NOT EXISTS sales (
+  id UUID PRIMARY KEY REFERENCES inventory(id) ON DELETE CASCADE,
+  "inventoryId" UUID NOT NULL,
+  title TEXT NOT NULL,
+  platform TEXT NOT NULL,
+  cost NUMERIC(10, 2) NOT NULL,
+  "sellPrice" NUMERIC(10, 2) NOT NULL,
+  "platformSold" TEXT NOT NULL,
+  fees NUMERIC(10, 2) NOT NULL DEFAULT 0,
+  profit NUMERIC(10, 2) NOT NULL,
+  "saleDate" TEXT NOT NULL,
+  notes TEXT
+);
+
+-- 5. Create menu_customization table
+CREATE TABLE IF NOT EXISTS menu_customization (
+  key TEXT PRIMARY KEY,
+  icon TEXT NOT NULL,
+  title TEXT NOT NULL
+);
+
+-- 6. Create app_settings table
+CREATE TABLE IF NOT EXISTS app_settings (
+  key TEXT PRIMARY KEY,
+  value JSONB NOT NULL
+);
+
+-- ==========================================================================
+-- ROW LEVEL SECURITY (RLS) POLICIES
+-- Ensures public anon access if RLS is enabled in your database settings.
+-- ==========================================================================
+
+-- Enable RLS & create policies for suppliers
+ALTER TABLE suppliers ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Anon Select" ON suppliers;
+CREATE POLICY "Anon Select" ON suppliers FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Anon Insert" ON suppliers;
+CREATE POLICY "Anon Insert" ON suppliers FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Anon Update" ON suppliers;
+CREATE POLICY "Anon Update" ON suppliers FOR UPDATE USING (true);
+DROP POLICY IF EXISTS "Anon Delete" ON suppliers;
+CREATE POLICY "Anon Delete" ON suppliers FOR DELETE USING (true);
+
+-- Enable RLS & create policies for platforms
+ALTER TABLE platforms ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Anon Select" ON platforms;
+CREATE POLICY "Anon Select" ON platforms FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Anon Insert" ON platforms;
+CREATE POLICY "Anon Insert" ON platforms FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Anon Update" ON platforms;
+CREATE POLICY "Anon Update" ON platforms FOR UPDATE USING (true);
+DROP POLICY IF EXISTS "Anon Delete" ON platforms;
+CREATE POLICY "Anon Delete" ON platforms FOR DELETE USING (true);
+
+-- Enable RLS & create policies for inventory
+ALTER TABLE inventory ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Anon Select" ON inventory;
+CREATE POLICY "Anon Select" ON inventory FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Anon Insert" ON inventory;
+CREATE POLICY "Anon Insert" ON inventory FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Anon Update" ON inventory;
+CREATE POLICY "Anon Update" ON inventory FOR UPDATE USING (true);
+DROP POLICY IF EXISTS "Anon Delete" ON inventory;
+CREATE POLICY "Anon Delete" ON inventory FOR DELETE USING (true);
+
+-- Enable RLS & create policies for sales
+ALTER TABLE sales ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Anon Select" ON sales;
+CREATE POLICY "Anon Select" ON sales FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Anon Insert" ON sales;
+CREATE POLICY "Anon Insert" ON sales FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Anon Update" ON sales;
+CREATE POLICY "Anon Update" ON sales FOR UPDATE USING (true);
+DROP POLICY IF EXISTS "Anon Delete" ON sales;
+CREATE POLICY "Anon Delete" ON sales FOR DELETE USING (true);
+
+-- Enable RLS & create policies for menu_customization
+ALTER TABLE menu_customization ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Anon Select" ON menu_customization;
+CREATE POLICY "Anon Select" ON menu_customization FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Anon Insert" ON menu_customization;
+CREATE POLICY "Anon Insert" ON menu_customization FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Anon Update" ON menu_customization;
+CREATE POLICY "Anon Update" ON menu_customization FOR UPDATE USING (true);
+DROP POLICY IF EXISTS "Anon Delete" ON menu_customization;
+CREATE POLICY "Anon Delete" ON menu_customization FOR DELETE USING (true);
+
+-- Enable RLS & create policies for app_settings
+ALTER TABLE app_settings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Anon Select" ON app_settings;
+CREATE POLICY "Anon Select" ON app_settings FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Anon Insert" ON app_settings;
+CREATE POLICY "Anon Insert" ON app_settings FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Anon Update" ON app_settings;
+CREATE POLICY "Anon Update" ON app_settings FOR UPDATE USING (true);
+DROP POLICY IF EXISTS "Anon Delete" ON app_settings;
+CREATE POLICY "Anon Delete" ON app_settings FOR DELETE USING (true);
+`;
+
+window.copySupabaseSQL = function() {
+  copyTextToClipboard(SUPABASE_SETUP_SQL, "Supabase schema SQL copied to clipboard!");
+};
+
+window.downloadSupabaseSQL = function() {
+  const blob = new Blob([SUPABASE_SETUP_SQL], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "supabase_schema.sql";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast("Downloaded supabase_schema.sql. Copy its contents into Supabase SQL Editor.", "success");
+};
+
+window.runSupabaseDiagnostics = async function() {
+  if (!window.supabaseClient) {
+    showToast("Please connect to Supabase first before running diagnostics.", "error");
+    return;
+  }
+  
+  showToast("Running connection diagnostics...", "info");
+  const report = [];
+  const tables = ["suppliers", "platforms", "inventory", "sales", "menu_customization", "app_settings"];
+  let successCount = 0;
+  
+  for (const t of tables) {
+    try {
+      const { data, error } = await window.supabaseClient.from(t).select('*').limit(1);
+      if (error) {
+        report.push(`<span style="color: var(--accent-danger); font-weight: 500;">✗ Table "${t}" check failed: ${error.message}</span>`);
+      } else {
+        report.push(`<span style="color: var(--accent-teal); font-weight: 500;">✓ Table "${t}" exists and is readable</span>`);
+        successCount++;
+      }
+    } catch (e) {
+      report.push(`<span style="color: var(--accent-danger); font-weight: 500;">✗ Table "${t}" connection error</span>`);
+    }
+  }
+  
+  const diagOutput = document.getElementById("supabase-diag-output");
+  if (diagOutput) {
+    diagOutput.innerHTML = report.join("<br>");
+    diagOutput.classList.remove("hidden");
+  }
+  
+  if (successCount === tables.length) {
+    showToast("Diagnostics complete: All tables exist and are connected!", "success");
+  } else {
+    showToast(`Diagnostics complete: ${tables.length - successCount} tables are missing or misconfigured.`, "warning");
+  }
+};
+
 // Bind Database Connection Settings Controls
 function bindSupabaseSettingsControls() {
   const btnConnect = document.getElementById("btn-connect-supabase");
@@ -13444,6 +13724,13 @@ async function dbLoadState() {
             applyDashboardSpans();
           } catch(e) {
             console.error("Error parsing widgetSettings from database sync:", e);
+          }
+        } else if (s.key === "favoriteGames") {
+          try {
+            state.favoriteGames = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+            if (!Array.isArray(state.favoriteGames)) state.favoriteGames = [];
+          } catch(e) {
+            console.error("Error parsing favoriteGames from database sync:", e);
           }
         } else if (s.key === "supMetricOrder") {
           try {
@@ -14674,12 +14961,13 @@ function renderPublishersTab() {
     const profitSign = pub.totalNetProfit > 0 ? "+" : "";
 
     const isNoPublisher = pub.name === "No Publisher";
+    const escapedPubName = pub.name.replace(/'/g, "\\'").replace(/"/g, "&quot;");
     const editBtnHtml = isNoPublisher 
       ? "" 
-      : `<button class="btn btn-outline btn-xs" onclick="triggerEditPublisher('${pub.name.replace(/'/g, "\\'")}')" style="padding: 2px 6px; font-size: 0.75rem;"><i class="fa-solid fa-pen-to-square"></i> Edit</button>`;
+      : `<button class="btn btn-outline btn-xs" onclick="triggerEditPublisher('${escapeHTML(escapedPubName)}')" style="padding: 2px 6px; font-size: 0.75rem;"><i class="fa-solid fa-pen-to-square"></i> Edit</button>`;
 
     tr.innerHTML = `
-      <td><strong>${pub.name}</strong></td>
+      <td><strong>${escapeHTML(pub.name)}</strong></td>
       <td>${pub.purchased}</td>
       <td>${pub.sold}</td>
       <td>${pub.inStock}</td>

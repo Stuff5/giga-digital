@@ -762,6 +762,17 @@ a {
   border-color: var(--accent-purple);
   color: #fff;
 }
+.btn-fav-active {
+  background-color: hsla(40, 95%, 55%, 0.15) !important;
+  border-color: var(--accent-warning) !important;
+  color: var(--accent-warning) !important;
+}
+.btn-fav-active:hover {
+  background-color: hsla(40, 95%, 55%, 0.25) !important;
+}
+.btn-fav-active i {
+  color: var(--accent-warning) !important;
+}
 .btn-sm {
   padding: 6px 12px;
   font-size: 0.8rem;

@@ -1829,7 +1829,10 @@
                 <h2 class="view-title">Game Catalog Entries</h2>
                 <p class="view-subtitle">Track sales performance, purchase counts, and available stock per unique game title.</p>
               </div>
-              <div class="action-buttons">
+              <div class="action-buttons" style="display: flex; align-items: center; gap: 10px;">
+                <button type="button" class="btn btn-outline btn-sm" id="btn-entries-fav-filter" style="height: 36px; padding: 0 12px; display: flex; align-items: center; gap: 6px; font-weight: 600;" title="Filter by Favorites">
+                  <i class="fa-regular fa-star" id="entries-fav-filter-icon" style="color: var(--accent-warning);"></i> <span id="entries-fav-filter-text">Favorites</span>
+                </button>
                 <div class="search-bar" style="margin-bottom: 0;">
                   <i class="fa-solid fa-magnifying-glass"></i>
                   <input type="text" id="entries-search-input" placeholder="Search game title...">
@@ -2250,6 +2253,26 @@
                       <button type="button" class="btn btn-outline btn-sm" id="btn-disconnect-supabase" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; font-size: 0.85rem;">
                         <i class="fa-solid fa-unlink"></i> Disconnect
                       </button>
+                    </div>
+
+                    <!-- Setup Helper Wizard -->
+                    <div style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed var(--border-color);">
+                      <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 8px;">Supabase Setup Wizard</span>
+                      <p style="color: var(--text-secondary); font-size: 0.78rem; margin-bottom: 12px; line-height: 1.4;">
+                        Missing tables in your Supabase project? Copy or download our setup SQL schema script, open your Supabase project's <strong>SQL Editor</strong>, paste it in, and click <strong>Run</strong>.
+                      </p>
+                      <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
+                        <button type="button" class="btn btn-outline btn-sm" onclick="copySupabaseSQL()" style="flex: 1; min-width: 110px; font-size: 0.75rem; padding: 6px 10px; height: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                          <i class="fa-solid fa-copy"></i> Copy Schema SQL
+                        </button>
+                        <button type="button" class="btn btn-outline btn-sm" onclick="downloadSupabaseSQL()" style="flex: 1; min-width: 110px; font-size: 0.75rem; padding: 6px 10px; height: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                          <i class="fa-solid fa-download"></i> Download SQL
+                        </button>
+                        <button type="button" class="btn btn-outline btn-sm" id="btn-run-supabase-diag" onclick="runSupabaseDiagnostics()" style="flex: 1; min-width: 110px; font-size: 0.75rem; padding: 6px 10px; height: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                          <i class="fa-solid fa-square-poll-horizontal"></i> Test Schema
+                        </button>
+                      </div>
+                      <div id="supabase-diag-output" class="hidden" style="background-color: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 10px; font-family: monospace; font-size: 0.72rem; max-height: 150px; overflow-y: auto; line-height: 1.5; color: var(--text-main);"></div>
                     </div>
                   </div>
 
@@ -3378,6 +3401,9 @@
             <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-sync" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
               <i class="fa-solid fa-arrows-rotate" style="margin-right: 8px; width: 16px; color: var(--accent-teal);"></i> Cloud & Auto-Sync
             </button>
+            <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-supabase-setup" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
+              <i class="fa-solid fa-cloud" style="margin-right: 8px; width: 16px; color: var(--accent-teal);"></i> Supabase Guide
+            </button>
             <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-business-math" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
               <i class="fa-solid fa-calculator" style="margin-right: 8px; width: 16px; color: var(--accent-warning);"></i> Formulas & Logic
             </button>
@@ -3503,6 +3529,34 @@
               <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">GitHub Repositories Sync</h5>
               <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 0;">
                 Configure a Personal Access Token (PAT) to commit your database backups directly to your GitHub repo as a JSON file. Use **Auto-Push on Change** to sync silently in the background, or **Auto-Push on Startup** to download the latest state automatically.
+              </p>
+            </div>
+
+            <!-- Pane Supabase Setup Guide -->
+            <div id="help-tab-supabase-setup" class="help-tab-pane hidden">
+              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Supabase Database Integration Guide</h4>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                Connecting GameVault to a remote Supabase project enables cross-device synchronization and secures database backups. Follow these simple steps to configure your database:
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Step 1: Create a Supabase Project</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                Sign in to <a href="https://supabase.com" target="_blank" style="color: var(--accent-cyan); text-decoration: underline;">Supabase Console</a> and click <strong>New Project</strong>. Choose a name, database password, and server region.
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Step 2: Initialize Database Tables</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                Open your project dashboard, navigate to the <strong>SQL Editor</strong> in the left sidebar, click <strong>New Query</strong>, paste the initialization script, and click <strong>Run</strong>. You can copy or download the SQL schema script directly from the <strong>Supabase Setup Wizard</strong> inside our Settings view.
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Step 3: Retrieve and Paste Credentials</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                Go to project <strong>Settings &gt; API</strong>. Copy the <strong>Project URL</strong> and <strong>anon (public) Key</strong>. Paste them in Settings &gt; Supabase Database panel and click <strong>Connect &amp; Sync</strong>.
+              </p>
+
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Step 4: Check Table Status</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 0;">
+                Click <strong>Test Schema</strong> inside our settings setup card to run remote queries against each table and verify the setup is successful.
               </p>
             </div>
 
