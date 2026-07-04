@@ -5029,6 +5029,54 @@ window.triggerCancelSale = async function(saleId) {
   }
 };
 
+window.triggerDisputeSale = async function(saleId) {
+  const sale = state.sales.find(item => item.id === saleId);
+  if (!sale) return;
+  
+  if (confirm(`Are you sure you want to flag the sale of "${sale.title}" as Disputed/Refunded?\n\nThis will:\n- Zero out the sale revenue.\n- Adjust net profit to record a capital loss of -${formatCurrency(sale.cost)}.\n- Mark the activation key status as "Disputed".`)) {
+    pushToUndoStack();
+    sale.disputed = true;
+    
+    // Find matching inventory item
+    const item = state.inventory.find(i => i.id === sale.inventoryId);
+    if (item) {
+      item.status = "Disputed";
+    }
+    
+    saveStateToStorage();
+    if (window.supabaseClient) {
+      await dbSaveSale(sale);
+      if (item) await dbSaveInventory(item);
+    }
+    updateUI();
+    showToast(`Flagged "${sale.title}" sale as Disputed/Refunded.`, "warning");
+  }
+};
+
+window.triggerResolveDispute = async function(saleId) {
+  const sale = state.sales.find(item => item.id === saleId);
+  if (!sale) return;
+  
+  if (confirm(`Resolve dispute for "${sale.title}" and restore the original sale transaction?`)) {
+    pushToUndoStack();
+    sale.disputed = false;
+    
+    // Find matching inventory item
+    const item = state.inventory.find(i => i.id === sale.inventoryId);
+    if (item) {
+      item.status = "Sold";
+    }
+    
+    saveStateToStorage();
+    if (window.supabaseClient) {
+      await dbSaveSale(sale);
+      if (item) await dbSaveInventory(item);
+    }
+    updateUI();
+    showToast(`Resolved dispute for "${sale.title}". Sale restored.`, "success");
+  }
+};
+
 window.triggerEditGame = function(gameId) {
   const game = state.inventory.find(item => item.id === gameId);
   if (!game) return;
@@ -5355,6 +5403,7 @@ window.triggerViewCatalogKeys = function(title, openModalFlag = true) {
     if (item.status === "Sold") badgeClass = "badge-sold";
     else if (item.status === "Reserved") badgeClass = "badge-reserved";
     else if (item.status === "Rejected") badgeClass = "badge-rejected";
+    else if (item.status === "Disputed") badgeClass = "badge-disputed";
     
     // Action buttons inside modal row
     let actionsHtml = `
@@ -6977,7 +7026,15 @@ function calculateMetrics(filteredSalesList, filteredInventoryList) {
     inventoryMap.set(item.id, item);
   });
 
+  let activeSalesCount = 0;
   filteredSalesList.forEach(sale => {
+    if (sale.disputed === true) {
+      totalCostOfSales += sale.cost;
+      totalNetProfit -= sale.cost;
+      return;
+    }
+    
+    activeSalesCount++;
     totalRevenue += sale.sellPrice;
     totalCostOfSales += sale.cost;
     totalFees += sale.fees;
@@ -7012,8 +7069,8 @@ function calculateMetrics(filteredSalesList, filteredInventoryList) {
   const roiPercentage = totalCostOfSales > 0 ? (totalNetProfit / totalCostOfSales) * 100 : 0;
   const avgDaysToSell = soldWithDurationCount > 0 ? (totalSellDays / soldWithDurationCount) : 0;
   const totalKeysInSubset = filteredSalesList.length + totalUnsoldCount;
-  const sellThroughRate = totalKeysInSubset > 0 ? (filteredSalesList.length / totalKeysInSubset) * 100 : 0;
-  const avgProfitPerKey = filteredSalesList.length > 0 ? (totalNetProfit / filteredSalesList.length) : 0;
+  const sellThroughRate = totalKeysInSubset > 0 ? (activeSalesCount / totalKeysInSubset) * 100 : 0;
+  const avgProfitPerKey = activeSalesCount > 0 ? (totalNetProfit / activeSalesCount) : 0;
 
   // Render values to DOM
   const metricProfitEl = document.getElementById("metric-profit");
@@ -7544,6 +7601,7 @@ function buildInventoryRowHTML(item, salesMap) {
   if (item.status === "Reserved") statusClass = "badge-reserved";
   if (item.status === "Sold") statusClass = "badge-sold";
   if (item.status === "Rejected") statusClass = "badge-rejected";
+  if (item.status === "Disputed") statusClass = "badge-disputed";
 
   // Action buttons based on stock status
   let actionButtons = "";
@@ -7800,6 +7858,7 @@ function renderInventoryGridLayout(itemsList) {
       if (item.status === "Reserved") statusClass = "badge-reserved";
       if (item.status === "Sold") statusClass = "badge-sold";
       if (item.status === "Rejected") statusClass = "badge-rejected";
+      if (item.status === "Disputed") statusClass = "badge-disputed";
 
       // Mask key structure safely
       const keyStr = String(item.key || "");
@@ -7981,6 +8040,7 @@ function renderInventoryGalleryLayout(itemsList) {
       if (item.status === "Reserved") statusClass = "badge-reserved";
       if (item.status === "Sold") statusClass = "badge-sold";
       if (item.status === "Rejected") statusClass = "badge-rejected";
+      if (item.status === "Disputed") statusClass = "badge-disputed";
 
       // Mask key structure safely
       const keyStr = String(item.key || "");
@@ -8105,18 +8165,32 @@ function buildSalesRowHTML(sale, inventoryMap) {
     ? `<div class="game-title-cell"><img src="${escapeHTML(saleImgUrl)}" class="game-thumbnail" alt="${escapeHTML(sale.title)}"><strong>${escapeHTML(sale.title)}</strong></div>`
     : `<div class="game-title-cell"><div class="game-thumbnail-placeholder">${escapeHTML(initials)}</div><strong>${escapeHTML(sale.title)}</strong></div>`;
 
+  const isDisputed = sale.disputed === true;
+  const rowStyle = isDisputed ? 'style="background-color: hsla(40, 95%, 55%, 0.04) !important; border-left: 3px solid var(--accent-warning);"' : '';
+  const profitClass = isDisputed ? 'text-danger-soft' : 'text-success-neon';
+  const profitSign = isDisputed ? '-' : '';
+  const profitStr = isDisputed ? formatCurrency(sale.cost) : formatCurrency(sale.profit);
+  const sellPriceCell = isDisputed 
+    ? `<s>${formatCurrency(sale.sellPrice)}</s> <span style="font-size: 0.65rem; color: var(--accent-warning); font-weight: 700; display: block; margin-top: 2px; letter-spacing: 0.05em;">REFUNDED</span>`
+    : `<strong>${formatCurrency(sale.sellPrice)}</strong>`;
+  
+  const disputeBtn = isDisputed
+    ? `<button class="btn-action" onclick="triggerResolveDispute('${sale.id}')" title="Resolve Dispute (Restore Sale)" style="color: var(--accent-teal); border-color: var(--accent-teal);"><i class="fa-solid fa-circle-check"></i></button>`
+    : `<button class="btn-action" onclick="triggerDisputeSale('${sale.id}')" title="Flag as Disputed / Refunded" style="color: var(--accent-warning); border-color: var(--accent-warning);"><i class="fa-solid fa-triangle-exclamation"></i></button>`;
+
   return `
-    <tr>
+    <tr ${rowStyle}>
       <td>${titleCell}</td>
       <td><span class="platform-indicator"><i class="fa-solid fa-gamepad" style="font-size: 0.8rem; margin-right: 6px;"></i> ${escapeHTML(sale.platform)}</span></td>
       <td>${formatCurrency(sale.cost)}</td>
-      <td><strong>${formatCurrency(sale.sellPrice)}</strong></td>
+      <td>${sellPriceCell}</td>
       <td><span class="tag-platform-sold" style="background-color: hsla(270, 85%, 60%, 0.1); border: 1px solid hsla(270, 85%, 60%, 0.2); color: var(--accent-purple); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight:600;">${escapeHTML(sale.platformSold)}</span></td>
-      <td class="text-success-neon"><strong>${formatCurrency(sale.profit)}</strong></td>
+      <td class="${profitClass}"><strong>${profitSign}${profitStr}</strong></td>
       <td>${formatDate(sale.saleDate)}</td>
       <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHTML(sale.notes || '')}">${sale.notes ? escapeHTML(sale.notes) : '<span style="color: var(--text-muted)">-</span>'}</td>
       <td>
         <div class="table-actions">
+          ${disputeBtn}
           <button class="btn-action btn-action-delete" onclick="triggerCancelSale('${sale.id}')" title="Cancel Sale (Return key to stock)"><i class="fa-solid fa-rotate-left"></i></button>
         </div>
       </td>
@@ -12967,7 +13041,8 @@ CREATE TABLE IF NOT EXISTS sales (
   fees NUMERIC(10, 2) NOT NULL DEFAULT 0,
   profit NUMERIC(10, 2) NOT NULL,
   "saleDate" TEXT NOT NULL,
-  notes TEXT
+  notes TEXT,
+  disputed BOOLEAN NOT NULL DEFAULT false
 );
 
 -- 5. Create menu_customization table
@@ -13832,7 +13907,8 @@ async function dbSeedDatabase() {
           fees: sale.fees,
           profit: sale.profit,
           saleDate: sale.saleDate,
-          notes: sale.notes || null
+          notes: sale.notes || null,
+          disputed: sale.disputed === true
         })));
     }
 
@@ -13944,22 +14020,37 @@ async function dbSaveSale(sale) {
     return;
   }
   try {
+    const payload = {
+      id: sale.id,
+      inventoryId: sale.inventoryId,
+      title: sale.title,
+      platform: sale.platform,
+      cost: sale.cost,
+      sellPrice: sale.sellPrice,
+      platformSold: sale.platformSold,
+      fees: sale.fees,
+      profit: sale.profit,
+      saleDate: sale.saleDate,
+      notes: sale.notes || null,
+      disputed: sale.disputed === true
+    };
+    
     const { error } = await window.supabaseClient
       .from('sales')
-      .upsert({
-        id: sale.id,
-        inventoryId: sale.inventoryId,
-        title: sale.title,
-        platform: sale.platform,
-        cost: sale.cost,
-        sellPrice: sale.sellPrice,
-        platformSold: sale.platformSold,
-        fees: sale.fees,
-        profit: sale.profit,
-        saleDate: sale.saleDate,
-        notes: sale.notes || null
-      });
-    if (error) throw error;
+      .upsert(payload);
+      
+    if (error) {
+      if (error.message && error.message.includes('column "disputed" of relation "sales" does not exist')) {
+        console.warn("Supabase relation 'sales' is missing the 'disputed' column. Retrying without disputed property. Please update database schema using settings setup wizard.");
+        delete payload.disputed;
+        const { error: retryError } = await window.supabaseClient
+          .from('sales')
+          .upsert(payload);
+        if (retryError) throw retryError;
+      } else {
+        throw error;
+      }
+    }
   } catch (err) {
     console.error("Error saving sale to Supabase:", err);
     showToast("Failed to save transaction to cloud.", "error");

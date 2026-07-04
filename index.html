@@ -3404,6 +3404,9 @@
             <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-supabase-setup" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
               <i class="fa-solid fa-cloud" style="margin-right: 8px; width: 16px; color: var(--accent-teal);"></i> Supabase Guide
             </button>
+            <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-disputes" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
+              <i class="fa-solid fa-triangle-exclamation" style="margin-right: 8px; width: 16px; color: var(--accent-warning);"></i> Disputes & Refunds
+            </button>
             <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-business-math" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
               <i class="fa-solid fa-calculator" style="margin-right: 8px; width: 16px; color: var(--accent-warning);"></i> Formulas & Logic
             </button>
@@ -3557,6 +3560,37 @@
               <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Step 4: Check Table Status</h5>
               <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 0;">
                 Click <strong>Test Schema</strong> inside our settings setup card to run remote queries against each table and verify the setup is successful.
+              </p>
+            </div>
+
+            <!-- Pane Disputes & Refunds -->
+            <div id="help-tab-disputes" class="help-tab-pane hidden">
+              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Disputes & Refunds Workflow</h4>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                License keys sold to buyers are sometimes disputed due to issues like duplicate redemption, regional locks, or publisher revocation. GameVault provides a built-in workflow to log these disputes and adjust your financial sheets automatically.
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">How to Flag a Dispute</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                Navigate to the <strong>Sales Ledger</strong>. Next to any transaction, click the amber warning button (<i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-warning);"></i>). Confirmed flags will highlight the row in warning orange, slash out the selling price, and update the profit to a capital loss.
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">How Math Adjusts for Refunds</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                To keep accounting accurate, a disputed/refunded key behaves as follows:
+                <br>
+                - <strong>Revenue:</strong> Drops to $0 (since the customer was refunded).
+                <br>
+                - <strong>Platform Fees:</strong> Drops to $0.
+                <br>
+                - <strong>Cost:</strong> Stays at the purchase price (since the wholesaler was already paid).
+                <br>
+                - <strong>Net Profit:</strong> Becomes negative (<code>-Cost</code>), representing a full capital loss on the inventory item.
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Resolving a Dispute</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 0;">
+                If a dispute is resolved (e.g., the customer withdrew the claim or the publisher restored the key), click the green check mark button (<i class="fa-solid fa-circle-check" style="color: var(--accent-teal);"></i>) on the disputed row. This restores the transaction's original selling price, fee calculations, and profit margins.
               </p>
             </div>
 

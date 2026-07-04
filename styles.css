@@ -1404,6 +1404,10 @@ a {
   background-color: hsla(0, 95%, 60%, 0.15);
   color: hsl(0, 95%, 60%);
 }
+.badge-disputed {
+  background-color: hsla(40, 95%, 55%, 0.15);
+  color: var(--accent-warning);
+}
 
 /* Action button inside tables */
 .table-actions {
