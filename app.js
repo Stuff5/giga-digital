@@ -6,31 +6,48 @@
 (function() {
   const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   if (isDev) {
-    const originalGetItem = Storage.prototype.getItem;
-    const originalSetItem = Storage.prototype.setItem;
-    const originalRemoveItem = Storage.prototype.removeItem;
+    // Override both prototypes and instances directly for maximum browser compatibility
+    const targets = [Storage.prototype, window.localStorage, window.sessionStorage];
+    targets.forEach(target => {
+      if (!target) return;
+      const originalGetItem = target.getItem;
+      const originalSetItem = target.setItem;
+      const originalRemoveItem = target.removeItem;
 
-    Storage.prototype.getItem = function(key) {
-      if (key && key.startsWith('gv_')) {
-        return originalGetItem.call(this, 'gv_dev_' + key.slice(3));
+      // Only override if not already overridden
+      if (originalGetItem && !originalGetItem.isOverridden) {
+        const newGet = function(key) {
+          if (key && key.startsWith('gv_')) {
+            return originalGetItem.call(this, 'gv_dev_' + key.slice(3));
+          }
+          return originalGetItem.call(this, key);
+        };
+        newGet.isOverridden = true;
+        target.getItem = newGet;
       }
-      return originalGetItem.call(this, key);
-    };
 
-    Storage.prototype.setItem = function(key, value) {
-      if (key && key.startsWith('gv_')) {
-        return originalSetItem.call(this, 'gv_dev_' + key.slice(3), value);
+      if (originalSetItem && !originalSetItem.isOverridden) {
+        const newSet = function(key, value) {
+          if (key && key.startsWith('gv_')) {
+            return originalSetItem.call(this, 'gv_dev_' + key.slice(3), value);
+          }
+          return originalSetItem.call(this, key, value);
+        };
+        newSet.isOverridden = true;
+        target.setItem = newSet;
       }
-      return originalSetItem.call(this, key, value);
-    };
 
-    Storage.prototype.removeItem = function(key) {
-      if (key && key.startsWith('gv_')) {
-        return originalRemoveItem.call(this, 'gv_dev_' + key.slice(3));
+      if (originalRemoveItem && !originalRemoveItem.isOverridden) {
+        const newRemove = function(key) {
+          if (key && key.startsWith('gv_')) {
+            return originalRemoveItem.call(this, 'gv_dev_' + key.slice(3));
+          }
+          return originalRemoveItem.call(this, key);
+        };
+        newRemove.isOverridden = true;
+        target.removeItem = newRemove;
       }
-      return originalRemoveItem.call(this, key);
-    };
-    
+    });
     console.log("GameVault Environment: DEVELOPMENT (LocalStorage virtualized with gv_dev_ prefixes)");
   } else {
     console.log("GameVault Environment: PRODUCTION (LocalStorage using normal gv_ prefixes)");
@@ -13083,8 +13100,8 @@ CREATE TABLE IF NOT EXISTS inventory (
 
 -- 4. Create sales table
 CREATE TABLE IF NOT EXISTS sales (
-  id TEXT PRIMARY KEY REFERENCES inventory(id) ON DELETE CASCADE,
-  "inventoryId" TEXT NOT NULL,
+  id TEXT PRIMARY KEY,
+  "inventoryId" TEXT NOT NULL REFERENCES inventory(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   platform TEXT NOT NULL,
   cost NUMERIC(10, 2) NOT NULL,
@@ -15422,15 +15439,29 @@ function parseExcelDate(val) {
     }
   }
   if (typeof val === 'string') {
+    val = val.trim();
+    // 1. Check if it matches D-M-YYYY or DD-MM-YYYY format (e.g. 15-6-2026, 2-7-2026)
+    const dmYMatch = val.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+    if (dmYMatch) {
+      const day = dmYMatch[1].padStart(2, '0');
+      const month = dmYMatch[2].padStart(2, '0');
+      const year = dmYMatch[3];
+      return `${year}-${month}-${day}`;
+    }
+    
+    // 2. Check if it matches YYYY-MM-DD or YYYY-M-D format
+    const yMdaMatch = val.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+    if (yMdaMatch) {
+      const year = yMdaMatch[1];
+      const month = yMdaMatch[2].padStart(2, '0');
+      const day = yMdaMatch[3].padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    // 3. Fallback to standard JS parsing
     const d = new Date(val);
     if (!isNaN(d.getTime())) {
       return d.toISOString().split('T')[0];
-    }
-    const parts = val.split(/[-\/]/);
-    if (parts.length === 3) {
-      if (parts[0].length === 4) {
-        return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
-      }
     }
   }
   return "";
