@@ -13057,7 +13057,7 @@ CREATE TABLE IF NOT EXISTS platforms (
 
 -- 3. Create inventory table
 CREATE TABLE IF NOT EXISTS inventory (
-  id UUID PRIMARY KEY,
+  id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
   platform TEXT NOT NULL,
   key TEXT NOT NULL,
@@ -13071,8 +13071,8 @@ CREATE TABLE IF NOT EXISTS inventory (
 
 -- 4. Create sales table
 CREATE TABLE IF NOT EXISTS sales (
-  id UUID PRIMARY KEY REFERENCES inventory(id) ON DELETE CASCADE,
-  "inventoryId" UUID NOT NULL,
+  id TEXT PRIMARY KEY REFERENCES inventory(id) ON DELETE CASCADE,
+  "inventoryId" TEXT NOT NULL,
   title TEXT NOT NULL,
   platform TEXT NOT NULL,
   cost NUMERIC(10, 2) NOT NULL,
@@ -14027,7 +14027,12 @@ async function dbSaveInventory(item) {
     if (error) throw error;
   } catch (err) {
     console.error("Error saving inventory item to Supabase:", err);
-    showToast("Failed to save changes to cloud.", "error");
+    if (err && (err.code === '22P02' || (err.message && err.message.includes('invalid input syntax for type uuid')))) {
+      showToast("Sync failed: Database UUID schema mismatch. Check developer console.", "error");
+      console.error("CRITICAL SCHEMA ERROR: Your Supabase sales/inventory table columns are type UUID, but GameVault uses custom text string IDs. Please run the migration script in your Supabase SQL Editor to alter columns to TEXT:\n\nALTER TABLE sales DROP CONSTRAINT IF EXISTS sales_id_fkey;\nALTER TABLE inventory ALTER COLUMN id TYPE TEXT;\nALTER TABLE sales ALTER COLUMN id TYPE TEXT;\nALTER TABLE sales ALTER COLUMN \"inventoryId\" TYPE TEXT;\nALTER TABLE sales ADD CONSTRAINT sales_id_fkey FOREIGN KEY (id) REFERENCES inventory(id) ON DELETE CASCADE;");
+    } else {
+      showToast("Failed to save changes to cloud.", "error");
+    }
   }
 }
 
@@ -14093,7 +14098,12 @@ async function dbSaveSale(sale) {
     }
   } catch (err) {
     console.error("Error saving sale to Supabase:", err);
-    showToast("Failed to save transaction to cloud.", "error");
+    if (err && (err.code === '22P02' || (err.message && err.message.includes('invalid input syntax for type uuid')))) {
+      showToast("Sync failed: Database UUID schema mismatch. Check developer console.", "error");
+      console.error("CRITICAL SCHEMA ERROR: Your Supabase sales/inventory table columns are type UUID, but GameVault uses custom text string IDs. Please run the migration script in your Supabase SQL Editor to alter columns to TEXT:\n\nALTER TABLE sales DROP CONSTRAINT IF EXISTS sales_id_fkey;\nALTER TABLE inventory ALTER COLUMN id TYPE TEXT;\nALTER TABLE sales ALTER COLUMN id TYPE TEXT;\nALTER TABLE sales ALTER COLUMN \"inventoryId\" TYPE TEXT;\nALTER TABLE sales ADD CONSTRAINT sales_id_fkey FOREIGN KEY (id) REFERENCES inventory(id) ON DELETE CASCADE;");
+    } else {
+      showToast("Failed to save transaction to cloud.", "error");
+    }
   }
 }
 

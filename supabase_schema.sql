@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS platforms (
 
 -- 3. Create inventory table
 CREATE TABLE IF NOT EXISTS inventory (
-  id UUID PRIMARY KEY,
+  id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
   platform TEXT NOT NULL,
   key TEXT NOT NULL,
@@ -34,8 +34,8 @@ CREATE TABLE IF NOT EXISTS inventory (
 
 -- 4. Create sales table
 CREATE TABLE IF NOT EXISTS sales (
-  id UUID PRIMARY KEY REFERENCES inventory(id) ON DELETE CASCADE,
-  "inventoryId" UUID NOT NULL,
+  id TEXT PRIMARY KEY REFERENCES inventory(id) ON DELETE CASCADE,
+  "inventoryId" TEXT NOT NULL,
   title TEXT NOT NULL,
   platform TEXT NOT NULL,
   cost NUMERIC(10, 2) NOT NULL,
