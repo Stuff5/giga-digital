@@ -14031,7 +14031,7 @@ async function dbSaveInventory(item) {
       showToast("Sync failed: Database UUID schema mismatch. Check developer console.", "error");
       console.error("CRITICAL SCHEMA ERROR: Your Supabase sales/inventory table columns are type UUID, but GameVault uses custom text string IDs. Please run the migration script in your Supabase SQL Editor to alter columns to TEXT:\n\nALTER TABLE sales DROP CONSTRAINT IF EXISTS sales_id_fkey;\nALTER TABLE inventory ALTER COLUMN id TYPE TEXT;\nALTER TABLE sales ALTER COLUMN id TYPE TEXT;\nALTER TABLE sales ALTER COLUMN \"inventoryId\" TYPE TEXT;\nALTER TABLE sales ADD CONSTRAINT sales_id_fkey FOREIGN KEY (id) REFERENCES inventory(id) ON DELETE CASCADE;");
     } else {
-      showToast("Failed to save changes to cloud.", "error");
+      showToast("Failed to save changes: " + (err.message || "Unknown error"), "error");
     }
   }
 }
@@ -14102,7 +14102,7 @@ async function dbSaveSale(sale) {
       showToast("Sync failed: Database UUID schema mismatch. Check developer console.", "error");
       console.error("CRITICAL SCHEMA ERROR: Your Supabase sales/inventory table columns are type UUID, but GameVault uses custom text string IDs. Please run the migration script in your Supabase SQL Editor to alter columns to TEXT:\n\nALTER TABLE sales DROP CONSTRAINT IF EXISTS sales_id_fkey;\nALTER TABLE inventory ALTER COLUMN id TYPE TEXT;\nALTER TABLE sales ALTER COLUMN id TYPE TEXT;\nALTER TABLE sales ALTER COLUMN \"inventoryId\" TYPE TEXT;\nALTER TABLE sales ADD CONSTRAINT sales_id_fkey FOREIGN KEY (id) REFERENCES inventory(id) ON DELETE CASCADE;");
     } else {
-      showToast("Failed to save transaction to cloud.", "error");
+      showToast("Failed to save transaction: " + (err.message || "Unknown error"), "error");
     }
   }
 }
