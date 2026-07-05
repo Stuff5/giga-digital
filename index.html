@@ -142,6 +142,7 @@
         </div>
         
         <div class="topbar-right">
+          <div id="dev-mode-badge" class="badge badge-disputed hidden" style="font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; padding: 4px 10px; border-radius: var(--radius-sm); align-self: center; text-transform: uppercase;">Dev Mode</div>
           <div class="time-widget">
             <i class="fa-regular fa-clock"></i>
             <span id="current-time">00:00:00</span>
@@ -3407,6 +3408,9 @@
             <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-disputes" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
               <i class="fa-solid fa-triangle-exclamation" style="margin-right: 8px; width: 16px; color: var(--accent-warning);"></i> Disputes & Refunds
             </button>
+            <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-environments" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
+              <i class="fa-solid fa-server" style="margin-right: 8px; width: 16px; color: var(--accent-cyan);"></i> Dev vs. Prod Mode
+            </button>
             <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-business-math" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
               <i class="fa-solid fa-calculator" style="margin-right: 8px; width: 16px; color: var(--accent-warning);"></i> Formulas & Logic
             </button>
@@ -3591,6 +3595,37 @@
               <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Resolving a Dispute</h5>
               <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 0;">
                 If a dispute is resolved (e.g., the customer withdrew the claim or the publisher restored the key), click the green check mark button (<i class="fa-solid fa-circle-check" style="color: var(--accent-teal);"></i>) on the disputed row. This restores the transaction's original selling price, fee calculations, and profit margins.
+              </p>
+            </div>
+
+            <!-- Pane Dev vs Prod Environments -->
+            <div id="help-tab-environments" class="help-tab-pane hidden">
+              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Development vs. Production Environments</h4>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                GameVault features automated environment segregation to isolate local developer trials from live production inventory configurations and database sync channels.
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">How Environment Switching Works</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                The application inspects the active browser bar URL hostname on load:
+                <br>
+                - <strong>Development Mode:</strong> Triggered on <code>localhost</code> or <code>127.0.0.1</code>. The amber <code>DEV MODE</code> badge is shown in the top bar.
+                <br>
+                - <strong>Production Mode:</strong> Triggered on all other domains (e.g., GitHub Pages, custom hosted domains). The top bar looks clean and standard.
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Namespace Virtualization</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                In Development Mode, storage queries (LocalStorage reads, writes, and deletions) are virtualized:
+                <br>
+                - Standard <code>gv_</code> keys are automatically redirected to <code>gv_dev_</code> keys (e.g., <code>gv_dev_inventory</code>).
+                <br>
+                - This ensures that local feature testing or mock imports never overwrite, modify, or corrupt your real live production data in the browser cache.
+              </p>
+
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Checking Active Status</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 0;">
+                Press <code>F12</code> or right-click and choose <strong>Inspect</strong>, then view the console. The application logs its current environment status on startup.
               </p>
             </div>
 

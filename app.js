@@ -3,6 +3,40 @@
  * Main Application Script (app.js)
  */
 
+(function() {
+  const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  if (isDev) {
+    const originalGetItem = Storage.prototype.getItem;
+    const originalSetItem = Storage.prototype.setItem;
+    const originalRemoveItem = Storage.prototype.removeItem;
+
+    Storage.prototype.getItem = function(key) {
+      if (key && key.startsWith('gv_')) {
+        return originalGetItem.call(this, 'gv_dev_' + key.slice(3));
+      }
+      return originalGetItem.call(this, key);
+    };
+
+    Storage.prototype.setItem = function(key, value) {
+      if (key && key.startsWith('gv_')) {
+        return originalSetItem.call(this, 'gv_dev_' + key.slice(3), value);
+      }
+      return originalSetItem.call(this, key, value);
+    };
+
+    Storage.prototype.removeItem = function(key) {
+      if (key && key.startsWith('gv_')) {
+        return originalRemoveItem.call(this, 'gv_dev_' + key.slice(3));
+      }
+      return originalRemoveItem.call(this, key);
+    };
+    
+    console.log("GameVault Environment: DEVELOPMENT (LocalStorage virtualized with gv_dev_ prefixes)");
+  } else {
+    console.log("GameVault Environment: PRODUCTION (LocalStorage using normal gv_ prefixes)");
+  }
+})();
+
 // Generic debounce helper function
 function debounce(func, wait) {
   let timeout;
@@ -703,6 +737,12 @@ function initDOMCache() {
 // ==========================================================================
 document.addEventListener("DOMContentLoaded", async () => {
   try {
+    // Show Dev Mode badge if running locally
+    const devBadge = document.getElementById("dev-mode-badge");
+    if (devBadge && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+      devBadge.classList.remove("hidden");
+    }
+
     // Initialize DOM cache layer
     initDOMCache();
     
