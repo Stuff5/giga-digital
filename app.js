@@ -5041,12 +5041,19 @@ window.triggerDeleteAllInventory = async function() {
         setUnsyncedChanges(true);
       } else {
         showToast("Deleting items from cloud database...", "info");
-        if (ids.length > 0) {
-          const { error: invErr } = await window.supabaseClient.from('inventory').delete().in('id', ids);
+        const deleteBatchSize = 200;
+        
+        // Delete inventory items in batches to avoid URL length limit errors
+        for (let j = 0; j < ids.length; j += deleteBatchSize) {
+          const batch = ids.slice(j, j + deleteBatchSize);
+          const { error: invErr } = await window.supabaseClient.from('inventory').delete().in('id', batch);
           if (invErr) throw invErr;
         }
-        if (saleIds.length > 0) {
-          const { error: saleErr } = await window.supabaseClient.from('sales').delete().in('id', saleIds);
+
+        // Delete sales items in batches to avoid URL length limit errors
+        for (let j = 0; j < saleIds.length; j += deleteBatchSize) {
+          const batch = saleIds.slice(j, j + deleteBatchSize);
+          const { error: saleErr } = await window.supabaseClient.from('sales').delete().in('id', batch);
           if (saleErr) throw saleErr;
         }
       }
