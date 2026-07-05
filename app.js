@@ -5085,8 +5085,8 @@ window.triggerDisputeSale = async function(saleId) {
     
     saveStateToStorage();
     if (window.supabaseClient) {
-      await dbSaveSale(sale);
       if (item) await dbSaveInventory(item);
+      await dbSaveSale(sale);
     }
     updateUI();
     showToast(`Flagged "${sale.title}" sale as Disputed/Refunded.`, "warning");
@@ -5109,8 +5109,8 @@ window.triggerResolveDispute = async function(saleId) {
     
     saveStateToStorage();
     if (window.supabaseClient) {
-      await dbSaveSale(sale);
       if (item) await dbSaveInventory(item);
+      await dbSaveSale(sale);
     }
     updateUI();
     showToast(`Resolved dispute for "${sale.title}". Sale restored.`, "success");
@@ -13066,7 +13066,8 @@ CREATE TABLE IF NOT EXISTS inventory (
   "purchaseDate" TEXT NOT NULL,
   "imageUrl" TEXT,
   status TEXT NOT NULL DEFAULT 'Available',
-  notes TEXT
+  notes TEXT,
+  publisher TEXT
 );
 
 -- 4. Create sales table

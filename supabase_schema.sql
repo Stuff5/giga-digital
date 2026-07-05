@@ -29,7 +29,8 @@ CREATE TABLE IF NOT EXISTS inventory (
   "purchaseDate" TEXT NOT NULL,
   "imageUrl" TEXT,
   status TEXT NOT NULL DEFAULT 'Available',
-  notes TEXT
+  notes TEXT,
+  publisher TEXT
 );
 
 -- 4. Create sales table
