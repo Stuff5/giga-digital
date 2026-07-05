@@ -5085,8 +5085,13 @@ window.triggerDisputeSale = async function(saleId) {
     
     saveStateToStorage();
     if (window.supabaseClient) {
-      if (item) await dbSaveInventory(item);
-      await dbSaveSale(sale);
+      let success = true;
+      if (item) {
+        success = await dbSaveInventory(item);
+      }
+      if (success) {
+        await dbSaveSale(sale);
+      }
     }
     updateUI();
     showToast(`Flagged "${sale.title}" sale as Disputed/Refunded.`, "warning");
@@ -5109,8 +5114,13 @@ window.triggerResolveDispute = async function(saleId) {
     
     saveStateToStorage();
     if (window.supabaseClient) {
-      if (item) await dbSaveInventory(item);
-      await dbSaveSale(sale);
+      let success = true;
+      if (item) {
+        success = await dbSaveInventory(item);
+      }
+      if (success) {
+        await dbSaveSale(sale);
+      }
     }
     updateUI();
     showToast(`Resolved dispute for "${sale.title}". Sale restored.`, "success");
@@ -14004,10 +14014,10 @@ async function dbSeedDatabase() {
 
 // Database Mutators
 async function dbSaveInventory(item) {
-  if (!window.supabaseClient) return;
+  if (!window.supabaseClient) return false;
   if (state.syncMode === "manual") {
     setUnsyncedChanges(true);
-    return;
+    return true;
   }
   try {
     const { error } = await window.supabaseClient
@@ -14026,6 +14036,7 @@ async function dbSaveInventory(item) {
         publisher: item.publisher || null
       });
     if (error) throw error;
+    return true;
   } catch (err) {
     console.error("Error saving inventory item to Supabase:", err);
     if (err && (err.code === '22P02' || (err.message && err.message.includes('invalid input syntax for type uuid')))) {
@@ -14034,6 +14045,7 @@ async function dbSaveInventory(item) {
     } else {
       showToast("Failed to save changes: " + (err.message || "Unknown error"), "error");
     }
+    return false;
   }
 }
 
@@ -14060,10 +14072,10 @@ async function dbDeleteInventory(id) {
 }
 
 async function dbSaveSale(sale) {
-  if (!window.supabaseClient) return;
+  if (!window.supabaseClient) return false;
   if (state.syncMode === "manual") {
     setUnsyncedChanges(true);
-    return;
+    return true;
   }
   try {
     const payload = {
@@ -14097,6 +14109,7 @@ async function dbSaveSale(sale) {
         throw error;
       }
     }
+    return true;
   } catch (err) {
     console.error("Error saving sale to Supabase:", err);
     if (err && (err.code === '22P02' || (err.message && err.message.includes('invalid input syntax for type uuid')))) {
@@ -14105,6 +14118,7 @@ async function dbSaveSale(sale) {
     } else {
       showToast("Failed to save transaction: " + (err.message || "Unknown error"), "error");
     }
+    return false;
   }
 }
 
