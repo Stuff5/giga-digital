@@ -813,6 +813,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       state.currentUser = null;
     } else {
       state.currentUser = activeUser;
+      loadStateFromStorage();
       if (appContainer) appContainer.classList.remove("hidden");
       if (authContainer) authContainer.classList.add("hidden");
       if (logoutBtn) logoutBtn.classList.remove("hidden");
