@@ -35,8 +35,8 @@ CREATE TABLE IF NOT EXISTS inventory (
 
 -- 4. Create sales table
 CREATE TABLE IF NOT EXISTS sales (
-  id TEXT PRIMARY KEY REFERENCES inventory(id) ON DELETE CASCADE,
-  "inventoryId" TEXT NOT NULL,
+  id TEXT PRIMARY KEY,
+  "inventoryId" TEXT NOT NULL REFERENCES inventory(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   platform TEXT NOT NULL,
   cost NUMERIC(10, 2) NOT NULL,
