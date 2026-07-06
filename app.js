@@ -15245,28 +15245,22 @@ async function importStateFromSpreadsheet(file) {
               
               let purchaseDate = row["Entry Date"] || row["Purchase Date"] || "";
               if (purchaseDate instanceof Date) {
-                const yr = purchaseDate.getFullYear();
-                const mo = String(purchaseDate.getMonth() + 1).padStart(2, '0');
-                const dy = String(purchaseDate.getDate()).padStart(2, '0');
-                purchaseDate = `${yr}-${mo}-${dy}`;
+                purchaseDate = formatLocalDateWithoutShifts(purchaseDate);
               } else if (purchaseDate) {
                 purchaseDate = parseExcelDate(purchaseDate.toString());
               } else {
-                const nowD = new Date();
-                const yr = nowD.getFullYear();
-                const mo = String(nowD.getMonth() + 1).padStart(2, '0');
-                const dy = String(nowD.getDate()).padStart(2, '0');
-                purchaseDate = `${yr}-${mo}-${dy}`;
+                purchaseDate = formatLocalDateWithoutShifts(new Date());
               }
               
               let saleDate = row["Closed Date"] || row["Sale Date"] || "";
+              const rawClosedDateVal = saleDate;
               if (saleDate instanceof Date) {
-                const yr = saleDate.getFullYear();
-                const mo = String(saleDate.getMonth() + 1).padStart(2, '0');
-                const dy = String(saleDate.getDate()).padStart(2, '0');
-                saleDate = `${yr}-${mo}-${dy}`;
+                saleDate = formatLocalDateWithoutShifts(saleDate);
               } else if (saleDate) {
                 saleDate = parseExcelDate(saleDate.toString());
+              }
+              if (title.toLowerCase().includes("dead by daylight")) {
+                console.log(`[Diagnostic] Row ${i} Dead by Daylight: Closed Date raw =`, rawClosedDateVal, `type =`, (rawClosedDateVal instanceof Date ? 'Date' : typeof rawClosedDateVal), `parsed saleDate =`, saleDate);
               }
               
               let status = (row["Status"] || "").toString().trim();
@@ -15452,15 +15446,20 @@ async function importStateFromSpreadsheet(file) {
   );
 }
 
+function formatLocalDateWithoutShifts(dateObj) {
+  if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) return "";
+  // Shift by 12 hours (12 * 60 * 60 * 1000 ms) to safely skip any LMT/GMT timezone shifts that cross midnight
+  const shifted = new Date(dateObj.getTime() + 12 * 60 * 60 * 1000);
+  const yr = shifted.getFullYear();
+  const mo = String(shifted.getMonth() + 1).padStart(2, '0');
+  const dy = String(shifted.getDate()).padStart(2, '0');
+  return `${yr}-${mo}-${dy}`;
+}
+
 function parseExcelDate(val) {
   if (!val) return "";
   if (val instanceof Date) {
-    if (!isNaN(val.getTime())) {
-      const yr = val.getFullYear();
-      const mo = String(val.getMonth() + 1).padStart(2, '0');
-      const dy = String(val.getDate()).padStart(2, '0');
-      return `${yr}-${mo}-${dy}`;
-    }
+    return formatLocalDateWithoutShifts(val);
   }
   if (typeof val === 'number') {
     const date = new Date(Math.round((val - 25569) * 86400 * 1000));
@@ -15490,12 +15489,7 @@ function parseExcelDate(val) {
 
     // 3. Fallback to standard JS parsing
     const d = new Date(val);
-    if (!isNaN(d.getTime())) {
-      const yr = d.getFullYear();
-      const mo = String(d.getMonth() + 1).padStart(2, '0');
-      const dy = String(d.getDate()).padStart(2, '0');
-      return `${yr}-${mo}-${dy}`;
-    }
+    return formatLocalDateWithoutShifts(d);
   }
   return "";
 }
