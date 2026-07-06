@@ -3474,9 +3474,18 @@
                   </tr>
                 </tbody>
               </table>
-              <div style="background-color: rgba(255, 179, 0, 0.05); border-left: 3px solid var(--accent-warning); padding: 10px; border-radius: var(--radius-sm);">
-                <p style="color: var(--text-main); font-size: 0.8rem; margin: 0; line-height: 1.4;">
+              <div style="background-color: rgba(255, 179, 0, 0.05); border-left: 3px solid var(--accent-warning); padding: 10px; border-radius: var(--radius-sm); margin-bottom: 12px;">
+                <p style="color: var(--text-main); font-size: 0.8rem; margin: 0; line-height: 1.4; margin-bottom: 6px;">
                   <strong>Pro Tip:</strong> Use the **Excel/CSV Bulk Import** card in Settings. The importer handles large batches asynchronously, so the browser stays responsive.
+                </p>
+                <p style="color: var(--text-secondary); font-size: 0.775rem; margin: 0; line-height: 1.4;">
+                  <strong>Date Formats:</strong> The importer parses standard (YYYY-MM-DD) and international (D/M/YYYY or DD-MM-YYYY) formats. Midnight boundaries are timezone-corrected automatically to prevent date shifts.
+                </p>
+              </div>
+              
+              <div style="background-color: rgba(57, 73, 171, 0.05); border-left: 3px solid var(--accent-cyan); padding: 10px; border-radius: var(--radius-sm);">
+                <p style="color: var(--text-main); font-size: 0.8rem; margin: 0; line-height: 1.4;">
+                  <strong>Duplicates Check:</strong> The importer checks all incoming activation keys against your current catalog. Any duplicates found will be reported as a warning alert when the import concludes.
                 </p>
               </div>
             </div>
