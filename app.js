@@ -3859,45 +3859,7 @@ function initEventHandlers() {
     });
   }
 
-  // Figures Customizer Event Listeners
-  const btnToggleFigures = document.getElementById("btn-toggle-figures-panel");
-  const figuresPanel = document.getElementById("figures-customize-panel");
-  
-  if (btnToggleFigures && figuresPanel) {
-    btnToggleFigures.addEventListener("click", (e) => {
-      e.stopPropagation();
-      figuresPanel.classList.toggle("active");
-    });
-    
-    // Close panel on clicking outside
-    document.addEventListener("click", (e) => {
-      const container = document.getElementById("figures-customize-dropdown");
-      if (container && !container.contains(e.target)) {
-        figuresPanel.classList.remove("active");
-      }
-    });
-    
-    // Bind figure checkboxes (synced with widget settings)
-    const figureKeys = ["salesProfit", "platformSplit", "costRevenue", "supplierSplit", "topBestsellers", "dailyProfitMonth"];
-    figureKeys.forEach(key => {
-      const checkbox = document.getElementById(`toggle-figure-${key}`);
-      if (checkbox) {
-        checkbox.addEventListener("change", (e) => {
-          state.visibleFigures[key] = e.target.checked;
-          if (state.widgetSettings && state.widgetSettings[key]) {
-            state.widgetSettings[key].visible = e.target.checked;
-          }
-          saveStateToStorage();
-          applyWidgetVisibility();
-          updateUI(); // Re-render charts and apply layout resizing safely
-          if (window.supabaseClient) {
-            dbSaveSettings("visibleFigures", state.visibleFigures);
-            dbSaveSettings("widgetSettings", state.widgetSettings);
-          }
-        });
-      }
-    });
-  }
+  // Figures Customizer Event Listeners (Removed - replaced by Widget Gallery)
 
   // Bestsellers Customizer Event Listeners
   const bestsellersLimitSelect = document.getElementById("bestsellers-limit-select");
@@ -11099,11 +11061,7 @@ function applyFiguresVisibility() {
       }
     }
     
-    // Also update checkbox state in the dropdown panel
-    const checkbox = document.getElementById(`toggle-figure-${key}`);
-    if (checkbox) {
-      checkbox.checked = !!(state.visibleFigures && state.visibleFigures[key]);
-    }
+    // Also update checkbox state (Removed - replaced by Widget Gallery)
   });
 }
 
@@ -11396,11 +11354,7 @@ function applyWidgetVisibility() {
         card.style.setProperty("display", "none", "important");
       }
       
-      // Synchronize checkbox state in the Figures panel
-      const checkbox = document.getElementById(`toggle-figure-${key}`);
-      if (checkbox) {
-        checkbox.checked = !!cfg.visible;
-      }
+      // Synchronize checkbox state (Removed - replaced by Widget Gallery)
       if (state.visibleFigures) {
         state.visibleFigures[key] = !!cfg.visible;
       }
