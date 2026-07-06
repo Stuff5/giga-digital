@@ -2968,6 +2968,89 @@ function initEventHandlers() {
   // Sell Game Form Submission
   document.getElementById("sell-game-form").addEventListener("submit", handleSellGameSubmit);
 
+  // Sell Game Autocomplete Search
+  const sellGameSearchInput = document.getElementById("sell-game-search");
+  const sellAutocompleteList = document.getElementById("sell-autocomplete-list");
+  if (sellGameSearchInput && sellAutocompleteList) {
+    sellGameSearchInput.addEventListener("input", (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      if (!q) {
+        sellAutocompleteList.style.display = "none";
+        return;
+      }
+      
+      const matches = state.inventory.filter(item => 
+        item.status === "Available" && 
+        ((item.title || "").toLowerCase().includes(q) || (item.key || "").toLowerCase().includes(q))
+      );
+      
+      if (matches.length === 0) {
+        sellAutocompleteList.innerHTML = `<div style="padding: 8px 12px; font-size: 0.8rem; color: var(--text-muted);">No in-stock keys found matching "${escapeHTML(q)}"</div>`;
+        sellAutocompleteList.style.display = "block";
+        return;
+      }
+      
+      sellAutocompleteList.innerHTML = "";
+      matches.slice(0, 30).forEach(item => {
+        const itemEl = document.createElement("div");
+        itemEl.className = "autocomplete-item";
+        itemEl.style.padding = "8px 12px";
+        itemEl.style.cursor = "pointer";
+        itemEl.style.borderBottom = "1px solid var(--border-color)";
+        itemEl.style.display = "flex";
+        itemEl.style.flexDirection = "column";
+        itemEl.style.gap = "2px";
+        itemEl.innerHTML = `
+          <div style="font-weight: 600; font-size: 0.85rem; color: #fff;">${escapeHTML(item.title)}</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+            <span>Platform: ${escapeHTML(item.platform)} | Cost: ${formatCurrency(item.cost)}</span>
+            <code style="font-size: 0.7rem; color: var(--accent-purple); font-family: monospace;">${escapeHTML((item.key || "").slice(0, 10))}...</code>
+          </div>
+        `;
+        
+        itemEl.addEventListener("mouseenter", () => {
+          itemEl.style.background = "var(--border-color)";
+        });
+        itemEl.addEventListener("mouseleave", () => {
+          itemEl.style.background = "";
+        });
+        
+        itemEl.addEventListener("click", () => {
+          document.getElementById("sell-game-id").value = item.id;
+          sellGameSearchInput.value = item.title;
+          
+          document.getElementById("sell-modal-title").textContent = item.title;
+          document.getElementById("sell-modal-platform").textContent = item.platform;
+          document.getElementById("sell-modal-cost").textContent = formatCurrency(item.cost);
+          document.getElementById("sell-modal-key").textContent = item.key || "-";
+          document.getElementById("sell-selected-game-card").style.display = "block";
+          sellAutocompleteList.style.display = "none";
+          
+          // Auto fill sell price with default markup
+          let defaultSalePrice;
+          if (item.sellPrice !== undefined && item.sellPrice > 0) {
+            defaultSalePrice = item.sellPrice.toFixed(2);
+          } else if (state.defaultMarkupType === "percent") {
+            defaultSalePrice = (item.cost * (1 + state.defaultMarkupValue / 100)).toFixed(2);
+          } else {
+            defaultSalePrice = (item.cost + state.defaultMarkupValue).toFixed(2);
+          }
+          document.getElementById("sale-price").value = defaultSalePrice;
+        });
+        
+        sellAutocompleteList.appendChild(itemEl);
+      });
+      sellAutocompleteList.style.display = "block";
+    });
+    
+    // Close list on clicking outside
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest("#sell-search-container")) {
+        sellAutocompleteList.style.display = "none";
+      }
+    });
+  }
+
   // Edit Game Form Submission
   document.getElementById("edit-game-form").addEventListener("submit", handleEditGameSubmit);
 
@@ -4719,6 +4802,13 @@ async function handleAddGameSubmit(e) {
     return;
   }
 
+  // Check for duplicate keys in inventory
+  const duplicateKeys = keys.filter(k => state.inventory.some(item => item.key.trim().toLowerCase() === k.toLowerCase()));
+  if (duplicateKeys.length > 0) {
+    const proceed = confirm(`Warning: The following keys already exist in your inventory:\n${duplicateKeys.join("\n")}\n\nAre you sure you want to add them anyway?`);
+    if (!proceed) return;
+  }
+
   // Artwork Cover Image Handling
   let imageUrl = document.getElementById("game-image-url").value.trim();
   const fileInput = document.getElementById("game-image-file");
@@ -4796,6 +4886,10 @@ async function handleSellGameSubmit(e) {
   e.preventDefault();
 
   const gameId = document.getElementById("sell-game-id").value;
+  if (!gameId) {
+    showToast("Please search and select an in-stock game from the autocomplete dropdown list.", "error");
+    return;
+  }
   const sellPrice = parseFloat(document.getElementById("sale-price").value) || 0;
   const platformSold = document.getElementById("sale-platform").value;
   const fees = parseFloat(document.getElementById("sale-fees").value) || 0;
@@ -4849,14 +4943,30 @@ async function handleSellGameSubmit(e) {
 }
 
 // Action triggers from Table Lists
+window.triggerSellGameManual = function() {
+  document.getElementById("sell-game-id").value = "";
+  document.getElementById("sell-game-search").value = "";
+  document.getElementById("sell-game-search").placeholder = "Type game title or key...";
+  document.getElementById("sell-selected-game-card").style.display = "none";
+  document.getElementById("sale-price").value = "";
+  document.getElementById("sale-fees").value = "0.00";
+  document.getElementById("sell-autocomplete-list").style.display = "none";
+  
+  openModal("sell-game-modal");
+};
+
 window.triggerSellGame = function(gameId) {
   const game = state.inventory.find(item => item.id === gameId);
   if (!game) return;
 
   document.getElementById("sell-game-id").value = game.id;
+  document.getElementById("sell-game-search").value = game.title;
   document.getElementById("sell-modal-title").textContent = game.title;
   document.getElementById("sell-modal-platform").textContent = game.platform;
   document.getElementById("sell-modal-cost").textContent = formatCurrency(game.cost);
+  document.getElementById("sell-modal-key").textContent = game.key || "-";
+  document.getElementById("sell-selected-game-card").style.display = "block";
+  document.getElementById("sell-autocomplete-list").style.display = "none";
 
   // Default values
   let defaultSalePrice;
@@ -5165,6 +5275,16 @@ async function handleEditGameSubmit(e) {
   if (gameIndex === -1) {
     showToast("Game not found.", "error");
     return;
+  }
+
+  // Check if edited key exists on another game item
+  const currentKey = state.inventory[gameIndex].key;
+  if (key && key.toLowerCase() !== currentKey.toLowerCase()) {
+    const isDuplicate = state.inventory.some(item => item.id !== gameId && item.key.trim().toLowerCase() === key.toLowerCase());
+    if (isDuplicate) {
+      const proceed = confirm(`Warning: The key "${key}" already exists in your inventory for another game.\n\nAre you sure you want to save this key?`);
+      if (!proceed) return;
+    }
   }
 
   const oldStatus = state.inventory[gameIndex].status;
@@ -15173,6 +15293,8 @@ async function importStateFromSpreadsheet(file) {
 
           const currentSuppliers = new Set(state.suppliers.map(s => s.name.toLowerCase()));
           const currentPlatforms = new Set(state.platforms.map(p => p.name.toLowerCase()));
+          const existingKeys = new Set(state.inventory.map(item => item.key.trim().toLowerCase()).filter(k => k.length > 0));
+          let duplicateKeysCount = 0;
           
           const importedGames = [];
           const importedSales = [];
@@ -15192,6 +15314,14 @@ async function importStateFromSpreadsheet(file) {
               if (!title) continue;
               
               const key = (row["Key"] || "").toString().trim();
+              if (key) {
+                const keyLower = key.toLowerCase();
+                if (existingKeys.has(keyLower)) {
+                  duplicateKeysCount++;
+                } else {
+                  existingKeys.add(keyLower);
+                }
+              }
               const vendor = (row["Vendor"] || row["Source"] || row["Supplier"] || "Other").toString().trim();
               const platform = (row["Platform"] || "Other").toString().trim();
               const cost = parseFloat(row["Cost"] || row["Buy Price"] || 0) || 0;
@@ -15372,7 +15502,11 @@ async function importStateFromSpreadsheet(file) {
             }, 1500);
             
             updateUI();
-            showToast(`Successfully imported ${importedGames.length} inventory keys from sheet!`, "success");
+            if (duplicateKeysCount > 0) {
+              showToast(`Import complete! ${importedGames.length} items imported. Note: ${duplicateKeysCount} keys already existed in your inventory.`, "warning");
+            } else {
+              showToast(`Successfully imported ${importedGames.length} inventory keys from sheet!`, "success");
+            }
           }
           
           setTimeout(processBatch, 0);

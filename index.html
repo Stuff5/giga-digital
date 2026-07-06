@@ -1354,7 +1354,10 @@
               <h2 class="view-title">Sales Ledger</h2>
               <p class="view-subtitle">Historical records of all sold digital keys, platforms, and fee structures.</p>
             </div>
-            <div class="action-buttons">
+            <div class="action-buttons" style="display: flex; gap: 8px;">
+              <button class="btn btn-primary btn-sm btn-icon" id="btn-sales-record-sale" onclick="triggerSellGameManual()" style="display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-plus"></i> <span>Record Sale</span>
+              </button>
               <button class="btn btn-outline" id="btn-export-sales">
                 <i class="fa-solid fa-download"></i> <span>Export CSV</span>
               </button>
@@ -2913,9 +2916,19 @@
         <input type="hidden" id="sell-game-id">
         <input type="hidden" id="sale-fees" value="0.00">
         <div class="modal-body">
-          <div class="sale-summary-card">
+          <div class="form-group" id="sell-search-container" style="margin-bottom: 16px;">
+            <label for="sell-game-search" class="required">Search In-Stock Game</label>
+            <div class="input-with-icon" style="position: relative;">
+              <i class="fa-solid fa-magnifying-glass search-icon" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.85rem;"></i>
+              <input type="text" id="sell-game-search" class="form-control" placeholder="Type game title or key..." style="padding-left: 36px;" autocomplete="off" required>
+              <div id="sell-autocomplete-list" class="glass-panel" style="position: absolute; top: 100%; left: 0; right: 0; max-height: 220px; overflow-y: auto; z-index: 1000; border: 1px solid var(--border-color); border-radius: 6px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); display: none; background: var(--bg-card); padding: 4px 0;"></div>
+            </div>
+          </div>
+
+          <div class="sale-summary-card" id="sell-selected-game-card" style="display: none; margin-bottom: 16px;">
             <h4 id="sell-modal-title">Game Title Here</h4>
             <p>Platform: <span id="sell-modal-platform">Steam</span> | Buy Cost: <span id="sell-modal-cost">€0.00</span></p>
+            <p style="font-size: 0.75rem; margin-top: 4px; color: var(--text-muted);">Key: <code id="sell-modal-key" style="font-size: 0.75rem;">-</code></p>
           </div>
 
           <div class="form-row-2">
