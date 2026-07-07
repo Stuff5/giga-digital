@@ -15590,3 +15590,56 @@ document.addEventListener("click", (e) => {
     });
   }
 });
+
+// Auto fetch game cover image from Steam Web Store API via CheapShark CORS-friendly API
+window.triggerAutoFetchSteamCover = async function(titleInputId, targetInputId, buttonId) {
+  const titleInput = document.getElementById(titleInputId);
+  const targetInput = document.getElementById(targetInputId);
+  const btn = document.getElementById(buttonId);
+  
+  if (!titleInput || !targetInput || !btn) return;
+  
+  const title = titleInput.value.trim();
+  if (!title) {
+    showToast("Please enter a game title first.", "error");
+    return;
+  }
+  
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Fetching...`;
+  
+  try {
+    const response = await fetch(`https://www.cheapshark.com/api/1.0/games?title=${encodeURIComponent(title)}`);
+    if (!response.ok) throw new Error("CheapShark API request failed");
+    
+    const matches = await response.json();
+    if (matches && matches.length > 0) {
+      // Find the first match with a valid Steam App ID if possible, otherwise use the first match
+      const match = matches.find(m => m.steamAppID) || matches[0];
+      let imageUrl = "";
+      
+      if (match.steamAppID) {
+        imageUrl = `https://cdn.akamai.steamstatic.com/steam/apps/${match.steamAppID}/header.jpg`;
+      } else if (match.thumb) {
+        imageUrl = match.thumb;
+      }
+      
+      if (imageUrl) {
+        targetInput.value = imageUrl;
+        targetInput.dispatchEvent(new Event("input", { bubbles: true }));
+        showToast(`Successfully fetched artwork for: "${match.external}"`, "success");
+      } else {
+        showToast(`No artwork found for "${title}".`, "warning");
+      }
+    } else {
+      showToast(`No matches found on Steam/CheapShark for "${title}".`, "warning");
+    }
+  } catch (err) {
+    console.error("Artwork auto-fetch error:", err);
+    showToast("Failed to fetch from Steam API. Try pasting a cover link manually.", "error");
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+  }
+};

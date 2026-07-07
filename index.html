@@ -2685,15 +2685,20 @@
 
           <div class="form-group">
             <label>Game Artwork / Cover Image</label>
-            <div class="image-input-container">
-              <input type="text" id="edit-game-image-url" class="form-control form-control-sm" placeholder="Paste image URL (HTTPS)...">
-              <div class="image-divider"><span>OR</span></div>
-              <label class="btn btn-outline btn-sm file-upload-label">
+            <div class="image-input-container" style="display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; gap: 8px; width: 100%;">
+                <input type="text" id="edit-game-image-url" class="form-control form-control-sm" placeholder="Paste image URL (HTTPS)..." style="flex: 1;">
+                <button type="button" class="btn btn-outline btn-sm" id="btn-edit-fetch-steam" onclick="triggerAutoFetchSteamCover('edit-game-title', 'edit-game-image-url', 'btn-edit-fetch-steam')" style="white-space: nowrap; height: 32px; display: flex; align-items: center; gap: 4px;">
+                  <i class="fa-brands fa-steam"></i> Fetch Steam
+                </button>
+              </div>
+              <div class="image-divider" style="margin: 4px 0;"><span>OR</span></div>
+              <label class="btn btn-outline btn-sm file-upload-label" style="width: 100%; display: flex; justify-content: center; align-items: center; margin: 0;">
                 <i class="fa-solid fa-upload"></i> Upload Image
                 <input type="file" id="edit-game-image-file" accept="image/*" style="display: none;">
               </label>
             </div>
-            <small class="form-help">Paste cover artwork URL or upload a local image file.</small>
+            <small class="form-help">Paste cover artwork URL, fetch from Steam, or upload a local image.</small>
           </div>
 
           <div class="form-row-2">
@@ -2791,10 +2796,15 @@
 
           <div class="form-group">
             <label>Game Artwork / Cover Image</label>
-            <div class="image-input-container">
-              <input type="text" id="edit-entry-image-url" class="form-control form-control-sm" placeholder="Paste image URL (HTTPS)...">
-              <div class="image-divider"><span>OR</span></div>
-              <label class="btn btn-outline btn-sm file-upload-label">
+            <div class="image-input-container" style="display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; gap: 8px; width: 100%;">
+                <input type="text" id="edit-entry-image-url" class="form-control form-control-sm" placeholder="Paste image URL (HTTPS)..." style="flex: 1;">
+                <button type="button" class="btn btn-outline btn-sm" id="btn-catalog-fetch-steam" onclick="triggerAutoFetchSteamCover('edit-entry-title', 'edit-entry-image-url', 'btn-catalog-fetch-steam')" style="white-space: nowrap; height: 32px; display: flex; align-items: center; gap: 4px;">
+                  <i class="fa-brands fa-steam"></i> Fetch Steam
+                </button>
+              </div>
+              <div class="image-divider" style="margin: 4px 0;"><span>OR</span></div>
+              <label class="btn btn-outline btn-sm file-upload-label" style="width: 100%; display: flex; justify-content: center; align-items: center; margin: 0;">
                 <i class="fa-solid fa-upload"></i> Upload Image
                 <input type="file" id="edit-entry-image-file" accept="image/*" style="display: none;">
               </label>
@@ -2831,15 +2841,20 @@
 
           <div class="form-group">
             <label>Game Artwork / Cover Image</label>
-            <div class="image-input-container">
-              <input type="text" id="game-image-url" class="form-control form-control-sm" placeholder="Paste image URL (HTTPS)...">
-              <div class="image-divider"><span>OR</span></div>
-              <label class="btn btn-outline btn-sm file-upload-label">
+            <div class="image-input-container" style="display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; gap: 8px; width: 100%;">
+                <input type="text" id="game-image-url" class="form-control form-control-sm" placeholder="Paste image URL (HTTPS)..." style="flex: 1;">
+                <button type="button" class="btn btn-outline btn-sm" id="btn-add-fetch-steam" onclick="triggerAutoFetchSteamCover('game-title', 'game-image-url', 'btn-add-fetch-steam')" style="white-space: nowrap; height: 32px; display: flex; align-items: center; gap: 4px;">
+                  <i class="fa-brands fa-steam"></i> Fetch Steam
+                </button>
+              </div>
+              <div class="image-divider" style="margin: 4px 0;"><span>OR</span></div>
+              <label class="btn btn-outline btn-sm file-upload-label" style="width: 100%; display: flex; justify-content: center; align-items: center; margin: 0;">
                 <i class="fa-solid fa-upload"></i> Upload Image
                 <input type="file" id="game-image-file" accept="image/*" style="display: none;">
               </label>
             </div>
-            <small class="form-help">Paste cover artwork URL or upload a local image file.</small>
+            <small class="form-help">Paste cover artwork URL, fetch from Steam, or upload a local image.</small>
           </div>
 
           <div class="form-row-2">
