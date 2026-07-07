@@ -732,6 +732,13 @@ let stockTurnoverChartInstance = null;
 
 // Initialize notification center state and bindings
 function initNotificationCenter() {
+  // Load notification limit
+  try {
+    state.notificationLimit = parseInt(localStorage.getItem("gv_notification_limit") || "10", 10);
+  } catch (err) {
+    state.notificationLimit = 10;
+  }
+
   // Load notifications from LocalStorage if they exist
   try {
     const saved = localStorage.getItem("gv_notifications");
@@ -739,6 +746,12 @@ function initNotificationCenter() {
   } catch (err) {
     console.error("Failed to load notifications:", err);
     state.notifications = [];
+  }
+
+  // Update limit dropdown visual selection
+  const selectLimit = document.getElementById("select-notification-limit");
+  if (selectLimit) {
+    selectLimit.value = state.notificationLimit.toString();
   }
 
   // Render initial list
@@ -767,6 +780,18 @@ function initNotificationCenter() {
       if (!dropdown.contains(e.target) && e.target !== btnBell && !btnBell.contains(e.target)) {
         dropdown.style.display = "none";
       }
+    });
+  }
+
+  if (selectLimit) {
+    selectLimit.addEventListener("change", (e) => {
+      state.notificationLimit = parseInt(e.target.value, 10);
+      try {
+        localStorage.setItem("gv_notification_limit", state.notificationLimit.toString());
+      } catch (err) {
+        console.error("Failed to save notification limit:", err);
+      }
+      renderNotifications();
     });
   }
 
@@ -827,7 +852,10 @@ function renderNotifications() {
     return;
   }
 
-  listContainer.innerHTML = state.notifications.map(notif => `
+  const limit = state.notificationLimit || 10;
+  const visibleNotifications = state.notifications.slice(0, limit);
+
+  listContainer.innerHTML = visibleNotifications.map(notif => `
     <div style="padding: 10px 16px; border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 4px; background: ${notif.unread ? 'var(--bg-input)' : 'transparent'};">
       <div style="font-size: 0.82rem; color: var(--text-main); line-height: 1.3;">${escapeHTML(notif.text)}</div>
       <div style="font-size: 0.7rem; color: var(--text-muted); text-align: right;">${notif.time}</div>
@@ -1000,6 +1028,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       editSupplierForm.addEventListener("submit", handleEditSupplierSubmit);
     }
 
+    // Register Dispute Sale submit handler
+    const disputeSaleForm = document.getElementById("dispute-sale-form");
+    if (disputeSaleForm) {
+      disputeSaleForm.addEventListener("submit", handleDisputeSaleSubmit);
+    }
+
     // Register Add & Edit Platform submit handlers
     const addPlatformForm = document.getElementById("add-platform-form");
     if (addPlatformForm) {
@@ -1072,6 +1106,42 @@ document.addEventListener("DOMContentLoaded", async () => {
           helpSearchInput.value = "";
           helpTabs.forEach(t => t.style.display = "");
         }
+        openModal("help-modal");
+      });
+    }
+
+    // Bind Changelog Link in Sidebar Footer
+    const linkChangelog = document.getElementById("link-show-changelog");
+    if (linkChangelog) {
+      linkChangelog.addEventListener("click", (e) => {
+        e.preventDefault();
+        // Clear search
+        if (helpSearchInput) {
+          helpSearchInput.value = "";
+          helpTabs.forEach(t => t.style.display = "");
+        }
+        
+        // Switch to the Changelog tab
+        helpTabs.forEach(t => {
+          if (t.getAttribute("data-help-tab") === "help-tab-changelog") {
+            t.classList.add("active");
+            t.style.backgroundColor = "var(--bg-input)";
+            t.style.color = "var(--text-main)";
+          } else {
+            t.classList.remove("active");
+            t.style.backgroundColor = "transparent";
+            t.style.color = "var(--text-secondary)";
+          }
+        });
+        
+        helpPanes.forEach(p => {
+          if (p.id === "help-tab-changelog") {
+            p.classList.remove("hidden");
+          } else {
+            p.classList.add("hidden");
+          }
+        });
+        
         openModal("help-modal");
       });
     }
@@ -5310,34 +5380,21 @@ window.triggerCancelSale = async function(saleId) {
   }
 };
 
-window.triggerDisputeSale = async function(saleId) {
+window.triggerDisputeSale = function(saleId) {
   const sale = state.sales.find(item => item.id === saleId);
   if (!sale) return;
   
-  if (confirm(`Are you sure you want to flag the sale of "${sale.title}" as Disputed/Refunded?\n\nThis will:\n- Zero out the sale revenue.\n- Adjust net profit to record a capital loss of -${formatCurrency(sale.cost)}.\n- Mark the activation key status as "Disputed".`)) {
-    pushToUndoStack();
-    sale.disputed = true;
-    
-    // Find matching inventory item
-    const item = state.inventory.find(i => i.id === sale.inventoryId);
-    if (item) {
-      item.status = "Disputed";
-    }
-    
-    saveStateToStorage();
-    if (window.supabaseClient) {
-      let success = true;
-      if (item) {
-        success = await dbSaveInventory(item);
-      }
-      if (success) {
-        await dbSaveSale(sale);
-      }
-    }
-    updateUI();
-    showToast(`Flagged "${sale.title}" sale as Disputed/Refunded.`, "warning");
-    logActionNotification(`Flagged dispute: "${sale.title}"`);
-  }
+  const idInput = document.getElementById("dispute-sale-id");
+  const titleLabel = document.getElementById("dispute-sale-title-label");
+  const costLabel = document.getElementById("dispute-sale-cost-label");
+  const checkbox = document.getElementById("dispute-cost-refunded");
+  
+  if (idInput) idInput.value = saleId;
+  if (titleLabel) titleLabel.textContent = `"${sale.title}"`;
+  if (costLabel) costLabel.textContent = formatCurrency(sale.cost);
+  if (checkbox) checkbox.checked = false;
+  
+  openModal("dispute-sale-modal");
 };
 
 window.triggerResolveDispute = async function(saleId) {
@@ -5347,6 +5404,7 @@ window.triggerResolveDispute = async function(saleId) {
   if (confirm(`Resolve dispute for "${sale.title}" and restore the original sale transaction?`)) {
     pushToUndoStack();
     sale.disputed = false;
+    sale.supplierRefunded = false;
     
     // Find matching inventory item
     const item = state.inventory.find(i => i.id === sale.inventoryId);
@@ -5369,6 +5427,45 @@ window.triggerResolveDispute = async function(saleId) {
     logActionNotification(`Resolved dispute: "${sale.title}"`);
   }
 };
+
+async function handleDisputeSaleSubmit(e) {
+  e.preventDefault();
+  
+  const saleId = document.getElementById("dispute-sale-id")?.value;
+  if (!saleId) return;
+  
+  const sale = state.sales.find(item => item.id === saleId);
+  if (!sale) return;
+  
+  const supplierRefunded = document.getElementById("dispute-cost-refunded")?.checked === true;
+  
+  closeModal("dispute-sale-modal");
+  
+  pushToUndoStack();
+  sale.disputed = true;
+  sale.supplierRefunded = supplierRefunded;
+  
+  // Find matching inventory item
+  const item = state.inventory.find(i => i.id === sale.inventoryId);
+  if (item) {
+    item.status = "Disputed";
+  }
+  
+  saveStateToStorage();
+  if (window.supabaseClient) {
+    let success = true;
+    if (item) {
+      success = await dbSaveInventory(item);
+    }
+    if (success) {
+      await dbSaveSale(sale);
+    }
+  }
+  updateUI();
+  const profitImpact = supplierRefunded ? "0.00 (refunded by supplier)" : `-${formatCurrency(sale.cost)} (loss)`;
+  showToast(`Flagged "${sale.title}" sale as Disputed/Refunded. Net profit impact: ${profitImpact}.`, "warning");
+  logActionNotification(`Flagged dispute: "${sale.title}" (Supplier Refunded: ${supplierRefunded ? 'Yes' : 'No'})`);
+}
 
 window.triggerEditGame = function(gameId) {
   const game = state.inventory.find(item => item.id === gameId);
@@ -7337,6 +7434,10 @@ function calculateMetrics(filteredSalesList, filteredInventoryList) {
   let activeSalesCount = 0;
   filteredSalesList.forEach(sale => {
     if (sale.disputed === true) {
+      if (sale.supplierRefunded === true) {
+        // Cost is refunded by supplier: net profit impact is 0, cost is not added to cost of sales
+        return;
+      }
       totalCostOfSales += sale.cost;
       totalNetProfit -= sale.cost;
       return;
@@ -8474,13 +8575,32 @@ function buildSalesRowHTML(sale, inventoryMap) {
     : `<div class="game-title-cell"><div class="game-thumbnail-placeholder">${escapeHTML(initials)}</div><strong>${escapeHTML(sale.title)}</strong></div>`;
 
   const isDisputed = sale.disputed === true;
+  const isSupplierRefunded = sale.supplierRefunded === true;
   const rowStyle = isDisputed ? 'style="background-color: hsla(40, 95%, 55%, 0.04) !important; border-left: 3px solid var(--accent-warning);"' : '';
-  const profitClass = isDisputed ? 'text-danger-soft' : 'text-success-neon';
-  const profitSign = isDisputed ? '-' : '';
-  const profitStr = isDisputed ? formatCurrency(sale.cost) : formatCurrency(sale.profit);
+  
+  let profitClass = 'text-success-neon';
+  let profitSign = '';
+  let profitStr = formatCurrency(sale.profit);
+  
+  if (isDisputed) {
+    if (isSupplierRefunded) {
+      profitClass = 'text-muted';
+      profitSign = '';
+      profitStr = formatCurrency(0);
+    } else {
+      profitClass = 'text-danger-soft';
+      profitSign = '-';
+      profitStr = formatCurrency(sale.cost);
+    }
+  }
+
   const sellPriceCell = isDisputed 
     ? `<s>${formatCurrency(sale.sellPrice)}</s> <span style="font-size: 0.65rem; color: var(--accent-warning); font-weight: 700; display: block; margin-top: 2px; letter-spacing: 0.05em;">REFUNDED</span>`
     : `<strong>${formatCurrency(sale.sellPrice)}</strong>`;
+
+  const costCell = isDisputed && isSupplierRefunded
+    ? `<s>${formatCurrency(sale.cost)}</s> <span style="font-size: 0.65rem; color: var(--accent-cyan); font-weight: 700; display: block; margin-top: 2px; letter-spacing: 0.05em;">REFUNDED</span>`
+    : `<strong>${formatCurrency(sale.cost)}</strong>`;
   
   const disputeBtn = isDisputed
     ? `<button class="btn-action" onclick="triggerResolveDispute('${sale.id}')" title="Resolve Dispute (Restore Sale)" style="color: var(--accent-teal); border-color: var(--accent-teal);"><i class="fa-solid fa-circle-check"></i></button>`
@@ -8500,7 +8620,7 @@ function buildSalesRowHTML(sale, inventoryMap) {
       <td>${titleCell}</td>
       <td><span class="platform-indicator"><i class="fa-solid fa-gamepad" style="font-size: 0.8rem; margin-right: 6px;"></i> ${escapeHTML(sale.platform)}</span></td>
       <td>${keyCell}</td>
-      <td>${formatCurrency(sale.cost)}</td>
+      <td>${costCell}</td>
       <td>${sellPriceCell}</td>
       <td><span class="tag-platform-sold" style="background-color: hsla(270, 85%, 60%, 0.1); border: 1px solid hsla(270, 85%, 60%, 0.2); color: var(--accent-purple); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight:600;">${escapeHTML(sale.platformSold)}</span></td>
       <td class="${profitClass}"><strong>${profitSign}${profitStr}</strong></td>
@@ -13354,7 +13474,8 @@ CREATE TABLE IF NOT EXISTS sales (
   profit NUMERIC(10, 2) NOT NULL,
   "saleDate" TEXT NOT NULL,
   notes TEXT,
-  disputed BOOLEAN NOT NULL DEFAULT false
+  disputed BOOLEAN NOT NULL DEFAULT false,
+  "supplierRefunded" BOOLEAN NOT NULL DEFAULT false
 );
 
 -- 5. Create menu_customization table
@@ -14352,24 +14473,28 @@ async function dbSaveSale(sale) {
       profit: sale.profit,
       saleDate: sale.saleDate,
       notes: sale.notes || null,
-      disputed: sale.disputed === true
+      disputed: sale.disputed === true,
+      supplierRefunded: sale.supplierRefunded === true
     };
     
-    const { error } = await window.supabaseClient
+    let { error } = await window.supabaseClient
       .from('sales')
       .upsert(payload);
       
     if (error) {
-      if (error.message && error.message.includes('column "disputed" of relation "sales" does not exist')) {
-        console.warn("Supabase relation 'sales' is missing the 'disputed' column. Retrying without disputed property. Please update database schema using settings setup wizard.");
-        delete payload.disputed;
-        const { error: retryError } = await window.supabaseClient
-          .from('sales')
-          .upsert(payload);
-        if (retryError) throw retryError;
-      } else {
-        throw error;
+      if (error.message && error.message.includes('column "supplierRefunded" of relation "sales" does not exist')) {
+        console.warn("Supabase relation 'sales' is missing the 'supplierRefunded' column. Retrying without it.");
+        delete payload.supplierRefunded;
+        const res = await window.supabaseClient.from('sales').upsert(payload);
+        error = res.error;
       }
+      if (error && error.message && error.message.includes('column "disputed" of relation "sales" does not exist')) {
+        console.warn("Supabase relation 'sales' is missing the 'disputed' column. Retrying without it. Please update database schema using settings setup wizard.");
+        delete payload.disputed;
+        const res = await window.supabaseClient.from('sales').upsert(payload);
+        error = res.error;
+      }
+      if (error) throw error;
     }
     return true;
   } catch (err) {

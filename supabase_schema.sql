@@ -46,7 +46,8 @@ CREATE TABLE IF NOT EXISTS sales (
   profit NUMERIC(10, 2) NOT NULL,
   "saleDate" TEXT NOT NULL,
   notes TEXT,
-  disputed BOOLEAN NOT NULL DEFAULT false
+  disputed BOOLEAN NOT NULL DEFAULT false,
+  "supplierRefunded" BOOLEAN NOT NULL DEFAULT false
 );
 
 -- 5. Create menu_customization table
