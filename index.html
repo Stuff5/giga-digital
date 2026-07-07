@@ -2492,101 +2492,125 @@
                   </div>
                 </div>
 
-                <!-- Data Maintenance Settings Card -->
+                <!-- Data Tools & Utilities Card -->
                 <div class="calc-card">
-                  <h3>Data Maintenance</h3>
+                  <h3>Data Tools & Utilities</h3>
                   <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
-                    Backup or restore all game vault configurations and records via JSON.
+                    Import inventory sheets, batch fetch covers, and manage local database backups.
                   </p>
-                  
-                  <div class="backup-restore-group" style="margin-bottom: 24px;">
-                    <button type="button" class="btn btn-primary btn-block" id="btn-export-backup" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-                      <i class="fa-solid fa-download"></i> Export Backup (JSON)
-                    </button>
-                    
-                    <button type="button" class="btn btn-outline btn-block" id="btn-restore-backup" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-                      <i class="fa-solid fa-upload"></i> Restore Backup (JSON)
-                    </button>
-                    <input type="file" id="settings-backup-file" accept=".json" style="display: none;">
-                  </div>
 
-                  <!-- Danger Zone -->
-                  <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-danger); margin-bottom: 12px; border-top: 1px solid var(--border-color); padding-top: 16px;">Danger Zone</h4>
-                  <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 16px;">
-                    Irreversibly delete all items currently stored in your inventory. This action cannot be undone.
-                  </p>
-                  <button type="button" class="btn btn-danger btn-block" id="btn-delete-all-inventory" style="display: flex; align-items: center; justify-content: center; gap: 8px; background-color: var(--accent-danger); border-color: var(--accent-danger); color: #fff;">
-                    <i class="fa-solid fa-trash-can"></i> Delete All Inventory Items
-                  </button>
-                </div>
+                  <div style="display: flex; flex-direction: column; gap: 24px;">
+                    <!-- Section A: Imports & Covers -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                      <!-- Column 1: Excel/CSV Import -->
+                      <div style="background: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px; display: flex; flex-direction: column; justify-content: space-between; gap: 16px;">
+                        <div>
+                          <h4 style="margin: 0 0 6px 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-file-excel" style="color: var(--accent-emerald);"></i> Excel/CSV Bulk Import
+                          </h4>
+                          <p style="color: var(--text-secondary); font-size: 0.8rem; margin: 0 0 12px 0; line-height: 1.4;">
+                            Import raw inventory data from an Excel workbook (.xlsx, .xls) or standard CSV file.
+                          </p>
+                          
+                          <div class="file-drop-zone" style="border: 2px dashed var(--border-color); border-radius: var(--radius-md); padding: 20px 10px; text-align: center; background: hsla(0, 0%, 100%, 0.01); transition: var(--transition-smooth); cursor: pointer;" id="import-drop-zone">
+                            <i class="fa-solid fa-file-excel" style="font-size: 1.8rem; color: var(--accent-emerald); margin-bottom: 8px;"></i>
+                            <p style="font-size: 0.8rem; font-weight: 500; margin-bottom: 2px;" id="import-file-name">Drag & drop sheet here, or browse</p>
+                            <p style="font-size: 0.7rem; color: var(--text-muted);">Supports XLSX, XLS, and CSV</p>
+                            <input type="file" id="settings-import-file" accept=".xlsx,.xls,.csv" style="display: none;">
+                          </div>
 
-                <!-- Artwork Utilities Card -->
-                <div class="calc-card">
-                  <h3>Catalog Artwork Utilities</h3>
-                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
-                    Automatically query CheapShark / Steam API to find cover images for games in your catalog. 
-                    <strong style="color: var(--accent-cyan); display: block; margin-top: 6px; font-size: 0.8rem;"><i class="fa-solid fa-circle-info"></i> Processes up to 100 entries per batch.</strong>
-                  </p>
-                  
-                  <div style="display: flex; flex-direction: column; gap: 16px;">
-                    <div style="display: flex; align-items: flex-start; gap: 10px; background: var(--bg-sidebar); border: 1px solid var(--border-color); padding: 12px 16px; border-radius: var(--radius-md);">
-                      <input type="checkbox" id="settings-artwork-overwrite" style="width: 16px; height: 16px; margin-top: 2px; cursor: pointer;">
-                      <div style="flex: 1;">
-                        <label for="settings-artwork-overwrite" style="font-size: 0.85rem; font-weight: 600; color: var(--text-main); cursor: pointer; display: block; margin-bottom: 2px;">Overwrite existing images</label>
-                        <span style="color: var(--text-muted); font-size: 0.75rem; line-height: 1.3; display: block;">
-                          Check this to replace already set covers with newly fetched Steam images. If unchecked, only games without a cover image will be updated.
-                        </span>
+                          <div id="import-progress-container" class="hidden" style="display: flex; flex-direction: column; gap: 4px; margin-top: 10px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.75rem;">
+                              <span id="import-progress-status" style="color: var(--text-secondary);">Processing...</span>
+                              <span id="import-progress-percent" style="font-weight: 600; color: var(--text-main);">0%</span>
+                            </div>
+                            <div style="width: 100%; height: 4px; background: var(--bg-input); border-radius: 2px; overflow: hidden;">
+                              <div id="import-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent-emerald), var(--accent-teal)); transition: width 0.1s ease;"></div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <button type="button" class="btn btn-primary btn-block btn-sm" id="btn-import-sheet" disabled style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px;">
+                          <i class="fa-solid fa-file-import"></i> Start Import
+                        </button>
+                      </div>
+
+                      <!-- Column 2: Catalog Artwork Utilities -->
+                      <div style="background: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px; display: flex; flex-direction: column; justify-content: space-between; gap: 16px;">
+                        <div>
+                          <h4 style="margin: 0 0 6px 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent-cyan);"></i> Catalog Artwork Utilities
+                          </h4>
+                          <p style="color: var(--text-secondary); font-size: 0.8rem; margin: 0 0 12px 0; line-height: 1.4;">
+                            Query Steam API dynamically to fetch covers in batches of 100 entries.
+                          </p>
+
+                          <div style="display: flex; align-items: flex-start; gap: 8px; background: var(--bg-input); padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 12px;">
+                            <input type="checkbox" id="settings-artwork-overwrite" style="width: 14px; height: 14px; margin-top: 2px; cursor: pointer;">
+                            <div style="flex: 1;">
+                              <label for="settings-artwork-overwrite" style="font-size: 0.78rem; font-weight: 600; color: var(--text-main); cursor: pointer; display: block;">Overwrite existing covers</label>
+                              <span style="color: var(--text-muted); font-size: 0.68rem; line-height: 1.2; display: block; margin-top: 1px;">
+                                Replaces set covers. If unchecked, only updates games without an image.
+                              </span>
+                            </div>
+                          </div>
+
+                          <div id="artwork-fetch-progress-container" class="hidden" style="display: flex; flex-direction: column; gap: 6px; background: var(--bg-input); padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; font-weight: 500;">
+                              <span id="artwork-fetch-progress-status" style="color: var(--text-secondary); max-width: 65%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Initializing...</span>
+                              <div style="display: flex; align-items: center; gap: 6px;">
+                                <span id="artwork-fetch-progress-percent" style="color: var(--accent-cyan);">0%</span>
+                                <button type="button" id="btn-cancel-artwork-fetch" style="background: var(--accent-danger); border: none; border-radius: 4px; color: #fff; font-size: 0.6rem; padding: 1px 4px; cursor: pointer; font-weight: 700;">Stop</button>
+                              </div>
+                            </div>
+                            <div style="width: 100%; height: 4px; background: var(--border-color); border-radius: 2px; overflow: hidden;">
+                              <div id="artwork-fetch-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent-cyan), var(--accent-teal)); transition: width 0.15s ease;"></div>
+                            </div>
+                            <span id="artwork-fetch-detail-status" style="font-size: 0.65rem; color: var(--text-muted);">0 of 0 processed</span>
+                          </div>
+                        </div>
+
+                        <button type="button" class="btn btn-primary btn-block btn-sm" id="btn-fetch-all-artworks" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px;">
+                          <i class="fa-solid fa-wand-magic-sparkles"></i> Fetch Catalog Images
+                        </button>
                       </div>
                     </div>
 
-                    <div id="artwork-fetch-progress-container" class="hidden" style="display: flex; flex-direction: column; gap: 8px; background: var(--bg-input); padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
-                      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; font-weight: 500;">
-                        <span id="artwork-fetch-progress-status" style="color: var(--text-secondary); max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Initializing...</span>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                          <span id="artwork-fetch-progress-percent" style="color: var(--accent-cyan);">0%</span>
-                          <button type="button" id="btn-cancel-artwork-fetch" style="background: var(--accent-danger); border: none; border-radius: 4px; color: #fff; font-size: 0.65rem; padding: 2px 6px; cursor: pointer; font-weight: 700;" title="Stop fetching and save progress">Stop</button>
+                    <!-- Section B: Backup & Maintenance -->
+                    <div style="border-top: 1px solid var(--border-color); padding-top: 20px;">
+                      <h4 style="margin: 0 0 12px 0; color: var(--text-main); font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Database Maintenance & Resets</h4>
+                      
+                      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; align-items: start;">
+                        <!-- Local JSON Backup -->
+                        <div>
+                          <p style="color: var(--text-secondary); font-size: 0.8rem; margin: 0 0 12px 0; line-height: 1.4;">
+                            Export a full snapshot of your configurations and listings to a JSON file, or restore from a previous save.
+                          </p>
+                          <div style="display: flex; gap: 10px;">
+                            <button type="button" class="btn btn-primary btn-sm" id="btn-export-backup" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.8rem; padding: 8px;">
+                              <i class="fa-solid fa-download"></i> Export JSON
+                            </button>
+                            <button type="button" class="btn btn-outline btn-sm" id="btn-restore-backup" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.8rem; padding: 8px;">
+                              <i class="fa-solid fa-upload"></i> Restore JSON
+                            </button>
+                            <input type="file" id="settings-backup-file" accept=".json" style="display: none;">
+                          </div>
+                        </div>
+
+                        <!-- Danger Zone -->
+                        <div style="border-left: 1px dashed var(--border-color); padding-left: 20px;">
+                          <p style="color: var(--accent-danger); font-weight: 600; font-size: 0.8rem; margin: 0 0 6px 0; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-triangle-exclamation"></i> Danger Zone
+                          </p>
+                          <p style="color: var(--text-secondary); font-size: 0.78rem; margin: 0 0 12px 0; line-height: 1.4;">
+                            Irreversibly delete all items currently stored in your inventory database. This action is final.
+                          </p>
+                          <button type="button" class="btn btn-danger btn-block btn-sm" id="btn-delete-all-inventory" style="display: flex; align-items: center; justify-content: center; gap: 6px; background-color: var(--accent-danger); border-color: var(--accent-danger); color: #fff; font-size: 0.8rem; padding: 8px;">
+                            <i class="fa-solid fa-trash-can"></i> Empty Inventory Database
+                          </button>
                         </div>
                       </div>
-                      <div style="width: 100%; height: 6px; background: var(--border-color); border-radius: 3px; overflow: hidden;">
-                        <div id="artwork-fetch-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent-cyan), var(--accent-teal)); transition: width 0.15s ease;"></div>
-                      </div>
-                      <span id="artwork-fetch-detail-status" style="font-size: 0.72rem; color: var(--text-muted);">0 of 0 games processed</span>
                     </div>
-
-                    <button type="button" class="btn btn-primary btn-block" id="btn-fetch-all-artworks" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-                      <i class="fa-solid fa-wand-magic-sparkles"></i> Fetch Catalog Images
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Excel/CSV Bulk Import Card -->
-                <div class="calc-card">
-                  <h3>Excel/CSV Bulk Import</h3>
-                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
-                    Import raw inventory data from an Excel workbook (.xlsx, .xls) or a standard CSV file.
-                  </p>
-                  
-                  <div style="display: flex; flex-direction: column; gap: 16px;">
-                    <div class="file-drop-zone" style="border: 2px dashed var(--border-color); border-radius: var(--radius-lg); padding: 30px 20px; text-align: center; background: hsla(0, 0%, 100%, 0.01); transition: var(--transition-smooth); cursor: pointer;" id="import-drop-zone">
-                      <i class="fa-solid fa-file-excel" style="font-size: 2.5rem; color: var(--accent-emerald); margin-bottom: 12px;"></i>
-                      <p style="font-size: 0.9rem; font-weight: 500; margin-bottom: 4px;" id="import-file-name">Drag & drop your file here, or click to browse</p>
-                      <p style="font-size: 0.75rem; color: var(--text-secondary);">Supports XLSX, XLS, and CSV formats</p>
-                      <input type="file" id="settings-import-file" accept=".xlsx,.xls,.csv" style="display: none;">
-                    </div>
-                    
-                    <div id="import-progress-container" class="hidden" style="display: flex; flex-direction: column; gap: 6px;">
-                      <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
-                        <span id="import-progress-status" style="color: var(--text-secondary);">Processing rows...</span>
-                        <span id="import-progress-percent" style="font-weight: 600; color: var(--text-main);">0%</span>
-                      </div>
-                      <div style="width: 100%; height: 6px; background: var(--bg-input); border-radius: 3px; overflow: hidden;">
-                        <div id="import-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent-emerald), var(--accent-teal)); transition: width 0.1s ease;"></div>
-                      </div>
-                    </div>
-                    
-                    <button type="button" class="btn btn-primary btn-block" id="btn-import-sheet" disabled style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-                      <i class="fa-solid fa-file-import"></i> Start Import
-                    </button>
                   </div>
                 </div>
 
