@@ -157,6 +157,23 @@
             <button class="btn btn-icon btn-outline" id="btn-open-help" title="Help & Documentation (F1)">
               <i class="fa-solid fa-circle-question"></i>
             </button>
+            <div style="position: relative;" id="notification-bell-container">
+              <button class="btn btn-icon btn-outline" id="btn-notification-bell" title="Notification Center">
+                <i class="fa-solid fa-bell"></i>
+                <span id="notification-badge" class="badge" style="position: absolute; top: -4px; right: -4px; background-color: var(--accent-danger, #f44336); color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 0.65rem; display: flex; align-items: center; justify-content: center; font-weight: 700; border: 2px solid var(--bg-card); display: none;">0</span>
+              </button>
+              
+              <!-- Notification Dropdown Panel -->
+              <div id="notification-dropdown" class="glass-panel" style="position: absolute; top: 40px; right: 0; width: 300px; max-height: 400px; overflow-y: auto; z-index: 1000; border: 1px solid var(--border-color); border-radius: 6px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); display: none; background: var(--bg-card); padding: 8px 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--border-color); margin-bottom: 6px;">
+                  <span style="font-weight: 700; font-size: 0.9rem; color: var(--text-main);">Recent Actions</span>
+                  <button type="button" id="btn-clear-notifications" style="background: none; border: none; color: var(--accent-cyan); font-size: 0.75rem; cursor: pointer;">Clear All</button>
+                </div>
+                <div id="notification-list" style="display: flex; flex-direction: column;">
+                  <div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 0.8rem;">No actions recorded yet</div>
+                </div>
+              </div>
+            </div>
             <button class="btn btn-icon btn-outline" id="btn-theme-toggle" title="Toggle Light/Dark Mode">
               <i class="fa-solid fa-sun" id="theme-toggle-icon"></i>
             </button>
@@ -3391,6 +3408,9 @@
             <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-business-math" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
               <i class="fa-solid fa-calculator" style="margin-right: 8px; width: 16px; color: var(--accent-warning);"></i> Formulas & Logic
             </button>
+            <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-notifications" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
+              <i class="fa-solid fa-bell" style="margin-right: 8px; width: 16px; color: var(--accent-pink);"></i> Notification Center
+            </button>
             <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-shortcuts" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
               <i class="fa-solid fa-keyboard" style="margin-right: 8px; width: 16px; color: var(--accent-pink);"></i> Keyboard Hotkeys
             </button>
@@ -3691,6 +3711,28 @@
                   </tr>
                 </tbody>
               </table>
+            </div>
+
+            <!-- Pane 5: Notifications -->
+            <div id="help-tab-notifications" class="help-tab-pane hidden">
+              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Action Notification Center</h4>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                The Action Notification Center keeps a ledger of recent operations performed inside the application. It acts as an audit log to verify that actions were successfully written or synced.
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">Features & Capabilities:</h5>
+              <ul style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.6; padding-left: 20px; margin-bottom: 16px;">
+                <li><strong>Unread Count Badge:</strong> A red badge appears over the bell icon in the top header when there are new events. Opening the dropdown automatically clears the unread count.</li>
+                <li><strong>Recent 10 Actions:</strong> The list tracks only the last 10 actions to remain clean, fast, and token-efficient.</li>
+                <li><strong>Timestamps:</strong> Each event displays a localized timestamp indicating precisely when the action occurred.</li>
+                <li><strong>Logged Actions:</strong> Logs are triggered on key creations, sale recordings, catalog edits, item restorations, bulk adjustments, backup actions, database sync connections, and undo/redo operations.</li>
+                <li><strong>Reload Persistence:</strong> Action logs are cached in the browser's LocalStorage so they persist if you refresh the page.</li>
+              </ul>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">Auditing and Maintenance:</h5>
+              <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 0;">
+                Clicking <strong>Clear All</strong> at the top of the notification card wipes all events from storage.
+              </p>
             </div>
 
           </div>

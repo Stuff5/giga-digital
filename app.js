@@ -730,6 +730,133 @@ let stockSpeedChartInstance = null;
 let markupAnalysisChartInstance = null;
 let stockTurnoverChartInstance = null;
 
+// Initialize notification center state and bindings
+function initNotificationCenter() {
+  // Load notifications from LocalStorage if they exist
+  try {
+    const saved = localStorage.getItem("gv_notifications");
+    state.notifications = saved ? JSON.parse(saved) : [];
+  } catch (err) {
+    console.error("Failed to load notifications:", err);
+    state.notifications = [];
+  }
+
+  // Render initial list
+  renderNotifications();
+  updateUnreadBadge();
+
+  // Set up button event listeners
+  const btnBell = document.getElementById("btn-notification-bell");
+  const dropdown = document.getElementById("notification-dropdown");
+  const btnClear = document.getElementById("btn-clear-notifications");
+
+  if (btnBell && dropdown) {
+    btnBell.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isVisible = dropdown.style.display === "block";
+      dropdown.style.display = isVisible ? "none" : "block";
+      
+      // If we open it, clear the unread badge count
+      if (!isVisible) {
+        clearUnreadBadge();
+      }
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener("click", (e) => {
+      if (!dropdown.contains(e.target) && e.target !== btnBell && !btnBell.contains(e.target)) {
+        dropdown.style.display = "none";
+      }
+    });
+  }
+
+  if (btnClear) {
+    btnClear.addEventListener("click", (e) => {
+      e.stopPropagation();
+      state.notifications = [];
+      saveNotificationsToStorage();
+      renderNotifications();
+      clearUnreadBadge();
+    });
+  }
+}
+
+// Log a notification message
+function logActionNotification(text) {
+  // If the app is still loading initial state, skip logging to avoid cluttering the recent 10 actions on reload/startup
+  if (!window.appInitialized) return;
+
+  if (!state.notifications) {
+    state.notifications = [];
+  }
+
+  // Add the new notification to the top
+  const notification = {
+    id: "notif_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9),
+    text: text,
+    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+    unread: true
+  };
+
+  state.notifications.unshift(notification);
+
+  // Keep only the last 10 notifications
+  if (state.notifications.length > 10) {
+    state.notifications = state.notifications.slice(0, 10);
+  }
+
+  saveNotificationsToStorage();
+  renderNotifications();
+  updateUnreadBadge();
+}
+
+function saveNotificationsToStorage() {
+  try {
+    localStorage.setItem("gv_notifications", JSON.stringify(state.notifications));
+  } catch (err) {
+    console.error("Failed to save notifications:", err);
+  }
+}
+
+function renderNotifications() {
+  const listContainer = document.getElementById("notification-list");
+  if (!listContainer) return;
+
+  if (!state.notifications || state.notifications.length === 0) {
+    listContainer.innerHTML = `<div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 0.8rem;">No actions recorded yet</div>`;
+    return;
+  }
+
+  listContainer.innerHTML = state.notifications.map(notif => `
+    <div style="padding: 10px 16px; border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 4px; background: ${notif.unread ? 'var(--bg-input)' : 'transparent'};">
+      <div style="font-size: 0.82rem; color: var(--text-main); line-height: 1.3;">${escapeHTML(notif.text)}</div>
+      <div style="font-size: 0.7rem; color: var(--text-muted); text-align: right;">${notif.time}</div>
+    </div>
+  `).join("");
+}
+
+function updateUnreadBadge() {
+  const badge = document.getElementById("notification-badge");
+  if (!badge) return;
+
+  const unreadCount = (state.notifications || []).filter(n => n.unread).length;
+  if (unreadCount > 0) {
+    badge.textContent = unreadCount;
+    badge.style.display = "flex";
+  } else {
+    badge.style.display = "none";
+  }
+}
+
+function clearUnreadBadge() {
+  if (state.notifications) {
+    state.notifications.forEach(n => n.unread = false);
+    saveNotificationsToStorage();
+  }
+  updateUnreadBadge();
+  renderNotifications();
+}
+
 function initDOMCache() {
   const elements = [
     // Views
@@ -785,6 +912,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Set up forms & modals event handlers
     initEventHandlers();
+
+    // Initialize notification center
+    initNotificationCenter();
 
     // Set up auth forms event listeners
     const loginForm = document.getElementById("login-form");
@@ -960,6 +1090,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
         updateUI();
         showToast(`Switched to ${nextMode === "light" ? "Light Mode" : "Dark Mode"}`, "info");
+        logActionNotification(`Switched theme to ${nextMode === "light" ? "Light Mode" : "Dark Mode"}`);
       });
     }
 
@@ -1063,7 +1194,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     }
 
-
+    window.appInitialized = true;
   } catch (err) {
     console.error("Initialization Error:", err);
   }
@@ -1641,6 +1772,7 @@ window.handleUndo = function() {
   const previousSnapshot = undoStack.pop();
   restoreFromSnapshot(previousSnapshot);
   showToast("Action undone", "info");
+  logActionNotification("Undid last action");
 };
 
 window.handleRedo = function() {
@@ -1663,6 +1795,7 @@ window.handleRedo = function() {
   const nextSnapshot = redoStack.pop();
   restoreFromSnapshot(nextSnapshot);
   showToast("Action redone", "info");
+  logActionNotification("Redid last action");
 };
 
 function clearHistoryStacks() {
@@ -4035,6 +4168,7 @@ function initEventHandlers() {
         updateUI();
 
         showToast(`Moved ${selectedIds.length} key(s) to the Recycle Bin.`, "info");
+        logActionNotification(`Moved ${selectedIds.length} key(s) to Recycle Bin`);
       }
     });
   }
@@ -4105,6 +4239,7 @@ function initEventHandlers() {
 
         updateUI();
         showToast(`Successfully restored ${ids.length} item(s).`, "success");
+        logActionNotification(`Restored ${ids.length} item(s) from Recycle Bin`);
       }
     });
   }
@@ -4125,6 +4260,7 @@ function initEventHandlers() {
         saveStateToStorage();
         updateUI();
         showToast(`Permanently deleted ${ids.length} item(s).`, "success");
+        logActionNotification(`Permanently deleted ${ids.length} item(s) from Recycle Bin`);
       }
     });
   }
@@ -4145,6 +4281,7 @@ function initEventHandlers() {
         saveStateToStorage();
         updateUI();
         showToast("Recycle Bin successfully emptied.", "success");
+        logActionNotification("Emptied Recycle Bin");
       }
     });
   }
@@ -4699,6 +4836,7 @@ function applyBulkPriceAdjustment(costAction, costVal, costIsPercent, sellAction
     state.selectedInventoryIds = [];
     updateUI();
     showToast(`Successfully adjusted prices for ${modifiedCount} item(s).`, "success");
+    logActionNotification(`Bulk adjusted prices for ${modifiedCount} item(s)`);
   }
 }
 
@@ -4877,8 +5015,10 @@ async function handleAddGameSubmit(e) {
   
   if (keys.length === 1) {
     showToast(`Successfully added game key: ${title}`, "success");
+    logActionNotification(`Added game key: ${title}`);
   } else {
     showToast(`Successfully added ${keys.length} game keys for: ${title}`, "success");
+    logActionNotification(`Added ${keys.length} game keys for: ${title}`);
   }
 }
 
@@ -4940,6 +5080,7 @@ async function handleSellGameSubmit(e) {
   document.getElementById("sale-date").valueAsDate = new Date();
 
   showToast(`Recorded sale for: ${game.title} (${profit >= 0 ? '+' : ''}${formatCurrency(profit)} net)`, "success");
+  logActionNotification(`Recorded sale for: ${game.title} (${formatCurrency(sellPrice)})`);
 }
 
 // Action triggers from Table Lists
@@ -5063,6 +5204,7 @@ window.triggerDeleteGame = async function(gameId) {
     }
     updateUI();
     showToast(`Moved "${game.title}" to the Recycle Bin.`, "info");
+    logActionNotification(`Moved "${game.title}" key to Recycle Bin`);
   }
 };
 
@@ -5135,6 +5277,7 @@ window.triggerDeleteAllInventory = async function() {
 
     updateUI();
     showToast(`Moved ${gamesToMove.length} items to the Recycle Bin.`, "success");
+    logActionNotification(`Moved all inventory (${gamesToMove.length} keys) to Recycle Bin`);
   } catch (err) {
     console.error("Error deleting all inventory items:", err);
     showToast("Failed to delete some items from cloud.", "error");
@@ -5163,6 +5306,7 @@ window.triggerCancelSale = async function(saleId) {
     }
     updateUI();
     showToast(`Cancelled sale of "${sale.title}". Key returned to stock.`, "info");
+    logActionNotification(`Cancelled sale: "${sale.title}"`);
   }
 };
 
@@ -5192,6 +5336,7 @@ window.triggerDisputeSale = async function(saleId) {
     }
     updateUI();
     showToast(`Flagged "${sale.title}" sale as Disputed/Refunded.`, "warning");
+    logActionNotification(`Flagged dispute: "${sale.title}"`);
   }
 };
 
@@ -5221,6 +5366,7 @@ window.triggerResolveDispute = async function(saleId) {
     }
     updateUI();
     showToast(`Resolved dispute for "${sale.title}". Sale restored.`, "success");
+    logActionNotification(`Resolved dispute: "${sale.title}"`);
   }
 };
 
@@ -5375,6 +5521,7 @@ async function handleEditGameSubmit(e) {
   closeModal("edit-game-modal");
 
   showToast(`Updated game metadata for "${title}"`, "success");
+  logActionNotification(`Edited game: "${title}"`);
 }
 
 window.toggleFavoriteGame = function(gameTitle) {
@@ -5383,9 +5530,11 @@ window.toggleFavoriteGame = function(gameTitle) {
   if (idx > -1) {
     state.favoriteGames.splice(idx, 1);
     showToast(`Removed "${gameTitle}" from Favorites.`, "info");
+    logActionNotification(`Removed "${gameTitle}" from favorites`);
   } else {
     state.favoriteGames.push(gameTitle);
     showToast(`Added "${gameTitle}" to Favorites.`, "success");
+    logActionNotification(`Added "${gameTitle}" to favorites`);
   }
   saveStateToStorage();
   renderEntries();
@@ -5483,6 +5632,7 @@ window.triggerDeleteCatalogEntry = async function(title) {
     
     updateUI();
     showToast(`Catalog entry "${title}" and all associated keys/sales moved to the Recycle Bin.`, "info");
+    logActionNotification(`Deleted catalog entry: "${title}"`);
   }
 };
 
@@ -5737,6 +5887,7 @@ async function handleEditCatalogEntrySubmit(e) {
   updateUI();
   closeModal("edit-catalog-entry-modal");
   showToast(`Updated "${oldTitle}" to "${newTitle}" across ${updatedCount} keys.`, "success");
+  logActionNotification(`Edited catalog: "${oldTitle}" to "${newTitle}"`);
 }
 
 // ==========================================================================
@@ -13137,6 +13288,7 @@ function initSupabaseConnection() {
         statusBadge.className = "badge badge-available";
       }
       dbLoadState();
+      logActionNotification("Connected to Supabase");
     } catch (e) {
       console.error("Supabase initialization error:", e);
       window.supabaseClient = null;
@@ -13388,6 +13540,7 @@ function bindSupabaseSettingsControls() {
       updateUI();
       
       showToast("Disconnected from Supabase. Switched to LocalStorage.", "success");
+      logActionNotification("Disconnected from Supabase");
     });
   }
 }
@@ -14759,6 +14912,7 @@ function exportStateBackupJSON() {
   URL.revokeObjectURL(url);
   
   showToast("Database backup file downloaded successfully.", "success");
+  logActionNotification("Exported database backup JSON file");
 }
 
 // Restore state backup from JSON upload
@@ -14782,6 +14936,7 @@ function importStateBackupJSON(file) {
       });
       
       showToast("Data backup restored successfully! Reloading...", "success");
+      logActionNotification("Restored database from JSON backup");
       
       if (window.supabaseClient) {
         localStorage.setItem("gv_unsynced_changes", "true");
@@ -15136,6 +15291,7 @@ window.triggerRestoreGame = async function(gameId) {
 
   updateUI();
   showToast(`Restored "${game.title}" to active inventory.`, "success");
+  logActionNotification(`Restored game: "${game.title}"`);
 };
 
 window.triggerPurgeGame = async function(gameId) {
@@ -15149,6 +15305,7 @@ window.triggerPurgeGame = async function(gameId) {
     saveStateToStorage();
     updateUI();
     showToast(`Permanently deleted "${game.title}".`, "success");
+    logActionNotification(`Permanently deleted game: "${game.title}"`);
   }
 };
 
@@ -15504,8 +15661,10 @@ async function importStateFromSpreadsheet(file) {
             updateUI();
             if (duplicateKeysCount > 0) {
               showToast(`Import complete! ${importedGames.length} items imported. Note: ${duplicateKeysCount} keys already existed in your inventory.`, "warning");
+              logActionNotification(`Imported ${importedGames.length} keys from sheet (with duplicates)`);
             } else {
               showToast(`Successfully imported ${importedGames.length} inventory keys from sheet!`, "success");
+              logActionNotification(`Imported ${importedGames.length} keys from sheet`);
             }
           }
           
