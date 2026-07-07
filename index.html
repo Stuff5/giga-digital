@@ -172,10 +172,10 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--border-color); margin-bottom: 6px;">
                   <span style="font-weight: 700; font-size: 0.9rem; color: var(--text-main);">Recent Actions</span>
                   <div style="display: flex; align-items: center; gap: 8px;">
-                    <select id="select-notification-limit" style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main); font-size: 0.7rem; padding: 2px 4px; cursor: pointer; outline: none;">
-                      <option value="5">Show 5</option>
-                      <option value="10" selected>Show 10</option>
-                    </select>
+                    <div class="notif-limit-bubbles" style="display: flex; align-items: center; gap: 4px; background: var(--bg-input); padding: 2px; border-radius: 20px; border: 1px solid var(--border-color);">
+                      <button type="button" class="btn-notif-limit-bubble active" data-limit="5" style="width: 20px; height: 20px; border-radius: 50%; border: none; background: var(--accent-cyan); color: #000; font-size: 0.7rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: all 0.2s;" title="Show last 5 actions">5</button>
+                      <button type="button" class="btn-notif-limit-bubble" data-limit="10" style="width: 20px; height: 20px; border-radius: 50%; border: none; background: transparent; color: var(--text-secondary); font-size: 0.7rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: all 0.2s;" title="Show last 10 actions">10</button>
+                    </div>
                     <button type="button" id="btn-clear-notifications" style="background: none; border: none; color: var(--accent-cyan); font-size: 0.75rem; cursor: pointer;">Clear All</button>
                   </div>
                 </div>
@@ -2520,6 +2520,45 @@
                   </button>
                 </div>
 
+                <!-- Artwork Utilities Card -->
+                <div class="calc-card">
+                  <h3>Catalog Artwork Utilities</h3>
+                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+                    Automatically query CheapShark / Steam API to find cover images for games in your catalog. 
+                    <strong style="color: var(--accent-cyan); display: block; margin-top: 6px; font-size: 0.8rem;"><i class="fa-solid fa-circle-info"></i> Processes up to 100 entries per batch.</strong>
+                  </p>
+                  
+                  <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <div style="display: flex; align-items: flex-start; gap: 10px; background: var(--bg-sidebar); border: 1px solid var(--border-color); padding: 12px 16px; border-radius: var(--radius-md);">
+                      <input type="checkbox" id="settings-artwork-overwrite" style="width: 16px; height: 16px; margin-top: 2px; cursor: pointer;">
+                      <div style="flex: 1;">
+                        <label for="settings-artwork-overwrite" style="font-size: 0.85rem; font-weight: 600; color: var(--text-main); cursor: pointer; display: block; margin-bottom: 2px;">Overwrite existing images</label>
+                        <span style="color: var(--text-muted); font-size: 0.75rem; line-height: 1.3; display: block;">
+                          Check this to replace already set covers with newly fetched Steam images. If unchecked, only games without a cover image will be updated.
+                        </span>
+                      </div>
+                    </div>
+
+                    <div id="artwork-fetch-progress-container" class="hidden" style="display: flex; flex-direction: column; gap: 8px; background: var(--bg-input); padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; font-weight: 500;">
+                        <span id="artwork-fetch-progress-status" style="color: var(--text-secondary); max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Initializing...</span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                          <span id="artwork-fetch-progress-percent" style="color: var(--accent-cyan);">0%</span>
+                          <button type="button" id="btn-cancel-artwork-fetch" style="background: var(--accent-danger); border: none; border-radius: 4px; color: #fff; font-size: 0.65rem; padding: 2px 6px; cursor: pointer; font-weight: 700;" title="Stop fetching and save progress">Stop</button>
+                        </div>
+                      </div>
+                      <div style="width: 100%; height: 6px; background: var(--border-color); border-radius: 3px; overflow: hidden;">
+                        <div id="artwork-fetch-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent-cyan), var(--accent-teal)); transition: width 0.15s ease;"></div>
+                      </div>
+                      <span id="artwork-fetch-detail-status" style="font-size: 0.72rem; color: var(--text-muted);">0 of 0 games processed</span>
+                    </div>
+
+                    <button type="button" class="btn btn-primary btn-block" id="btn-fetch-all-artworks" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                      <i class="fa-solid fa-wand-magic-sparkles"></i> Fetch Catalog Images
+                    </button>
+                  </div>
+                </div>
+
                 <!-- Excel/CSV Bulk Import Card -->
                 <div class="calc-card">
                   <h3>Excel/CSV Bulk Import</h3>
@@ -3447,13 +3486,22 @@
               </ul>
               
               <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Inventory Aging Alerts</h5>
-              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 0;">
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
                 To prevent stock depreciation, the app categorizes key storage duration:
                 <br>
                 <span class="badge badge-age-fresh" style="margin-top: 4px; display: inline-block;">Fresh</span> (under 30 days), 
                 <span class="badge badge-age-aging" style="display: inline-block;">Aging</span> (30-90 days), 
                 <span class="badge badge-age-stale" style="display: inline-block;">Stale</span> (90-180 days), and 
                 <span class="badge badge-age-verystale" style="display: inline-block;">Very Stale</span> (180+ days).
+              </p>
+
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Catalog Cover Artworks</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 0;">
+                GameVault fetches game covers dynamically via the CheapShark / Steam API:
+                <br>
+                - <strong>Single Fetch:</strong> Clicking the "Fetch Steam" button next to visual inputs in Catalog Modals queries artwork links in real-time.
+                <br>
+                - <strong>Bulk Fetcher:</strong> Navigate to the <strong>Settings</strong> tab and use the <strong>Catalog Artwork Utilities</strong> card to fetch covers for all games sequentially, with optional overwrite toggles.
               </p>
             </div>
 
@@ -3766,6 +3814,7 @@
                   <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0;">
                     <li><strong>Action Notification Center:</strong> Logs recent user operations in a persistent history dropdown, with option to toggle between showing the last 5 or 10 actions.</li>
                     <li><strong>Dispute Cost Options Modal:</strong> Added a custom modal dialog when flagging disputes to select if the cost of the key was refunded by the supplier, zeroing out net loss metrics.</li>
+                    <li><strong>Bulk Catalog Artwork Fetcher:</strong> Built a batch utility in Settings to query CheapShark / Steam API sequentially to resolve cover images for all catalog games.</li>
                     <li><strong>Development Mode Isolation:</strong> Virtualized LocalStorage key mappings when running on localhost to separate test states from production backend schemas.</li>
                   </ul>
                 </div>
