@@ -4675,4 +4675,12 @@ textarea.form-control {
   border-radius: 4px;
 }
 
+/* Prevent transition animations during initial load to resolve mobile flickering */
+.no-transition *,
+.no-transition *::before,
+.no-transition *::after {
+  transition: none !important;
+  animation: none !important;
+}
+
 

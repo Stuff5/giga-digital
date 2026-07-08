@@ -1290,8 +1290,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     window.appInitialized = true;
+    document.body.classList.remove("no-transition");
   } catch (err) {
     console.error("Initialization Error:", err);
+    document.body.classList.remove("no-transition");
   }
 });
 

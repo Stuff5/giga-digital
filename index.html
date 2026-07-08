@@ -26,8 +26,18 @@
   
   <!-- App Stylesheet -->
   <link rel="stylesheet" href="styles.css?v=3">
+  
+  <!-- Early theme application to prevent FOUC / light theme flicker -->
+  <script>
+    (function() {
+      const mode = localStorage.getItem("gv_theme_mode") || "dark";
+      const color = localStorage.getItem("gv_theme_color") || "classic";
+      document.documentElement.setAttribute("data-theme-mode", mode);
+      document.documentElement.setAttribute("data-theme-color", color);
+    })();
+  </script>
 </head>
-<body>
+<body class="no-transition">
   <!-- App Shell Container -->
   <div class="app-container" id="app-container">
     
