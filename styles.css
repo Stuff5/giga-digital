@@ -4178,20 +4178,22 @@ textarea.form-control {
    COMPACT COLUMN SPAN OVERRIDES
    ========================================================================== */
 #dashboard-charts-container .span-1 .chart-card-header {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 #dashboard-charts-container .span-1 .chart-card-header h4 {
   font-size: 0.92rem;
+  margin: 0;
 }
 
 #dashboard-charts-container .span-1 .chart-card-header > div {
-  width: 100%;
-  justify-content: flex-start;
-  flex-wrap: wrap;
-  gap: 8px;
+  width: auto;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
 }
 
 #dashboard-charts-container .span-1 .bestseller-item {
