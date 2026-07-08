@@ -8213,8 +8213,8 @@ function renderInventoryListLayout(itemsList) {
     }
 
     if (isVirtual && tableContainer) {
-      const rowHeight = 55;
-      const containerHeight = tableContainer.clientHeight || 500;
+      const rowHeight = 65;
+      const containerHeight = tableContainer.clientHeight || 600;
 
       const renderSlice = () => {
         const scrollTop = tableContainer.scrollTop;
@@ -8223,8 +8223,11 @@ function renderInventoryListLayout(itemsList) {
         let startIndex = Math.floor(scrollTop / rowHeight);
         let endIndex = Math.ceil((scrollTop + containerHeight) / rowHeight);
 
-        startIndex = Math.max(0, startIndex - 5);
-        endIndex = Math.min(totalItems, endIndex + 5);
+        startIndex = Math.max(0, startIndex - 8);
+        endIndex = Math.min(totalItems, endIndex + 8);
+
+        if (startIndex <= 5) startIndex = 0;
+        if (endIndex >= totalItems - 5) endIndex = totalItems;
 
         const topSpacerHeight = startIndex * rowHeight;
         const bottomSpacerHeight = (totalItems - endIndex) * rowHeight;
@@ -8232,7 +8235,7 @@ function renderInventoryListLayout(itemsList) {
         let tbodyContent = "";
 
         if (topSpacerHeight > 0) {
-          tbodyContent += `<tr style="height: ${topSpacerHeight}px;"><td colspan="12" style="padding: 0; border: none; height: ${topSpacerHeight}px;"></td></tr>`;
+          tbodyContent += `<tr style="height: ${topSpacerHeight}px; line-height: 0; font-size: 0;"><td colspan="12" style="padding: 0; border: none; height: ${topSpacerHeight}px; line-height: 0; font-size: 0;"></td></tr>`;
         }
 
         const slicedItems = itemsList.slice(startIndex, endIndex);
@@ -8242,7 +8245,7 @@ function renderInventoryListLayout(itemsList) {
         });
 
         if (bottomSpacerHeight > 0) {
-          tbodyContent += `<tr style="height: ${bottomSpacerHeight}px;"><td colspan="12" style="padding: 0; border: none; height: ${bottomSpacerHeight}px;"></td></tr>`;
+          tbodyContent += `<tr style="height: ${bottomSpacerHeight}px; line-height: 0; font-size: 0;"><td colspan="12" style="padding: 0; border: none; height: ${bottomSpacerHeight}px; line-height: 0; font-size: 0;"></td></tr>`;
         }
 
         tbody.innerHTML = tbodyContent;
@@ -8261,7 +8264,7 @@ function renderInventoryListLayout(itemsList) {
       tableContainer.addEventListener("scroll", onScroll);
       tableContainer._scrollListener = onScroll;
 
-      tableContainer.style.maxHeight = "65vh";
+      tableContainer.style.maxHeight = "calc(100vh - 290px)";
       tableContainer.style.overflowY = "auto";
       tableContainer.style.position = "relative";
 
@@ -8797,8 +8800,8 @@ function renderSalesTable(salesList) {
   }
 
   if (isVirtual && tableContainer) {
-    const rowHeight = 55;
-    const containerHeight = tableContainer.clientHeight || 500;
+    const rowHeight = 65;
+    const containerHeight = tableContainer.clientHeight || 600;
 
     const renderSlice = () => {
       const scrollTop = tableContainer.scrollTop;
@@ -8807,8 +8810,11 @@ function renderSalesTable(salesList) {
       let startIndex = Math.floor(scrollTop / rowHeight);
       let endIndex = Math.ceil((scrollTop + containerHeight) / rowHeight);
 
-      startIndex = Math.max(0, startIndex - 5);
-      endIndex = Math.min(totalItems, endIndex + 5);
+      startIndex = Math.max(0, startIndex - 8);
+      endIndex = Math.min(totalItems, endIndex + 8);
+
+      if (startIndex <= 5) startIndex = 0;
+      if (endIndex >= totalItems - 5) endIndex = totalItems;
 
       const topSpacerHeight = startIndex * rowHeight;
       const bottomSpacerHeight = (totalItems - endIndex) * rowHeight;
@@ -8816,7 +8822,7 @@ function renderSalesTable(salesList) {
       let tbodyContent = "";
 
       if (topSpacerHeight > 0) {
-        tbodyContent += `<tr style="height: ${topSpacerHeight}px;"><td colspan="10" style="padding: 0; border: none; height: ${topSpacerHeight}px;"></td></tr>`;
+        tbodyContent += `<tr style="height: ${topSpacerHeight}px; line-height: 0; font-size: 0;"><td colspan="10" style="padding: 0; border: none; height: ${topSpacerHeight}px; line-height: 0; font-size: 0;"></td></tr>`;
       }
 
       const slicedItems = salesList.slice(startIndex, endIndex);
@@ -8826,7 +8832,7 @@ function renderSalesTable(salesList) {
       });
 
       if (bottomSpacerHeight > 0) {
-        tbodyContent += `<tr style="height: ${bottomSpacerHeight}px;"><td colspan="10" style="padding: 0; border: none; height: ${bottomSpacerHeight}px;"></td></tr>`;
+        tbodyContent += `<tr style="height: ${bottomSpacerHeight}px; line-height: 0; font-size: 0;"><td colspan="10" style="padding: 0; border: none; height: ${bottomSpacerHeight}px; line-height: 0; font-size: 0;"></td></tr>`;
       }
 
       tbody.innerHTML = tbodyContent;
@@ -8839,7 +8845,7 @@ function renderSalesTable(salesList) {
     tableContainer.addEventListener("scroll", onScroll);
     tableContainer._scrollListener = onScroll;
 
-    tableContainer.style.maxHeight = "65vh";
+    tableContainer.style.maxHeight = "calc(100vh - 350px)";
     tableContainer.style.overflowY = "auto";
     tableContainer.style.position = "relative";
 
