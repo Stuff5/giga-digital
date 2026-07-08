@@ -125,8 +125,9 @@
         </div>
         <div class="version-info" style="text-align: center; font-size: 0.7rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; overflow: hidden; white-space: nowrap;">
           <span class="version-label">GameVault</span>
-          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v1.3.0</a>
+          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v1.4.0</a>
         </div>
+
       </div>
     </aside>
 
@@ -1407,6 +1408,13 @@
               </select>
             </div>
 
+            <div class="filter-group">
+              <label for="sales-filter-supplier">Key Supplier</label>
+              <select id="sales-filter-supplier" class="form-control form-control-sm">
+                <option value="all">All Suppliers</option>
+              </select>
+            </div>
+
             <div class="filter-group search-filter">
               <label for="sales-search-input">Search Sales</label>
               <input type="text" id="sales-search-input" class="form-control form-control-sm" placeholder="Search game, key, buyer, notes...">
@@ -1421,6 +1429,7 @@
 
           <!-- Sales Ledger Table -->
           <div class="ledger-table-card">
+            <div id="sales-ledger-summary"></div>
             <div class="table-responsive" id="sales-table-container">
               <table class="table" id="sales-table">
                 <thead>
@@ -3523,9 +3532,9 @@
               <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 0;">
                 GameVault fetches game covers dynamically via the CheapShark / Steam API:
                 <br>
-                - <strong>Single Fetch:</strong> Clicking the "Fetch Steam" button next to visual inputs in Catalog Modals queries artwork links in real-time.
+                - <strong>Single Fetch:</strong> Clicking the "Fetch Steam" button next to cover art inputs queries artwork links in real-time.
                 <br>
-                - <strong>Bulk Fetcher:</strong> Navigate to the <strong>Settings</strong> tab and use the <strong>Catalog Artwork Utilities</strong> card to fetch covers for all games sequentially, with optional overwrite toggles.
+                - <strong>Bulk Fetcher:</strong> Located in the unified <strong>Data Tools & Utilities</strong> card in Settings. It runs in safe batches of <strong>100 entries</strong> at a time to prevent rate-limiting and tab lag, featuring a Steam fallback search via <code>corsproxy.io</code> if CheapShark is blocked.
               </p>
             </div>
 
@@ -3603,11 +3612,21 @@
                 </p>
               </div>
               
-              <div style="background-color: rgba(57, 73, 171, 0.05); border-left: 3px solid var(--accent-cyan); padding: 10px; border-radius: var(--radius-sm);">
+              <div style="background-color: rgba(57, 73, 171, 0.05); border-left: 3px solid var(--accent-cyan); padding: 10px; border-radius: var(--radius-sm); margin-bottom: 20px;">
                 <p style="color: var(--text-main); font-size: 0.8rem; margin: 0; line-height: 1.4;">
                   <strong>Duplicates Check:</strong> The importer checks all incoming activation keys against your current catalog. Any duplicates found will be reported as a warning alert when the import concludes.
                 </p>
               </div>
+
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Catalog Cover Artwork Utilities</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 12px;">
+                You can dynamically retrieve cover images for all games in your catalog inside the unified **Data Tools & Utilities** card in Settings:
+              </p>
+              <ul style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; padding-left: 20px; margin: 0;">
+                <li style="margin-bottom: 6px;"><strong>Dual-Source Fallback Pipeline:</strong> Queries CheapShark API first. If CheapShark is rate-limited (429) or blocked by your browser's ad-blocker, the utility instantly queries Steam's Store Search API via <code>corsproxy.io</code>.</li>
+                <li style="margin-bottom: 6px;"><strong>100-Item Batching Safeguard:</strong> Runs up to 100 entries per click to protect API rate limits and keep browser tabs responsive. If you have more than 100 items remaining, simply click <em>Fetch Catalog Images</em> again to process the next batch.</li>
+                <li><strong>Overwrite Filter:</strong> Turn on <em>Overwrite existing covers</em> to fetch new Steam covers for all listings. If unchecked, only entries lacking cover images are queried.</li>
+              </ul>
             </div>
 
             <!-- Pane 3: Sync -->
@@ -3829,11 +3848,26 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
-                <!-- v1.3.0 -->
+                <!-- v1.4.0 -->
                 <div style="border-left: 3px solid var(--accent-cyan); padding-left: 12px;">
                   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.4.0 — Data Toolbox & Advanced Auditing</strong>
+                    <span style="font-size: 0.75rem; color: var(--accent-cyan); font-weight: bold;">Current Version</span>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0;">
+                    <li><strong>Data Tools Settings Panel:</strong> Merged JSON backups, Excel spreadsheet imports, cover fetchers, and database resets into one unified card layout.</li>
+                    <li><strong>Sliced Artwork Batches (100 Entries):</strong> Restricts bulk fetches to 100 items per run to prevent browser hangs, adding a button resume prompt.</li>
+                    <li><strong>API Fetch Fallback Strategy:</strong> Resolves cover art using CheapShark first and falls back to Steam search via <code>corsproxy.io</code> if rate-limited or ad-blocked.</li>
+                    <li><strong>Sales Ledger Supplier Filter:</strong> Filter past transaction logs by the supplier source of the sold key.</li>
+                    <li><strong>Live Filtered Sales Stats:</strong> Real-time calculations of total revenue, cost, net profit, and profit margins for any active filtered ledger subset.</li>
+                  </ul>
+                </div>
+
+                <!-- v1.3.0 -->
+                <div style="border-left: 3px solid var(--accent-warning); padding-left: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
                     <strong style="color: var(--text-main); font-size: 0.95rem;">v1.3.0 — Audit & Control Release</strong>
-                    <span style="font-size: 0.75rem; color: var(--text-muted);">Current Version</span>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">Previous Version</span>
                   </div>
                   <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0;">
                     <li><strong>Action Notification Center:</strong> Logs recent user operations in a persistent history dropdown, with option to toggle between showing the last 5 or 10 actions.</li>

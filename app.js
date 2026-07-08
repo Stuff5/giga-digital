@@ -3045,6 +3045,18 @@ function bindSidebarEvents() {
       }
     });
   });
+
+  // Bind click listeners for general view-all links (like the Dashboard View Ledger link)
+  document.querySelectorAll(".view-all-link").forEach(link => {
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      const targetHash = link.getAttribute("href");
+      const navLink = document.querySelector(`.nav-link[href="${targetHash}"]`);
+      if (navLink) {
+        navLink.click();
+      }
+    });
+  });
 }
 
 // ==========================================================================
@@ -3490,8 +3502,18 @@ function initEventHandlers() {
   });
 
   // Filters Event Listeners for Sales
-  document.getElementById("sales-filter-platform").addEventListener("change", updateUI);
-  const debouncedSalesSearch = debounce(updateUI, 150);
+  document.getElementById("sales-filter-platform").addEventListener("change", () => {
+    state.salesCurrentPage = 1;
+    updateUI();
+  });
+  document.getElementById("sales-filter-supplier").addEventListener("change", () => {
+    state.salesCurrentPage = 1;
+    updateUI();
+  });
+  const debouncedSalesSearch = debounce(() => {
+    state.salesCurrentPage = 1;
+    updateUI();
+  }, 150);
   document.getElementById("sales-search-input").addEventListener("input", debouncedSalesSearch);
   
   // Dashboard Supplier Filter Event Listener
@@ -3524,7 +3546,10 @@ function initEventHandlers() {
   });
   document.getElementById("btn-reset-sales-filters").addEventListener("click", () => {
     document.getElementById("sales-filter-platform").value = "all";
+    const salesFilterSup = document.getElementById("sales-filter-supplier");
+    if (salesFilterSup) salesFilterSup.value = "all";
     document.getElementById("sales-search-input").value = "";
+    state.salesCurrentPage = 1;
     updateUI();
     showToast("Sales ledger filters reset.", "info");
   });
@@ -6289,17 +6314,30 @@ function renderSuppliers() {
     if (prevAddVal && state.suppliers.some(s => s.name === prevAddVal)) addSelect.value = prevAddVal;
     if (prevEditVal && state.suppliers.some(s => s.name === prevEditVal)) editSelect.value = prevEditVal;
 
-    // Populate inventory filter dropdown as well
+    // Populate inventory & sales filter dropdowns as well
     if (filterSelect) {
       const prevFilterVal = filterSelect.value;
-      // Show all suppliers in filter dropdown, but label disabled ones
-      filterSelect.innerHTML = '<option value="all">All Suppliers</option>' +
+      const salesFilterSelect = document.getElementById("sales-filter-supplier");
+      const prevSalesFilterVal = salesFilterSelect ? salesFilterSelect.value : "all";
+
+      const optionsHTML = '<option value="all">All Suppliers</option>' +
         dropdownSuppliers.map(s => `<option value="${s.name}">${s.name}${s.enabled === false ? ' (Disabled)' : ''}</option>`).join("");
+      
+      filterSelect.innerHTML = optionsHTML;
+      if (salesFilterSelect) salesFilterSelect.innerHTML = optionsHTML;
       
       if (prevFilterVal && (prevFilterVal === "all" || state.suppliers.some(s => s.name === prevFilterVal))) {
         filterSelect.value = prevFilterVal;
       } else {
         filterSelect.value = "all";
+      }
+
+      if (salesFilterSelect) {
+        if (prevSalesFilterVal && (prevSalesFilterVal === "all" || state.suppliers.some(s => s.name === prevSalesFilterVal))) {
+          salesFilterSelect.value = prevSalesFilterVal;
+        } else {
+          salesFilterSelect.value = "all";
+        }
       }
     }
 
@@ -7296,6 +7334,13 @@ function getFilteredSales() {
   const platformFilter = document.getElementById("sales-filter-platform").value;
   if (platformFilter !== "all") {
     list = list.filter(item => item.platformSold.toLowerCase() === platformFilter.toLowerCase());
+  }
+
+  // B2. Specific Page Filter: Supplier
+  const supplierFilterEl = document.getElementById("sales-filter-supplier");
+  const supplierFilter = supplierFilterEl ? supplierFilterEl.value : "all";
+  if (supplierFilter !== "all") {
+    list = list.filter(item => item.source === supplierFilter);
   }
 
   // C. Search Input Filter
@@ -8661,10 +8706,55 @@ function buildSalesRowHTML(sale, inventoryMap) {
   `;
 }
 
+function updateSalesLedgerSummary(salesList) {
+  const summaryEl = document.getElementById("sales-ledger-summary");
+  if (!summaryEl) return;
+
+  if (salesList.length === 0) {
+    summaryEl.innerHTML = "";
+    return;
+  }
+
+  let totalRevenue = 0;
+  let totalCost = 0;
+  
+  salesList.forEach(sale => {
+    totalRevenue += Number(sale.priceSold || 0);
+    totalCost += Number(sale.cost || 0);
+  });
+
+  const totalProfit = totalRevenue - totalCost;
+  const margin = totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100) : 0;
+
+  summaryEl.innerHTML = `
+    <div style="display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; padding: 12px 16px; background: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-md); width: 100%;">
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem;">
+        <span style="color: var(--text-muted); font-weight: 500;">Total Revenue:</span>
+        <span style="color: var(--text-main); font-weight: 700;">${formatCurrency(totalRevenue)}</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; border-left: 1px solid var(--border-color); padding-left: 16px;">
+        <span style="color: var(--text-muted); font-weight: 500;">Total Cost:</span>
+        <span style="color: var(--text-main); font-weight: 700;">${formatCurrency(totalCost)}</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; border-left: 1px solid var(--border-color); padding-left: 16px;">
+        <span style="color: var(--text-muted); font-weight: 500;">Net Profit:</span>
+        <span style="color: ${totalProfit >= 0 ? 'var(--accent-emerald)' : 'var(--accent-danger)'}; font-weight: 700;">${formatCurrency(totalProfit)}</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; border-left: 1px solid var(--border-color); padding-left: 16px;">
+        <span style="color: var(--text-muted); font-weight: 500;">Profit Margin:</span>
+        <span style="color: ${margin >= 0 ? 'var(--accent-cyan)' : 'var(--accent-danger)'}; font-weight: 700;">${margin.toFixed(1)}%</span>
+      </div>
+    </div>
+  `;
+}
+
 function renderSalesTable(salesList) {
   const tbody = document.getElementById("sales-table-body");
   if (!tbody) return;
   tbody.innerHTML = "";
+
+  // Update filtered summary statistics
+  updateSalesLedgerSummary(salesList);
 
   if (salesList.length === 0) {
     tbody.innerHTML = `<tr><td colspan="10" class="text-center" style="text-align: center; padding: 30px; color: var(--text-muted);">No sales recorded in this period.</td></tr>`;
