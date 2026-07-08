@@ -6043,6 +6043,9 @@ async function handleEditCatalogEntrySubmit(e) {
 // RENDER & UI DYNAMIC UPDATES
 // ==========================================================================
 function updateUI() {
+  const activeView = document.querySelector(".content-view.active");
+  const activeViewId = activeView ? activeView.id : "dashboard-view";
+
   // 1. Get filtered data
   const filteredSales = getFilteredSales();
   const filteredInventory = getFilteredInventory();
@@ -6066,58 +6069,65 @@ function updateUI() {
     dbFilteredInventory = state.inventory.filter(item => item.source === dbSupplier);
   }
 
-  // 2. Render Metrics Cards based on filtered period and supplier
-  calculateMetrics(dbFilteredSales, dbFilteredInventory);
-  calculateSupplierMetrics();
-  renderPeriodSummary(dbFilteredSales, dbFilteredInventory);
+  // ONLY execute rendering logic relevant to the active view
+  if (activeViewId === "dashboard-view") {
+    calculateMetrics(dbFilteredSales, dbFilteredInventory);
+    calculateSupplierMetrics();
+    renderPeriodSummary(dbFilteredSales, dbFilteredInventory);
 
-  // 2b. Apply figures visibility first so that shown canvases have layout dimensions
-  renderDashboardCardsOrder();
-  applyFiguresVisibility();
-  applyDashboardSpans();
+    renderDashboardCardsOrder();
+    applyFiguresVisibility();
+    applyDashboardSpans();
 
-  // 3. Render Charts
-  renderSalesTrendChart(dbFilteredSales);
-  renderPlatformSplitChart(dbFilteredSales);
-  renderCostRevenueChart(dbFilteredSales);
-  renderSupplierSplitChart(dbFilteredInventory);
-  renderTopBestsellersChart(dbFilteredSales);
-  renderDailyProfitMonthChart(dbFilteredSales);
-  renderStockSpeedChart(dbFilteredInventory, dbFilteredSales);
-  renderSalesFeedWidget(dbFilteredSales);
-  renderFinanceTrackerWidget(dbFilteredSales);
-  renderMarkupAnalysisChart(dbFilteredInventory);
-  renderStockTurnoverChart(dbFilteredInventory, dbFilteredSales);
+    renderSalesTrendChart(dbFilteredSales);
+    renderPlatformSplitChart(dbFilteredSales);
+    renderCostRevenueChart(dbFilteredSales);
+    renderSupplierSplitChart(dbFilteredInventory);
+    renderTopBestsellersChart(dbFilteredSales);
+    renderDailyProfitMonthChart(dbFilteredSales);
+    renderStockSpeedChart(dbFilteredInventory, dbFilteredSales);
+    renderSalesFeedWidget(dbFilteredSales);
+    renderFinanceTrackerWidget(dbFilteredSales);
+    renderMarkupAnalysisChart(dbFilteredInventory);
+    renderStockTurnoverChart(dbFilteredInventory, dbFilteredSales);
 
-  // 4. Render Tables
-  renderInventoryTable(filteredInventory);
-  renderSalesTable(filteredSales);
-  
-  // 5. Render Dashboard Summary Sections
-  renderDashboardDetails(dbFilteredSales, dbFilteredInventory);
-
-  // 7. Render Suppliers and populate dropdown lists
-  if (state.suppliersActiveTab === "publisher") {
-    document.getElementById("suppliers-tab-content")?.classList.add("hidden");
-    document.getElementById("publishers-tab-content")?.classList.remove("hidden");
-    renderPublishersTab();
-  } else {
-    document.getElementById("suppliers-tab-content")?.classList.remove("hidden");
-    document.getElementById("publishers-tab-content")?.classList.add("hidden");
-    renderSuppliers();
+    renderDashboardDetails(dbFilteredSales, dbFilteredInventory);
+  } 
+  else if (activeViewId === "inventory-view") {
+    renderInventoryTable(filteredInventory);
+  } 
+  else if (activeViewId === "sales-view") {
+    renderSalesTable(filteredSales);
+  } 
+  else if (activeViewId === "suppliers-view") {
+    if (state.suppliersActiveTab === "publisher") {
+      document.getElementById("suppliers-tab-content")?.classList.add("hidden");
+      document.getElementById("publishers-tab-content")?.classList.remove("hidden");
+      renderPublishersTab();
+    } else {
+      document.getElementById("suppliers-tab-content")?.classList.remove("hidden");
+      document.getElementById("publishers-tab-content")?.classList.add("hidden");
+      renderSuppliers();
+    }
+  } 
+  else if (activeViewId === "platforms-view") {
+    renderPlatforms();
+  } 
+  else if (activeViewId === "entries-view") {
+    renderEntries();
+  } 
+  else if (activeViewId === "finance-view") {
+    renderFinanceView();
+    populateCategoryDropdown();
+    renderPayoutsLedger();
+  } 
+  else if (activeViewId === "recycle-view") {
+    renderRecycleBin();
+  } 
+  else if (activeViewId === "settings-view") {
+    renderSidebarCustomizationSettings();
+    renderAdminUsers();
   }
-
-  // 7b. Render Platforms and populate dropdown lists
-  renderPlatforms();
-
-  // 8. Render Game catalog entries
-  renderEntries();
-
-  // 9. Render Finance view data
-  renderFinanceView();
-
-  // 9b. Render Recycle Bin data
-  renderRecycleBin();
 
   // 10. Reset bulk actions bar and select-all checkbox
   const selectAllCheckbox = document.getElementById("inv-select-all");
@@ -6132,16 +6142,6 @@ function updateUI() {
   
   const recycleBulkBar = document.getElementById("recycle-bulk-actions");
   if (recycleBulkBar) recycleBulkBar.classList.add("hidden");
-  
-  const recycleInfoText = document.getElementById("recycle-info-text");
-  if (recycleInfoText) recycleInfoText.classList.remove("hidden");
-
-  // 11. Render admin users
-  renderAdminUsers();
-
-  // 12. Sync and Render operational expense categories & ledger
-  populateCategoryDropdown();
-  renderPayoutsLedger();
 }
 
 function renderSuppliers() {
