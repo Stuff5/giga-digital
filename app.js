@@ -677,7 +677,7 @@ let state = {
   menuOrder: ["dashboard", "inventory", "sales", "finance", "suppliers", "platforms", "entries", "recycle", "settings"],
   dashboardOrder: [
     "salesProfit", "platformSplit", "costRevenue", "supplierSplit", "topBestsellers", "dailyProfitMonth",
-    "stockSpeed", "salesFeed", "financeTracker", "markupAnalysis", "stockTurnover"
+    "stockSpeed", "salesFeed", "financeTracker", "markupAnalysis", "stockTurnover", "stockAging"
   ],
   dashboardSpans: {
     salesProfit: 2,
@@ -690,7 +690,8 @@ let state = {
     salesFeed: 2,
     financeTracker: 1,
     markupAnalysis: 2,
-    stockTurnover: 3
+    stockTurnover: 3,
+    stockAging: 3
   },
   widgetSettings: {
     salesProfit: { visible: true, collapsed: false, chartType: 'line', timeframe: 'global' },
@@ -703,7 +704,8 @@ let state = {
     salesFeed: { visible: true, collapsed: false, limit: 5, timeframe: 'global' },
     financeTracker: { visible: true, collapsed: false, timeframe: 'global' },
     markupAnalysis: { visible: true, collapsed: false, chartType: 'bar', groupBy: 'publisher', timeframe: 'global' },
-    stockTurnover: { visible: true, collapsed: false, chartType: 'line', timeframe: 'global' }
+    stockTurnover: { visible: true, collapsed: false, chartType: 'line', timeframe: 'global' },
+    stockAging: { visible: true, collapsed: false, chartType: 'bar', supplier: 'all', timeframe: 'global' }
   }
 };
 
@@ -722,7 +724,9 @@ let salesProfitChartInstance = null;
 let platformSplitChartInstance = null;
 let financeMonthlyChartInstance = null;
 let financeAveragesChartInstance = null;
+let financeOutflowChartInstance = null;
 let costRevenueChartInstance = null;
+let stockAgingChartInstance = null;
 let supplierSplitChartInstance = null;
 let topBestsellersChartInstance = null;
 let supplierRoiMatrixChartInstance = null;
@@ -3956,6 +3960,13 @@ function initEventHandlers() {
     });
   }
 
+  const financeOutflowChartYearFilter = document.getElementById("finance-outflow-chart-year-filter");
+  if (financeOutflowChartYearFilter) {
+    financeOutflowChartYearFilter.addEventListener("change", () => {
+      renderFinanceView();
+    });
+  }
+
   const financeSortBtn = document.getElementById("finance-breakdown-sort-order");
   if (financeSortBtn) {
     financeSortBtn.addEventListener("click", () => {
@@ -6112,6 +6123,7 @@ function updateUI() {
     renderFinanceTrackerWidget(dbFilteredSales);
     renderMarkupAnalysisChart(dbFilteredInventory);
     renderStockTurnoverChart(dbFilteredInventory, dbFilteredSales);
+    renderStockAgingChart(dbFilteredInventory);
 
     renderDashboardDetails(dbFilteredSales, dbFilteredInventory);
   } 
@@ -10269,8 +10281,8 @@ function renderStockTurnoverChart(filteredInventoryList, filteredSalesList) {
   const activityByDate = {};
 
   wInventory.forEach(item => {
-    if (!item.dateAdded) return;
-    const dateStr = item.dateAdded.substring(0, 10);
+    if (!item.purchaseDate) return;
+    const dateStr = item.purchaseDate.substring(0, 10);
     if (!activityByDate[dateStr]) {
       activityByDate[dateStr] = { bought: 0, sold: 0 };
     }
@@ -10353,6 +10365,110 @@ function renderStockTurnoverChart(filteredInventoryList, filteredSalesList) {
         }
       },
       scales: {
+        x: { grid: { display: false }, ticks: { color: textSecondaryColor } },
+        y: {
+          grid: { color: borderColor },
+          ticks: { color: textSecondaryColor, stepSize: 1, beginAtZero: true }
+        }
+      }
+    }
+  });
+}
+
+function renderStockAgingChart(filteredInventoryList) {
+  if (typeof Chart === 'undefined') return;
+  const canvas = document.getElementById("stockAgingChart");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+
+  if (stockAgingChartInstance) {
+    try { stockAgingChartInstance.destroy(); } catch (e) { console.error(e); }
+  }
+
+  const cfg = state.widgetSettings ? state.widgetSettings.stockAging : null;
+  const supplierFilter = cfg ? cfg.supplier : 'all';
+
+  // Get unsold available keys (exclude sold and recycled keys)
+  const unsoldKeys = state.inventory.filter(item => !item.sold && !item.recycleBin);
+  const filteredUnsold = unsoldKeys.filter(item => {
+    if (supplierFilter !== 'all' && item.source !== supplierFilter) return false;
+    return true;
+  });
+
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+
+  let bracket1 = 0; // 0-7 days
+  let bracket2 = 0; // 8-30 days
+  let bracket3 = 0; // 31-90 days
+  let bracket4 = 0; // 90+ days
+
+  filteredUnsold.forEach(item => {
+    if (!item.purchaseDate) return;
+    const pDate = new Date(item.purchaseDate);
+    pDate.setHours(0, 0, 0, 0);
+    const diffTime = Math.max(0, now - pDate);
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays <= 7) bracket1++;
+    else if (diffDays <= 30) bracket2++;
+    else if (diffDays <= 90) bracket3++;
+    else bracket4++;
+  });
+
+  const labels = ["0-7 Days (Fresh)", "8-30 Days (Recent)", "31-90 Days (Aging)", "90+ Days (Dead Stock)"];
+  const data = [bracket1, bracket2, bracket3, bracket4];
+  const chartType = (cfg && cfg.chartType) || "bar";
+
+  const rootStyle = getComputedStyle(document.documentElement);
+  const textSecondaryColor = rootStyle.getPropertyValue('--text-secondary').trim() || 'hsl(220, 12%, 65%)';
+  const borderColor = rootStyle.getPropertyValue('--border-color').trim() || 'hsla(224, 20%, 25%, 0.15)';
+  const tooltipBg = rootStyle.getPropertyValue('--bg-sidebar').trim() || 'hsl(224, 25%, 10%)';
+
+  const colors = [
+    'hsl(145, 80%, 45%)',  // Fresh
+    'hsl(210, 85%, 55%)',  // Recent
+    'hsl(35, 90%, 55%)',   // Aging
+    'hsl(350, 85%, 55%)'   // Dead
+  ];
+  const bgColors = [
+    'hsla(145, 80%, 45%, 0.2)',
+    'hsla(210, 85%, 55%, 0.2)',
+    'hsla(35, 90%, 55%, 0.2)',
+    'hsla(350, 85%, 55%, 0.2)'
+  ];
+
+  stockAgingChartInstance = new Chart(ctx, {
+    type: chartType,
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Unsold Keys',
+        data: data,
+        backgroundColor: chartType === 'doughnut' ? colors : bgColors,
+        borderColor: colors,
+        borderWidth: chartType === 'doughnut' ? 0 : 2,
+        borderRadius: chartType === 'doughnut' ? 0 : 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: chartType === 'doughnut',
+          position: 'bottom',
+          labels: { color: textSecondaryColor, font: { family: 'Inter', size: 10 } }
+        },
+        tooltip: {
+          backgroundColor: tooltipBg,
+          titleColor: state.theme !== "light" ? "#fff" : "#000",
+          bodyColor: state.theme !== "light" ? "#fff" : "#000",
+          borderColor: borderColor,
+          borderWidth: 1
+        }
+      },
+      scales: chartType === 'doughnut' ? {} : {
         x: { grid: { display: false }, ticks: { color: textSecondaryColor } },
         y: {
           grid: { color: borderColor },
@@ -11799,7 +11915,9 @@ function getWidgetFilteredSales(widgetKey, globalSalesList) {
   const now = new Date();
   let cutoffDate = null;
   
-  if (cfg.timeframe === "30") {
+  if (cfg.timeframe === "month") {
+    cutoffDate = new Date(now.getFullYear(), now.getMonth(), 1);
+  } else if (cfg.timeframe === "30") {
     cutoffDate = new Date();
     cutoffDate.setDate(now.getDate() - 30);
   } else if (cfg.timeframe === "90") {
@@ -11827,7 +11945,9 @@ function getWidgetFilteredInventory(widgetKey, globalInventoryList) {
   const now = new Date();
   let cutoffDate = null;
   
-  if (cfg.timeframe === "30") {
+  if (cfg.timeframe === "month") {
+    cutoffDate = new Date(now.getFullYear(), now.getMonth(), 1);
+  } else if (cfg.timeframe === "30") {
     cutoffDate = new Date();
     cutoffDate.setDate(now.getDate() - 30);
   } else if (cfg.timeframe === "90") {
@@ -11840,8 +11960,8 @@ function getWidgetFilteredInventory(widgetKey, globalInventoryList) {
   if (!cutoffDate) return globalInventoryList;
   
   return state.inventory.filter(item => {
-    if (!item.dateAdded) return false;
-    const iDate = new Date(item.dateAdded);
+    if (!item.purchaseDate) return false;
+    const iDate = new Date(item.purchaseDate);
     return iDate >= cutoffDate;
   });
 }
@@ -12048,6 +12168,20 @@ function bindWidgetControls() {
     } else if (widgetKey === "markupAnalysis") {
       const selectGroupBy = document.getElementById("config-markupAnalysis-groupBy");
       if (selectGroupBy) selectGroupBy.value = cfg.groupBy || "publisher";
+    } else if (widgetKey === "stockAging") {
+      const selectSupplier = document.getElementById("config-stockAging-supplier");
+      if (selectSupplier) {
+        const suppliers = new Set();
+        state.inventory.forEach(item => {
+          if (item.source) suppliers.add(item.source);
+        });
+        let selectHtml = `<option value="all">All Suppliers</option>`;
+        Array.from(suppliers).sort().forEach(s => {
+          selectHtml += `<option value="${s}">${s}</option>`;
+        });
+        selectSupplier.innerHTML = selectHtml;
+        selectSupplier.value = cfg.supplier || "all";
+      }
     }
   };
   
@@ -12173,6 +12307,9 @@ function bindWidgetControls() {
         } else if (widgetKey === "markupAnalysis") {
           const selectGroupBy = document.getElementById("config-markupAnalysis-groupBy");
           if (selectGroupBy) cfg.groupBy = selectGroupBy.value;
+        } else if (widgetKey === "stockAging") {
+          const selectSupplier = document.getElementById("config-stockAging-supplier");
+          if (selectSupplier) cfg.supplier = selectSupplier.value;
         }
         
         saveStateToStorage();
@@ -12444,6 +12581,40 @@ function renderFinanceView() {
       avgChartYearFilter.value = "all";
     }
     selectedAvgChartYear = avgChartYearFilter.value;
+  }
+
+  // Populate the Outflow Chart Year Filter dropdown if it exists
+  const outflowChartYearFilter = document.getElementById("finance-outflow-chart-year-filter");
+  let selectedOutflowYear = "all";
+  if (outflowChartYearFilter) {
+    const years = new Set();
+    state.inventory.forEach(item => {
+      if (item.purchaseDate && item.purchaseDate.length >= 4) {
+        const y = item.purchaseDate.substring(0, 4);
+        if (/^\d{4}$/.test(y)) years.add(y);
+      }
+    });
+    state.payouts.forEach(p => {
+      if (p.date && p.date.length >= 4) {
+        const y = p.date.substring(0, 4);
+        if (/^\d{4}$/.test(y)) years.add(y);
+      }
+    });
+    
+    const sortedYears = Array.from(years).sort((a, b) => b.localeCompare(a));
+    const currentSelected = outflowChartYearFilter.value || "all";
+    
+    outflowChartYearFilter.innerHTML = `<option value="all">All Years</option>`;
+    sortedYears.forEach(y => {
+      outflowChartYearFilter.innerHTML += `<option value="${y}">${y}</option>`;
+    });
+    
+    if (currentSelected === "all" || sortedYears.includes(currentSelected)) {
+      outflowChartYearFilter.value = currentSelected;
+    } else {
+      outflowChartYearFilter.value = "all";
+    }
+    selectedOutflowYear = outflowChartYearFilter.value;
   }
 
   // Update layout toggle buttons active state
@@ -13396,6 +13567,122 @@ function renderFinanceView() {
           y: {
             grid: { color: borderColor },
             ticks: { color: textSecondaryColor }
+          }
+        }
+      }
+    });
+  }
+
+  // Render outflow & expense allocation doughnut chart
+  const outflowCanvas = document.getElementById("financeOutflowChart");
+  if (outflowCanvas) {
+    const outflowCtx = outflowCanvas.getContext("2d");
+
+    if (financeOutflowChartInstance) {
+      try {
+        financeOutflowChartInstance.destroy();
+      } catch (e) {
+        console.error("Error destroying financeOutflowChartInstance:", e);
+      }
+    }
+
+    // Group and format outflow data
+    const outflowAllocation = {};
+
+    // 1. Calculate Supplier Key Purchases outflow
+    let supplierOutflow = 0;
+    state.inventory.forEach(item => {
+      if (item.recycleBin) return;
+      const year = item.purchaseDate ? item.purchaseDate.substring(0, 4) : "";
+      if (selectedOutflowYear !== "all" && year !== selectedOutflowYear) {
+        return;
+      }
+      supplierOutflow += parseFloat(item.cost) || 0;
+    });
+
+    if (supplierOutflow > 0) {
+      outflowAllocation["Key Purchases (Supplier)"] = supplierOutflow;
+    }
+
+    // 2. Add Payouts/Expenses outflow by category
+    state.payouts.forEach(p => {
+      const year = p.date ? p.date.substring(0, 4) : "";
+      if (selectedOutflowYear !== "all" && year !== selectedOutflowYear) {
+        return;
+      }
+      const cat = p.category || "Miscellaneous Expense";
+      const amt = parseFloat(p.amount) || 0;
+      if (amt > 0) {
+        if (!outflowAllocation[cat]) {
+          outflowAllocation[cat] = 0;
+        }
+        outflowAllocation[cat] += amt;
+      }
+    });
+
+    const outflowLabels = Object.keys(outflowAllocation);
+    const outflowData = outflowLabels.map(cat => outflowAllocation[cat]);
+
+    // Update outflow chart header text dynamically
+    const outflowTitle = document.getElementById("finance-outflow-chart-title");
+    if (outflowTitle) {
+      outflowTitle.textContent = selectedOutflowYear === "all" ? "Outflow & Expense Allocation" : `Outflow & Expense Allocation (${selectedOutflowYear})`;
+    }
+
+    // Modern color palette for categories
+    const outflowPalette = [
+      'hsl(330, 95%, 60%)', // Key purchases (Pink/Rose)
+      'hsl(195, 90%, 50%)', // Cyan
+      'hsl(260, 85%, 65%)', // Purple
+      'hsl(35, 90%, 55%)',  // Amber
+      'hsl(145, 80%, 45%)', // Green
+      'hsl(350, 85%, 55%)', // Red
+      'hsl(175, 90%, 48%)', // Teal
+      'hsl(220, 12%, 65%)'  // Gray
+    ];
+
+    if (outflowLabels.length === 0) {
+      outflowLabels.push("No recorded outflow");
+      outflowData.push(0);
+    }
+
+    financeOutflowChartInstance = new Chart(outflowCtx, {
+      type: 'doughnut',
+      data: {
+        labels: outflowLabels,
+        datasets: [{
+          data: outflowData,
+          backgroundColor: outflowPalette.slice(0, outflowLabels.length),
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              color: textSecondaryColor,
+              font: { family: 'Inter', size: 10 }
+            }
+          },
+          tooltip: {
+            backgroundColor: tooltipBg,
+            titleColor: state.theme !== "light" ? "#fff" : "#000",
+            bodyColor: state.theme !== "light" ? "#fff" : "#000",
+            borderColor: borderColor,
+            borderWidth: 1,
+            callbacks: {
+              label: function(context) {
+                const label = context.label || '';
+                const val = context.parsed || 0;
+                // Calculate percentage
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percent = total > 0 ? ((val / total) * 100).toFixed(1) + '%' : '0%';
+                return ` ${label}: ${formatCurrency(val)} (${percent})`;
+              }
+            }
           }
         }
       }

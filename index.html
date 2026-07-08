@@ -135,7 +135,7 @@
         </div>
         <div class="version-info" style="text-align: center; font-size: 0.7rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; overflow: hidden; white-space: nowrap;">
           <span class="version-label">GameVault</span>
-          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v1.4.0</a>
+          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v1.5.0</a>
         </div>
 
       </div>
@@ -1171,9 +1171,76 @@
                         <label for="config-stockTurnover-timeframe">Time Period</label>
                         <select id="config-stockTurnover-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
                           <option value="global">Global Dashboard Filter</option>
+                          <option value="month">This Month</option>
                           <option value="30">Last 30 Days</option>
                           <option value="90">Last 90 Days</option>
                           <option value="year">This Year</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="config-form-actions">
+                      <button type="submit" class="btn-widget-save">Save Changes</button>
+                      <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <!-- Widget 12: Inventory Stock Aging Distribution -->
+            <div class="chart-card" id="card-chart-stockAging" data-figure="stockAging">
+              <div class="card-inner">
+                <div class="card-front">
+                  <div class="chart-card-header">
+                    <h4>Stock Aging Analysis</h4>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                      <div class="card-actions-dropdown">
+                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
+                        <div class="card-actions-menu">
+                          <button type="button" class="card-actions-item btn-widget-configure">
+                            <i class="fa-solid fa-sliders"></i> Configure
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-remove">
+                            <i class="fa-solid fa-trash-can"></i> Remove Widget
+                          </button>
+                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                          <button type="button" class="card-actions-item" data-span="1">
+                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="2">
+                            <i class="fa-solid fa-table-columns"></i> 2 Columns
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="3">
+                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chart-body">
+                    <canvas id="stockAgingChart"></canvas>
+                  </div>
+                </div>
+                <div class="card-back">
+                  <form class="widget-config-form" data-widget="stockAging">
+                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
+                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
+                    </div>
+                    <div class="config-form-body">
+                      <div class="config-field-group">
+                        <label for="config-stockAging-chartType">Chart Type</label>
+                        <select id="config-stockAging-chartType" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="bar">Bar Chart</option>
+                          <option value="doughnut">Doughnut Chart</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-stockAging-supplier">Supplier Filter</label>
+                        <select id="config-stockAging-supplier" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="all">All Suppliers</option>
                         </select>
                       </div>
                     </div>
@@ -1900,7 +1967,7 @@
             </div>
 
             <!-- Financial charts section -->
-            <div class="responsive-grid-equal" style="margin-bottom: 24px; margin-top: 0;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-bottom: 24px;">
               <!-- Chart 1: Monthly trend totals -->
               <div class="chart-card" style="margin-bottom: 0;">
                 <div class="chart-card-header">
@@ -1938,6 +2005,21 @@
                 </div>
                 <div class="chart-body">
                   <canvas id="financeAveragesChart"></canvas>
+                </div>
+              </div>
+
+              <!-- Chart 3: Outflow & Expense Allocation -->
+              <div class="chart-card" style="margin-bottom: 0;">
+                <div class="chart-card-header">
+                  <h4 id="finance-outflow-chart-title">Outflow & Expense Allocation</h4>
+                  <div style="display: flex; gap: 8px; align-items: center;">
+                    <select id="finance-outflow-chart-year-filter" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
+                      <option value="all">All Years</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="chart-body">
+                  <canvas id="financeOutflowChart"></canvas>
                 </div>
               </div>
             </div>
@@ -3886,11 +3968,25 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
-                <!-- v1.4.0 -->
+                <!-- v1.5.0 -->
                 <div style="border-left: 3px solid var(--accent-cyan); padding-left: 12px;">
                   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.4.0 — Data Toolbox & Advanced Auditing</strong>
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.5.0 — Business Analytics & Outflow Allocation</strong>
                     <span style="font-size: 0.75rem; color: var(--accent-cyan); font-weight: bold;">Current Version</span>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0;">
+                    <li><strong>Inventory Stock Aging Widget:</strong> Segments available unsold keys into four distinct age categories with dynamic toggles and supplier overrides.</li>
+                    <li><strong>Finances Outflow Allocation:</strong> Allocation doughnut chart on the Finances view grouping key purchase costs and operational overhead payouts by category.</li>
+                    <li><strong>Turnover Timeline Enhancements:</strong> Added "This Month" configuration timeframe filter and fixed keys purchased data line rendering calculations.</li>
+                    <li><strong>Header Placement Customization:</strong> Adjusted 1-column layout header settings to keep buttons aligned on the right on small widths.</li>
+                  </ul>
+                </div>
+
+                <!-- v1.4.0 -->
+                <div style="border-left: 3px solid var(--accent-warning); padding-left: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.4.0 — Data Toolbox & Advanced Auditing</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">Previous Version</span>
                   </div>
                   <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0;">
                     <li><strong>Data Tools Settings Panel:</strong> Merged JSON backups, Excel spreadsheet imports, cover fetchers, and database resets into one unified card layout.</li>
