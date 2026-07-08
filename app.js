@@ -8717,13 +8717,29 @@ function updateSalesLedgerSummary(salesList) {
 
   let totalRevenue = 0;
   let totalCost = 0;
+  let totalProfit = 0;
   
   salesList.forEach(sale => {
-    totalRevenue += Number(sale.priceSold || 0);
-    totalCost += Number(sale.cost || 0);
+    const isDisputed = sale.disputed === true;
+    const isSupplierRefunded = sale.supplierRefunded === true;
+    
+    const rev = isDisputed ? 0 : Number(sale.sellPrice || 0);
+    const cost = (isDisputed && isSupplierRefunded) ? 0 : Number(sale.cost || 0);
+    
+    totalRevenue += rev;
+    totalCost += cost;
+    
+    let resolvedProfit = Number(sale.profit || 0);
+    if (isDisputed) {
+      if (isSupplierRefunded) {
+        resolvedProfit = 0;
+      } else {
+        resolvedProfit = -Number(sale.cost || 0);
+      }
+    }
+    totalProfit += resolvedProfit;
   });
 
-  const totalProfit = totalRevenue - totalCost;
   const margin = totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100) : 0;
 
   summaryEl.innerHTML = `
