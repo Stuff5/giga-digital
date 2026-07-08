@@ -3934,6 +3934,13 @@ function initEventHandlers() {
     });
   }
 
+  const financeChartYearFilter = document.getElementById("finance-chart-year-filter");
+  if (financeChartYearFilter) {
+    financeChartYearFilter.addEventListener("change", () => {
+      renderFinanceView();
+    });
+  }
+
   const financeSortBtn = document.getElementById("finance-breakdown-sort-order");
   if (financeSortBtn) {
     financeSortBtn.addEventListener("click", () => {
@@ -12358,6 +12365,42 @@ function renderFinanceView() {
     }
   }
 
+  // Populate the Chart Year Filter dropdown if it exists
+  const chartYearFilter = document.getElementById("finance-chart-year-filter");
+  let selectedChartYear = "all";
+  if (chartYearFilter) {
+    if (chartBreakdownType === "month") {
+      chartYearFilter.style.display = "";
+      
+      // Get unique years from sales
+      const years = new Set();
+      state.sales.forEach(sale => {
+        if (sale.saleDate && sale.saleDate.length >= 4) {
+          const y = sale.saleDate.substring(0, 4);
+          if (/^\d{4}$/.test(y)) years.add(y);
+        }
+      });
+      
+      const sortedYears = Array.from(years).sort((a, b) => b.localeCompare(a));
+      const currentSelected = chartYearFilter.value || "all";
+      
+      chartYearFilter.innerHTML = `<option value="all">All Years</option>`;
+      sortedYears.forEach(y => {
+        chartYearFilter.innerHTML += `<option value="${y}">${y}</option>`;
+      });
+      
+      // Restore selected year if still valid
+      if (currentSelected === "all" || sortedYears.includes(currentSelected)) {
+        chartYearFilter.value = currentSelected;
+      } else {
+        chartYearFilter.value = "all";
+      }
+      selectedChartYear = chartYearFilter.value;
+    } else {
+      chartYearFilter.style.display = "none";
+    }
+  }
+
   // Update layout toggle buttons active state
   const layoutButtons = document.querySelectorAll(".btn-toggle-layout");
   layoutButtons.forEach(b => {
@@ -12369,7 +12412,9 @@ function renderFinanceView() {
 
   // Update chart header text dynamically
   if (chartTitle) {
-    if (chartBreakdownType === "month") chartTitle.textContent = "Monthly Financial Trend";
+    if (chartBreakdownType === "month") {
+      chartTitle.textContent = selectedChartYear === "all" ? "Monthly Financial Trend" : `Monthly Financial Trend (${selectedChartYear})`;
+    }
     else if (chartBreakdownType === "year") chartTitle.textContent = "Yearly Financial Trend";
     else chartTitle.textContent = "All-Time Cumulative Financial Trend";
   }
@@ -12975,6 +13020,10 @@ function renderFinanceView() {
   if (chartBreakdownType === "month") {
     const monthlyData = {};
     state.sales.forEach(sale => {
+      const year = sale.saleDate.substring(0, 4);
+      if (selectedChartYear !== "all" && year !== selectedChartYear) {
+        return;
+      }
       const m = sale.saleDate.substring(0, 7); // e.g. "2026-06"
       if (!monthlyData[m]) {
         monthlyData[m] = { revenue: 0, cost: 0, profit: 0 };
