@@ -721,6 +721,7 @@ const DEFAULT_EXPENSE_CATEGORIES = [
 let salesProfitChartInstance = null;
 let platformSplitChartInstance = null;
 let financeMonthlyChartInstance = null;
+let financeAveragesChartInstance = null;
 let costRevenueChartInstance = null;
 let supplierSplitChartInstance = null;
 let topBestsellersChartInstance = null;
@@ -3937,6 +3938,20 @@ function initEventHandlers() {
   const financeChartYearFilter = document.getElementById("finance-chart-year-filter");
   if (financeChartYearFilter) {
     financeChartYearFilter.addEventListener("change", () => {
+      renderFinanceView();
+    });
+  }
+
+  const financeAvgChartMetricType = document.getElementById("finance-avg-chart-metric-type");
+  if (financeAvgChartMetricType) {
+    financeAvgChartMetricType.addEventListener("change", () => {
+      renderFinanceView();
+    });
+  }
+
+  const financeAvgChartYearFilter = document.getElementById("finance-avg-chart-year-filter");
+  if (financeAvgChartYearFilter) {
+    financeAvgChartYearFilter.addEventListener("change", () => {
       renderFinanceView();
     });
   }
@@ -12401,6 +12416,36 @@ function renderFinanceView() {
     }
   }
 
+  // Populate the Averages Chart Year Filter dropdown if it exists
+  const avgChartYearFilter = document.getElementById("finance-avg-chart-year-filter");
+  let selectedAvgChartYear = "all";
+  if (avgChartYearFilter) {
+    // Get unique years from sales
+    const years = new Set();
+    state.sales.forEach(sale => {
+      if (sale.saleDate && sale.saleDate.length >= 4) {
+        const y = sale.saleDate.substring(0, 4);
+        if (/^\d{4}$/.test(y)) years.add(y);
+      }
+    });
+    
+    const sortedYears = Array.from(years).sort((a, b) => b.localeCompare(a));
+    const currentSelected = avgChartYearFilter.value || "all";
+    
+    avgChartYearFilter.innerHTML = `<option value="all">All Years</option>`;
+    sortedYears.forEach(y => {
+      avgChartYearFilter.innerHTML += `<option value="${y}">${y}</option>`;
+    });
+    
+    // Restore selected year if still valid
+    if (currentSelected === "all" || sortedYears.includes(currentSelected)) {
+      avgChartYearFilter.value = currentSelected;
+    } else {
+      avgChartYearFilter.value = "all";
+    }
+    selectedAvgChartYear = avgChartYearFilter.value;
+  }
+
   // Update layout toggle buttons active state
   const layoutButtons = document.querySelectorAll(".btn-toggle-layout");
   layoutButtons.forEach(b => {
@@ -12417,6 +12462,21 @@ function renderFinanceView() {
     }
     else if (chartBreakdownType === "year") chartTitle.textContent = "Yearly Financial Trend";
     else chartTitle.textContent = "All-Time Cumulative Financial Trend";
+  }
+
+  const avgChartTitle = document.getElementById("finance-avg-chart-title");
+  const avgMetricSelect = document.getElementById("finance-avg-chart-metric-type");
+  const avgMetricType = avgMetricSelect ? avgMetricSelect.value : "financial";
+
+  if (avgChartTitle) {
+    const yrSuffix = selectedAvgChartYear === "all" ? "" : ` (${selectedAvgChartYear})`;
+    if (avgMetricType === "financial") {
+      avgChartTitle.textContent = `Unit Performance Averages${yrSuffix}`;
+    } else if (avgMetricType === "duration") {
+      avgChartTitle.textContent = `Average Shelf Duration (Days)${yrSuffix}`;
+    } else {
+      avgChartTitle.textContent = `Average Profit Margin (%)${yrSuffix}`;
+    }
   }
 
   // Update card header text dynamically
@@ -13155,6 +13215,192 @@ function renderFinanceView() {
       }
     }
   });
+
+  // Render averages trend chart
+  const avgCanvas = document.getElementById("financeAveragesChart");
+  if (avgCanvas) {
+    const avgCtx = avgCanvas.getContext("2d");
+
+    if (financeAveragesChartInstance) {
+      try {
+        financeAveragesChartInstance.destroy();
+      } catch (e) {
+        console.error("Error destroying financeAveragesChartInstance:", e);
+      }
+    }
+
+    // Group and format averages data
+    let avgChartKeys = [];
+    let avgRevenueData = [];
+    let avgCostData = [];
+    let avgProfitData = [];
+    let avgDurationData = [];
+    let avgMarginData = [];
+
+    const avgMonthlyData = {};
+    state.sales.forEach(sale => {
+      const year = sale.saleDate.substring(0, 4);
+      if (selectedAvgChartYear !== "all" && year !== selectedAvgChartYear) {
+        return;
+      }
+      const m = sale.saleDate.substring(0, 7); // e.g. "2026-06"
+      if (!avgMonthlyData[m]) {
+        avgMonthlyData[m] = { revenue: 0, cost: 0, profit: 0, count: 0, totalSellDays: 0, durationCount: 0 };
+      }
+      avgMonthlyData[m].revenue += sale.sellPrice;
+      avgMonthlyData[m].cost += sale.cost;
+      avgMonthlyData[m].profit += sale.profit;
+      avgMonthlyData[m].count += 1;
+
+      const invItem = state.inventory.find(i => i.id === sale.inventoryId);
+      if (invItem && invItem.purchaseDate && sale.saleDate) {
+        const start = new Date(invItem.purchaseDate);
+        const end = new Date(sale.saleDate);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(0, 0, 0, 0);
+        const diffTime = Math.max(0, end - start);
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+        avgMonthlyData[m].totalSellDays += diffDays;
+        avgMonthlyData[m].durationCount += 1;
+      }
+    });
+
+    avgChartKeys = Object.keys(avgMonthlyData).sort();
+
+    if (avgMetricType === "financial") {
+      avgRevenueData = avgChartKeys.map(k => avgMonthlyData[k].count > 0 ? avgMonthlyData[k].revenue / avgMonthlyData[k].count : 0);
+      avgCostData = avgChartKeys.map(k => avgMonthlyData[k].count > 0 ? avgMonthlyData[k].cost / avgMonthlyData[k].count : 0);
+      avgProfitData = avgChartKeys.map(k => avgMonthlyData[k].count > 0 ? avgMonthlyData[k].profit / avgMonthlyData[k].count : 0);
+    } else if (avgMetricType === "duration") {
+      avgDurationData = avgChartKeys.map(k => avgMonthlyData[k].durationCount > 0 ? avgMonthlyData[k].totalSellDays / avgMonthlyData[k].durationCount : 0);
+    } else { // "margin"
+      avgMarginData = avgChartKeys.map(k => avgMonthlyData[k].revenue > 0 ? (avgMonthlyData[k].profit / avgMonthlyData[k].revenue) * 100 : 0);
+    }
+
+    const avgChartLabels = avgChartKeys.length > 0 ? avgChartKeys.map(m => formatMonthKey(m)) : [formatMonthKey(new Date().toISOString().substring(0, 7))];
+
+    let avgDatasets = [];
+    if (avgMetricType === "financial") {
+      avgDatasets = [
+        {
+          label: `Avg Sell Price`,
+          data: avgRevenueData,
+          borderColor: 'hsl(145, 80%, 45%)',
+          backgroundColor: 'hsla(145, 80%, 45%, 0.05)',
+          borderWidth: 3,
+          fill: true,
+          tension: 0.35,
+          pointBackgroundColor: 'hsl(145, 80%, 45%)',
+          pointHoverRadius: 6
+        },
+        {
+          label: `Avg Unit Cost`,
+          data: avgCostData,
+          borderColor: 'hsl(35, 90%, 55%)',
+          backgroundColor: 'hsla(35, 90%, 55%, 0.05)',
+          borderWidth: 3,
+          fill: true,
+          tension: 0.35,
+          pointBackgroundColor: 'hsl(35, 90%, 55%)',
+          pointHoverRadius: 6
+        },
+        {
+          label: `Avg Profit`,
+          data: avgProfitData,
+          borderColor: 'hsl(185, 90%, 45%)',
+          backgroundColor: 'hsla(185, 90%, 45%, 0.05)',
+          borderWidth: 3,
+          fill: true,
+          tension: 0.35,
+          pointBackgroundColor: 'hsl(185, 90%, 45%)',
+          pointHoverRadius: 6
+        }
+      ];
+    } else if (avgMetricType === "duration") {
+      avgDatasets = [
+        {
+          label: `Avg Shelf Duration (Days)`,
+          data: avgDurationData,
+          borderColor: 'hsl(260, 85%, 65%)',
+          backgroundColor: 'hsla(260, 85%, 65%, 0.05)',
+          borderWidth: 3,
+          fill: true,
+          tension: 0.35,
+          pointBackgroundColor: 'hsl(260, 85%, 65%)',
+          pointHoverRadius: 6
+        }
+      ];
+    } else { // "margin"
+      avgDatasets = [
+        {
+          label: `Avg Profit Margin (%)`,
+          data: avgMarginData,
+          borderColor: 'hsl(175, 90%, 48%)',
+          backgroundColor: 'hsla(175, 90%, 48%, 0.05)',
+          borderWidth: 3,
+          fill: true,
+          tension: 0.35,
+          pointBackgroundColor: 'hsl(175, 90%, 48%)',
+          pointHoverRadius: 6
+        }
+      ];
+    }
+
+    financeAveragesChartInstance = new Chart(avgCtx, {
+      type: 'line',
+      data: {
+        labels: avgChartLabels,
+        datasets: avgDatasets
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            labels: {
+              color: textSecondaryColor,
+              font: { family: 'Inter', size: 12 }
+            }
+          },
+          tooltip: {
+            backgroundColor: tooltipBg,
+            titleColor: state.theme !== "light" ? "#fff" : "#000",
+            bodyColor: state.theme !== "light" ? "#fff" : "#000",
+            borderColor: borderColor,
+            borderWidth: 1,
+            callbacks: {
+              label: function(context) {
+                let label = context.dataset.label || '';
+                if (label) {
+                  label += ': ';
+                }
+                if (context.parsed.y !== null) {
+                  if (avgMetricType === "financial") {
+                    label += formatCurrency(context.parsed.y);
+                  } else if (avgMetricType === "duration") {
+                    label += context.parsed.y.toFixed(1) + ' days';
+                  } else {
+                    label += context.parsed.y.toFixed(1) + '%';
+                  }
+                }
+                return label;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: borderColor },
+            ticks: { color: textSecondaryColor }
+          },
+          y: {
+            grid: { color: borderColor },
+            ticks: { color: textSecondaryColor }
+          }
+        }
+      }
+    });
+  }
 }
 
 // Initialize Payouts & Fees Ledger Controls

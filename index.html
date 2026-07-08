@@ -1899,23 +1899,46 @@
               <!-- Rendered dynamically -->
             </div>
 
-            <!-- Monthly trend chart -->
-            <div class="chart-card" style="margin-bottom: 24px;">
-              <div class="chart-card-header">
-                <h4 id="finance-chart-title">Monthly Financial Trend</h4>
-                <div style="display: flex; gap: 8px; align-items: center;">
-                  <select id="finance-chart-breakdown-type" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
-                    <option value="month">By Month</option>
-                    <option value="year">By Year</option>
-                    <option value="all">All Time</option>
-                  </select>
-                  <select id="finance-chart-year-filter" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
-                    <option value="all">All Years</option>
-                  </select>
+            <!-- Financial charts section -->
+            <div class="responsive-grid-equal" style="margin-bottom: 24px; margin-top: 0;">
+              <!-- Chart 1: Monthly trend totals -->
+              <div class="chart-card" style="margin-bottom: 0;">
+                <div class="chart-card-header">
+                  <h4 id="finance-chart-title">Monthly Financial Trend</h4>
+                  <div style="display: flex; gap: 8px; align-items: center;">
+                    <select id="finance-chart-breakdown-type" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
+                      <option value="month">By Month</option>
+                      <option value="year">By Year</option>
+                      <option value="all">All Time</option>
+                    </select>
+                    <select id="finance-chart-year-filter" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
+                      <option value="all">All Years</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="chart-body">
+                  <canvas id="financeMonthlyChart"></canvas>
                 </div>
               </div>
-              <div class="chart-body">
-                <canvas id="financeMonthlyChart"></canvas>
+
+              <!-- Chart 2: Monthly performance averages -->
+              <div class="chart-card" style="margin-bottom: 0;">
+                <div class="chart-card-header">
+                  <h4 id="finance-avg-chart-title">Unit Performance Averages</h4>
+                  <div style="display: flex; gap: 8px; align-items: center;">
+                    <select id="finance-avg-chart-metric-type" class="form-control form-control-sm" style="width: auto; min-width: 140px; height: 32px; padding: 2px 8px; margin: 0;">
+                      <option value="financial">Avg Prices & Profit</option>
+                      <option value="duration">Avg Days in Stock</option>
+                      <option value="margin">Avg Profit Margin (%)</option>
+                    </select>
+                    <select id="finance-avg-chart-year-filter" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
+                      <option value="all">All Years</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="chart-body">
+                  <canvas id="financeAveragesChart"></canvas>
+                </div>
               </div>
             </div>
 
