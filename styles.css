@@ -1041,22 +1041,26 @@ a {
 }
 
 /* Dashboard Charts Grid Container */
-#dashboard-charts-container {
+#dashboard-charts-container,
+.finance-charts-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 24px;
   margin-bottom: 32px;
 }
 
-#dashboard-charts-container .span-1 {
+#dashboard-charts-container .span-1,
+.finance-charts-grid .span-1 {
   grid-column: span 1;
 }
 
-#dashboard-charts-container .span-2 {
+#dashboard-charts-container .span-2,
+.finance-charts-grid .span-2 {
   grid-column: span 2;
 }
 
-#dashboard-charts-container .span-3 {
+#dashboard-charts-container .span-3,
+.finance-charts-grid .span-3 {
   grid-column: span 3;
 }
 
@@ -2024,14 +2028,18 @@ textarea.form-control {
    RESPONSIVENESS & MEDIA QUERIES
    ========================================================================== */
 @media (max-width: 1024px) {
-  #dashboard-charts-container {
+  #dashboard-charts-container,
+  .finance-charts-grid {
     grid-template-columns: repeat(2, 1fr) !important;
   }
-  #dashboard-charts-container .span-1 {
+  #dashboard-charts-container .span-1,
+  .finance-charts-grid .span-1 {
     grid-column: span 1 !important;
   }
   #dashboard-charts-container .span-2,
-  #dashboard-charts-container .span-3 {
+  #dashboard-charts-container .span-3,
+  .finance-charts-grid .span-2,
+  .finance-charts-grid .span-3 {
     grid-column: span 2 !important;
   }
   .charts-grid, .dashboard-details-grid {
@@ -2044,11 +2052,13 @@ textarea.form-control {
 }
 
 @media (max-width: 768px) {
-  #dashboard-charts-container {
+  #dashboard-charts-container,
+  .finance-charts-grid {
     grid-template-columns: 1fr !important;
     gap: 16px !important;
   }
-  #dashboard-charts-container .chart-card {
+  #dashboard-charts-container .chart-card,
+  .finance-charts-grid .chart-card {
     grid-column: span 1 !important;
     padding: 16px !important;
   }

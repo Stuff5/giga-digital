@@ -676,20 +676,17 @@ let state = {
   payouts: [],
   menuOrder: ["dashboard", "inventory", "sales", "finance", "suppliers", "platforms", "entries", "recycle", "settings"],
   dashboardOrder: [
-    "salesProfit", "platformSplit", "costRevenue", "supplierSplit", "topBestsellers", "dailyProfitMonth",
-    "stockSpeed", "salesFeed", "financeTracker", "markupAnalysis", "stockTurnover", "stockAging"
+    "salesProfit", "platformSplit", "supplierSplit", "topBestsellers", "dailyProfitMonth",
+    "stockSpeed", "salesFeed", "stockTurnover", "stockAging"
   ],
   dashboardSpans: {
     salesProfit: 2,
     platformSplit: 1,
-    costRevenue: 2,
     supplierSplit: 1,
     topBestsellers: 3,
     dailyProfitMonth: 3,
     stockSpeed: 1,
     salesFeed: 2,
-    financeTracker: 1,
-    markupAnalysis: 2,
     stockTurnover: 3,
     stockAging: 3
   },
@@ -706,6 +703,13 @@ let state = {
     markupAnalysis: { visible: true, collapsed: false, chartType: 'bar', groupBy: 'publisher', timeframe: 'global' },
     stockTurnover: { visible: true, collapsed: false, chartType: 'line', timeframe: 'global' },
     stockAging: { visible: true, collapsed: false, chartType: 'bar', supplier: 'all', timeframe: 'global' }
+  },
+  financeSpans: {
+    financeMonthly: 2,
+    financeAverages: 1,
+    financeOutflow: 1,
+    costRevenue: 1,
+    markupAnalysis: 1
   }
 };
 
@@ -1593,7 +1597,10 @@ function loadStateFromStorage() {
     if (storedDashboardOrder) {
       try {
         state.dashboardOrder = JSON.parse(storedDashboardOrder);
-        const expectedKeys = ["salesProfit", "platformSplit", "costRevenue", "supplierSplit", "topBestsellers", "dailyProfitMonth"];
+        const expectedKeys = [
+          "salesProfit", "platformSplit", "supplierSplit", "topBestsellers", "dailyProfitMonth",
+          "stockSpeed", "salesFeed", "stockTurnover", "stockAging"
+        ];
         state.dashboardOrder = state.dashboardOrder.filter(k => expectedKeys.includes(k));
         expectedKeys.forEach(k => {
           if (!state.dashboardOrder.includes(k)) {
@@ -1611,6 +1618,15 @@ function loadStateFromStorage() {
         state.dashboardSpans = { ...state.dashboardSpans, ...JSON.parse(storedDashboardSpans) };
       } catch (e) {
         console.error("Error parsing dashboard spans, using defaults:", e);
+      }
+    }
+
+    const storedFinanceSpans = localStorage.getItem("gv_finance_spans");
+    if (storedFinanceSpans) {
+      try {
+        state.financeSpans = { ...state.financeSpans, ...JSON.parse(storedFinanceSpans) };
+      } catch (e) {
+        console.error("Error parsing finance spans, using defaults:", e);
       }
     }
 
@@ -1775,6 +1791,7 @@ function saveStateToStorage() {
   localStorage.setItem("gv_menu_visibility", JSON.stringify(state.menuVisibility));
   localStorage.setItem("gv_dashboard_order", JSON.stringify(state.dashboardOrder));
   localStorage.setItem("gv_dashboard_spans", JSON.stringify(state.dashboardSpans));
+  localStorage.setItem("gv_finance_spans", JSON.stringify(state.financeSpans));
   localStorage.setItem("gv_widget_settings", JSON.stringify(state.widgetSettings));
   if (state.customLogo) {
     localStorage.setItem("gv_custom_logo", state.customLogo);
@@ -3967,6 +3984,90 @@ function initEventHandlers() {
     });
   }
 
+  const fsCostRevenueChartType = document.getElementById("finance-costRevenue-chartType");
+  if (fsCostRevenueChartType) {
+    fsCostRevenueChartType.addEventListener("change", (e) => {
+      if (state.widgetSettings.costRevenue) {
+        state.widgetSettings.costRevenue.chartType = e.target.value;
+        saveStateToStorage();
+        if (window.supabaseClient) {
+          dbSaveSettings("widgetSettings", state.widgetSettings);
+        }
+        renderCostRevenueChart(state.sales);
+      }
+    });
+  }
+
+  const fsCostRevenueTimeframe = document.getElementById("finance-costRevenue-timeframe");
+  if (fsCostRevenueTimeframe) {
+    fsCostRevenueTimeframe.addEventListener("change", (e) => {
+      if (state.widgetSettings.costRevenue) {
+        state.widgetSettings.costRevenue.timeframe = e.target.value;
+        saveStateToStorage();
+        if (window.supabaseClient) {
+          dbSaveSettings("widgetSettings", state.widgetSettings);
+        }
+        renderCostRevenueChart(state.sales);
+      }
+    });
+  }
+
+  const fsMarkupAnalysisChartType = document.getElementById("finance-markupAnalysis-chartType");
+  if (fsMarkupAnalysisChartType) {
+    fsMarkupAnalysisChartType.addEventListener("change", (e) => {
+      if (state.widgetSettings.markupAnalysis) {
+        state.widgetSettings.markupAnalysis.chartType = e.target.value;
+        saveStateToStorage();
+        if (window.supabaseClient) {
+          dbSaveSettings("widgetSettings", state.widgetSettings);
+        }
+        renderMarkupAnalysisChart(state.inventory);
+      }
+    });
+  }
+
+  const fsMarkupAnalysisGroupBy = document.getElementById("finance-markupAnalysis-groupBy");
+  if (fsMarkupAnalysisGroupBy) {
+    fsMarkupAnalysisGroupBy.addEventListener("change", (e) => {
+      if (state.widgetSettings.markupAnalysis) {
+        state.widgetSettings.markupAnalysis.groupBy = e.target.value;
+        saveStateToStorage();
+        if (window.supabaseClient) {
+          dbSaveSettings("widgetSettings", state.widgetSettings);
+        }
+        renderMarkupAnalysisChart(state.inventory);
+      }
+    });
+  }
+
+  const fsMarkupAnalysisTimeframe = document.getElementById("finance-markupAnalysis-timeframe");
+  if (fsMarkupAnalysisTimeframe) {
+    fsMarkupAnalysisTimeframe.addEventListener("change", (e) => {
+      if (state.widgetSettings.markupAnalysis) {
+        state.widgetSettings.markupAnalysis.timeframe = e.target.value;
+        saveStateToStorage();
+        if (window.supabaseClient) {
+          dbSaveSettings("widgetSettings", state.widgetSettings);
+        }
+        renderMarkupAnalysisChart(state.inventory);
+      }
+    });
+  }
+
+  const fsFinanceTrackerTimeframe = document.getElementById("finance-financeTracker-timeframe");
+  if (fsFinanceTrackerTimeframe) {
+    fsFinanceTrackerTimeframe.addEventListener("change", (e) => {
+      if (state.widgetSettings.financeTracker) {
+        state.widgetSettings.financeTracker.timeframe = e.target.value;
+        saveStateToStorage();
+        if (window.supabaseClient) {
+          dbSaveSettings("widgetSettings", state.widgetSettings);
+        }
+        renderFinanceTrackerWidget(state.sales);
+      }
+    });
+  }
+
   const financeSortBtn = document.getElementById("finance-breakdown-sort-order");
   if (financeSortBtn) {
     financeSortBtn.addEventListener("click", () => {
@@ -6114,14 +6215,11 @@ function updateUI() {
 
     renderSalesTrendChart(dbFilteredSales);
     renderPlatformSplitChart(dbFilteredSales);
-    renderCostRevenueChart(dbFilteredSales);
     renderSupplierSplitChart(dbFilteredInventory);
     renderTopBestsellersChart(dbFilteredSales);
     renderDailyProfitMonthChart(dbFilteredSales);
     renderStockSpeedChart(dbFilteredInventory, dbFilteredSales);
     renderSalesFeedWidget(dbFilteredSales);
-    renderFinanceTrackerWidget(dbFilteredSales);
-    renderMarkupAnalysisChart(dbFilteredInventory);
     renderStockTurnoverChart(dbFilteredInventory, dbFilteredSales);
     renderStockAgingChart(dbFilteredInventory);
 
@@ -11843,10 +11941,37 @@ function applyDashboardSpans() {
   });
 }
 
+function applyFinanceSpans() {
+  const container = document.getElementById("finance-charts-container");
+  if (!container) return;
+  
+  Object.keys(state.financeSpans).forEach(key => {
+    const card = container.querySelector(`[data-figure="${key}"]`);
+    if (card) {
+      card.classList.remove("span-1", "span-2", "span-3");
+      const spanVal = state.financeSpans[key] || 1;
+      card.classList.add(`span-${spanVal}`);
+      
+      const menu = card.querySelector(".card-actions-menu");
+      if (menu) {
+        const items = menu.querySelectorAll(".card-actions-item");
+        items.forEach(item => {
+          const dataSpan = parseInt(item.getAttribute("data-span"));
+          if (dataSpan === spanVal) {
+            item.classList.add("selected");
+          } else {
+            item.classList.remove("selected");
+          }
+        });
+      }
+    }
+  });
+}
+
 function bindDashboardCardActions() {
   const container = document.getElementById("dashboard-charts-container");
+  const finContainer = document.getElementById("finance-charts-container");
   const overlay = document.getElementById("widget-fullscreen-overlay");
-  if (!container) return;
   
   // Close menus when clicking outside
   document.addEventListener("click", (e) => {
@@ -11883,24 +12008,38 @@ function bindDashboardCardActions() {
       const spanVal = parseInt(item.getAttribute("data-span"));
       
       if (figureKey && !isNaN(spanVal)) {
-        state.dashboardSpans[figureKey] = spanVal;
-        saveStateToStorage();
-        applyDashboardSpans();
+        const isFinance = card.closest(".finance-charts-grid") !== null;
+        if (isFinance) {
+          state.financeSpans[figureKey] = spanVal;
+          saveStateToStorage();
+          applyFinanceSpans();
+          if (window.supabaseClient) {
+            dbSaveSettings("financeSpans", state.financeSpans);
+          }
+        } else {
+          state.dashboardSpans[figureKey] = spanVal;
+          saveStateToStorage();
+          applyDashboardSpans();
+          if (window.supabaseClient) {
+            dbSaveSettings("dashboardSpans", state.dashboardSpans);
+          }
+        }
         
         const menu = item.closest(".card-actions-menu");
         if (menu) menu.classList.remove("active");
         
         showToast("Adjusted card width.", "success");
         window.dispatchEvent(new Event("resize"));
-        
-        if (window.supabaseClient) {
-          dbSaveSettings("dashboardSpans", state.dashboardSpans);
-        }
       }
     }
   };
 
-  container.addEventListener("click", handleCardActionClick);
+  if (container) {
+    container.addEventListener("click", handleCardActionClick);
+  }
+  if (finContainer) {
+    finContainer.addEventListener("click", handleCardActionClick);
+  }
   if (overlay) {
     overlay.addEventListener("click", handleCardActionClick);
   }
@@ -12057,23 +12196,21 @@ function renderWidgetGallery() {
   const widgetMeta = {
     salesProfit: { title: "Sales vs Profit Trend", desc: "Line/Bar chart showing net sales vs profit over time." },
     platformSplit: { title: "Platform Sales Split", desc: "Doughnut/Pie chart illustrating sales distribution by platform." },
-    costRevenue: { title: "Cost vs Revenue Comparison", desc: "Comparison of key purchase cost vs sales revenue." },
     supplierSplit: { title: "Supplier Stock Distribution", desc: "Stock count distribution mapped by supplier source." },
     topBestsellers: { title: "Top Bestselling Games", desc: "Leaderboard listing top grossing games by metrics." },
     dailyProfitMonth: { title: "Daily Profit of the Month", desc: "Daily net profit tracking bar chart for active month." },
     stockSpeed: { title: "Stock Speed & Aging Analytics", desc: "Doughnut/Pie/Bar chart tracking shelf-life of sold keys." },
     salesFeed: { title: "Recent Sales Activity Feed", desc: "Visual feed of the latest game key sales transactions." },
-    financeTracker: { title: "Monthly Finance & Payouts", desc: "Ledger comparison table of revenue, margins, and payouts." },
-    markupAnalysis: { title: "Markup & Pricing Analysis", desc: "Cost vs price vs markup comparison grouped by publisher/supplier." },
-    stockTurnover: { title: "Stock Turnover Timeline", desc: "Dual timeline chart of key purchases vs keys sold over time." }
+    stockTurnover: { title: "Stock Turnover Timeline", desc: "Dual timeline chart of key purchases vs keys sold over time." },
+    stockAging: { title: "Stock Aging Distribution", desc: "Segments available stock keys by age brackets." }
   };
   
   let html = "";
   let inactiveCount = 0;
   
-  Object.keys(state.widgetSettings).forEach(key => {
+  Object.keys(widgetMeta).forEach(key => {
     const cfg = state.widgetSettings[key];
-    if (!cfg.visible) {
+    if (cfg && !cfg.visible) {
       inactiveCount++;
       const meta = widgetMeta[key];
       html += `
@@ -13688,6 +13825,41 @@ function renderFinanceView() {
       }
     });
   }
+
+  // Initialize values of select elements for transferred widgets
+  const fsCostRevenueChartType = document.getElementById("finance-costRevenue-chartType");
+  const fsCostRevenueTimeframe = document.getElementById("finance-costRevenue-timeframe");
+  const fsMarkupAnalysisChartType = document.getElementById("finance-markupAnalysis-chartType");
+  const fsMarkupAnalysisGroupBy = document.getElementById("finance-markupAnalysis-groupBy");
+  const fsMarkupAnalysisTimeframe = document.getElementById("finance-markupAnalysis-timeframe");
+  const fsFinanceTrackerTimeframe = document.getElementById("finance-financeTracker-timeframe");
+
+  if (fsCostRevenueChartType && state.widgetSettings.costRevenue) {
+    fsCostRevenueChartType.value = state.widgetSettings.costRevenue.chartType || "bar";
+  }
+  if (fsCostRevenueTimeframe && state.widgetSettings.costRevenue) {
+    fsCostRevenueTimeframe.value = state.widgetSettings.costRevenue.timeframe || "global";
+  }
+  if (fsMarkupAnalysisChartType && state.widgetSettings.markupAnalysis) {
+    fsMarkupAnalysisChartType.value = state.widgetSettings.markupAnalysis.chartType || "bar";
+  }
+  if (fsMarkupAnalysisGroupBy && state.widgetSettings.markupAnalysis) {
+    fsMarkupAnalysisGroupBy.value = state.widgetSettings.markupAnalysis.groupBy || "publisher";
+  }
+  if (fsMarkupAnalysisTimeframe && state.widgetSettings.markupAnalysis) {
+    fsMarkupAnalysisTimeframe.value = state.widgetSettings.markupAnalysis.timeframe || "global";
+  }
+  if (fsFinanceTrackerTimeframe && state.widgetSettings.financeTracker) {
+    fsFinanceTrackerTimeframe.value = state.widgetSettings.financeTracker.timeframe || "global";
+  }
+
+  // Render the transferred widgets inside the Finances view
+  renderCostRevenueChart(state.sales);
+  renderMarkupAnalysisChart(state.inventory);
+  renderFinanceTrackerWidget(state.sales);
+
+  // Apply column spans for all Finance tab chart cards
+  applyFinanceSpans();
 }
 
 // Initialize Payouts & Fees Ledger Controls
@@ -14929,7 +15101,10 @@ async function dbLoadState() {
         } else if (s.key === "dashboardOrder") {
           try {
             state.dashboardOrder = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
-            const expectedKeys = ["salesProfit", "platformSplit", "costRevenue", "supplierSplit", "topBestsellers", "dailyProfitMonth"];
+            const expectedKeys = [
+              "salesProfit", "platformSplit", "supplierSplit", "topBestsellers", "dailyProfitMonth",
+              "stockSpeed", "salesFeed", "stockTurnover", "stockAging"
+            ];
             state.dashboardOrder = state.dashboardOrder.filter(k => expectedKeys.includes(k));
             expectedKeys.forEach(k => {
               if (!state.dashboardOrder.includes(k)) {
@@ -14946,6 +15121,13 @@ async function dbLoadState() {
             applyDashboardSpans();
           } catch(e) {
             console.error("Error parsing dashboardSpans from database sync:", e);
+          }
+        } else if (s.key === "financeSpans") {
+          try {
+            state.financeSpans = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+            applyFinanceSpans();
+          } catch(e) {
+            console.error("Error parsing financeSpans from database sync:", e);
           }
         } else if (s.key === "widgetSettings") {
           try {
@@ -15099,6 +15281,7 @@ async function dbSeedDatabase() {
       { key: "platformDisplayMode", value: state.platformDisplayMode },
       { key: "dashboardOrder", value: state.dashboardOrder },
       { key: "dashboardSpans", value: state.dashboardSpans },
+      { key: "financeSpans", value: state.financeSpans },
       { key: "widgetSettings", value: state.widgetSettings }
     ];
     

@@ -560,74 +560,6 @@
               </div>
             </div>
 
-            <div class="chart-card" id="card-chart-costRevenue" data-figure="costRevenue">
-              <div class="card-inner">
-                <div class="card-front">
-                  <div class="chart-card-header">
-                    <h4>Monthly Cost vs Revenue Comparison</h4>
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
-                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
-                      <div class="card-actions-dropdown">
-                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
-                        <div class="card-actions-menu">
-                          <button type="button" class="card-actions-item btn-widget-configure">
-                            <i class="fa-solid fa-sliders"></i> Configure
-                          </button>
-                          <button type="button" class="card-actions-item btn-widget-remove">
-                            <i class="fa-solid fa-trash-can"></i> Remove Widget
-                          </button>
-                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
-                          <button type="button" class="card-actions-item" data-span="1">
-                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
-                          </button>
-                          <button type="button" class="card-actions-item" data-span="2">
-                            <i class="fa-solid fa-table-columns"></i> 2 Columns
-                          </button>
-                          <button type="button" class="card-actions-item" data-span="3">
-                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="chart-body">
-                    <canvas id="costRevenueChart"></canvas>
-                  </div>
-                </div>
-                <div class="card-back">
-                  <form class="widget-config-form" data-widget="costRevenue">
-                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
-                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
-                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
-                    </div>
-                    <div class="config-form-body">
-                      <div class="config-field-group">
-                        <label for="config-costRevenue-chartType">Chart Type</label>
-                        <select id="config-costRevenue-chartType" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
-                          <option value="bar">Bar Chart</option>
-                          <option value="line">Line Chart</option>
-                        </select>
-                      </div>
-                      <div class="config-field-group">
-                        <label for="config-costRevenue-timeframe">Time Period</label>
-                        <select id="config-costRevenue-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
-                          <option value="global">Global Dashboard Filter</option>
-                          <option value="30">Last 30 Days</option>
-                          <option value="90">Last 90 Days</option>
-                          <option value="year">This Year</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div class="config-form-actions">
-                      <button type="submit" class="btn-widget-save">Save Changes</button>
-                      <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </div>
-
             <div class="chart-card" id="card-chart-supplierSplit" data-figure="supplierSplit">
               <div class="card-inner">
                 <div class="card-front">
@@ -963,144 +895,6 @@
                       <div class="config-field-group">
                         <label for="config-salesFeed-timeframe">Time Period</label>
                         <select id="config-salesFeed-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
-                          <option value="global">Global Dashboard Filter</option>
-                          <option value="30">Last 30 Days</option>
-                          <option value="90">Last 90 Days</option>
-                          <option value="year">This Year</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div class="config-form-actions">
-                      <button type="submit" class="btn-widget-save">Save Changes</button>
-                      <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </div>
-
-            <!-- Widget 9: Monthly Finance & Payouts Tracker -->
-            <div class="chart-card" id="card-chart-financeTracker" data-figure="financeTracker">
-              <div class="card-inner">
-                <div class="card-front">
-                  <div class="chart-card-header">
-                    <h4>Monthly Finance & Payouts</h4>
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
-                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
-                      <div class="card-actions-dropdown">
-                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
-                        <div class="card-actions-menu">
-                          <button type="button" class="card-actions-item btn-widget-configure">
-                            <i class="fa-solid fa-sliders"></i> Configure
-                          </button>
-                          <button type="button" class="card-actions-item btn-widget-remove">
-                            <i class="fa-solid fa-trash-can"></i> Remove Widget
-                          </button>
-                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
-                          <button type="button" class="card-actions-item" data-span="1">
-                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
-                          </button>
-                          <button type="button" class="card-actions-item" data-span="2">
-                            <i class="fa-solid fa-table-columns"></i> 2 Columns
-                          </button>
-                          <button type="button" class="card-actions-item" data-span="3">
-                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="chart-body" style="min-height: auto; max-height: none; overflow-y: auto; padding: 4px 8px;">
-                    <div id="finance-tracker-card" class="finance-tracker-card"></div>
-                  </div>
-                </div>
-                <div class="card-back">
-                  <form class="widget-config-form" data-widget="financeTracker">
-                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
-                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
-                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
-                    </div>
-                    <div class="config-form-body">
-                      <div class="config-field-group">
-                        <label for="config-financeTracker-timeframe">Time Period</label>
-                        <select id="config-financeTracker-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
-                          <option value="global">Global Dashboard Filter</option>
-                          <option value="30">Last 30 Days</option>
-                          <option value="90">Last 90 Days</option>
-                          <option value="year">This Year</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div class="config-form-actions">
-                      <button type="submit" class="btn-widget-save">Save Changes</button>
-                      <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </div>
-
-            <!-- Widget 10: Markup & Pricing Analysis Chart -->
-            <div class="chart-card" id="card-chart-markupAnalysis" data-figure="markupAnalysis">
-              <div class="card-inner">
-                <div class="card-front">
-                  <div class="chart-card-header">
-                    <h4>Markup & Pricing Analysis</h4>
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
-                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
-                      <div class="card-actions-dropdown">
-                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
-                        <div class="card-actions-menu">
-                          <button type="button" class="card-actions-item btn-widget-configure">
-                            <i class="fa-solid fa-sliders"></i> Configure
-                          </button>
-                          <button type="button" class="card-actions-item btn-widget-remove">
-                            <i class="fa-solid fa-trash-can"></i> Remove Widget
-                          </button>
-                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
-                          <button type="button" class="card-actions-item" data-span="1">
-                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
-                          </button>
-                          <button type="button" class="card-actions-item" data-span="2">
-                            <i class="fa-solid fa-table-columns"></i> 2 Columns
-                          </button>
-                          <button type="button" class="card-actions-item" data-span="3">
-                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="chart-body">
-                    <canvas id="markupAnalysisChart"></canvas>
-                  </div>
-                </div>
-                <div class="card-back">
-                  <form class="widget-config-form" data-widget="markupAnalysis">
-                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
-                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
-                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
-                    </div>
-                    <div class="config-form-body">
-                      <div class="config-field-group">
-                        <label for="config-markupAnalysis-chartType">Chart Type</label>
-                        <select id="config-markupAnalysis-chartType" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
-                          <option value="bar">Bar Chart</option>
-                          <option value="line">Line Chart</option>
-                        </select>
-                      </div>
-                      <div class="config-field-group">
-                        <label for="config-markupAnalysis-groupBy">Group Analysis By</label>
-                        <select id="config-markupAnalysis-groupBy" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
-                          <option value="publisher">By Game Publisher</option>
-                          <option value="supplier">By Stock Supplier</option>
-                        </select>
-                      </div>
-                      <div class="config-field-group">
-                        <label for="config-markupAnalysis-timeframe">Time Period</label>
-                        <select id="config-markupAnalysis-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
                           <option value="global">Global Dashboard Filter</option>
                           <option value="30">Last 30 Days</option>
                           <option value="90">Last 90 Days</option>
@@ -1967,60 +1761,226 @@
             </div>
 
             <!-- Financial charts section -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-bottom: 24px;">
+            <div id="finance-charts-container" class="finance-charts-grid" style="margin-bottom: 24px;">
               <!-- Chart 1: Monthly trend totals -->
-              <div class="chart-card" style="margin-bottom: 0;">
-                <div class="chart-card-header">
-                  <h4 id="finance-chart-title">Monthly Financial Trend</h4>
-                  <div style="display: flex; gap: 8px; align-items: center;">
-                    <select id="finance-chart-breakdown-type" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
-                      <option value="month">By Month</option>
-                      <option value="year">By Year</option>
-                      <option value="all">All Time</option>
-                    </select>
-                    <select id="finance-chart-year-filter" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
-                      <option value="all">All Years</option>
-                    </select>
+              <div class="chart-card" data-figure="financeMonthly" style="margin-bottom: 0;">
+                <div class="card-inner">
+                  <div class="card-front">
+                    <div class="chart-card-header">
+                      <h4 id="finance-chart-title">Monthly Financial Trend</h4>
+                      <div style="display: flex; gap: 8px; align-items: center;">
+                        <select id="finance-chart-breakdown-type" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
+                          <option value="month">By Month</option>
+                          <option value="year">By Year</option>
+                          <option value="all">All Time</option>
+                        </select>
+                        <select id="finance-chart-year-filter" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
+                          <option value="all">All Years</option>
+                        </select>
+                        <div class="card-actions-dropdown">
+                          <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Chart options"></i>
+                          <div class="card-actions-menu">
+                            <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                            <button type="button" class="card-actions-item" data-span="1">
+                              <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                            </button>
+                            <button type="button" class="card-actions-item" data-span="2">
+                              <i class="fa-solid fa-table-columns"></i> 2 Columns
+                            </button>
+                            <button type="button" class="card-actions-item" data-span="3">
+                              <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="chart-body">
+                      <canvas id="financeMonthlyChart"></canvas>
+                    </div>
                   </div>
-                </div>
-                <div class="chart-body">
-                  <canvas id="financeMonthlyChart"></canvas>
                 </div>
               </div>
 
               <!-- Chart 2: Monthly performance averages -->
-              <div class="chart-card" style="margin-bottom: 0;">
-                <div class="chart-card-header">
-                  <h4 id="finance-avg-chart-title">Unit Performance Averages</h4>
-                  <div style="display: flex; gap: 8px; align-items: center;">
-                    <select id="finance-avg-chart-metric-type" class="form-control form-control-sm" style="width: auto; min-width: 140px; height: 32px; padding: 2px 8px; margin: 0;">
-                      <option value="financial">Avg Prices & Profit</option>
-                      <option value="duration">Avg Days in Stock</option>
-                      <option value="margin">Avg Profit Margin (%)</option>
-                    </select>
-                    <select id="finance-avg-chart-year-filter" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
-                      <option value="all">All Years</option>
-                    </select>
+              <div class="chart-card" data-figure="financeAverages" style="margin-bottom: 0;">
+                <div class="card-inner">
+                  <div class="card-front">
+                    <div class="chart-card-header">
+                      <h4 id="finance-avg-chart-title">Unit Performance Averages</h4>
+                      <div style="display: flex; gap: 8px; align-items: center;">
+                        <select id="finance-avg-chart-metric-type" class="form-control form-control-sm" style="width: auto; min-width: 140px; height: 32px; padding: 2px 8px; margin: 0;">
+                          <option value="financial">Avg Prices & Profit</option>
+                          <option value="duration">Avg Days in Stock</option>
+                          <option value="margin">Avg Profit Margin (%)</option>
+                        </select>
+                        <select id="finance-avg-chart-year-filter" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
+                          <option value="all">All Years</option>
+                        </select>
+                        <div class="card-actions-dropdown">
+                          <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Chart options"></i>
+                          <div class="card-actions-menu">
+                            <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                            <button type="button" class="card-actions-item" data-span="1">
+                              <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                            </button>
+                            <button type="button" class="card-actions-item" data-span="2">
+                              <i class="fa-solid fa-table-columns"></i> 2 Columns
+                            </button>
+                            <button type="button" class="card-actions-item" data-span="3">
+                              <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="chart-body">
+                      <canvas id="financeAveragesChart"></canvas>
+                    </div>
                   </div>
-                </div>
-                <div class="chart-body">
-                  <canvas id="financeAveragesChart"></canvas>
                 </div>
               </div>
 
               <!-- Chart 3: Outflow & Expense Allocation -->
-              <div class="chart-card" style="margin-bottom: 0;">
-                <div class="chart-card-header">
-                  <h4 id="finance-outflow-chart-title">Outflow & Expense Allocation</h4>
-                  <div style="display: flex; gap: 8px; align-items: center;">
-                    <select id="finance-outflow-chart-year-filter" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
-                      <option value="all">All Years</option>
-                    </select>
+              <div class="chart-card" data-figure="financeOutflow" style="margin-bottom: 0;">
+                <div class="card-inner">
+                  <div class="card-front">
+                    <div class="chart-card-header">
+                      <h4 id="finance-outflow-chart-title">Outflow & Expense Allocation</h4>
+                      <div style="display: flex; gap: 8px; align-items: center;">
+                        <select id="finance-outflow-chart-year-filter" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
+                          <option value="all">All Years</option>
+                        </select>
+                        <div class="card-actions-dropdown">
+                          <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Chart options"></i>
+                          <div class="card-actions-menu">
+                            <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                            <button type="button" class="card-actions-item" data-span="1">
+                              <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                            </button>
+                            <button type="button" class="card-actions-item" data-span="2">
+                              <i class="fa-solid fa-table-columns"></i> 2 Columns
+                            </button>
+                            <button type="button" class="card-actions-item" data-span="3">
+                              <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="chart-body">
+                      <canvas id="financeOutflowChart"></canvas>
+                    </div>
                   </div>
                 </div>
-                <div class="chart-body">
-                  <canvas id="financeOutflowChart"></canvas>
+              </div>
+
+              <!-- Chart 4: Cost & Revenue Comparison -->
+              <div class="chart-card" data-figure="costRevenue" style="margin-bottom: 0;">
+                <div class="card-inner">
+                  <div class="card-front">
+                    <div class="chart-card-header">
+                      <h4 id="finance-costRevenue-chart-title">Cost & Revenue Comparison</h4>
+                      <div style="display: flex; gap: 8px; align-items: center;">
+                        <select id="finance-costRevenue-chartType" class="form-control form-control-sm" style="width: auto; min-width: 110px; height: 32px; padding: 2px 8px; margin: 0;">
+                          <option value="bar">Bar Chart</option>
+                          <option value="line">Line Chart</option>
+                        </select>
+                        <select id="finance-costRevenue-timeframe" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
+                          <option value="global">Global Filter</option>
+                          <option value="month">This Month</option>
+                          <option value="30">Last 30 Days</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="year">This Year</option>
+                        </select>
+                        <div class="card-actions-dropdown">
+                          <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Chart options"></i>
+                          <div class="card-actions-menu">
+                            <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                            <button type="button" class="card-actions-item" data-span="1">
+                              <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                            </button>
+                            <button type="button" class="card-actions-item" data-span="2">
+                              <i class="fa-solid fa-table-columns"></i> 2 Columns
+                            </button>
+                            <button type="button" class="card-actions-item" data-span="3">
+                              <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="chart-body">
+                      <canvas id="costRevenueChart"></canvas>
+                    </div>
+                  </div>
                 </div>
+              </div>
+
+              <!-- Chart 5: Markup & Pricing Analysis -->
+              <div class="chart-card" data-figure="markupAnalysis" style="margin-bottom: 0;">
+                <div class="card-inner">
+                  <div class="card-front">
+                    <div class="chart-card-header">
+                      <h4 id="finance-markupAnalysis-chart-title">Markup & Pricing Analysis</h4>
+                      <div style="display: flex; gap: 8px; align-items: center;">
+                        <select id="finance-markupAnalysis-chartType" class="form-control form-control-sm" style="width: auto; min-width: 110px; height: 32px; padding: 2px 8px; margin: 0;">
+                          <option value="bar">Bar Chart</option>
+                          <option value="line">Line Chart</option>
+                        </select>
+                        <select id="finance-markupAnalysis-groupBy" class="form-control form-control-sm" style="width: auto; min-width: 130px; height: 32px; padding: 2px 8px; margin: 0;">
+                          <option value="publisher">By Publisher</option>
+                          <option value="supplier">By Supplier</option>
+                        </select>
+                        <select id="finance-markupAnalysis-timeframe" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
+                          <option value="global">Global Filter</option>
+                          <option value="month">This Month</option>
+                          <option value="30">Last 30 Days</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="year">This Year</option>
+                        </select>
+                        <div class="card-actions-dropdown">
+                          <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Chart options"></i>
+                          <div class="card-actions-menu">
+                            <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                            <button type="button" class="card-actions-item" data-span="1">
+                              <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                            </button>
+                            <button type="button" class="card-actions-item" data-span="2">
+                              <i class="fa-solid fa-table-columns"></i> 2 Columns
+                            </button>
+                            <button type="button" class="card-actions-item" data-span="3">
+                              <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="chart-body">
+                      <canvas id="markupAnalysisChart"></canvas>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Monthly Finance & Payouts Tracker -->
+            <div class="detail-card" style="margin-bottom: 24px; padding: 16px 20px;">
+              <div class="detail-card-header flex-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px; align-items: center; justify-content: space-between;">
+                <h4 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                  <i class="fa-solid fa-calculator" style="color: var(--accent-cyan);"></i> Monthly Finance & Payouts Comparison
+                </h4>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <select id="finance-financeTracker-timeframe" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
+                    <option value="global">Global Filter</option>
+                    <option value="month">This Month</option>
+                    <option value="30">Last 30 Days</option>
+                    <option value="90">Last 90 Days</option>
+                    <option value="year">This Year</option>
+                  </select>
+                </div>
+              </div>
+              <div style="min-height: auto; max-height: none; overflow-y: auto;">
+                <div id="finance-tracker-card" class="finance-tracker-card"></div>
               </div>
             </div>
 
