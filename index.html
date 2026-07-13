@@ -1622,6 +1622,11 @@
               <p class="view-subtitle">Add, enable, disable, edit or delete gaming platforms for your key inventory.</p>
             </div>
 
+            <!-- Platforms view metrics summary -->
+            <div class="metrics-grid" id="platforms-metrics-grid" style="margin-bottom: 24px;">
+              <!-- Rendered dynamically -->
+            </div>
+
             <div class="responsive-grid-2">
               <!-- Add Platform Card -->
               <div class="calc-card">
@@ -1640,6 +1645,12 @@
                         <i class="fa-solid fa-upload"></i> Upload Logo
                         <input type="file" id="platform-logo-file-input" accept="image/*" style="display: none;">
                       </label>
+                    </div>
+                  </div>
+                  <div class="form-group" style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
+                    <label>Logo Preview</label>
+                    <div id="add-platform-logo-preview" class="logo-preview-box" style="display: flex; align-items: center; justify-content: center; width: 72px; height: 72px; border-radius: var(--radius-md); border: 2px dashed var(--border-color); background-color: var(--bg-input); font-size: 1.5rem; color: var(--text-muted); overflow: hidden;">
+                      <i class="fa-solid fa-gamepad"></i>
                     </div>
                   </div>
                   <button type="submit" class="btn btn-primary btn-block">
@@ -3332,6 +3343,12 @@
               </label>
             </div>
           </div>
+          <div class="form-group" style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
+            <label>Logo Preview</label>
+            <div id="edit-platform-logo-preview" class="logo-preview-box" style="display: flex; align-items: center; justify-content: center; width: 72px; height: 72px; border-radius: var(--radius-md); border: 2px dashed var(--border-color); background-color: var(--bg-input); font-size: 1.5rem; color: var(--text-muted); overflow: hidden;">
+              <i class="fa-solid fa-gamepad"></i>
+            </div>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline" data-close-modal="edit-platform-modal">Cancel</button>
@@ -3539,9 +3556,9 @@
         <button class="modal-close-btn" data-close-modal="help-modal">&times;</button>
       </div>
       <div class="modal-body" style="padding: 20px; overflow-y: hidden;">
-        <div style="display: grid; grid-template-columns: 220px 1fr; gap: 24px; min-height: 420px;">
+        <div class="help-modal-grid">
           <!-- Sidebar tabs -->
-          <div style="display: flex; flex-direction: column; gap: 6px; border-right: 1px solid var(--border-color); padding-right: 16px;">
+          <div class="help-modal-sidebar">
             <div style="position: relative; margin-bottom: 8px;">
               <input type="text" id="help-search-input" placeholder="Search docs..." style="width: 100%; padding: 8px 12px 8px 30px; font-size: 0.8rem; background-color: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-main);">
               <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 10px; top: 11px; font-size: 0.75rem; color: var(--text-muted);"></i>
@@ -3634,6 +3651,11 @@
                 <li><strong>3D Config Card Flip:</strong> Click **Configure** in options to rotate the card in 3D. Setup custom timeframe overrides (e.g. Last 30 Days, This Year) or change chart styles on the fly.</li>
                 <li><strong>Widget Gallery Drawer:</strong> Click **Remove Widget** in options to hide a card. Open the sidebar **+ Add Widget** gallery drawer to place inactive widgets back in real-time.</li>
               </ul>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Finances View Grid Spanning</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 0;">
+                All accounting widgets (including Monthly Trend, Performance Averages, Outflow Allocation, Cost & Revenue, and Markup Analysis) are consolidated inside the **Finances** tab. Just like the dashboard, you can click the ellipsis menu <i class="fa-solid fa-ellipsis-vertical"></i> on any Finance card header to choose between 1, 2, or 3 columns to lay out your accounting view.
+              </p>
             </div>
 
             <!-- Pane 2: Import -->
@@ -3928,11 +3950,25 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- v1.6.0 -->
+                <div style="border-left: 3px solid var(--accent-purple); padding-left: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.6.0 — Modular Finances Grid & Platform Analytics</strong>
+                    <span style="font-size: 0.75rem; color: var(--accent-purple); font-weight: bold;">Current Version</span>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
+                    <li><strong>Finance Grid Column Spanning:</strong> Resize any of the 5 consolidated Finance view chart cards to span 1, 2, or 3 columns in the grid. Layout states are cached and synced.</li>
+                    <li><strong>Platforms Metrics Summary:</strong> Added a real-time summary card row at the top of the Platforms tab tracking configured channel counts, keys in stock, top platform by volume, and top platform by sales profit.</li>
+                    <li><strong>Interactive Form Logo Previews:</strong> Live dashed preview boxes inside the Add and Edit Platform forms render thumbnails instantly upon URL paste or file upload.</li>
+                    <li><strong>Mobile Sizing & Overflow Adjustments:</strong> Enhanced layout responsiveness for the Help center modal and card header select boxes on small mobile viewports.</li>
+                  </ul>
+                </div>
+
                 <!-- v1.5.0 -->
-                <div style="border-left: 3px solid var(--accent-cyan); padding-left: 12px;">
+                <div style="border-left: 3px solid var(--border-color); padding-left: 12px;">
                   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
                     <strong style="color: var(--text-main); font-size: 0.95rem;">v1.5.0 — Business Analytics & Outflow Allocation</strong>
-                    <span style="font-size: 0.75rem; color: var(--accent-cyan); font-weight: bold;">Current Version</span>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Previous Version</span>
                   </div>
                   <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0;">
                     <li><strong>Inventory Stock Aging Widget:</strong> Segments available unsold keys into four distinct age categories with dynamic toggles and supplier overrides.</li>

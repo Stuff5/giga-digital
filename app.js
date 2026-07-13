@@ -1102,6 +1102,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     bindDashboardCardActions();
     applyWidgetVisibility();
     bindWidgetControls();
+    bindPlatformPreview();
     applyMenuIcons();
     applyMenuTitles();
     renderSidebarCustomizationSettings();
@@ -7033,7 +7034,191 @@ window.triggerEditPublisher = function(name) {
   }
 };
 
+function renderPlatformMetrics() {
+  const metricsGrid = document.getElementById("platforms-metrics-grid");
+  if (!metricsGrid) return;
+  
+  const totalPlatforms = state.platforms.length;
+  
+  // Calculate keys by platform
+  const platformStats = new Map();
+  let totalKeysInStock = 0;
+  
+  state.inventory.forEach(item => {
+    const plat = item.platform || "";
+    if (!platformStats.has(plat)) {
+      platformStats.set(plat, { total: 0, inStock: 0 });
+    }
+    const stats = platformStats.get(plat);
+    stats.total++;
+    if (item.status !== "Sold") {
+      stats.inStock++;
+      totalKeysInStock++;
+    }
+  });
+  
+  // Find top platform by volume (registered keys)
+  let topPlatformName = "None";
+  let topPlatformVolume = 0;
+  platformStats.forEach((stats, name) => {
+    if (stats.total > topPlatformVolume && name) {
+      topPlatformVolume = stats.total;
+      topPlatformName = name;
+    }
+  });
+  
+  // Find top platform by sales profit
+  const platformSales = new Map();
+  state.sales.forEach(sale => {
+    const plat = sale.platform || "";
+    if (plat) {
+      platformSales.set(plat, (platformSales.get(plat) || 0) + (sale.profit || 0));
+    }
+  });
+  
+  let topSalesPlatName = "None";
+  let topSalesPlatProfit = 0;
+  platformSales.forEach((profit, name) => {
+    if (profit > topSalesPlatProfit) {
+      topSalesPlatProfit = profit;
+      topSalesPlatName = name;
+    }
+  });
+  
+  metricsGrid.innerHTML = `
+    <!-- Metric 1: Total Platforms -->
+    <div class="metric-card">
+      <div class="metric-content">
+        <span class="metric-label">Total Platforms</span>
+        <strong class="metric-value">${totalPlatforms}</strong>
+        <span class="metric-trend text-neutral" style="font-size: 0.72rem; margin-top: 4px; display: inline-block;">
+          <i class="fa-solid fa-gamepad"></i> Configured channels
+        </span>
+      </div>
+      <div class="metric-icon" style="background-color: hsla(270, 85%, 55%, 0.15); color: var(--accent-purple);">
+        <i class="fa-solid fa-gamepad"></i>
+      </div>
+    </div>
+    
+    <!-- Metric 2: Active Keys in Stock -->
+    <div class="metric-card">
+      <div class="metric-content">
+        <span class="metric-label">Total In Stock Keys</span>
+        <strong class="metric-value">${totalKeysInStock}</strong>
+        <span class="metric-trend text-neutral" style="font-size: 0.72rem; margin-top: 4px; display: inline-block;">
+          <i class="fa-solid fa-key"></i> Available for sale
+        </span>
+      </div>
+      <div class="metric-icon" style="background-color: hsla(175, 90%, 48%, 0.15); color: var(--accent-teal);">
+        <i class="fa-solid fa-key"></i>
+      </div>
+    </div>
+    
+    <!-- Metric 3: Top Volume Platform -->
+    <div class="metric-card">
+      <div class="metric-content">
+        <span class="metric-label">Top Platform (Keys)</span>
+        <strong class="metric-value" style="font-size: 1.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px;" title="${escapeHTML(topPlatformName)}">${escapeHTML(topPlatformName)}</strong>
+        <span class="metric-trend text-neutral" style="font-size: 0.72rem; margin-top: 4px; display: inline-block;">
+          <i class="fa-solid fa-boxes-stacked"></i> ${topPlatformVolume} registered
+        </span>
+      </div>
+      <div class="metric-icon" style="background-color: hsla(195, 90%, 50%, 0.15); color: var(--accent-cyan);">
+        <i class="fa-solid fa-boxes-stacked"></i>
+      </div>
+    </div>
+    
+    <!-- Metric 4: Top Profit Platform -->
+    <div class="metric-card">
+      <div class="metric-content">
+        <span class="metric-label">Top Profit Platform</span>
+        <strong class="metric-value" style="font-size: 1.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px;" title="${escapeHTML(topSalesPlatName)}">${escapeHTML(topSalesPlatName)}</strong>
+        <span class="metric-trend text-neutral" style="font-size: 0.72rem; margin-top: 4px; display: inline-block;">
+          <i class="fa-solid fa-wallet"></i> ${formatCurrency(topSalesPlatProfit)} profit
+        </span>
+      </div>
+      <div class="metric-icon" style="background-color: hsla(40, 95%, 55%, 0.15); color: var(--accent-warning);">
+        <i class="fa-solid fa-wallet"></i>
+      </div>
+    </div>
+  `;
+}
+
+function bindPlatformPreview() {
+  const addUrlInput = document.getElementById("platform-logo-url-input");
+  const addFileInput = document.getElementById("platform-logo-file-input");
+  const addPreview = document.getElementById("add-platform-logo-preview");
+  
+  const updateAddPreview = (src) => {
+    if (src) {
+      addPreview.innerHTML = `<img src="${src}" style="width: 100%; height: 100%; object-fit: cover;">`;
+      addPreview.style.borderStyle = "solid";
+    } else {
+      addPreview.innerHTML = `<i class="fa-solid fa-gamepad"></i>`;
+      addPreview.style.borderStyle = "dashed";
+    }
+  };
+  
+  if (addUrlInput) {
+    addUrlInput.addEventListener("input", (e) => {
+      updateAddPreview(e.target.value.trim());
+    });
+  }
+  
+  if (addFileInput) {
+    addFileInput.addEventListener("change", async (e) => {
+      if (e.target.files && e.target.files[0]) {
+        try {
+          const base64 = await getBase64(e.target.files[0]);
+          updateAddPreview(base64);
+        } catch (err) {
+          console.error(err);
+        }
+      } else {
+        updateAddPreview(addUrlInput ? addUrlInput.value.trim() : "");
+      }
+    });
+  }
+  
+  // Edit Preview
+  const editUrlInput = document.getElementById("edit-platform-logo-url");
+  const editFileInput = document.getElementById("edit-platform-logo-file");
+  const editPreview = document.getElementById("edit-platform-logo-preview");
+  
+  const updateEditPreview = (src) => {
+    if (src) {
+      editPreview.innerHTML = `<img src="${src}" style="width: 100%; height: 100%; object-fit: cover;">`;
+      editPreview.style.borderStyle = "solid";
+    } else {
+      editPreview.innerHTML = `<i class="fa-solid fa-gamepad"></i>`;
+      editPreview.style.borderStyle = "dashed";
+    }
+  };
+  
+  if (editUrlInput) {
+    editUrlInput.addEventListener("input", (e) => {
+      updateEditPreview(e.target.value.trim());
+    });
+  }
+  
+  if (editFileInput) {
+    editFileInput.addEventListener("change", async (e) => {
+      if (e.target.files && e.target.files[0]) {
+        try {
+          const base64 = await getBase64(e.target.files[0]);
+          updateEditPreview(base64);
+        } catch (err) {
+          console.error(err);
+        }
+      } else {
+        updateEditPreview(editUrlInput ? editUrlInput.value.trim() : "");
+      }
+    });
+  }
+}
+
 function renderPlatforms() {
+  renderPlatformMetrics();
   const tbody = DOM["platforms-table-body"] || document.getElementById("platforms-table-body");
   if (!tbody) return;
   tbody.innerHTML = "";
@@ -7206,6 +7391,12 @@ async function handleAddPlatformSubmit(e) {
   if (addLogoLabel) {
     addLogoLabel.innerHTML = `<i class="fa-solid fa-upload"></i> Upload Logo`;
   }
+
+  const addPreview = document.getElementById("add-platform-logo-preview");
+  if (addPreview) {
+    addPreview.innerHTML = `<i class="fa-solid fa-gamepad"></i>`;
+    addPreview.style.borderStyle = "dashed";
+  }
   
   showToast(`Successfully registered platform: ${name}`, "success");
 }
@@ -7227,6 +7418,17 @@ window.triggerEditPlatform = function(oldName) {
   const editLogoLabel = document.querySelector("#edit-platform-modal .file-upload-label");
   if (editLogoLabel) {
     editLogoLabel.innerHTML = `<i class="fa-solid fa-upload"></i> Upload Logo`;
+  }
+
+  const editPreview = document.getElementById("edit-platform-logo-preview");
+  if (editPreview) {
+    if (logoUrl) {
+      editPreview.innerHTML = `<img src="${logoUrl}" style="width: 100%; height: 100%; object-fit: cover;">`;
+      editPreview.style.borderStyle = "solid";
+    } else {
+      editPreview.innerHTML = `<i class="fa-solid fa-gamepad"></i>`;
+      editPreview.style.borderStyle = "dashed";
+    }
   }
 
   openModal("edit-platform-modal");
@@ -7312,6 +7514,12 @@ async function handleEditPlatformSubmit(e) {
   
   updateUI();
   closeModal("edit-platform-modal");
+
+  const editPreview = document.getElementById("edit-platform-logo-preview");
+  if (editPreview) {
+    editPreview.innerHTML = `<i class="fa-solid fa-gamepad"></i>`;
+    editPreview.style.borderStyle = "dashed";
+  }
   
   if (newName !== oldName) {
     showToast(`Renamed "${oldName}" to "${newName}" (updated ${inventoryUpdateCount} inventory, ${salesUpdateCount} sales)`, "success");
