@@ -1833,6 +1833,22 @@ textarea.form-control {
   transform: translateY(0);
 }
 
+/* Help Modal Sizing */
+.help-modal-grid {
+  display: flex;
+  gap: 24px;
+  min-height: 420px;
+}
+.help-modal-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-right: 1px solid var(--border-color);
+  padding-right: 16px;
+}
+
 .modal-header {
   padding: 20px 24px;
   border-bottom: 1px solid var(--border-color);
@@ -2148,6 +2164,19 @@ textarea.form-control {
   .metric-value {
     font-size: 1.6rem;
   }
+  
+  .help-modal-grid {
+    flex-direction: column !important;
+    min-height: auto !important;
+    gap: 20px !important;
+  }
+  .help-modal-sidebar {
+    width: 100% !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    padding-right: 0 !important;
+    padding-bottom: 16px !important;
+  }
 }
 
 @media (max-width: 576px) {
@@ -2179,8 +2208,8 @@ textarea.form-control {
   .metric-value {
     font-size: 1.5rem !important;
   }
-  .chart-card, .detail-card {
-    padding: 16px;
+  .chart-card, .detail-card, .calc-card {
+    padding: 16px !important;
   }
   .chart-body {
     min-height: 200px;
@@ -4250,15 +4279,18 @@ textarea.form-control {
 
 /* Mobile responsive formatting for all dashboard cards */
 @media (max-width: 768px) {
-  #dashboard-charts-container .chart-card .chart-card-header {
+  #dashboard-charts-container .chart-card .chart-card-header,
+  .finance-charts-grid .chart-card .chart-card-header {
     flex-direction: column !important;
     align-items: flex-start !important;
     gap: 12px !important;
   }
-  #dashboard-charts-container .chart-card .chart-card-header h4 {
+  #dashboard-charts-container .chart-card .chart-card-header h4,
+  .finance-charts-grid .chart-card .chart-card-header h4 {
     font-size: 0.92rem !important;
   }
-  #dashboard-charts-container .chart-card .chart-card-header > div {
+  #dashboard-charts-container .chart-card .chart-card-header > div,
+  .finance-charts-grid .chart-card .chart-card-header > div {
     width: 100% !important;
     justify-content: flex-start !important;
     flex-wrap: wrap !important;

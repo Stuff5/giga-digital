@@ -3556,9 +3556,9 @@
         <button class="modal-close-btn" data-close-modal="help-modal">&times;</button>
       </div>
       <div class="modal-body" style="padding: 20px; overflow-y: hidden;">
-        <div class="help-modal-grid" style="display: grid; grid-template-columns: 220px 1fr; gap: 24px; min-height: 420px;">
+        <div class="help-modal-grid" style="display: flex; gap: 24px; min-height: 420px;">
           <!-- Sidebar tabs -->
-          <div class="help-modal-sidebar" style="display: flex; flex-direction: column; gap: 6px; border-right: 1px solid var(--border-color); padding-right: 16px;">
+          <div class="help-modal-sidebar" style="width: 220px; flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; border-right: 1px solid var(--border-color); padding-right: 16px;">
             <div style="position: relative; margin-bottom: 8px;">
               <input type="text" id="help-search-input" placeholder="Search docs..." style="width: 100%; padding: 8px 12px 8px 30px; font-size: 0.8rem; background-color: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-main);">
               <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 10px; top: 11px; font-size: 0.75rem; color: var(--text-muted);"></i>
@@ -3598,7 +3598,7 @@
             </button>
           </div>
           <!-- Pane contents -->
-          <div style="max-height: 420px; overflow-y: auto; padding-right: 8px; text-align: left;">
+          <div style="flex: 1; min-width: 0; max-height: 420px; overflow-y: auto; padding-right: 8px; text-align: left;">
             
             <!-- Pane 1: General -->
             <div id="help-tab-general" class="help-tab-pane">
