@@ -740,7 +740,6 @@ let financeOutflowChartInstance = null;
 let costRevenueChartInstance = null;
 let stockAgingChartInstance = null;
 let supplierSplitChartInstance = null;
-let topBestsellersChartInstance = null;
 let supplierRoiMatrixChartInstance = null;
 let dailyProfitMonthChartInstance = null;
 let stockSpeedChartInstance = null;
