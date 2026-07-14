@@ -679,6 +679,9 @@ let state = {
     "salesProfit", "platformSplit", "supplierSplit", "topBestsellers", "dailyProfitMonth",
     "stockSpeed", "salesFeed", "stockTurnover", "stockAging"
   ],
+  financeOrder: [
+    "financeMonthly", "financeAverages", "financeOutflow", "costRevenue", "markupAnalysis", "financeBenchmark"
+  ],
   dashboardSpans: {
     salesProfit: 2,
     platformSplit: 1,
@@ -702,14 +705,19 @@ let state = {
     financeTracker: { visible: true, collapsed: false, timeframe: 'global' },
     markupAnalysis: { visible: true, collapsed: false, chartType: 'bar', groupBy: 'publisher', timeframe: 'global' },
     stockTurnover: { visible: true, collapsed: false, chartType: 'line', timeframe: 'global' },
-    stockAging: { visible: true, collapsed: false, chartType: 'bar', supplier: 'all', timeframe: 'global' }
+    stockAging: { visible: true, collapsed: false, chartType: 'bar', supplier: 'all', timeframe: 'global' },
+    financeMonthly: { visible: true, collapsed: false },
+    financeAverages: { visible: true, collapsed: false, chartType: 'bar', metricType: 'financial', timeframe: 'global' },
+    financeOutflow: { visible: true, collapsed: false, timeframe: 'global' },
+    financeBenchmark: { visible: true, collapsed: false, yearA: '', yearB: '' }
   },
   financeSpans: {
     financeMonthly: 2,
     financeAverages: 1,
     financeOutflow: 1,
     costRevenue: 1,
-    markupAnalysis: 1
+    markupAnalysis: 1,
+    financeBenchmark: 2
   }
 };
 
@@ -1099,7 +1107,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     applySupplierMetricOrder();
     initDragAndDrop();
     bindDashboardDragAndDrop();
+    bindFinanceDragAndDrop();
     bindDashboardCardActions();
+    renderFinanceCardsOrder();
     applyWidgetVisibility();
     bindWidgetControls();
     bindPlatformPreview();
@@ -1613,6 +1623,24 @@ function loadStateFromStorage() {
       }
     }
 
+    const storedFinanceOrder = localStorage.getItem("gv_finance_order");
+    if (storedFinanceOrder) {
+      try {
+        state.financeOrder = JSON.parse(storedFinanceOrder);
+        const expectedFinKeys = [
+          "financeMonthly", "financeAverages", "financeOutflow", "costRevenue", "markupAnalysis", "financeBenchmark"
+        ];
+        state.financeOrder = state.financeOrder.filter(k => expectedFinKeys.includes(k));
+        expectedFinKeys.forEach(k => {
+          if (!state.financeOrder.includes(k)) {
+            state.financeOrder.push(k);
+          }
+        });
+      } catch (e) {
+        console.error("Error parsing finance order, using defaults:", e);
+      }
+    }
+
     const storedDashboardSpans = localStorage.getItem("gv_dashboard_spans");
     if (storedDashboardSpans) {
       try {
@@ -1791,6 +1819,7 @@ function saveStateToStorage() {
   localStorage.setItem("gv_menu_titles", JSON.stringify(state.menuTitles));
   localStorage.setItem("gv_menu_visibility", JSON.stringify(state.menuVisibility));
   localStorage.setItem("gv_dashboard_order", JSON.stringify(state.dashboardOrder));
+  localStorage.setItem("gv_finance_order", JSON.stringify(state.financeOrder));
   localStorage.setItem("gv_dashboard_spans", JSON.stringify(state.dashboardSpans));
   localStorage.setItem("gv_finance_spans", JSON.stringify(state.financeSpans));
   localStorage.setItem("gv_widget_settings", JSON.stringify(state.widgetSettings));
@@ -3961,6 +3990,27 @@ function initEventHandlers() {
   if (financeChartYearFilter) {
     financeChartYearFilter.addEventListener("change", () => {
       renderFinanceView();
+    });
+  }
+
+  const financeChartComparePrior = document.getElementById("finance-chart-compare-prior");
+  if (financeChartComparePrior) {
+    financeChartComparePrior.addEventListener("change", () => {
+      renderFinanceView();
+    });
+  }
+
+  const benchmarkYearA = document.getElementById("benchmark-year-a");
+  if (benchmarkYearA) {
+    benchmarkYearA.addEventListener("change", () => {
+      renderFinanceBenchmark();
+    });
+  }
+
+  const benchmarkYearB = document.getElementById("benchmark-year-b");
+  if (benchmarkYearB) {
+    benchmarkYearB.addEventListener("change", () => {
+      renderFinanceBenchmark();
     });
   }
 
@@ -6250,6 +6300,9 @@ function updateUI() {
     renderEntries();
   } 
   else if (activeViewId === "finance-view") {
+    renderFinanceCardsOrder();
+    applyFinanceSpans();
+    applyWidgetVisibility();
     renderFinanceView();
     populateCategoryDropdown();
     renderPayoutsLedger();
@@ -12122,6 +12175,88 @@ function bindDashboardDragAndDrop() {
   });
 }
 
+function renderFinanceCardsOrder() {
+  const container = document.getElementById("finance-charts-container");
+  if (!container || !state.financeOrder) return;
+  state.financeOrder.forEach(key => {
+    const card = document.getElementById(`card-chart-${key}`);
+    if (card) {
+      container.appendChild(card);
+    }
+  });
+}
+
+function bindFinanceDragAndDrop() {
+  const container = document.getElementById("finance-charts-container");
+  if (!container) return;
+  
+  const cards = container.querySelectorAll(".chart-card");
+  
+  cards.forEach(card => {
+    const header = card.querySelector(".chart-card-header");
+    if (!header) return;
+    
+    // Set headers draggable
+    header.setAttribute("draggable", "true");
+    
+    header.addEventListener("dragstart", (e) => {
+      const figureKey = card.getAttribute("data-figure");
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", figureKey);
+      card.classList.add("dragging");
+    });
+    
+    header.addEventListener("dragend", () => {
+      card.classList.remove("dragging");
+      cards.forEach(c => c.classList.remove("drag-over"));
+    });
+    
+    card.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+    });
+    
+    card.addEventListener("dragenter", (e) => {
+      const draggingCard = container.querySelector(".chart-card.dragging");
+      if (draggingCard && draggingCard !== card) {
+        card.classList.add("drag-over");
+      }
+    });
+    
+    card.addEventListener("dragleave", () => {
+      card.classList.remove("drag-over");
+    });
+    
+    card.addEventListener("drop", (e) => {
+      e.preventDefault();
+      card.classList.remove("drag-over");
+      
+      const fromKey = e.dataTransfer.getData("text/plain");
+      const toKey = card.getAttribute("data-figure");
+      
+      if (!fromKey || !toKey || fromKey === toKey) return;
+      
+      const fromIndex = state.financeOrder.indexOf(fromKey);
+      const toIndex = state.financeOrder.indexOf(toKey);
+      
+      if (fromIndex !== -1 && toIndex !== -1) {
+        // Swap visual and state order
+        state.financeOrder[fromIndex] = toKey;
+        state.financeOrder[toIndex] = fromKey;
+        
+        saveStateToStorage();
+        renderFinanceCardsOrder();
+        
+        showToast("Rearranged finances layout.", "success");
+        
+        if (window.supabaseClient) {
+          dbSaveSettings("financeOrder", state.financeOrder);
+        }
+      }
+    });
+  });
+}
+
 function applyDashboardSpans() {
   const container = document.getElementById("dashboard-charts-container");
   if (!container) return;
@@ -12489,7 +12624,8 @@ function bindWidgetControls() {
   }
   
   const container = document.getElementById("dashboard-charts-container");
-  if (!container) return;
+  const finContainer = document.getElementById("finance-charts-container");
+  if (!container && !finContainer) return;
   
   const populateFormConfig = (widgetKey) => {
     const card = document.getElementById(`card-chart-${widgetKey}`);
@@ -12669,8 +12805,14 @@ function bindWidgetControls() {
     }
   };
 
-  container.addEventListener("click", handleWidgetClick);
-  container.addEventListener("submit", handleWidgetSubmit);
+  if (container) {
+    container.addEventListener("click", handleWidgetClick);
+    container.addEventListener("submit", handleWidgetSubmit);
+  }
+  if (finContainer) {
+    finContainer.addEventListener("click", handleWidgetClick);
+    finContainer.addEventListener("submit", handleWidgetSubmit);
+  }
   if (overlay) {
     overlay.addEventListener("click", handleWidgetClick);
     overlay.addEventListener("submit", handleWidgetSubmit);
@@ -12898,6 +13040,21 @@ function renderFinanceView() {
     }
   }
 
+  // Toggle dynamic visibility of Compare Prior Year checkbox
+  const compareLabel = document.getElementById("finance-chart-compare-label");
+  const compareCheckbox = document.getElementById("finance-chart-compare-prior");
+  let shouldComparePrior = false;
+  
+  if (compareLabel && compareCheckbox) {
+    if (chartBreakdownType === "month" && selectedChartYear !== "all") {
+      compareLabel.style.display = "flex";
+      shouldComparePrior = compareCheckbox.checked;
+    } else {
+      compareLabel.style.display = "none";
+      compareCheckbox.checked = false;
+    }
+  }
+
   // Populate the Averages Chart Year Filter dropdown if it exists
   const avgChartYearFilter = document.getElementById("finance-avg-chart-year-filter");
   let selectedAvgChartYear = "all";
@@ -12974,7 +13131,12 @@ function renderFinanceView() {
   // Update chart header text dynamically
   if (chartTitle) {
     if (chartBreakdownType === "month") {
-      chartTitle.textContent = selectedChartYear === "all" ? "Monthly Financial Trend" : `Monthly Financial Trend (${selectedChartYear})`;
+      if (shouldComparePrior && selectedChartYear !== "all") {
+        const prevYear = (parseInt(selectedChartYear, 10) - 1).toString();
+        chartTitle.textContent = `Monthly Financial Trend (${selectedChartYear} vs ${prevYear})`;
+      } else {
+        chartTitle.textContent = selectedChartYear === "all" ? "Monthly Financial Trend" : `Monthly Financial Trend (${selectedChartYear})`;
+      }
     }
     else if (chartBreakdownType === "year") chartTitle.textContent = "Yearly Financial Trend";
     else chartTitle.textContent = "All-Time Cumulative Financial Trend";
@@ -13587,31 +13749,59 @@ function renderFinanceView() {
     }
   }
 
-  // Group and format chart data based on chartBreakdownType: Month, Year, All-Time (Cumulative)
-  let chartKeys = [];
-  let revenueData = [];
-  let costData = [];
-  let profitData = [];
+  let compRevenueData = [];
+  let compProfitData = [];
+  let activeBaseYear = selectedChartYear;
+  let activeCompareYear = "";
+  if (selectedChartYear !== "all") {
+    activeCompareYear = (parseInt(selectedChartYear, 10) - 1).toString();
+  }
 
   if (chartBreakdownType === "month") {
-    const monthlyData = {};
-    state.sales.forEach(sale => {
-      const year = sale.saleDate.substring(0, 4);
-      if (selectedChartYear !== "all" && year !== selectedChartYear) {
-        return;
-      }
-      const m = sale.saleDate.substring(0, 7); // e.g. "2026-06"
-      if (!monthlyData[m]) {
-        monthlyData[m] = { revenue: 0, cost: 0, profit: 0 };
-      }
-      monthlyData[m].revenue += sale.sellPrice;
-      monthlyData[m].cost += sale.cost;
-      monthlyData[m].profit += sale.profit;
-    });
-    chartKeys = Object.keys(monthlyData).sort();
-    revenueData = chartKeys.map(k => monthlyData[k].revenue);
-    costData = chartKeys.map(k => monthlyData[k].cost);
-    profitData = chartKeys.map(k => monthlyData[k].profit);
+    if (shouldComparePrior && selectedChartYear !== "all") {
+      const baseMonthly = Array(12).fill(0).map(() => ({ revenue: 0, profit: 0 }));
+      const compareMonthly = Array(12).fill(0).map(() => ({ revenue: 0, profit: 0 }));
+
+      state.sales.forEach(sale => {
+        if (!sale.saleDate || sale.saleDate.length < 7) return;
+        const year = sale.saleDate.substring(0, 4);
+        const monthIdx = parseInt(sale.saleDate.substring(5, 7), 10) - 1;
+        if (monthIdx < 0 || monthIdx > 11) return;
+
+        if (year === activeBaseYear) {
+          baseMonthly[monthIdx].revenue += sale.sellPrice;
+          baseMonthly[monthIdx].profit += sale.profit;
+        } else if (year === activeCompareYear) {
+          compareMonthly[monthIdx].revenue += sale.sellPrice;
+          compareMonthly[monthIdx].profit += sale.profit;
+        }
+      });
+
+      chartKeys = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      revenueData = baseMonthly.map(m => m.revenue);
+      profitData = baseMonthly.map(m => m.profit);
+      compRevenueData = compareMonthly.map(m => m.revenue);
+      compProfitData = compareMonthly.map(m => m.profit);
+    } else {
+      const monthlyData = {};
+      state.sales.forEach(sale => {
+        const year = sale.saleDate.substring(0, 4);
+        if (selectedChartYear !== "all" && year !== selectedChartYear) {
+          return;
+        }
+        const m = sale.saleDate.substring(0, 7); // e.g. "2026-06"
+        if (!monthlyData[m]) {
+          monthlyData[m] = { revenue: 0, cost: 0, profit: 0 };
+        }
+        monthlyData[m].revenue += sale.sellPrice;
+        monthlyData[m].cost += sale.cost;
+        monthlyData[m].profit += sale.profit;
+      });
+      chartKeys = Object.keys(monthlyData).sort();
+      revenueData = chartKeys.map(k => monthlyData[k].revenue);
+      costData = chartKeys.map(k => monthlyData[k].cost);
+      profitData = chartKeys.map(k => monthlyData[k].profit);
+    }
   } else if (chartBreakdownType === "year") {
     const yearlyData = {};
     state.sales.forEach(sale => {
@@ -13652,7 +13842,7 @@ function renderFinanceView() {
     });
   }
 
-  const chartLabels = chartBreakdownType === "year" 
+  const chartLabels = (chartBreakdownType === "year" || (chartBreakdownType === "month" && shouldComparePrior && selectedChartYear !== "all"))
     ? chartKeys 
     : (chartKeys.length > 0 ? chartKeys.map(m => formatMonthKey(m)) : [formatMonthKey(new Date().toISOString().substring(0, 7))]);
 
@@ -13665,7 +13855,54 @@ function renderFinanceView() {
     type: 'line',
     data: {
       labels: chartLabels,
-      datasets: [
+      datasets: (chartBreakdownType === "month" && shouldComparePrior && selectedChartYear !== "all") ? [
+        {
+          label: `Revenue (${activeBaseYear})`,
+          data: revenueData,
+          borderColor: 'hsl(330, 95%, 60%)', // Solid Pink
+          backgroundColor: 'transparent',
+          borderWidth: 3,
+          fill: false,
+          tension: 0.35,
+          pointBackgroundColor: 'hsl(330, 95%, 60%)',
+          pointHoverRadius: 6
+        },
+        {
+          label: `Revenue (${activeCompareYear})`,
+          data: compRevenueData,
+          borderColor: 'hsla(330, 95%, 60%, 0.45)', // Lighter/transparent Pink
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          borderDash: [5, 5],
+          fill: false,
+          tension: 0.35,
+          pointBackgroundColor: 'hsla(330, 95%, 60%, 0.5)',
+          pointHoverRadius: 6
+        },
+        {
+          label: `Profit (${activeBaseYear})`,
+          data: profitData,
+          borderColor: 'hsl(175, 90%, 48%)', // Solid Teal
+          backgroundColor: 'transparent',
+          borderWidth: 3,
+          fill: false,
+          tension: 0.35,
+          pointBackgroundColor: 'hsl(175, 90%, 48%)',
+          pointHoverRadius: 6
+        },
+        {
+          label: `Profit (${activeCompareYear})`,
+          data: compProfitData,
+          borderColor: 'hsla(175, 90%, 48%, 0.45)', // Lighter/transparent Teal
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          borderDash: [5, 5],
+          fill: false,
+          tension: 0.35,
+          pointBackgroundColor: 'hsla(175, 90%, 48%, 0.5)',
+          pointHoverRadius: 6
+        }
+      ] : [
         {
           label: `Revenue`,
           data: revenueData,
@@ -14068,6 +14305,191 @@ function renderFinanceView() {
 
   // Apply column spans for all Finance tab chart cards
   applyFinanceSpans();
+  renderFinanceBenchmark();
+}
+
+function renderFinanceBenchmark() {
+  const benchmarkList = document.getElementById("finance-benchmark-list");
+  if (!benchmarkList) return;
+
+  const selectA = document.getElementById("benchmark-year-a");
+  const selectB = document.getElementById("benchmark-year-b");
+  if (!selectA || !selectB) return;
+
+  // Get unique sorted years from sales
+  const yearsSet = new Set();
+  state.sales.forEach(sale => {
+    if (sale.saleDate && sale.saleDate.length >= 4) {
+      const y = sale.saleDate.substring(0, 4);
+      if (/^\d{4}$/.test(y)) yearsSet.add(y);
+    }
+  });
+  const yearsList = Array.from(yearsSet).sort((a, b) => b.localeCompare(a));
+
+  if (yearsList.length === 0) {
+    benchmarkList.innerHTML = `<div style="color: var(--text-secondary); text-align: center; padding: 20px;">No sales data available for comparison.</div>`;
+    return;
+  }
+
+  // Populate selectors dynamically
+  const prevValA = selectA.value;
+  const prevValB = selectB.value;
+
+  selectA.innerHTML = "";
+  selectB.innerHTML = "";
+  yearsList.forEach(y => {
+    selectA.innerHTML += `<option value="${y}">${y}</option>`;
+    selectB.innerHTML += `<option value="${y}">${y}</option>`;
+  });
+
+  if (prevValA && yearsList.includes(prevValA)) {
+    selectA.value = prevValA;
+  } else {
+    selectA.value = yearsList[0];
+  }
+
+  if (prevValB && yearsList.includes(prevValB)) {
+    selectB.value = prevValB;
+  } else {
+    selectB.value = yearsList[1] || yearsList[0];
+  }
+
+  const yearA = selectA.value;
+  const yearB = selectB.value;
+
+  // Calculate metrics for both years
+  const metricsA = { revenue: 0, cost: 0, profit: 0, count: 0 };
+  const metricsB = { revenue: 0, cost: 0, profit: 0, count: 0 };
+  const monthsSetA = new Set();
+  const monthsSetB = new Set();
+
+  state.sales.forEach(sale => {
+    if (!sale.saleDate || sale.saleDate.length < 4) return;
+    const y = sale.saleDate.substring(0, 4);
+    if (sale.saleDate.length >= 7) {
+      const ym = sale.saleDate.substring(0, 7);
+      if (y === yearA) monthsSetA.add(ym);
+      if (y === yearB) monthsSetB.add(ym);
+    }
+    if (y === yearA) {
+      metricsA.revenue += sale.sellPrice;
+      metricsA.cost += sale.cost;
+      metricsA.profit += sale.profit;
+      metricsA.count += 1;
+    }
+    if (y === yearB) {
+      metricsB.revenue += sale.sellPrice;
+      metricsB.cost += sale.cost;
+      metricsB.profit += sale.profit;
+      metricsB.count += 1;
+    }
+  });
+
+  const monthsA = monthsSetA.size || 1;
+  const monthsB = monthsSetB.size || 1;
+
+  const avgMonthlyRevA = metricsA.revenue / monthsA;
+  const avgMonthlyRevB = metricsB.revenue / monthsB;
+  const avgMonthlyCostA = metricsA.cost / monthsA;
+  const avgMonthlyCostB = metricsB.cost / monthsB;
+  const avgMonthlyProfitA = metricsA.profit / monthsA;
+  const avgMonthlyProfitB = metricsB.profit / monthsB;
+  const avgMonthlyKeysA = metricsA.count / monthsA;
+  const avgMonthlyKeysB = metricsB.count / monthsB;
+
+  const marginA = metricsA.revenue > 0 ? (metricsA.profit / metricsA.revenue) * 100 : 0;
+  const marginB = metricsB.revenue > 0 ? (metricsB.profit / metricsB.revenue) * 100 : 0;
+
+  const avgPriceA = metricsA.count > 0 ? metricsA.revenue / metricsA.count : 0;
+  const avgPriceB = metricsB.count > 0 ? metricsB.revenue / metricsB.count : 0;
+
+  // Helper to build rows
+  function createRow(title, valA, valB, formatType) {
+    let formattedA = "";
+    let formattedB = "";
+    let delta = 0;
+    let isBetter = null;
+
+    if (formatType === "currency") {
+      formattedA = formatCurrency(valA);
+      formattedB = formatCurrency(valB);
+      delta = valB > 0 ? ((valA - valB) / valB) * 100 : 0;
+    } else if (formatType === "percent") {
+      formattedA = valA.toFixed(1) + "%";
+      formattedB = valB.toFixed(1) + "%";
+      delta = valB > 0 ? valA - valB : 0;
+    } else if (formatType === "float") {
+      formattedA = valA.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+      formattedB = valB.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+      delta = valB > 0 ? ((valA - valB) / valB) * 100 : 0;
+    } else {
+      formattedA = Math.round(valA).toLocaleString();
+      formattedB = Math.round(valB).toLocaleString();
+      delta = valB > 0 ? ((valA - valB) / valB) * 100 : 0;
+    }
+
+    const isCost = title.toLowerCase().includes("cost") || title.toLowerCase().includes("outflow");
+    if (valA !== valB) {
+      if (isCost) {
+        isBetter = valA < valB ? "A" : "B";
+      } else {
+        isBetter = valA > valB ? "A" : "B";
+      }
+    }
+
+    const colorA = isBetter === "A" ? "var(--accent-emerald)" : "var(--text-main)";
+    const colorB = isBetter === "B" ? "var(--accent-emerald)" : "var(--text-main)";
+
+    let deltaText = "";
+    if (valA !== valB && valB > 0) {
+      const sign = delta > 0 ? "+" : "";
+      const percentSign = formatType === "percent" ? " pp" : "%";
+      deltaText = `(${sign}${delta.toFixed(1)}${percentSign} vs ${yearB})`;
+    }
+
+    const sum = valA + valB;
+    let pctA = 50;
+    let pctB = 50;
+    if (sum > 0) {
+      pctA = (valA / sum) * 100;
+      pctB = (valB / sum) * 100;
+    }
+
+    return `
+      <div style="padding-bottom: 12px; border-bottom: 1px dashed var(--border-color);">
+        <div style="display: flex; justify-content: space-between; font-size: 0.825rem; font-weight: 600; margin-bottom: 4px;">
+          <span style="color: var(--text-main); font-weight: 700;">${title}</span>
+          <span style="color: var(--text-muted); font-size: 0.72rem;">${deltaText}</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <div style="width: 100px; text-align: left; font-size: 0.95rem; font-weight: 700; color: ${colorA}; display: flex; align-items: center; gap: 4px;">
+            ${isBetter === "A" ? '<i class="fa-solid fa-trophy" style="color: var(--accent-amber); font-size: 0.8rem;"></i>' : ''}
+            <span>${formattedA}</span>
+          </div>
+          <div style="flex-grow: 1;">
+            <div style="display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: var(--bg-input);">
+              <div style="width: ${pctA}%; background: var(--accent-pink); height: 100%; transition: width 0.3s ease;"></div>
+              <div style="width: ${pctB}%; background: var(--accent-cyan); height: 100%; transition: width 0.3s ease;"></div>
+            </div>
+          </div>
+          <div style="width: 100px; text-align: right; font-size: 0.95rem; font-weight: 700; color: ${colorB}; display: flex; align-items: center; justify-content: flex-end; gap: 4px;">
+            <span>${formattedB}</span>
+            ${isBetter === "B" ? '<i class="fa-solid fa-trophy" style="color: var(--accent-amber); font-size: 0.8rem;"></i>' : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  let html = "";
+  html += createRow("Avg Monthly Revenue", avgMonthlyRevA, avgMonthlyRevB, "currency");
+  html += createRow("Avg Monthly Cost", avgMonthlyCostA, avgMonthlyCostB, "currency");
+  html += createRow("Avg Monthly Net Profit", avgMonthlyProfitA, avgMonthlyProfitB, "currency");
+  html += createRow("Profit Margin", marginA, marginB, "percent");
+  html += createRow("Avg Monthly Keys Sold", avgMonthlyKeysA, avgMonthlyKeysB, "float");
+  html += createRow("Avg Sell Price", avgPriceA, avgPriceB, "currency");
+
+  benchmarkList.innerHTML = html;
 }
 
 // Initialize Payouts & Fees Ledger Controls
@@ -15323,6 +15745,22 @@ async function dbLoadState() {
           } catch(e) {
             console.error("Error parsing dashboardOrder:", e);
           }
+        } else if (s.key === "financeOrder") {
+          try {
+            state.financeOrder = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+            const expectedFinKeys = [
+              "financeMonthly", "financeAverages", "financeOutflow", "costRevenue", "markupAnalysis", "financeBenchmark"
+            ];
+            state.financeOrder = state.financeOrder.filter(k => expectedFinKeys.includes(k));
+            expectedFinKeys.forEach(k => {
+              if (!state.financeOrder.includes(k)) {
+                state.financeOrder.push(k);
+              }
+            });
+            renderFinanceCardsOrder();
+          } catch(e) {
+            console.error("Error parsing financeOrder:", e);
+          }
         } else if (s.key === "dashboardSpans") {
           try {
             state.dashboardSpans = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
@@ -15488,6 +15926,7 @@ async function dbSeedDatabase() {
       { key: "supplierDisplayMode", value: state.supplierDisplayMode },
       { key: "platformDisplayMode", value: state.platformDisplayMode },
       { key: "dashboardOrder", value: state.dashboardOrder },
+      { key: "financeOrder", value: state.financeOrder },
       { key: "dashboardSpans", value: state.dashboardSpans },
       { key: "financeSpans", value: state.financeSpans },
       { key: "widgetSettings", value: state.widgetSettings }
