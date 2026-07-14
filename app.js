@@ -14473,7 +14473,7 @@ function renderFinanceBenchmark() {
     }
 
     return `
-      <div style="padding-bottom: 12px; border-bottom: 1px dashed var(--border-color);">
+      <div class="benchmark-row">
         <div style="display: flex; justify-content: space-between; font-size: 0.825rem; font-weight: 600; margin-bottom: 4px;">
           <span style="color: var(--text-main); font-weight: 700;">${title}</span>
           <span style="color: var(--text-muted); font-size: 0.72rem;">${deltaText}</span>
@@ -14484,9 +14484,10 @@ function renderFinanceBenchmark() {
             <span>${formattedA}</span>
           </div>
           <div style="flex-grow: 1;">
-            <div style="display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: var(--bg-input);">
-              <div style="width: ${pctA}%; background: var(--accent-pink); height: 100%; transition: width 0.3s ease;"></div>
-              <div style="width: ${pctB}%; background: var(--accent-cyan); height: 100%; transition: width 0.3s ease;"></div>
+            <div class="benchmark-progress-track">
+              <div class="benchmark-progress-midline"></div>
+              <div class="benchmark-progress-bar-a" style="width: ${pctA}%;"></div>
+              <div class="benchmark-progress-bar-b" style="width: ${pctB}%;"></div>
             </div>
           </div>
           <div style="width: 100px; text-align: right; font-size: 0.95rem; font-weight: 700; color: ${colorB}; display: flex; align-items: center; justify-content: flex-end; gap: 4px;">
