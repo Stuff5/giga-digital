@@ -1359,6 +1359,7 @@ function loadStateFromStorage() {
     }
     state.currency = localStorage.getItem("gv_currency") || "EUR";
     state.dateFormat = localStorage.getItem("gv_date_format") || "YYYY-MM-DD";
+    state.benchmarkMode = localStorage.getItem("gv_benchmark_mode") || "averages";
     
     // Force-migrate any old "transposed" layout values in local storage to "full"
     const storedLayoutStyle = localStorage.getItem("gv_finance_layout_style");
@@ -1796,6 +1797,7 @@ function saveStateToStorage() {
   localStorage.setItem("gv_theme", state.themeMode === "light" ? "light" : state.themeColor);
   localStorage.setItem("gv_currency", state.currency);
   localStorage.setItem("gv_date_format", state.dateFormat);
+  localStorage.setItem("gv_benchmark_mode", state.benchmarkMode);
   localStorage.setItem("gv_sidebar_collapsed", state.sidebarCollapsed);
   localStorage.setItem("gv_show_sales_ledger", state.showSalesLedger);
   localStorage.setItem("gv_visible_metrics", JSON.stringify(state.visibleMetrics));
@@ -3997,6 +3999,15 @@ function initEventHandlers() {
   if (financeChartComparePrior) {
     financeChartComparePrior.addEventListener("change", () => {
       renderFinanceView();
+    });
+  }
+
+  const benchmarkMode = document.getElementById("benchmark-mode");
+  if (benchmarkMode) {
+    benchmarkMode.addEventListener("change", () => {
+      state.benchmarkMode = benchmarkMode.value;
+      saveStateToStorage();
+      renderFinanceBenchmark();
     });
   }
 
@@ -14316,6 +14327,13 @@ function renderFinanceBenchmark() {
   const selectB = document.getElementById("benchmark-year-b");
   if (!selectA || !selectB) return;
 
+  const selectMode = document.getElementById("benchmark-mode");
+  if (selectMode && !selectMode.dataset.initialized) {
+    selectMode.value = state.benchmarkMode;
+    selectMode.dataset.initialized = "true";
+  }
+  const isAverages = selectMode ? (selectMode.value === "averages") : (state.benchmarkMode === "averages");
+
   // Get unique sorted years from sales
   const yearsSet = new Set();
   state.sales.forEach(sale => {
@@ -14482,12 +14500,21 @@ function renderFinanceBenchmark() {
   }
 
   let html = "";
-  html += createRow("Avg Monthly Revenue", avgMonthlyRevA, avgMonthlyRevB, "currency");
-  html += createRow("Avg Monthly Cost", avgMonthlyCostA, avgMonthlyCostB, "currency");
-  html += createRow("Avg Monthly Net Profit", avgMonthlyProfitA, avgMonthlyProfitB, "currency");
-  html += createRow("Profit Margin", marginA, marginB, "percent");
-  html += createRow("Avg Monthly Keys Sold", avgMonthlyKeysA, avgMonthlyKeysB, "float");
-  html += createRow("Avg Sell Price", avgPriceA, avgPriceB, "currency");
+  if (isAverages) {
+    html += createRow("Avg Monthly Revenue", avgMonthlyRevA, avgMonthlyRevB, "currency");
+    html += createRow("Avg Monthly Cost", avgMonthlyCostA, avgMonthlyCostB, "currency");
+    html += createRow("Avg Monthly Net Profit", avgMonthlyProfitA, avgMonthlyProfitB, "currency");
+    html += createRow("Profit Margin", marginA, marginB, "percent");
+    html += createRow("Avg Monthly Keys Sold", avgMonthlyKeysA, avgMonthlyKeysB, "float");
+    html += createRow("Avg Sell Price", avgPriceA, avgPriceB, "currency");
+  } else {
+    html += createRow("Total Revenue", metricsA.revenue, metricsB.revenue, "currency");
+    html += createRow("Acquisition Costs", metricsA.cost, metricsB.cost, "currency");
+    html += createRow("Net Profit", metricsA.profit, metricsB.profit, "currency");
+    html += createRow("Profit Margin", marginA, marginB, "percent");
+    html += createRow("Keys Sold", metricsA.count, metricsB.count, "int");
+    html += createRow("Avg Sell Price", avgPriceA, avgPriceB, "currency");
+  }
 
   benchmarkList.innerHTML = html;
 }

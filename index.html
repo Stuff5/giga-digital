@@ -1774,7 +1774,7 @@
             <!-- Financial charts section -->
             <div id="finance-charts-container" class="finance-charts-grid" style="margin-bottom: 24px;">
               <!-- Chart 1: Monthly trend totals -->
-              <div class="chart-card" data-figure="financeMonthly" style="margin-bottom: 0;">
+              <div class="chart-card" id="card-chart-financeMonthly" data-figure="financeMonthly" style="margin-bottom: 0;">
                 <div class="card-inner">
                   <div class="card-front">
                     <div class="chart-card-header">
@@ -1788,6 +1788,11 @@
                         <select id="finance-chart-year-filter" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
                           <option value="all">All Years</option>
                         </select>
+                        <label id="finance-chart-compare-label" style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer; user-select: none; margin: 0 4px; display: none;">
+                          <input type="checkbox" id="finance-chart-compare-prior" style="accent-color: var(--accent-purple); width: 14px; height: 14px; margin: 0;"> Compare Prior Year
+                        </label>
+                        <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                        <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
                         <div class="card-actions-dropdown">
                           <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Chart options"></i>
                           <div class="card-actions-menu">
@@ -1813,7 +1818,7 @@
               </div>
 
               <!-- Chart 2: Monthly performance averages -->
-              <div class="chart-card" data-figure="financeAverages" style="margin-bottom: 0;">
+              <div class="chart-card" id="card-chart-financeAverages" data-figure="financeAverages" style="margin-bottom: 0;">
                 <div class="card-inner">
                   <div class="card-front">
                     <div class="chart-card-header">
@@ -1827,6 +1832,8 @@
                         <select id="finance-avg-chart-year-filter" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
                           <option value="all">All Years</option>
                         </select>
+                        <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                        <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
                         <div class="card-actions-dropdown">
                           <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Chart options"></i>
                           <div class="card-actions-menu">
@@ -1852,7 +1859,7 @@
               </div>
 
               <!-- Chart 3: Outflow & Expense Allocation -->
-              <div class="chart-card" data-figure="financeOutflow" style="margin-bottom: 0;">
+              <div class="chart-card" id="card-chart-financeOutflow" data-figure="financeOutflow" style="margin-bottom: 0;">
                 <div class="card-inner">
                   <div class="card-front">
                     <div class="chart-card-header">
@@ -1861,6 +1868,8 @@
                         <select id="finance-outflow-chart-year-filter" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
                           <option value="all">All Years</option>
                         </select>
+                        <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                        <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
                         <div class="card-actions-dropdown">
                           <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Chart options"></i>
                           <div class="card-actions-menu">
@@ -1886,7 +1895,7 @@
               </div>
 
               <!-- Chart 4: Cost & Revenue Comparison -->
-              <div class="chart-card" data-figure="costRevenue" style="margin-bottom: 0;">
+              <div class="chart-card" id="card-chart-costRevenue" data-figure="costRevenue" style="margin-bottom: 0;">
                 <div class="card-inner">
                   <div class="card-front">
                     <div class="chart-card-header">
@@ -1903,6 +1912,8 @@
                           <option value="90">Last 90 Days</option>
                           <option value="year">This Year</option>
                         </select>
+                        <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                        <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
                         <div class="card-actions-dropdown">
                           <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Chart options"></i>
                           <div class="card-actions-menu">
@@ -1928,7 +1939,7 @@
               </div>
 
               <!-- Chart 5: Markup & Pricing Analysis -->
-              <div class="chart-card" data-figure="markupAnalysis" style="margin-bottom: 0;">
+              <div class="chart-card" id="card-chart-markupAnalysis" data-figure="markupAnalysis" style="margin-bottom: 0;">
                 <div class="card-inner">
                   <div class="card-front">
                     <div class="chart-card-header">
@@ -1949,6 +1960,8 @@
                           <option value="90">Last 90 Days</option>
                           <option value="year">This Year</option>
                         </select>
+                        <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                        <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
                         <div class="card-actions-dropdown">
                           <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Chart options"></i>
                           <div class="card-actions-menu">
@@ -1972,6 +1985,57 @@
                   </div>
                 </div>
               </div>
+
+              <!-- Card 6: Yearly Head-to-Head Benchmark -->
+              <div class="chart-card" id="card-chart-financeBenchmark" data-figure="financeBenchmark" style="margin-bottom: 0; min-height: 460px;">
+                <div class="card-inner">
+                  <div class="card-front">
+                    <div class="chart-card-header">
+                      <h4 style="display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-code-compare text-purple"></i> Yearly Benchmark
+                      </h4>
+                      <div style="display: flex; gap: 8px; align-items: center;">
+                        <select id="benchmark-mode" class="form-control form-control-sm" style="width: auto; min-width: 130px; height: 32px; padding: 2px 8px; margin: 0;">
+                          <option value="averages">Monthly Averages</option>
+                          <option value="totals">Yearly Totals</option>
+                        </select>
+                        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent-pink);"></span>
+                        <select id="benchmark-year-a" class="form-control form-control-sm" style="width: auto; min-width: 90px; height: 32px; padding: 2px 8px; margin: 0;">
+                          <!-- Populated dynamically -->
+                        </select>
+                        <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">VS</span>
+                        <select id="benchmark-year-b" class="form-control form-control-sm" style="width: auto; min-width: 90px; height: 32px; padding: 2px 8px; margin: 0;">
+                          <!-- Populated dynamically -->
+                        </select>
+                        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent-cyan);"></span>
+                        <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                        <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                        <div class="card-actions-dropdown">
+                          <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Card options"></i>
+                          <div class="card-actions-menu">
+                            <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                            <button type="button" class="card-actions-item" data-span="1">
+                              <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                            </button>
+                            <button type="button" class="card-actions-item" data-span="2">
+                              <i class="fa-solid fa-table-columns"></i> 2 Columns
+                            </button>
+                            <button type="button" class="card-actions-item" data-span="3">
+                              <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="chart-body" style="padding: 12px 0 0 0; overflow-y: auto; flex: 1;">
+                      <div id="finance-benchmark-list" style="display: flex; flex-direction: column; gap: 16px;">
+                        <!-- Injected dynamically by JavaScript -->
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
             </div>
 
             <!-- Monthly Finance & Payouts Tracker -->
