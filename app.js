@@ -629,6 +629,8 @@ let state = {
     costRevenue: true,
     supplierSplit: true,
     topBestsellers: true,
+    topBestsellersRevenue: true,
+    topBestsellersSales: true,
     dailyProfitMonth: true
   },
   metricOrder: [],
@@ -676,7 +678,7 @@ let state = {
   payouts: [],
   menuOrder: ["dashboard", "inventory", "sales", "finance", "suppliers", "platforms", "entries", "recycle", "settings"],
   dashboardOrder: [
-    "salesProfit", "platformSplit", "supplierSplit", "topBestsellers", "dailyProfitMonth",
+    "salesProfit", "platformSplit", "supplierSplit", "topBestsellers", "topBestsellersRevenue", "topBestsellersSales", "dailyProfitMonth",
     "stockSpeed", "salesFeed", "stockTurnover", "stockAging"
   ],
   financeOrder: [
@@ -687,6 +689,8 @@ let state = {
     platformSplit: 1,
     supplierSplit: 1,
     topBestsellers: 3,
+    topBestsellersRevenue: 3,
+    topBestsellersSales: 3,
     dailyProfitMonth: 3,
     stockSpeed: 1,
     salesFeed: 2,
@@ -699,6 +703,8 @@ let state = {
     costRevenue: { visible: true, collapsed: false, chartType: 'bar', timeframe: 'global' },
     supplierSplit: { visible: true, collapsed: false, chartType: 'doughnut', timeframe: 'global' },
     topBestsellers: { visible: true, collapsed: false, limit: 5, metric: 'profit', timeframe: 'global' },
+    topBestsellersRevenue: { visible: true, collapsed: false, limit: 5, metric: 'revenue', timeframe: 'global' },
+    topBestsellersSales: { visible: true, collapsed: false, limit: 5, metric: 'sales', timeframe: 'global' },
     dailyProfitMonth: { visible: true, collapsed: false, chartType: 'bar', timeframe: 'global' },
     stockSpeed: { visible: true, collapsed: false, chartType: 'doughnut', timeframe: 'global' },
     salesFeed: { visible: true, collapsed: false, limit: 5, timeframe: 'global' },
@@ -1425,6 +1431,8 @@ function loadStateFromStorage() {
           costRevenue: true,
           supplierSplit: true,
           topBestsellers: true,
+          topBestsellersRevenue: true,
+          topBestsellersSales: true,
           dailyProfitMonth: true,
           ...parsed
         };
@@ -1438,6 +1446,8 @@ function loadStateFromStorage() {
         costRevenue: true,
         supplierSplit: true,
         topBestsellers: true,
+        topBestsellersRevenue: true,
+        topBestsellersSales: true,
         dailyProfitMonth: true
       };
     }
@@ -1609,7 +1619,7 @@ function loadStateFromStorage() {
       try {
         state.dashboardOrder = JSON.parse(storedDashboardOrder);
         const expectedKeys = [
-          "salesProfit", "platformSplit", "supplierSplit", "topBestsellers", "dailyProfitMonth",
+          "salesProfit", "platformSplit", "supplierSplit", "topBestsellers", "topBestsellersRevenue", "topBestsellersSales", "dailyProfitMonth",
           "stockSpeed", "salesFeed", "stockTurnover", "stockAging"
         ];
         state.dashboardOrder = state.dashboardOrder.filter(k => expectedKeys.includes(k));
@@ -6277,7 +6287,9 @@ function updateUI() {
     renderSalesTrendChart(dbFilteredSales);
     renderPlatformSplitChart(dbFilteredSales);
     renderSupplierSplitChart(dbFilteredInventory);
-    renderTopBestsellersChart(dbFilteredSales);
+    renderTopBestsellersChart("topBestsellers", "top-bestsellers-list", "bestsellers-chart-title", dbFilteredSales);
+    renderTopBestsellersChart("topBestsellersRevenue", "top-bestsellers-revenue-list", "bestsellers-revenue-chart-title", dbFilteredSales);
+    renderTopBestsellersChart("topBestsellersSales", "top-bestsellers-sales-list", "bestsellers-sales-chart-title", dbFilteredSales);
     renderDailyProfitMonthChart(dbFilteredSales);
     renderStockSpeedChart(dbFilteredInventory, dbFilteredSales);
     renderSalesFeedWidget(dbFilteredSales);
@@ -10055,19 +10067,19 @@ function renderSupplierSplitChart(filteredInventoryList) {
 }
 
 // Render top bestselling games horizontal bar chart
-function renderTopBestsellersChart(filteredSalesList) {
-  const container = document.getElementById("top-bestsellers-list");
+function renderTopBestsellersChart(widgetKey, listId, titleId, filteredSalesList) {
+  const container = document.getElementById(listId);
   if (!container) {
-    console.warn("top-bestsellers-list container not found. Skipping list rendering.");
+    console.warn(`${listId} container not found. Skipping list rendering.`);
     return;
   }
 
   // Get current configurations
-  const cfg = state.widgetSettings ? state.widgetSettings.topBestsellers : null;
-  const metric = cfg ? cfg.metric : (state.bestsellersMetric || "profit");
-  const limit = cfg ? cfg.limit : (state.bestsellersLimit || 5);
+  const cfg = state.widgetSettings ? state.widgetSettings[widgetKey] : null;
+  const metric = widgetKey === "topBestsellersRevenue" ? "revenue" : (widgetKey === "topBestsellersSales" ? "sales" : "profit");
+  const limit = cfg ? cfg.limit : 5;
 
-  const wSales = getWidgetFilteredSales("topBestsellers", filteredSalesList);
+  const wSales = getWidgetFilteredSales(widgetKey, filteredSalesList);
 
   // Build lookup maps for images from inventory
   const imgUrlByTitle = {};
@@ -10102,28 +10114,31 @@ function renderTopBestsellersChart(filteredSalesList) {
     }
   });
 
-  // Sort and pick top N
-  const sortedGames = Object.keys(gameMetrics)
-    .map(title => {
-      const salesCount = gameMetrics[title].sales;
-      const totalProfit = gameMetrics[title].profit;
-      const totalRevenue = gameMetrics[title].revenue;
-      const avgProfit = salesCount > 0 ? (totalProfit / salesCount) : 0;
-      const avgMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
-      return {
-        title: title,
-        value: gameMetrics[title][metric],
-        imageUrl: gameMetrics[title].imageUrl,
-        salesCount: salesCount,
-        avgProfit: avgProfit,
-        avgMargin: avgMargin
-      };
-    })
-    .sort((a, b) => b.value - a.value)
-    .slice(0, limit);
+  // Convert to array
+  const gamesArray = Object.keys(gameMetrics).map(title => {
+    const metrics = gameMetrics[title];
+    let val = metrics.profit;
+    if (metric === 'revenue') val = metrics.revenue;
+    else if (metric === 'sales') val = metrics.sales;
+
+    return {
+      title: title,
+      value: val,
+      salesCount: metrics.sales,
+      avgProfit: metrics.sales > 0 ? (metrics.profit / metrics.sales) : 0,
+      avgMargin: metrics.revenue > 0 ? ((metrics.profit / metrics.revenue) * 100) : 0,
+      imageUrl: metrics.imageUrl
+    };
+  });
+
+  // Sort descending
+  gamesArray.sort((a, b) => b.value - a.value);
+
+  // Apply limit
+  const sortedGames = gamesArray.slice(0, limit);
 
   // Update card header title dynamically
-  const cardTitle = document.getElementById("bestsellers-chart-title");
+  const cardTitle = document.getElementById(titleId);
   if (cardTitle) {
     const metricLabel = metric === 'profit' ? 'Net Profit' : (metric === 'revenue' ? 'Revenue' : 'Sales Volume');
     cardTitle.textContent = `Top ${limit} Bestselling Games by ${metricLabel}`;
@@ -10138,7 +10153,8 @@ function renderTopBestsellersChart(filteredSalesList) {
 
   // Color the progress bars based on the metric
   let barColor = 'var(--accent-purple)';
-  let valueFormatter = (val) => `€${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const currSym = state.currency === 'USD' ? '$' : '€';
+  let valueFormatter = (val) => `${currSym}${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   if (metric === 'revenue') {
     barColor = 'var(--accent-cyan)';
@@ -10146,6 +10162,8 @@ function renderTopBestsellersChart(filteredSalesList) {
     barColor = 'var(--accent-emerald)';
     valueFormatter = (val) => `${val} unit${val === 1 ? '' : 's'}`;
   }
+
+
 
   let html = '';
   sortedGames.forEach((game, index) => {
@@ -10161,8 +10179,8 @@ function renderTopBestsellersChart(filteredSalesList) {
     // Generate initials for placeholder
     const initials = game.title.split(" ").map(w => w[0]).join("").slice(0, 3).toUpperCase();
     const imageHTML = game.imageUrl 
-      ? `<img src="${game.imageUrl}" class="game-thumbnail" alt="${game.title}" style="width: 32px; height: 32px; min-width: 32px; border-radius: var(--radius-sm); object-fit: cover; border: 1px solid var(--border-color); background-color: var(--bg-input);">`
-      : `<div class="game-thumbnail-placeholder" style="width: 32px; height: 32px; min-width: 32px; border-radius: var(--radius-sm); font-size: 0.75rem; background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan)); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff;">${initials}</div>`;
+      ? `<img src="${game.imageUrl}" class="game-thumbnail" alt="${game.title}" style="width: 64px; height: 64px; min-width: 64px; border-radius: var(--radius-sm); object-fit: cover; border: 1px solid var(--border-color); background-color: var(--bg-input);">`
+      : `<div class="game-thumbnail-placeholder" style="width: 64px; height: 64px; min-width: 64px; border-radius: var(--radius-sm); font-size: 1.25rem; background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan)); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff;">${initials}</div>`;
 
     html += `
       <div class="bestseller-item">
@@ -10181,7 +10199,7 @@ function renderTopBestsellersChart(filteredSalesList) {
               </span>
               <span class="bestseller-label bestseller-label-profit">
                 <i class="fa-solid fa-coins" style="font-size: 0.65rem;"></i>
-                Avg. Profit: €${game.avgProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                Avg. Profit: ${currSym}${game.avgProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
               <span class="bestseller-label bestseller-label-margin">
                 <i class="fa-solid fa-chart-line" style="font-size: 0.65rem;"></i>
@@ -12085,6 +12103,8 @@ function applyFiguresVisibility() {
     costRevenue: document.getElementById("card-chart-costRevenue"),
     supplierSplit: document.getElementById("card-chart-supplierSplit"),
     topBestsellers: document.getElementById("card-chart-topBestsellers"),
+    topBestsellersRevenue: document.getElementById("card-chart-topBestsellersRevenue"),
+    topBestsellersSales: document.getElementById("card-chart-topBestsellersSales"),
     dailyProfitMonth: document.getElementById("card-chart-dailyProfitMonth")
   };
   
@@ -12550,7 +12570,9 @@ function renderWidgetGallery() {
     salesProfit: { title: "Sales vs Profit Trend", desc: "Line/Bar chart showing net sales vs profit over time." },
     platformSplit: { title: "Platform Sales Split", desc: "Doughnut/Pie chart illustrating sales distribution by platform." },
     supplierSplit: { title: "Supplier Stock Distribution", desc: "Stock count distribution mapped by supplier source." },
-    topBestsellers: { title: "Top Bestselling Games", desc: "Leaderboard listing top grossing games by metrics." },
+    topBestsellers: { title: "Top Bestselling Games (Profit)", desc: "Leaderboard listing top grossing games by net profit." },
+    topBestsellersRevenue: { title: "Top Bestselling Games (Revenue)", desc: "Leaderboard listing top grossing games by revenue." },
+    topBestsellersSales: { title: "Top Bestselling Games (Sales Volume)", desc: "Leaderboard listing top grossing games by sales volume." },
     dailyProfitMonth: { title: "Daily Profit of the Month", desc: "Daily net profit tracking bar chart for active month." },
     stockSpeed: { title: "Stock Speed & Aging Analytics", desc: "Doughnut/Pie/Bar chart tracking shelf-life of sold keys." },
     salesFeed: { title: "Recent Sales Activity Feed", desc: "Visual feed of the latest game key sales transactions." },
@@ -12648,11 +12670,9 @@ function bindWidgetControls() {
     const selectTime = document.getElementById(`config-${widgetKey}-timeframe`);
     if (selectTime) selectTime.value = cfg.timeframe || "global";
     
-    if (widgetKey === "topBestsellers") {
-      const selectLimit = document.getElementById("config-topBestsellers-limit");
+    if (widgetKey === "topBestsellers" || widgetKey === "topBestsellersRevenue" || widgetKey === "topBestsellersSales") {
+      const selectLimit = document.getElementById(`config-${widgetKey}-limit`);
       if (selectLimit) selectLimit.value = cfg.limit || 5;
-      const selectMetric = document.getElementById("config-topBestsellers-metric");
-      if (selectMetric) selectMetric.value = cfg.metric || "profit";
     } else if (widgetKey === "salesFeed") {
       const selectLimit = document.getElementById("config-salesFeed-limit");
       if (selectLimit) selectLimit.value = cfg.limit || 5;
@@ -12787,11 +12807,9 @@ function bindWidgetControls() {
         const selectTime = document.getElementById(`config-${widgetKey}-timeframe`);
         if (selectTime) cfg.timeframe = selectTime.value;
         
-        if (widgetKey === "topBestsellers") {
-          const selectLimit = document.getElementById("config-topBestsellers-limit");
+        if (widgetKey === "topBestsellers" || widgetKey === "topBestsellersRevenue" || widgetKey === "topBestsellersSales") {
+          const selectLimit = document.getElementById(`config-${widgetKey}-limit`);
           if (selectLimit) cfg.limit = parseInt(selectLimit.value);
-          const selectMetric = document.getElementById("config-topBestsellers-metric");
-          if (selectMetric) cfg.metric = selectMetric.value;
         } else if (widgetKey === "salesFeed") {
           const selectLimit = document.getElementById("config-salesFeed-limit");
           if (selectLimit) cfg.limit = parseInt(selectLimit.value);
@@ -15759,7 +15777,7 @@ async function dbLoadState() {
           try {
             state.dashboardOrder = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
             const expectedKeys = [
-              "salesProfit", "platformSplit", "supplierSplit", "topBestsellers", "dailyProfitMonth",
+              "salesProfit", "platformSplit", "supplierSplit", "topBestsellers", "topBestsellersRevenue", "topBestsellersSales", "dailyProfitMonth",
               "stockSpeed", "salesFeed", "stockTurnover", "stockAging"
             ];
             state.dashboardOrder = state.dashboardOrder.filter(k => expectedKeys.includes(k));

@@ -4037,7 +4037,7 @@ textarea.form-control {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
+  padding: 8px 12px;
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
@@ -4763,6 +4763,200 @@ textarea.form-control {
 }
 
 .benchmark-progress-bar-b {
+.sales-feed-item:hover {
+  border-color: var(--accent-purple);
+  transform: translateY(-1px);
+}
+
+.sales-feed-thumb {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  object-fit: contain;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  padding: 2px;
+}
+
+.sales-feed-thumb-placeholder {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent-purple), var(--accent-teal));
+  color: #fff;
+  border: 1px solid var(--border-color);
+}
+
+.sales-feed-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0; /* Prevents overflow in narrow containers */
+}
+
+.sales-feed-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sales-feed-meta {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sales-feed-platform {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--accent-cyan);
+}
+
+.sales-feed-pricing {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+.sales-feed-price {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.sales-feed-profit {
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.sales-feed-speed {
+  font-size: 0.65rem;
+  color: var(--accent-teal);
+  font-weight: 600;
+}
+
+/* Finance Tracker Card */
+.finance-tracker-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.finance-tracker-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.finance-tracker-table th,
+.finance-tracker-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.finance-tracker-table th {
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.5px;
+}
+
+.finance-tracker-table td {
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+.finance-trend-indicator {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 6px;
+  display: inline-block;
+}
+
+.finance-trend-up {
+  background-color: hsla(142, 70%, 45%, 0.12);
+  color: var(--accent-teal);
+}
+
+.finance-trend-down {
+  background-color: hsla(355, 85%, 55%, 0.12);
+  color: var(--accent-danger);
+}
+
+.finance-margin-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent-teal);
+  background-color: hsla(175, 90%, 48%, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Prevent transition animations during initial load to resolve mobile flickering */
+.no-transition *,
+.no-transition *::before,
+.no-transition *::after {
+  transition: none !important;
+  animation: none !important;
+}
+
+/* Yearly Benchmark Row hover animation */
+.benchmark-row {
+  padding: 10px 12px;
+  margin: 0 -12px;
+  border-radius: var(--radius-md);
+  border-bottom: 1px dashed var(--border-color);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.benchmark-row:hover {
+  background-color: var(--bg-hover);
+  transform: translateX(4px);
+}
+
+.benchmark-row:last-child {
+  border-bottom: none;
+}
+
+/* Benchmark Progress Bar mid-point line and glows */
+.benchmark-progress-track {
+  position: relative;
+  display: flex;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--bg-input);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.benchmark-progress-bar-a {
+  height: 100%;
+  background: linear-gradient(90deg, hsl(330, 95%, 65%), var(--accent-pink));
+  transition: width 0.3s ease;
+}
+
+.benchmark-progress-bar-b {
   height: 100%;
   background: linear-gradient(90deg, var(--accent-cyan), hsl(195, 90%, 60%));
   transition: width 0.3s ease;
@@ -4778,3 +4972,5 @@ textarea.form-control {
   opacity: 0.8;
   z-index: 2;
 }
+
+

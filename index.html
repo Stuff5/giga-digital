@@ -630,11 +630,11 @@
               </div>
             </div>
 
-            <div class="chart-card" id="card-chart-topBestsellers" data-figure="topBestsellers">
+            <div class="chart-card" id="card-chart-topBestsellers" data-figure="topBestsellers" style="min-height: 580px;">
               <div class="card-inner">
                 <div class="card-front">
                   <div class="chart-card-header">
-                    <h4 id="bestsellers-chart-title">Top Bestselling Games</h4>
+                    <h4 id="bestsellers-chart-title">Top Bestselling Games (Net Profit)</h4>
                     <div style="display: flex; align-items: center; gap: 12px;">
                       <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
                       <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
@@ -681,17 +681,150 @@
                         </select>
                       </div>
                       <div class="config-field-group">
-                        <label for="config-topBestsellers-metric">Ranking Metric</label>
-                        <select id="config-topBestsellers-metric" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
-                          <option value="profit">By Net Profit</option>
-                          <option value="revenue">By Revenue</option>
-                          <option value="sales">By Sales Volume</option>
-                        </select>
-                      </div>
-                      <div class="config-field-group">
                         <label for="config-topBestsellers-timeframe">Time Period</label>
                         <select id="config-topBestsellers-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
                           <option value="global">Global Dashboard Filter</option>
+                          <option value="month">This Month</option>
+                          <option value="30">Last 30 Days</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="year">This Year</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="config-form-actions">
+                      <button type="submit" class="btn-widget-save">Save Changes</button>
+                      <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <div class="chart-card" id="card-chart-topBestsellersRevenue" data-figure="topBestsellersRevenue" style="min-height: 580px;">
+              <div class="card-inner">
+                <div class="card-front">
+                  <div class="chart-card-header">
+                    <h4 id="bestsellers-revenue-chart-title">Top Bestselling Games (Revenue)</h4>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                      <div class="card-actions-dropdown">
+                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
+                        <div class="card-actions-menu">
+                          <button type="button" class="card-actions-item btn-widget-configure">
+                            <i class="fa-solid fa-sliders"></i> Configure
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-remove">
+                            <i class="fa-solid fa-trash-can"></i> Remove Widget
+                          </button>
+                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                          <button type="button" class="card-actions-item" data-span="1">
+                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="2">
+                            <i class="fa-solid fa-table-columns"></i> 2 Columns
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="3">
+                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chart-body" style="min-height: auto; max-height: none; overflow-y: auto;">
+                    <div id="top-bestsellers-revenue-list" class="bestsellers-list"></div>
+                  </div>
+                </div>
+                <div class="card-back">
+                  <form class="widget-config-form" data-widget="topBestsellersRevenue">
+                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
+                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
+                    </div>
+                    <div class="config-form-body">
+                      <div class="config-field-group">
+                        <label for="config-topBestsellersRevenue-limit">Show Quantity</label>
+                        <select id="config-topBestsellersRevenue-limit" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="5">Top 5 Games</option>
+                          <option value="10">Top 10 Games</option>
+                          <option value="20">Top 20 Games</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-topBestsellersRevenue-timeframe">Time Period</label>
+                        <select id="config-topBestsellersRevenue-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="global">Global Dashboard Filter</option>
+                          <option value="month">This Month</option>
+                          <option value="30">Last 30 Days</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="year">This Year</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="config-form-actions">
+                      <button type="submit" class="btn-widget-save">Save Changes</button>
+                      <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <div class="chart-card" id="card-chart-topBestsellersSales" data-figure="topBestsellersSales" style="min-height: 580px;">
+              <div class="card-inner">
+                <div class="card-front">
+                  <div class="chart-card-header">
+                    <h4 id="bestsellers-sales-chart-title">Top Bestselling Games (Sales Volume)</h4>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                      <div class="card-actions-dropdown">
+                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
+                        <div class="card-actions-menu">
+                          <button type="button" class="card-actions-item btn-widget-configure">
+                            <i class="fa-solid fa-sliders"></i> Configure
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-remove">
+                            <i class="fa-solid fa-trash-can"></i> Remove Widget
+                          </button>
+                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                          <button type="button" class="card-actions-item" data-span="1">
+                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="2">
+                            <i class="fa-solid fa-table-columns"></i> 2 Columns
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="3">
+                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chart-body" style="min-height: auto; max-height: none; overflow-y: auto;">
+                    <div id="top-bestsellers-sales-list" class="bestsellers-list"></div>
+                  </div>
+                </div>
+                <div class="card-back">
+                  <form class="widget-config-form" data-widget="topBestsellersSales">
+                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
+                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
+                    </div>
+                    <div class="config-form-body">
+                      <div class="config-field-group">
+                        <label for="config-topBestsellersSales-limit">Show Quantity</label>
+                        <select id="config-topBestsellersSales-limit" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="5">Top 5 Games</option>
+                          <option value="10">Top 10 Games</option>
+                          <option value="20">Top 20 Games</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-topBestsellersSales-timeframe">Time Period</label>
+                        <select id="config-topBestsellersSales-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="global">Global Dashboard Filter</option>
+                          <option value="month">This Month</option>
                           <option value="30">Last 30 Days</option>
                           <option value="90">Last 90 Days</option>
                           <option value="year">This Year</option>
