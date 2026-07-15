@@ -12960,6 +12960,58 @@ function initDragAndDrop() {
   });
 }
 
+function getPeriodStockStatus(key, breakdownType) {
+  let endMs = Infinity;
+  if (key !== "All Time") {
+    if (breakdownType === "month") {
+      const year = parseInt(key.substring(0, 4), 10);
+      const month = parseInt(key.substring(5, 7), 10);
+      const end = new Date(year, month, 0, 23, 59, 59, 999);
+      endMs = end.getTime();
+    } else if (breakdownType === "year") {
+      const year = parseInt(key, 10);
+      const end = new Date(year, 12, 0, 23, 59, 59, 999);
+      endMs = end.getTime();
+    }
+  }
+
+  const saleMap = {};
+  if (state.sales && Array.isArray(state.sales)) {
+    state.sales.forEach(sale => {
+      if (sale.inventoryId) {
+        saleMap[sale.inventoryId] = sale;
+      }
+    });
+  }
+
+  let openCount = 0;
+  let openCost = 0;
+
+  if (state.inventory && Array.isArray(state.inventory)) {
+    state.inventory.forEach(item => {
+      if (!item.purchaseDate) return;
+      const pTime = new Date(item.purchaseDate).getTime();
+      if (pTime <= endMs) {
+        const sale = saleMap[item.id];
+        if (sale && sale.saleDate) {
+          const sTime = new Date(sale.saleDate).getTime();
+          if (sTime > endMs) {
+            openCount++;
+            openCost += (parseFloat(item.cost) || 0);
+          }
+        } else {
+          if (item.status !== "sold") {
+            openCount++;
+            openCost += (parseFloat(item.cost) || 0);
+          }
+        }
+      }
+    });
+  }
+
+  return { count: openCount, cost: openCost };
+}
+
 function renderFinanceView() {
   const metricsContainer = document.getElementById("finance-metrics-grid");
   const detailContent = document.getElementById("finance-detail-content");
@@ -13355,12 +13407,26 @@ function renderFinanceView() {
             ${sortedKeys.map(k => `<td style="text-align: right; color: var(--accent-cyan); font-weight: 500;">${groupedData[k].count} keys</td>`).join("")}
           </tr>
           <tr style="border-bottom: 1px solid var(--border-color);">
+            <td style="position: sticky; left: 0; background: var(--bg-input); z-index: 1; font-weight: 600; border-right: 1px solid var(--border-color); color: var(--accent-cyan);">Unsold Stock (Qty)</td>
+            ${sortedKeys.map(k => {
+              const stock = getPeriodStockStatus(k, breakdownType);
+              return `<td style="text-align: right; color: var(--accent-cyan); font-weight: 500;">${stock.count} keys</td>`;
+            }).join("")}
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border-color);">
             <td style="position: sticky; left: 0; background: var(--bg-input); z-index: 1; font-weight: 600; border-right: 1px solid var(--border-color); color: var(--accent-emerald);">Revenue</td>
             ${sortedKeys.map(k => `<td style="text-align: right; color: var(--accent-emerald); font-weight: 600;">${formatCurrency(groupedData[k].revenue)}</td>`).join("")}
           </tr>
           <tr style="border-bottom: 1px solid var(--border-color);">
             <td style="position: sticky; left: 0; background: var(--bg-input); z-index: 1; font-weight: 600; border-right: 1px solid var(--border-color); color: var(--accent-amber);">Expenses (Cost)</td>
             ${sortedKeys.map(k => `<td style="text-align: right; color: var(--accent-amber); font-weight: 500;">${formatCurrency(groupedData[k].cost)}</td>`).join("")}
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border-color);">
+            <td style="position: sticky; left: 0; background: var(--bg-input); z-index: 1; font-weight: 600; border-right: 1px solid var(--border-color); color: var(--accent-amber);">Stock Valuation (Cost)</td>
+            ${sortedKeys.map(k => {
+              const stock = getPeriodStockStatus(k, breakdownType);
+              return `<td style="text-align: right; color: var(--accent-amber); font-weight: 500;">${formatCurrency(stock.cost)}</td>`;
+            }).join("")}
           </tr>
           <tr style="font-weight: 700; background: hsla(270, 85%, 60%, 0.05); border-top: 1.5px solid var(--border-color); border-bottom: 1.5px solid var(--border-color);">
             <td style="position: sticky; left: 0; background: var(--bg-input); z-index: 1; font-weight: 700; color: var(--accent-purple); border-right: 1px solid var(--border-color);">Profit</td>
@@ -13429,6 +13495,7 @@ function renderFinanceView() {
       
       sortedKeys.forEach(k => {
         const stats = groupedData[k];
+        const stock = getPeriodStockStatus(k, breakdownType);
         const roi = stats.cost > 0 ? (stats.profit / stats.cost) * 100 : 0;
         const avgPrice = stats.count > 0 ? stats.revenue / stats.count : 0;
         const avgProfit = stats.count > 0 ? stats.profit / stats.count : 0;
@@ -13468,6 +13535,10 @@ function renderFinanceView() {
             </div>
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-input); padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; border: 1px solid var(--border-color);">
+            <span style="color: var(--text-secondary);">Ending Stock:</span>
+            <strong style="color: var(--accent-cyan);">${stock.count} keys (${formatCurrency(stock.cost)})</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-input); padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; border: 1px solid var(--border-color); margin-top: -6px;">
             <span style="color: var(--text-secondary);">ROI:</span>
             <strong style="color: var(--accent-purple);">${roi.toFixed(1)}%</strong>
           </div>
@@ -13502,6 +13573,7 @@ function renderFinanceView() {
       const tbody = table.querySelector("tbody");
       sortedKeys.forEach(k => {
         const stats = groupedData[k];
+        const stock = getPeriodStockStatus(k, breakdownType);
         const roi = stats.cost > 0 ? (stats.profit / stats.cost) * 100 : 0;
         const avgPrice = stats.count > 0 ? stats.revenue / stats.count : 0;
         const avgProfit = stats.count > 0 ? stats.profit / stats.count : 0;
@@ -13528,6 +13600,11 @@ function renderFinanceView() {
                 <span style="color: var(--text-muted); font-size: 0.75rem; display: block; text-transform: uppercase; letter-spacing: 0.5px;">Totals</span>
                 <span style="font-weight: 600; display: block; margin-top: 4px;">Rev: ${formatCurrency(stats.revenue)}</span>
                 <span style="display: block; color: var(--text-secondary);">Cost: ${formatCurrency(stats.cost)}</span>
+              </div>
+              <div>
+                <span style="color: var(--text-muted); font-size: 0.75rem; display: block; text-transform: uppercase; letter-spacing: 0.5px;">Ending Stock</span>
+                <span style="font-weight: 600; display: block; margin-top: 4px;">Unsold: ${stock.count} keys</span>
+                <span style="display: block; color: var(--text-secondary);">Value: ${formatCurrency(stock.cost)}</span>
               </div>
               <div>
                 <span style="color: var(--text-muted); font-size: 0.75rem; display: block; text-transform: uppercase; letter-spacing: 0.5px;">Averages</span>
@@ -13601,6 +13678,8 @@ function renderFinanceView() {
                 <th>Revenue</th>
                 <th>Expenses</th>
                 <th>Net Profit</th>
+                <th>Ending Stock</th>
+                <th>Stock Cost</th>
                 <th>ROI</th>
               </tr>
             </thead>
@@ -13609,6 +13688,7 @@ function renderFinanceView() {
           const tbody = table.querySelector("tbody");
           sortedKeys.forEach(k => {
             const stats = groupedData[k];
+            const stock = getPeriodStockStatus(k, breakdownType);
             const roi = stats.cost > 0 ? (stats.profit / stats.cost) * 100 : 0;
             const periodLabel = breakdownType === "month" ? formatMonthKey(k) : k;
             
@@ -13619,6 +13699,8 @@ function renderFinanceView() {
               <td>${formatCurrency(stats.revenue)}</td>
               <td>${formatCurrency(stats.cost)}</td>
               <td class="${stats.profit >= 0 ? 'text-success-neon' : 'text-danger-soft'}">${stats.profit >= 0 ? '+' : ''}${formatCurrency(stats.profit)}</td>
+              <td>${stock.count} keys</td>
+              <td>${formatCurrency(stock.cost)}</td>
               <td><span class="badge ${roi >= 0 ? 'badge-available' : 'badge-sold'}">${roi.toFixed(1)}%</span></td>
             `;
             tbody.appendChild(tr);
@@ -13700,6 +13782,8 @@ function renderFinanceView() {
             <th>Revenue</th>
             <th>Expenses (Cost)</th>
             <th>Net Profit</th>
+            <th>Ending Stock</th>
+            <th>Stock Cost</th>
             <th>Avg Price</th>
             <th>Avg Profit</th>
             <th>Avg Margin %</th>
@@ -13713,6 +13797,7 @@ function renderFinanceView() {
       const tbody = table.querySelector("tbody");
       sortedKeys.forEach(k => {
         const stats = groupedData[k];
+        const stock = getPeriodStockStatus(k, breakdownType);
         const roi = stats.cost > 0 ? (stats.profit / stats.cost) * 100 : 0;
         const avgPrice = stats.count > 0 ? stats.revenue / stats.count : 0;
         const avgProfit = stats.count > 0 ? stats.profit / stats.count : 0;
@@ -13727,6 +13812,8 @@ function renderFinanceView() {
           <td>${formatCurrency(stats.revenue)}</td>
           <td>${formatCurrency(stats.cost)}</td>
           <td class="${stats.profit >= 0 ? 'text-success-neon' : 'text-danger-soft'}">${stats.profit >= 0 ? '+' : ''}${formatCurrency(stats.profit)}</td>
+          <td>${stock.count} keys</td>
+          <td>${formatCurrency(stock.cost)}</td>
           <td>${formatCurrency(avgPrice)}</td>
           <td class="${avgProfit >= 0 ? 'text-success-neon' : 'text-danger-soft'}">${avgProfit >= 0 ? '+' : ''}${formatCurrency(avgProfit)}</td>
           <td>${avgMargin.toFixed(1)}%</td>
