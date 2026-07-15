@@ -672,8 +672,6 @@ let state = {
   autoSyncInterval: localStorage.getItem("gv_auto_sync_interval") || "off",
   autoPushGitHub: localStorage.getItem("gv_auto_push_github") === "true",
   autoPullGitHub: localStorage.getItem("gv_auto_pull_github") === "true",
-  bestsellersLimit: parseInt(localStorage.getItem("gv_bestsellers_limit")) || 5,
-  bestsellersMetric: localStorage.getItem("gv_bestsellers_metric") || "profit",
   expenseCategories: [],
   payouts: [],
   menuOrder: ["dashboard", "inventory", "sales", "finance", "suppliers", "platforms", "entries", "recycle", "settings"],
@@ -1731,8 +1729,6 @@ function loadStateFromStorage() {
     state.autoSyncInterval = localStorage.getItem("gv_auto_sync_interval") || "off";
     state.autoPushGitHub = localStorage.getItem("gv_auto_push_github") === "true";
     state.autoPullGitHub = localStorage.getItem("gv_auto_pull_github") === "true";
-    state.bestsellersLimit = parseInt(localStorage.getItem("gv_bestsellers_limit")) || 5;
-    state.bestsellersMetric = localStorage.getItem("gv_bestsellers_metric") || "profit";
 
     // Purge empty/invalid rows from the database state automatically
     cleanupEmptyDatabaseRows();
@@ -1824,8 +1820,6 @@ function saveStateToStorage() {
   localStorage.setItem("gv_auto_push_github", state.autoPushGitHub ? "true" : "false");
   localStorage.setItem("gv_auto_pull_github", state.autoPullGitHub ? "true" : "false");
   localStorage.setItem("gv_platform_fee_presets", JSON.stringify(PLATFORM_FEE_PRESETS));
-  localStorage.setItem("gv_bestsellers_limit", state.bestsellersLimit);
-  localStorage.setItem("gv_bestsellers_metric", state.bestsellersMetric);
   localStorage.setItem("gv_menu_icons", JSON.stringify(state.menuIcons));
   localStorage.setItem("gv_menu_titles", JSON.stringify(state.menuTitles));
   localStorage.setItem("gv_menu_visibility", JSON.stringify(state.menuVisibility));
@@ -4404,23 +4398,7 @@ function initEventHandlers() {
 
   // Figures Customizer Event Listeners (Removed - replaced by Widget Gallery)
 
-  // Bestsellers Customizer Event Listeners
-  const bestsellersLimitSelect = document.getElementById("bestsellers-limit-select");
-  const bestsellersMetricSelect = document.getElementById("bestsellers-metric-select");
-  if (bestsellersLimitSelect && bestsellersMetricSelect) {
-    bestsellersLimitSelect.value = state.bestsellersLimit;
-    bestsellersMetricSelect.value = state.bestsellersMetric;
-    
-    const handleBestsellersChange = () => {
-      state.bestsellersLimit = parseInt(bestsellersLimitSelect.value) || 5;
-      state.bestsellersMetric = bestsellersMetricSelect.value || "profit";
-      saveStateToStorage();
-      updateUI();
-    };
-    
-    bestsellersLimitSelect.addEventListener("change", handleBestsellersChange);
-    bestsellersMetricSelect.addEventListener("change", handleBestsellersChange);
-  }
+
 
   // Event delegation for inventory checkbox selections
   document.addEventListener("change", (e) => {
