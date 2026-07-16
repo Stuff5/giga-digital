@@ -406,11 +406,24 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
-                <!-- v1.7.1 -->
+                <!-- v1.7.2 -->
                 <div style="border-left: 3px solid var(--accent-emerald); padding-left: 12px;">
                   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.7.1 — Catalog Gallery View & Month-End Valuations</strong>
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.7.2 — Codebase Modularization & Refactoring</strong>
                     <span style="font-size: 0.75rem; color: var(--accent-emerald); font-weight: bold;">Current Version</span>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
+                    <li><strong>Javascript Codebase Splits:</strong> Divided the monolithic 18k lines of `app.js` into 5 clean sub-files under a separate `src/` directory, loaded sequentially in dependency order to retain global scope and offline double-click load capabilities.</li>
+                    <li><strong>HTML Modals and Help Extraction:</strong> Extracted over 1,350 lines of static settings forms, manuals, and dialog boxes into external templates dynamically loaded and cached at startup.</li>
+                    <li><strong>Offline fallback systems:</strong> Implemented CORS local file indicators warning users of local system loading constraints when loading from `file://` protocol.</li>
+                  </ul>
+                </div>
+
+                <!-- v1.7.1 -->
+                <div style="border-left: 3px solid var(--border-color); padding-left: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.7.1 — Catalog Gallery View & Month-End Valuations</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Previous Version</span>
                   </div>
                   <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
                     <li><strong>Catalog Entries Gallery View:</strong> Replaced the old individual-key inventory gallery with an aggregated product-level poster card gallery layout inside the Catalog tab (Table vs Gallery toggles).</li>
