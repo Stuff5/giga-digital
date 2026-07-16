@@ -5,6 +5,9 @@
 
 document.addEventListener("DOMContentLoaded", async () => {
   try {
+    // Load HTML templates dynamically
+    await loadHTMLTemplates();
+
     // Show Dev Mode badge if running locally
     const devBadge = document.getElementById("dev-mode-badge");
     if (devBadge && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {

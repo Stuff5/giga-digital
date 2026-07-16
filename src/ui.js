@@ -2,6 +2,33 @@
  * GameVault - User Interface Renderers & Routers (ui.js)
  */
 
+// Asynchronously loads external HTML templates and injects them into placeholder containers
+window.loadHTMLTemplates = async () => {
+  const templates = [
+    { url: "templates/modals.html", targetId: "modals-placeholder" },
+    { url: "templates/help-modal.html", targetId: "help-modal-placeholder" }
+  ];
+  
+  await Promise.all(templates.map(async t => {
+    try {
+      // Use cache-busting parameter to ensure the latest HTML is loaded
+      const res = await fetch(t.url + "?v=4");
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      const html = await res.text();
+      const placeholder = document.getElementById(t.targetId);
+      if (placeholder) {
+        placeholder.innerHTML = html;
+      }
+    } catch (err) {
+      console.error(`Failed to load template ${t.url}:`, err);
+      // Fallback placeholder content in case of local file CORS blocks
+      const placeholder = document.getElementById(t.targetId);
+      if (placeholder && !placeholder.innerHTML.trim()) {
+        placeholder.innerHTML = `<div style="padding: 20px; color: var(--accent-danger); text-align: center; border: 1px dashed var(--border-color); border-radius: 8px; margin: 10px;">Offline Local CORS Alert: Failed to load ${t.url}. If running locally, please run a web server (e.g. using VSCode Live Server or python -m http.server) or upload to GitHub Pages.</div>`;
+      }
+    }
+  }));
+};
 
 // Load data from LocalStorage
 function cleanupEmptyDatabaseRows() {
