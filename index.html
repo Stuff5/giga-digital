@@ -25,7 +25,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=4">
   
   <!-- Early theme application to prevent FOUC / light theme flicker -->
   <script>
@@ -135,7 +135,7 @@
         </div>
         <div class="version-info" style="text-align: center; font-size: 0.7rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; overflow: hidden; white-space: nowrap;">
           <span class="version-label">GameVault</span>
-          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v1.7.0</a>
+          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v1.7.1</a>
         </div>
 
       </div>
@@ -4163,13 +4163,14 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
-                <!-- v1.7.0 -->
+                <!-- v1.7.1 -->
                 <div style="border-left: 3px solid var(--accent-emerald); padding-left: 12px;">
                   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.7.0 — Asset Valuations & Advanced Bestsellers</strong>
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.7.1 — Catalog Gallery View & Month-End Valuations</strong>
                     <span style="font-size: 0.75rem; color: var(--accent-emerald); font-weight: bold;">Current Version</span>
                   </div>
                   <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
+                    <li><strong>Catalog Entries Gallery View:</strong> Replaced the old individual-key inventory gallery with an aggregated product-level poster card gallery layout inside the Catalog tab (Table vs Gallery toggles).</li>
                     <li><strong>Ending Inventory Asset Valuations:</strong> Automatically computes unsold stock counts and purchase cost values on period closing dates, integrated directly into all 5 layout views of the Monthly Ledger Breakdown card.</li>
                     <li><strong>Dedicated Bestseller Widgets:</strong> Replaced the single legacy bestseller widget with three separate specialized widgets: *Top Bestselling Games (Net Profit)*, *Top Bestselling Games (Revenue)*, and *Top Bestselling Games (Sales Volume)*, each with customizable timeframe limits.</li>
                     <li><strong>Yearly Benchmark Splits:</strong> Introduced a mode toggle to compare total finance sums against monthly averages, styled with dual gradient highlights and split lines.</li>
@@ -4493,6 +4494,6 @@
   </div>
 
   <!-- Main JavaScript File -->
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>
