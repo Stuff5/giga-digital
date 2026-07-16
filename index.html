@@ -1229,9 +1229,6 @@
                 <button class="btn btn-outline btn-sm" id="btn-layout-grid" title="Grid View" onclick="setInvLayout('grid')">
                   <i class="fa-solid fa-border-all"></i>
                 </button>
-                <button class="btn btn-outline btn-sm" id="btn-layout-gallery" title="Gallery View" onclick="setInvLayout('gallery')">
-                  <i class="fa-solid fa-image"></i>
-                </button>
               </div>
               <button class="btn btn-outline" id="btn-import-inventory">
                 <i class="fa-solid fa-upload"></i> <span>Import CSV</span>
@@ -1354,10 +1351,7 @@
               <!-- Injected by JS -->
             </div>
 
-            <!-- Gallery View Container -->
-            <div class="inventory-gallery-container" id="inventory-gallery-container" style="display: none;">
-              <!-- Injected by JS -->
-            </div>
+
             
             <div class="table-footer">
               <span id="inventory-count-text">Showing 0 of 0 inventory items</span>
@@ -1834,6 +1828,15 @@
                 <p class="view-subtitle">Track sales performance, purchase counts, and available stock per unique game title.</p>
               </div>
               <div class="action-buttons" style="display: flex; align-items: center; gap: 10px;">
+                <!-- Catalog View Toggles -->
+                <div class="layout-toggle-group">
+                  <button class="btn btn-outline btn-sm active" id="btn-entries-layout-table" title="Table View" onclick="setEntriesLayout('table')">
+                    <i class="fa-solid fa-table"></i>
+                  </button>
+                  <button class="btn btn-outline btn-sm" id="btn-entries-layout-gallery" title="Gallery View" onclick="setEntriesLayout('gallery')">
+                    <i class="fa-solid fa-image"></i>
+                  </button>
+                </div>
                 <button type="button" class="btn btn-outline btn-sm" id="btn-entries-fav-filter" style="height: 36px; padding: 0 12px; display: flex; align-items: center; gap: 6px; font-weight: 600;" title="Filter by Favorites">
                   <i class="fa-regular fa-star" id="entries-fav-filter-icon" style="color: var(--accent-warning);"></i> <span id="entries-fav-filter-text">Favorites</span>
                 </button>
@@ -1866,6 +1869,12 @@
                   </tbody>
                 </table>
               </div>
+
+              <!-- Catalog Gallery Container -->
+              <div class="inventory-gallery-container" id="entries-gallery-container" style="display: none; padding: 24px; gap: 24px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
+                <!-- Injected dynamically by JS -->
+              </div>
+
               <div class="table-footer">
                 <span id="entries-count-text">Showing 0 unique game titles</span>
                 <div class="pagination-controls" style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">

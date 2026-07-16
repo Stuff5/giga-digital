@@ -581,7 +581,8 @@ let state = {
   customEndDate: "",
   supActivePeriod: "all",
   supFilterSupplier: "all",
-  inventoryLayout: "list", // "list", "grid", "gallery"
+  inventoryLayout: "list", // "list", "grid"
+  entriesLayout: "table", // "table", "gallery"
   supplierDisplayMode: "name", // "name", "logo"
   platformDisplayMode: "name", // "name", "logo"
   inventorySortBy: "date-desc", // "date-desc", "date-asc", "title-asc", "title-desc", "duration-desc", "duration-asc"
@@ -1326,7 +1327,9 @@ function loadStateFromStorage() {
     if (typeof clearHistoryStacks === "function") {
       clearHistoryStacks();
     }
-    state.inventoryLayout = localStorage.getItem("gv_inv_layout") || "list";
+    const storedInvLayout = localStorage.getItem("gv_inv_layout") || "list";
+    state.inventoryLayout = (storedInvLayout === "list" || storedInvLayout === "grid") ? storedInvLayout : "list";
+    state.entriesLayout = localStorage.getItem("gv_entries_layout") || "table";
     state.supplierDisplayMode = localStorage.getItem("gv_supplier_display_mode") || "name";
     state.platformDisplayMode = localStorage.getItem("gv_platform_display_mode") || "name";
     state.inventorySortBy = localStorage.getItem("gv_inventory_sort_by") || "date-desc";
@@ -1789,6 +1792,7 @@ function saveStateToStorage() {
   localStorage.setItem("gv_payouts" + userSuffix, JSON.stringify(state.payouts));
   localStorage.setItem("gv_expense_categories" + userSuffix, JSON.stringify(state.expenseCategories));
   localStorage.setItem("gv_inv_layout", state.inventoryLayout);
+  localStorage.setItem("gv_entries_layout", state.entriesLayout);
   localStorage.setItem("gv_supplier_display_mode", state.supplierDisplayMode);
   localStorage.setItem("gv_platform_display_mode", state.platformDisplayMode);
   localStorage.setItem("gv_inventory_sort_by", state.inventorySortBy);
@@ -3683,28 +3687,25 @@ function initEventHandlers() {
   // Inventory Layout Toggle Listeners
   const btnList = document.getElementById("btn-layout-list");
   const btnGrid = document.getElementById("btn-layout-grid");
-  const btnGallery = document.getElementById("btn-layout-gallery");
   
   // Make setInvLayout global so inline onclick handlers in index.html work reliably
   window.setInvLayout = (layout) => {
     try {
       console.log("setInvLayout called with layout:", layout);
+      if (layout === "gallery") layout = "list";
       state.inventoryLayout = layout;
       saveStateToStorage();
       
       // Update toggle buttons active state
       const btnList = document.getElementById("btn-layout-list");
       const btnGrid = document.getElementById("btn-layout-grid");
-      const btnGallery = document.getElementById("btn-layout-gallery");
       
-      if (btnList && btnGrid && btnGallery) {
+      if (btnList && btnGrid) {
         btnList.classList.remove("active");
         btnGrid.classList.remove("active");
-        btnGallery.classList.remove("active");
         
         if (layout === "list") btnList.classList.add("active");
         if (layout === "grid") btnGrid.classList.add("active");
-        if (layout === "gallery") btnGallery.classList.add("active");
       }
       
       // Re-render inventory only
@@ -3717,11 +3718,35 @@ function initEventHandlers() {
   };
 
   // Keep event listeners on DOM elements as an additional backup binding
-  if (btnList && btnGrid && btnGallery) {
+  if (btnList && btnGrid) {
     btnList.addEventListener("click", () => window.setInvLayout("list"));
     btnGrid.addEventListener("click", () => window.setInvLayout("grid"));
-    btnGallery.addEventListener("click", () => window.setInvLayout("gallery"));
   }
+
+  // Catalog Entries Layout Toggle Setup
+  window.setEntriesLayout = (layout) => {
+    try {
+      console.log("setEntriesLayout called with layout:", layout);
+      state.entriesLayout = layout;
+      saveStateToStorage();
+
+      // Update Catalog toggle buttons active state
+      const btnTable = document.getElementById("btn-entries-layout-table");
+      const btnGallery = document.getElementById("btn-entries-layout-gallery");
+
+      if (btnTable && btnGallery) {
+        btnTable.classList.remove("active");
+        btnGallery.classList.remove("active");
+
+        if (layout === "table") btnTable.classList.add("active");
+        if (layout === "gallery") btnGallery.classList.add("active");
+      }
+
+      renderEntries();
+    } catch (err) {
+      console.error("Error in setEntriesLayout:", err);
+    }
+  };
 
   // Settings Page - Appearance Mode Click Listeners
   const modes = [
@@ -8307,21 +8332,17 @@ function renderInventoryTable(itemsList) {
     // Update inventory layout containers visibility
     const tableContainer = document.getElementById("inventory-table-container");
     const gridContainer = document.getElementById("inventory-grid-container");
-    const galleryContainer = document.getElementById("inventory-gallery-container");
     
     // Clean up containers
     if (tableContainer) tableContainer.style.display = "none";
     if (gridContainer) gridContainer.style.display = "none";
-    if (galleryContainer) galleryContainer.style.display = "none";
     
     // Set active buttons in toggle group (just in case they are out of sync)
     const btnList = document.getElementById("btn-layout-list");
     const btnGrid = document.getElementById("btn-layout-grid");
-    const btnGallery = document.getElementById("btn-layout-gallery");
-    if (btnList && btnGrid && btnGallery) {
+    if (btnList && btnGrid) {
       btnList.classList.toggle("active", state.inventoryLayout === "list");
       btnGrid.classList.toggle("active", state.inventoryLayout === "grid");
-      btnGallery.classList.toggle("active", state.inventoryLayout === "gallery");
     }
 
     // Pagination Logic
@@ -8345,9 +8366,6 @@ function renderInventoryTable(itemsList) {
     } else if (state.inventoryLayout === "grid") {
       if (gridContainer) gridContainer.style.display = "grid";
       renderInventoryGridLayout(paginatedItemsList);
-    } else if (state.inventoryLayout === "gallery") {
-      if (galleryContainer) galleryContainer.style.display = "grid";
-      renderInventoryGalleryLayout(paginatedItemsList);
     }
     
     // Update footer text count
@@ -8862,174 +8880,149 @@ function renderInventoryGridLayout(itemsList) {
   }
 }
 
-// Render layout format C: Gallery (Poster cards)
-// Render layout format C: Gallery (Poster cards)
-function renderInventoryGalleryLayout(itemsList) {
+// Render Catalog entries in Gallery View format
+function renderEntriesGalleryLayout(entriesList) {
   try {
-    const container = document.getElementById("inventory-gallery-container");
+    const container = document.getElementById("entries-gallery-container");
     if (!container) return;
     container.innerHTML = "";
 
-    if (itemsList.length === 0) {
-      container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">No matching inventory keys in stock.</div>`;
+    if (entriesList.length === 0) {
+      container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">No matching game entries in catalog.</div>`;
       return;
     }
 
-    const salesMap = new Map();
-    state.sales.forEach(sale => {
-      if (sale && sale.inventoryId) {
-        salesMap.set(sale.inventoryId, sale);
-      }
-    });
-
-    itemsList.forEach(item => {
-      if (!item) return;
+    entriesList.forEach(entry => {
+      if (!entry) return;
       const card = document.createElement("div");
       card.className = "gallery-card";
 
-      const sourceStr = String(item.source || "Direct");
-      const supplierObj = state.suppliers.find(s => s.name === sourceStr);
-      const colorName = supplierObj ? (supplierObj.color || getSupplierColorName(sourceStr)) : getSupplierColorName(sourceStr);
-      const colorPreset = SUPPLIER_COLORS.find(c => c.name === colorName) || SUPPLIER_COLORS[0];
-      
-      const supplierBadge = `
-        <strong style="color: ${colorPreset.value}; display: inline-flex; align-items: center; gap: 5px;">
-          <span class="supplier-dot" style="background-color: ${colorPreset.value}; width: 6px; height: 6px;"></span>
-          ${escapeHTML(sourceStr)}
-        </strong>
-      `;
+      // Double-click action on card
+      card.style.cursor = "pointer";
+      card.setAttribute("title", "Double-click to view all keys for this game");
+      card.addEventListener("dblclick", () => {
+        triggerViewCatalogKeys(entry.title);
+      });
 
-      const titleStr = String(item.title || "Untitled Game");
+      const titleStr = String(entry.title || "Untitled Game");
       const initials = titleStr.split(" ").map(w => w ? w[0] : "").join("").slice(0, 3) || "???";
-      const imageHtml = item.imageUrl
-        ? `<img src="${escapeHTML(item.imageUrl)}" class="gallery-card-img" alt="${escapeHTML(titleStr)}">`
+      
+      // Cover art rendering
+      const imageHtml = entry.imageUrl
+        ? `<img src="${escapeHTML(entry.imageUrl)}" class="gallery-card-img" alt="${escapeHTML(titleStr)}">`
         : `<div class="gallery-card-placeholder">${escapeHTML(initials)}</div>`;
 
-      // Platform icon classes
-      const platformStr = String(item.platform || "PC");
-      let platformIcon = "fa-solid fa-gamepad";
-      if (platformStr.includes("Steam")) platformIcon = "fa-brands fa-steam";
-      if (platformStr.includes("PlayStation")) platformIcon = "fa-brands fa-playstation";
-      if (platformStr.includes("Xbox")) platformIcon = "fa-brands fa-xbox";
+      // Favorite status & star icon
+      const safeTitle = entry.title.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      const isFav = state.favoriteGames && state.favoriteGames.includes(entry.title);
+      const starColor = isFav ? "var(--accent-warning)" : "rgba(255,255,255,0.4)";
+      const starIconClass = isFav ? "fa-solid fa-star" : "fa-regular fa-star";
+      const starBtn = `
+        <button onclick="event.stopPropagation(); toggleFavoriteGame('${safeTitle}')" style="position: absolute; top: 12px; right: 12px; z-index: 10; background: rgba(0,0,0,0.6); border: none; border-radius: 50%; cursor: pointer; color: ${starColor}; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; transition: var(--transition-smooth); backdrop-filter: blur(4px);" title="${isFav ? 'Remove from Favorites' : 'Add to Favorites'}">
+          <i class="${starIconClass}" style="font-size: 0.85rem;"></i>
+        </button>
+      `;
 
-      // Status classes
-      let statusClass = "badge-available";
-      if (item.status === "Reserved") statusClass = "badge-reserved";
-      if (item.status === "Sold") statusClass = "badge-sold";
-      if (item.status === "Rejected") statusClass = "badge-rejected";
-      if (item.status === "Disputed") statusClass = "badge-disputed";
-
-      // Mask key structure safely
-      const keyStr = String(item.key || "");
-      const maskedKey = keyStr.length >= 8 
-        ? `${keyStr.slice(0, 4)}-****-****-${keyStr.slice(-4)}`
-        : keyStr || "—";
-
-      // Action buttons based on status
-      let actionButton = "";
-      if (item.status === "Available") {
-        actionButton = `
-          <button class="btn-action btn-action-sell" onclick="triggerSellGame('${item.id}')" title="Mark as Sold"><i class="fa-solid fa-euro-sign"></i></button>
-        `;
+      // Available stock badge
+      let badgeClass = "badge-available";
+      let badgeText = `${entry.availableStock} in stock`;
+      if (entry.availableStock === 0) {
+        badgeClass = "badge-sold";
+        badgeText = "0 in stock";
+      } else if (entry.availableStock <= state.lowStockThreshold) {
+        badgeClass = "badge-low-stock";
+        badgeText = `${entry.availableStock} in stock (Low)`;
       }
 
-      const saleItem = salesMap.get(item.id);
-      const dateClosedMeta = saleItem 
-        ? `<div class="gallery-card-hover-meta-item"><span>Closed:</span><strong>${formatToDDMMYYYY(saleItem.saleDate)}</strong></div>`
-        : "";
-      const soldPriceMeta = saleItem 
-        ? `<div class="gallery-card-hover-meta-item"><span>Sold:</span><strong class="text-success-neon">${formatCurrency(saleItem.sellPrice)}</strong></div>`
-        : "";
+      // Calculations
+      const roiPercentage = entry.totalCostOfSold > 0 ? (entry.profit / entry.totalCostOfSold) * 100 : 0;
+      const marginPercentage = entry.totalRevenue > 0 ? (entry.profit / entry.totalRevenue) * 100 : 0;
 
-      let profitMeta = "";
-      if (saleItem) {
-        const margin = saleItem.sellPrice > 0 ? (saleItem.profit / saleItem.sellPrice) * 100 : 0;
-        const profitClass = saleItem.profit >= 0 ? "text-success-neon" : "text-danger-soft";
-        const profitSign = saleItem.profit >= 0 ? "+" : "";
-        profitMeta = `<div class="gallery-card-hover-meta-item"><span>Profit:</span><strong class="${profitClass}">${profitSign}${formatCurrency(saleItem.profit)} <span style="font-size: 0.75rem; opacity: 0.75; font-weight: normal; margin-left: 2px;">(${margin.toFixed(1)}%)</span></strong></div>`;
+      // Avg duration
+      const durations = entry.sellDurations || [];
+      let avgDurationStr = "—";
+      if (durations.length > 0) {
+        const totalDays = durations.reduce((sum, d) => sum + d, 0);
+        const avgDays = Math.round(totalDays / durations.length);
+        avgDurationStr = `${avgDays} day${avgDays === 1 ? '' : 's'}`;
       }
 
-      let durationMeta = "";
-      if (item.purchaseDate) {
-        const start = new Date(item.purchaseDate);
-        const end = saleItem ? new Date(saleItem.saleDate) : new Date();
-        start.setHours(0, 0, 0, 0);
-        end.setHours(0, 0, 0, 0);
-        const diffTime = Math.max(0, end - start);
-        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-        if (saleItem) {
-          durationMeta = `<div class="gallery-card-hover-meta-item"><span>Duration:</span><strong class="text-success-neon">${diffDays} day${diffDays === 1 ? '' : 's'}</strong></div>`;
-        } else {
-          const agingCat = getAgingCategory(item.purchaseDate);
-          durationMeta = `<div class="gallery-card-hover-meta-item"><span>Active:</span><strong>${diffDays} day${diffDays === 1 ? '' : 's'} <span class="badge ${agingCat.class}" style="font-size: 0.6rem; padding: 1px 5px; text-transform: uppercase; margin-left: 6px; line-height: 1; vertical-align: middle;">${agingCat.name}</span></strong></div>`;
-        }
-      }
+      const publisherStr = entry.publisher 
+        ? `<span style="font-size: 0.8rem; color: var(--text-muted);"><i class="fa-solid fa-building" style="margin-right: 4px; font-size: 0.75rem; opacity: 0.8;"></i>${escapeHTML(entry.publisher)}</span>`
+        : `<span style="font-style: italic; font-size: 0.8rem; color: var(--text-muted);"><i class="fa-solid fa-building" style="margin-right: 4px; font-size: 0.75rem; opacity: 0.5;"></i>No Publisher</span>`;
 
-      card.innerHTML = `
-        <div class="gallery-card-img-container">
-          ${imageHtml}
-        </div>
+      // Front card overlay
+      const frontOverlay = `
         <div class="gallery-card-overlay">
           <h4 class="gallery-card-title" title="${escapeHTML(titleStr)}">${escapeHTML(titleStr)}</h4>
           <div class="gallery-card-subtitle">
-            <span><i class="${platformIcon}"></i> ${escapeHTML(platformStr)}</span>
-            <span class="badge ${statusClass}">${item.status || "Available"}</span>
-          </div>
-        </div>
-        <div class="gallery-card-hover-details">
-          <div class="gallery-card-hover-header">
-            <h4 title="${escapeHTML(titleStr)}">${escapeHTML(titleStr)}</h4>
-            <span class="badge ${statusClass}">${item.status || "Available"}</span>
-          </div>
-          <div class="gallery-card-hover-meta">
-            <div class="gallery-card-hover-meta-item">
-              <span>Platform:</span>
-              <strong>${escapeHTML(platformStr)}</strong>
-            </div>
-            <div class="gallery-card-hover-meta-item">
-              <span>Cost:</span>
-              <strong>${formatCurrency(item.cost)}</strong>
-            </div>
-            ${soldPriceMeta}
-            ${profitMeta}
-            <div class="gallery-card-hover-meta-item">
-              <span>Supplier:</span>
-              ${supplierBadge}
-            </div>
-            <div class="gallery-card-hover-meta-item">
-              <span>Added:</span>
-              <strong>${formatToDDMMYYYY(item.purchaseDate)}</strong>
-            </div>
-            ${dateClosedMeta}
-            ${durationMeta}
-          </div>
-          <div class="gallery-card-hover-key">
-            <span class="key-label" style="margin-bottom: 4px; font-size: 0.65rem;">Key</span>
-            <div class="secured-key" style="width: 100%; justify-content: center;">
-              <code style="font-size: 0.75rem; padding: 2px 4px;">${maskedKey}</code>
-            </div>
-          </div>
-          <div class="gallery-card-hover-actions">
-            ${actionButton}
-            <button class="btn-action btn-action-edit" onclick="triggerEditGame('${item.id}')" title="Edit Game"><i class="fa-solid fa-pen"></i></button>
-            <button class="btn-action btn-action-view" onclick="triggerViewKey('${item.id}')" title="Secure View"><i class="fa-solid fa-eye"></i></button>
-            <button class="btn-action btn-action-delete" onclick="triggerDeleteGame('${item.id}')" title="Delete"><i class="fa-solid fa-trash"></i></button>
+            ${publisherStr}
+            <span class="badge ${badgeClass}" style="margin-left: 8px;">${badgeText}</span>
           </div>
         </div>
       `;
 
-      // Click card body (except interactive buttons) to trigger inspect Secure View modal
-      card.addEventListener("click", (e) => {
-        if (e.target.closest("button") || e.target.closest("a") || e.target.closest("code")) {
-          return;
-        }
-        triggerViewKey(item.id);
-      });
+      // Hover overlay details
+      const hoverOverlay = `
+        <div class="gallery-card-hover-details">
+          <div class="gallery-card-hover-header">
+            <h4 title="${escapeHTML(titleStr)}" style="margin: 0; font-size: 0.95rem; font-weight: 700; color: var(--text-main); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3;">${escapeHTML(titleStr)}</h4>
+            <span class="badge ${badgeClass}" style="align-self: flex-start; margin-top: 4px;">${badgeText}</span>
+          </div>
+          <div class="gallery-card-hover-meta" style="flex: 1; display: flex; flex-direction: column; gap: 8px; margin-top: 12px; font-size: 0.8rem;">
+            <div class="gallery-card-hover-meta-item">
+              <span>Added Keys:</span>
+              <strong>${entry.totalAdded} keys</strong>
+            </div>
+            <div class="gallery-card-hover-meta-item">
+              <span>Sold Keys:</span>
+              <strong>${entry.totalSold} sold</strong>
+            </div>
+            <div class="gallery-card-hover-meta-item">
+              <span>Revenue:</span>
+              <strong>${formatCurrency(entry.totalRevenue)}</strong>
+            </div>
+            <div class="gallery-card-hover-meta-item">
+              <span>Net Profit:</span>
+              <strong class="${entry.profit >= 0 ? 'text-success-neon' : 'text-danger-soft'}">${formatCurrency(entry.profit)}</strong>
+            </div>
+            <div class="gallery-card-hover-meta-item">
+              <span>ROI:</span>
+              <strong class="${roiPercentage >= 0 ? 'text-success-neon' : 'text-danger-soft'}">${roiPercentage.toFixed(1)}%</strong>
+            </div>
+            <div class="gallery-card-hover-meta-item">
+              <span>Margin:</span>
+              <strong class="${marginPercentage >= 0 ? 'text-success-neon' : 'text-danger-soft'}">${marginPercentage.toFixed(1)}%</strong>
+            </div>
+            <div class="gallery-card-hover-meta-item">
+              <span>Avg Speed:</span>
+              <strong style="color: var(--accent-cyan);">${avgDurationStr}</strong>
+            </div>
+          </div>
+          <div class="gallery-card-hover-actions" style="margin-top: auto; display: flex; gap: 8px; width: 100%;">
+            <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); triggerEditCatalogEntry('${escapeHTML(safeTitle)}')" title="Edit Catalog Entry" style="flex: 1; padding: 4px; font-size: 0.75rem; height: 28px;">
+              <i class="fa-solid fa-pen" style="margin-right: 3px;"></i> Edit
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); triggerDeleteCatalogEntry('${escapeHTML(safeTitle)}')" title="Delete Catalog Entry" style="flex: 1; padding: 4px; font-size: 0.75rem; height: 28px; color: var(--accent-danger); border-color: var(--accent-danger);">
+              <i class="fa-solid fa-trash" style="margin-right: 3px;"></i> Delete
+            </button>
+          </div>
+        </div>
+      `;
+
+      card.innerHTML = `
+        ${starBtn}
+        <div class="gallery-card-img-container">
+          ${imageHtml}
+        </div>
+        ${frontOverlay}
+        ${hoverOverlay}
+      `;
 
       container.appendChild(card);
     });
   } catch (err) {
-    console.error("Error in renderInventoryGalleryLayout:", err);
+    console.error("Error in renderEntriesGalleryLayout:", err);
   }
 }
 
@@ -11668,6 +11661,20 @@ function renderEntries() {
   if (!tbody) return;
   tbody.innerHTML = "";
 
+  // Sync layout buttons active class states
+  const btnTable = document.getElementById("btn-entries-layout-table");
+  const btnGallery = document.getElementById("btn-entries-layout-gallery");
+  if (btnTable && btnGallery) {
+    btnTable.classList.toggle("active", state.entriesLayout === "table");
+    btnGallery.classList.toggle("active", state.entriesLayout === "gallery");
+  }
+
+  // Manage visibility of the two layout view containers
+  const tableContainer = document.querySelector("#entries-view .table-responsive");
+  const galleryContainer = document.getElementById("entries-gallery-container");
+  if (tableContainer) tableContainer.style.display = "none";
+  if (galleryContainer) galleryContainer.style.display = "none";
+
   // Sync Favorite Filter Button UI state
   const btnFavFilter = document.getElementById("btn-entries-fav-filter");
   const favIcon = document.getElementById("entries-fav-filter-icon");
@@ -11809,83 +11816,89 @@ function renderEntries() {
   const endIndex = startIndex + state.entriesPageSize;
   const paginatedEntriesList = entriesList.slice(startIndex, endIndex);
 
-  // Draw entries rows
-  paginatedEntriesList.forEach(entry => {
-    const tr = document.createElement("tr");
-    tr.style.cursor = "pointer";
-    tr.setAttribute("title", "Double-click to view all keys for this game");
-    tr.addEventListener("dblclick", () => {
-      triggerViewCatalogKeys(entry.title);
+  if (state.entriesLayout === "table") {
+    if (tableContainer) tableContainer.style.display = "block";
+    // Draw entries rows
+    paginatedEntriesList.forEach(entry => {
+      const tr = document.createElement("tr");
+      tr.style.cursor = "pointer";
+      tr.setAttribute("title", "Double-click to view all keys for this game");
+      tr.addEventListener("dblclick", () => {
+        triggerViewCatalogKeys(entry.title);
+      });
+
+      // ROI = Net Profit / Cost of Sold Keys * 100
+      const roiPercentage = entry.totalCostOfSold > 0 ? (entry.profit / entry.totalCostOfSold) * 100 : 0;
+      const marginPercentage = entry.totalRevenue > 0 ? (entry.profit / entry.totalRevenue) * 100 : 0;
+
+      const initials = entry.title.split(" ").map(w => w[0]).join("").slice(0, 3);
+      
+      const publisherSubtitle = entry.publisher 
+        ? `<div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;"><i class="fa-solid fa-building" style="font-size: 0.7rem; opacity: 0.7; margin-right: 4px;"></i>${escapeHTML(entry.publisher)}</div>` 
+        : `<div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; font-style: italic;"><i class="fa-solid fa-building" style="font-size: 0.7rem; opacity: 0.5; margin-right: 4px;"></i>No Publisher</div>`;
+
+      const safeTitle = entry.title.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      const isFav = state.favoriteGames && state.favoriteGames.includes(entry.title);
+      const starColor = isFav ? "var(--accent-warning)" : "var(--text-muted)";
+      const starIconClass = isFav ? "fa-solid fa-star" : "fa-regular fa-star";
+      const starBtn = `
+        <button class="btn-fav" onclick="event.stopPropagation(); toggleFavoriteGame('${safeTitle}')" style="background: none; border: none; cursor: pointer; color: ${starColor}; font-size: 0.9rem; padding: 2px 4px; display: inline-flex; align-items: center; justify-content: center; transition: transform 0.15s ease;" title="${isFav ? 'Remove from Favorites' : 'Add to Favorites'}">
+          <i class="${starIconClass}"></i>
+        </button>
+      `;
+
+      const titleCell = entry.imageUrl
+        ? `<div class="game-title-cell"><img src="${escapeHTML(entry.imageUrl)}" class="game-thumbnail" alt="${escapeHTML(entry.title)}"><div><div style="display: flex; align-items: center; gap: 4px;"><strong>${escapeHTML(entry.title)}</strong>${starBtn}</div>${publisherSubtitle}</div></div>`
+        : `<div class="game-title-cell"><div class="game-thumbnail-placeholder">${escapeHTML(initials)}</div><div><div style="display: flex; align-items: center; gap: 4px;"><strong>${escapeHTML(entry.title)}</strong>${starBtn}</div>${publisherSubtitle}</div></div>`;
+
+      // Calculate Average Days to Sell
+      const durations = entry.sellDurations || [];
+      let avgDaysCell = "";
+      if (durations.length > 0) {
+        const totalDays = durations.reduce((sum, d) => sum + d, 0);
+        const avgDays = Math.round(totalDays / durations.length);
+        avgDaysCell = `<span style="font-weight: 600; color: var(--accent-cyan);">${avgDays} day${avgDays === 1 ? '' : 's'}</span>`;
+      } else {
+        avgDaysCell = `<span style="color: var(--text-muted); font-size: 0.8rem;">-</span>`;
+      }
+
+      let badgeClass = "badge-available";
+      let badgeText = `${entry.availableStock} in stock`;
+      if (entry.availableStock === 0) {
+        badgeClass = "badge-sold";
+        badgeText = "0 in stock";
+      } else if (entry.availableStock <= state.lowStockThreshold) {
+        badgeClass = "badge-low-stock";
+        badgeText = `${entry.availableStock} in stock (Low)`;
+      }
+
+      tr.innerHTML = `
+        <td>${titleCell}</td>
+        <td><span style="font-weight: 600;">${entry.totalAdded}</span> keys</td>
+        <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+        <td><span style="font-weight: 600;">${entry.totalSold}</span> sold</td>
+        <td>${avgDaysCell}</td>
+        <td>${formatCurrency(entry.totalRevenue)}</td>
+        <td class="${entry.profit >= 0 ? 'text-success-neon' : 'text-danger-soft'}"><strong>${formatCurrency(entry.profit)}</strong></td>
+        <td class="${roiPercentage >= 0 ? 'text-success-neon' : 'text-danger-soft'}">${roiPercentage.toFixed(1)}%</td>
+        <td class="${marginPercentage >= 0 ? 'text-success-neon' : 'text-danger-soft'}">${marginPercentage.toFixed(1)}%</td>
+        <td style="text-align: right;">
+          <div style="display: inline-flex; gap: 8px; justify-content: flex-end; width: 100%;">
+            <button class="btn btn-outline btn-sm" onclick="triggerEditCatalogEntry('${escapeHTML(safeTitle)}')" title="Edit Catalog Entry">
+              <i class="fa-solid fa-pen"></i> Edit
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="triggerDeleteCatalogEntry('${escapeHTML(safeTitle)}')" title="Delete Catalog Entry" style="color: var(--accent-danger); border-color: var(--accent-danger);">
+              <i class="fa-solid fa-trash"></i> Delete
+            </button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
     });
-
-    // ROI = Net Profit / Cost of Sold Keys * 100
-    const roiPercentage = entry.totalCostOfSold > 0 ? (entry.profit / entry.totalCostOfSold) * 100 : 0;
-    const marginPercentage = entry.totalRevenue > 0 ? (entry.profit / entry.totalRevenue) * 100 : 0;
-
-    const initials = entry.title.split(" ").map(w => w[0]).join("").slice(0, 3);
-    
-    const publisherSubtitle = entry.publisher 
-      ? `<div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;"><i class="fa-solid fa-building" style="font-size: 0.7rem; opacity: 0.7; margin-right: 4px;"></i>${escapeHTML(entry.publisher)}</div>` 
-      : `<div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; font-style: italic;"><i class="fa-solid fa-building" style="font-size: 0.7rem; opacity: 0.5; margin-right: 4px;"></i>No Publisher</div>`;
-
-    const safeTitle = entry.title.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-    const isFav = state.favoriteGames && state.favoriteGames.includes(entry.title);
-    const starColor = isFav ? "var(--accent-warning)" : "var(--text-muted)";
-    const starIconClass = isFav ? "fa-solid fa-star" : "fa-regular fa-star";
-    const starBtn = `
-      <button class="btn-fav" onclick="event.stopPropagation(); toggleFavoriteGame('${safeTitle}')" style="background: none; border: none; cursor: pointer; color: ${starColor}; font-size: 0.9rem; padding: 2px 4px; display: inline-flex; align-items: center; justify-content: center; transition: transform 0.15s ease;" title="${isFav ? 'Remove from Favorites' : 'Add to Favorites'}">
-        <i class="${starIconClass}"></i>
-      </button>
-    `;
-
-    const titleCell = entry.imageUrl
-      ? `<div class="game-title-cell"><img src="${escapeHTML(entry.imageUrl)}" class="game-thumbnail" alt="${escapeHTML(entry.title)}"><div><div style="display: flex; align-items: center; gap: 4px;"><strong>${escapeHTML(entry.title)}</strong>${starBtn}</div>${publisherSubtitle}</div></div>`
-      : `<div class="game-title-cell"><div class="game-thumbnail-placeholder">${escapeHTML(initials)}</div><div><div style="display: flex; align-items: center; gap: 4px;"><strong>${escapeHTML(entry.title)}</strong>${starBtn}</div>${publisherSubtitle}</div></div>`;
-
-    // Calculate Average Days to Sell
-    const durations = entry.sellDurations || [];
-    let avgDaysCell = "";
-    if (durations.length > 0) {
-      const totalDays = durations.reduce((sum, d) => sum + d, 0);
-      const avgDays = Math.round(totalDays / durations.length);
-      avgDaysCell = `<span style="font-weight: 600; color: var(--accent-cyan);">${avgDays} day${avgDays === 1 ? '' : 's'}</span>`;
-    } else {
-      avgDaysCell = `<span style="color: var(--text-muted); font-size: 0.8rem;">-</span>`;
-    }
-
-    let badgeClass = "badge-available";
-    let badgeText = `${entry.availableStock} in stock`;
-    if (entry.availableStock === 0) {
-      badgeClass = "badge-sold";
-      badgeText = "0 in stock";
-    } else if (entry.availableStock <= state.lowStockThreshold) {
-      badgeClass = "badge-low-stock";
-      badgeText = `${entry.availableStock} in stock (Low)`;
-    }
-
-    tr.innerHTML = `
-      <td>${titleCell}</td>
-      <td><span style="font-weight: 600;">${entry.totalAdded}</span> keys</td>
-      <td><span class="badge ${badgeClass}">${badgeText}</span></td>
-      <td><span style="font-weight: 600;">${entry.totalSold}</span> sold</td>
-      <td>${avgDaysCell}</td>
-      <td>${formatCurrency(entry.totalRevenue)}</td>
-      <td class="${entry.profit >= 0 ? 'text-success-neon' : 'text-danger-soft'}"><strong>${formatCurrency(entry.profit)}</strong></td>
-      <td class="${roiPercentage >= 0 ? 'text-success-neon' : 'text-danger-soft'}">${roiPercentage.toFixed(1)}%</td>
-      <td class="${marginPercentage >= 0 ? 'text-success-neon' : 'text-danger-soft'}">${marginPercentage.toFixed(1)}%</td>
-      <td style="text-align: right;">
-        <div style="display: inline-flex; gap: 8px; justify-content: flex-end; width: 100%;">
-          <button class="btn btn-outline btn-sm" onclick="triggerEditCatalogEntry('${escapeHTML(safeTitle)}')" title="Edit Catalog Entry">
-            <i class="fa-solid fa-pen"></i> Edit
-          </button>
-          <button class="btn btn-outline btn-sm" onclick="triggerDeleteCatalogEntry('${escapeHTML(safeTitle)}')" title="Delete Catalog Entry" style="color: var(--accent-danger); border-color: var(--accent-danger);">
-            <i class="fa-solid fa-trash"></i> Delete
-          </button>
-        </div>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
+  } else if (state.entriesLayout === "gallery") {
+    if (galleryContainer) galleryContainer.style.display = "grid";
+    renderEntriesGalleryLayout(paginatedEntriesList);
+  }
 
   const showingStart = entriesList.length === 0 ? 0 : startIndex + 1;
   const showingEnd = Math.min(endIndex, entriesList.length);
