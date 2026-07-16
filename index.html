@@ -4493,7 +4493,12 @@
     <!-- Focussed widget is appended here dynamically -->
   </div>
 
-  <!-- Main JavaScript File -->
+  <!-- Modular Application Scripts loaded sequentially to share the global scope -->
+  <script src="src/state.js?v=4"></script>
+  <script src="src/api.js?v=4"></script>
+  <script src="src/charts.js?v=4"></script>
+  <script src="src/ui.js?v=4"></script>
+  <script src="src/importer.js?v=4"></script>
   <script src="app.js?v=4"></script>
 </body>
 </html>
