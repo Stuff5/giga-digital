@@ -135,7 +135,7 @@
         </div>
         <div class="version-info" style="text-align: center; font-size: 0.7rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; overflow: hidden; white-space: nowrap;">
           <span class="version-label">GameVault</span>
-          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v1.5.0</a>
+          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v1.7.0</a>
         </div>
 
       </div>
@@ -4074,10 +4074,17 @@
               </p>
 
               <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">5. Stock Speed / Shelf-life Aging</h5>
-              <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 0;">
+              <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 12px;">
                 Calculated per key as the duration between when a key is added and when it is marked sold:
                 <br>
                 <code style="font-family: monospace; color: var(--accent-warning);">Days to Sell = Sale Date - Purchase Date</code>
+              </p>
+
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">6. Ending Stock Asset Valuation</h5>
+              <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 0;">
+                Calculated on the closing boundaries of any selected timeframe (e.g. month-end or year-end). It counts keys purchased on/before the cutoff that remain unsold or were sold after that cutoff:
+                <br>
+                <code style="font-family: monospace; color: var(--accent-cyan);">Ending Stock Cost Value = Sum(Item Purchase Cost of Open Keys)</code>
               </p>
             </div>
 
@@ -4147,11 +4154,24 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- v1.7.0 -->
+                <div style="border-left: 3px solid var(--accent-emerald); padding-left: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.7.0 — Asset Valuations & Advanced Bestsellers</strong>
+                    <span style="font-size: 0.75rem; color: var(--accent-emerald); font-weight: bold;">Current Version</span>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
+                    <li><strong>Ending Inventory Asset Valuations:</strong> Automatically computes unsold stock counts and purchase cost values on period closing dates, integrated directly into all 5 layout views of the Monthly Ledger Breakdown card.</li>
+                    <li><strong>Dedicated Bestseller Widgets:</strong> Replaced the single legacy bestseller widget with three separate specialized widgets: *Top Bestselling Games (Net Profit)*, *Top Bestselling Games (Revenue)*, and *Top Bestselling Games (Sales Volume)*, each with customizable timeframe limits.</li>
+                    <li><strong>Yearly Benchmark Splits:</strong> Introduced a mode toggle to compare total finance sums against monthly averages, styled with dual gradient highlights and split lines.</li>
+                  </ul>
+                </div>
+
                 <!-- v1.6.0 -->
-                <div style="border-left: 3px solid var(--accent-purple); padding-left: 12px;">
+                <div style="border-left: 3px solid var(--border-color); padding-left: 12px;">
                   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
                     <strong style="color: var(--text-main); font-size: 0.95rem;">v1.6.0 — Modular Finances Grid & Platform Analytics</strong>
-                    <span style="font-size: 0.75rem; color: var(--accent-purple); font-weight: bold;">Current Version</span>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Previous Version</span>
                   </div>
                   <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
                     <li><strong>Finance Grid Column Spanning:</strong> Resize any of the 5 consolidated Finance view chart cards to span 1, 2, or 3 columns in the grid. Layout states are cached and synced.</li>
