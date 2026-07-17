@@ -133,10 +133,55 @@ function renderPeriodSummary(dbFilteredSales, dbFilteredInventory) {
   }
 }
 
+window.logAuditAction = function(action, details = "") {
+  const activeUser = state.currentUser || "system";
+  const logEntry = {
+    id: 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+    timestamp: new Date().toISOString(),
+    user: activeUser,
+    action: action,
+    details: details
+  };
+  
+  if (!state.auditLogs) state.auditLogs = [];
+  state.auditLogs.unshift(logEntry);
+  
+  // Cap at 1000 logs
+  if (state.auditLogs.length > 1000) {
+    state.auditLogs = state.auditLogs.slice(0, 1000);
+  }
+  
+  try {
+    localStorage.setItem("gv_audit_logs", JSON.stringify(state.auditLogs));
+  } catch (e) {
+    console.error("Failed to persist audit logs:", e);
+  }
+  
+  // Trigger table render if active
+  if (typeof renderAuditLogs === "function") {
+    renderAuditLogs();
+  }
+};
+
 // Recalculates metrics specifically for the Suppliers view
 function initSupabaseConnection() {
-  const url = localStorage.getItem("gv_supabase_url") || "";
-  const key = localStorage.getItem("gv_supabase_key") || "";
+  const userSuffix = (state.currentUser && state.currentUser !== "guest") ? `_${state.currentUser}` : "";
+  let url = localStorage.getItem("gv_supabase_url" + userSuffix);
+  let key = localStorage.getItem("gv_supabase_key" + userSuffix);
+  
+  // Migration fallback
+  if (url === null && key === null) {
+    const globalUrl = localStorage.getItem("gv_supabase_url");
+    const globalKey = localStorage.getItem("gv_supabase_key");
+    if (globalUrl || globalKey) {
+      url = globalUrl || "";
+      key = globalKey || "";
+      localStorage.setItem("gv_supabase_url" + userSuffix, url);
+      localStorage.setItem("gv_supabase_key" + userSuffix, key);
+    }
+  }
+  url = url || "";
+  key = key || "";
   
   const urlInput = document.getElementById("settings-supabase-url");
   const keyInput = document.getElementById("settings-supabase-key");
@@ -263,10 +308,12 @@ function bindSupabaseSettingsControls() {
         return;
       }
       
-      localStorage.setItem("gv_supabase_url", url);
-      localStorage.setItem("gv_supabase_key", key);
+      const userSuffix = (state.currentUser && state.currentUser !== "guest") ? `_${state.currentUser}` : "";
+      localStorage.setItem("gv_supabase_url" + userSuffix, url);
+      localStorage.setItem("gv_supabase_key" + userSuffix, key);
       
       showToast("Connecting and synchronizing database...", "info");
+      window.logAuditAction("Connect Supabase", `URL: ${url}`);
       initSupabaseConnection();
     });
   }
@@ -276,8 +323,9 @@ function bindSupabaseSettingsControls() {
     const newBtnDisconnect = btnDisconnect.cloneNode(true);
     btnDisconnect.parentNode.replaceChild(newBtnDisconnect, btnDisconnect);
     newBtnDisconnect.addEventListener("click", () => {
-      localStorage.removeItem("gv_supabase_url");
-      localStorage.removeItem("gv_supabase_key");
+      const userSuffix = (state.currentUser && state.currentUser !== "guest") ? `_${state.currentUser}` : "";
+      localStorage.removeItem("gv_supabase_url" + userSuffix);
+      localStorage.removeItem("gv_supabase_key" + userSuffix);
       
       const urlInput = document.getElementById("settings-supabase-url");
       const keyInput = document.getElementById("settings-supabase-key");
@@ -291,6 +339,7 @@ function bindSupabaseSettingsControls() {
       updateUI();
       
       showToast("Disconnected from Supabase. Switched to LocalStorage.", "success");
+      window.logAuditAction("Disconnect Supabase");
       logActionNotification("Disconnected from Supabase");
     });
   }
@@ -380,10 +429,29 @@ window.runFirebaseDiagnostics = async function() {
 
 // Initialize Firebase Connection
 function initFirebaseConnection() {
-  const apiKey = localStorage.getItem("gv_firebase_apikey") || "";
-  const projectId = localStorage.getItem("gv_firebase_projectid") || "";
-  const authDomain = localStorage.getItem("gv_firebase_authdomain") || "";
-  const appId = localStorage.getItem("gv_firebase_appid") || "";
+  const userSuffix = (state.currentUser && state.currentUser !== "guest") ? `_${state.currentUser}` : "";
+  let apiKey = localStorage.getItem("gv_firebase_apikey" + userSuffix);
+  let projectId = localStorage.getItem("gv_firebase_projectid" + userSuffix);
+  let authDomain = localStorage.getItem("gv_firebase_authdomain" + userSuffix);
+  let appId = localStorage.getItem("gv_firebase_appid" + userSuffix);
+  
+  // Migration fallback
+  if (apiKey === null && projectId === null) {
+    apiKey = localStorage.getItem("gv_firebase_apikey") || "";
+    projectId = localStorage.getItem("gv_firebase_projectid") || "";
+    authDomain = localStorage.getItem("gv_firebase_authdomain") || "";
+    appId = localStorage.getItem("gv_firebase_appid") || "";
+    if (apiKey || projectId) {
+      localStorage.setItem("gv_firebase_apikey" + userSuffix, apiKey);
+      localStorage.setItem("gv_firebase_projectid" + userSuffix, projectId);
+      localStorage.setItem("gv_firebase_authdomain" + userSuffix, authDomain);
+      localStorage.setItem("gv_firebase_appid" + userSuffix, appId);
+    }
+  }
+  apiKey = apiKey || "";
+  projectId = projectId || "";
+  authDomain = authDomain || "";
+  appId = appId || "";
 
   const apiKeyInput = document.getElementById("settings-firebase-apikey");
   const projectIdInput = document.getElementById("settings-firebase-projectid");
@@ -447,12 +515,14 @@ function bindFirebaseSettingsControls() {
         return;
       }
 
-      localStorage.setItem("gv_firebase_apikey", apiKey);
-      localStorage.setItem("gv_firebase_projectid", projectId);
-      localStorage.setItem("gv_firebase_authdomain", authDomain);
-      localStorage.setItem("gv_firebase_appid", appId);
+      const userSuffix = (state.currentUser && state.currentUser !== "guest") ? `_${state.currentUser}` : "";
+      localStorage.setItem("gv_firebase_apikey" + userSuffix, apiKey);
+      localStorage.setItem("gv_firebase_projectid" + userSuffix, projectId);
+      localStorage.setItem("gv_firebase_authdomain" + userSuffix, authDomain);
+      localStorage.setItem("gv_firebase_appid" + userSuffix, appId);
 
       showToast("Connecting to Firebase...", "info");
+      window.logAuditAction("Connect Firebase", `Project: ${projectId}`);
       initFirebaseConnection();
       if (window.firebaseApp) {
         showToast("Connected to Firebase successfully!", "success");
@@ -465,10 +535,11 @@ function bindFirebaseSettingsControls() {
     const newBtnDisconnect = btnDisconnect.cloneNode(true);
     btnDisconnect.parentNode.replaceChild(newBtnDisconnect, btnDisconnect);
     newBtnDisconnect.addEventListener("click", () => {
-      localStorage.removeItem("gv_firebase_apikey");
-      localStorage.removeItem("gv_firebase_projectid");
-      localStorage.removeItem("gv_firebase_authdomain");
-      localStorage.removeItem("gv_firebase_appid");
+      const userSuffix = (state.currentUser && state.currentUser !== "guest") ? `_${state.currentUser}` : "";
+      localStorage.removeItem("gv_firebase_apikey" + userSuffix);
+      localStorage.removeItem("gv_firebase_projectid" + userSuffix);
+      localStorage.removeItem("gv_firebase_authdomain" + userSuffix);
+      localStorage.removeItem("gv_firebase_appid" + userSuffix);
 
       const apiKeyInput = document.getElementById("settings-firebase-apikey");
       const projectIdInput = document.getElementById("settings-firebase-projectid");
@@ -487,15 +558,35 @@ function bindFirebaseSettingsControls() {
 
       initFirebaseConnection();
       showToast("Disconnected from Firebase.", "success");
+      window.logAuditAction("Disconnect Firebase");
     });
   }
 }
 
 function initGitHubConnection() {
-  const token = localStorage.getItem("gv_github_token") || "";
-  const repo = localStorage.getItem("gv_github_repo") || "";
-  const branch = localStorage.getItem("gv_github_branch") || "main";
-  const path = localStorage.getItem("gv_github_path") || "gamevault_backup.json";
+  const userSuffix = (state.currentUser && state.currentUser !== "guest") ? `_${state.currentUser}` : "";
+  let token = localStorage.getItem("gv_github_token" + userSuffix);
+  let repo = localStorage.getItem("gv_github_repo" + userSuffix);
+  let branch = localStorage.getItem("gv_github_branch" + userSuffix);
+  let path = localStorage.getItem("gv_github_path" + userSuffix);
+
+  // Migration fallback
+  if (token === null && repo === null) {
+    token = localStorage.getItem("gv_github_token") || "";
+    repo = localStorage.getItem("gv_github_repo") || "";
+    branch = localStorage.getItem("gv_github_branch") || "main";
+    path = localStorage.getItem("gv_github_path") || "gamevault_backup.json";
+    if (token || repo) {
+      localStorage.setItem("gv_github_token" + userSuffix, token);
+      localStorage.setItem("gv_github_repo" + userSuffix, repo);
+      localStorage.setItem("gv_github_branch" + userSuffix, branch);
+      localStorage.setItem("gv_github_path" + userSuffix, path);
+    }
+  }
+  token = token || "";
+  repo = repo || "";
+  branch = branch || "main";
+  path = path || "gamevault_backup.json";
 
   const tokenInput = document.getElementById("settings-github-token");
   const repoInput = document.getElementById("settings-github-repo");
@@ -541,12 +632,14 @@ function bindGitHubSettingsControls() {
         return;
       }
 
-      localStorage.setItem("gv_github_token", token);
-      localStorage.setItem("gv_github_repo", repo);
-      localStorage.setItem("gv_github_branch", branch);
-      localStorage.setItem("gv_github_path", path);
+      const userSuffix = (state.currentUser && state.currentUser !== "guest") ? `_${state.currentUser}` : "";
+      localStorage.setItem("gv_github_token" + userSuffix, token);
+      localStorage.setItem("gv_github_repo" + userSuffix, repo);
+      localStorage.setItem("gv_github_branch" + userSuffix, branch);
+      localStorage.setItem("gv_github_path" + userSuffix, path);
 
       showToast("Configuring GitHub connection...", "info");
+      window.logAuditAction("Connect GitHub", `Repo: ${repo}`);
       initGitHubConnection();
       showToast("GitHub configured successfully!", "success");
     });
@@ -557,10 +650,11 @@ function bindGitHubSettingsControls() {
     const newBtnDisconnect = btnDisconnect.cloneNode(true);
     btnDisconnect.parentNode.replaceChild(newBtnDisconnect, btnDisconnect);
     newBtnDisconnect.addEventListener("click", () => {
-      localStorage.removeItem("gv_github_token");
-      localStorage.removeItem("gv_github_repo");
-      localStorage.removeItem("gv_github_branch");
-      localStorage.removeItem("gv_github_path");
+      const userSuffix = (state.currentUser && state.currentUser !== "guest") ? `_${state.currentUser}` : "";
+      localStorage.removeItem("gv_github_token" + userSuffix);
+      localStorage.removeItem("gv_github_repo" + userSuffix);
+      localStorage.removeItem("gv_github_branch" + userSuffix);
+      localStorage.removeItem("gv_github_path" + userSuffix);
 
       const tokenInput = document.getElementById("settings-github-token");
       const repoInput = document.getElementById("settings-github-repo");
@@ -574,6 +668,7 @@ function bindGitHubSettingsControls() {
 
       initGitHubConnection();
       showToast("GitHub integration disconnected.", "success");
+      window.logAuditAction("Disconnect GitHub");
     });
   }
 

@@ -280,9 +280,22 @@ function getUsersFromStorage() {
       username: "admin",
       email: "admin@gamevault.local",
       password: "password",
+      role: "admin",
       twoFactorEnabled: false
     };
     arr.push(defaultAdmin);
+  }
+
+  // Ensure all users have a role assigned
+  let needsSave = false;
+  arr.forEach(u => {
+    if (!u.role) {
+      u.role = u.username.toLowerCase() === "admin" ? "admin" : "merchant";
+      needsSave = true;
+    }
+  });
+
+  if (needsSave || !hasAdmin) {
     try {
       localStorage.setItem("gv_users", JSON.stringify(arr));
     } catch (e) {
@@ -313,6 +326,7 @@ function handleLoginSubmit(e) {
     if (!matchedUser || matchedUser.password !== password) {
       console.warn("[Auth Debug] Invalid login credentials mismatch:", { enteredUser: username, enteredPass: password, storedUser: matchedUser ? matchedUser.username : null, storedPass: matchedUser ? matchedUser.password : null });
       showToast("Invalid username or password.", "error");
+      window.logAuditAction("Login Failed", `Failed sign in attempt for username '${username}'`);
       return;
     }
 
@@ -346,6 +360,7 @@ function handleLoginSubmit(e) {
     // Set state and load data
     state.currentUser = matchedUser.username;
     loadStateFromStorage();
+    window.logAuditAction("User Login", `Sign in succeeded for '${matchedUser.username}'`);
     
     // Transition to main dashboard
     const authContainer = document.getElementById("auth-container");
@@ -385,6 +400,7 @@ function handleVerify2FASubmit(e) {
 
     if (enteredCode !== state.pending2FA.code) {
       showToast("Invalid verification code. Please try again.", "error");
+      window.logAuditAction("2FA Failed", `Failed 2FA verification for '${username}'`);
       return;
     }
 
@@ -407,6 +423,7 @@ function handleVerify2FASubmit(e) {
     // Set state and load data
     state.currentUser = username;
     loadStateFromStorage();
+    window.logAuditAction("User Login (2FA)", `Sign in (2FA passed) for '${username}'`);
     
     // Transition to main dashboard
     const authContainer = document.getElementById("auth-container");
@@ -579,9 +596,11 @@ function handleAdminCreateUser(e) {
     }
 
     const twoFactorEnabled = document.getElementById("admin-new-2fa")?.checked || false;
-    const newUser = { username, email, password, twoFactorEnabled };
+    const role = document.getElementById("admin-new-role")?.value || "merchant";
+    const newUser = { username, email, password, role, twoFactorEnabled };
     users.push(newUser);
     saveUsersToStorage(users);
+    window.logAuditAction("Create User", `Created account '${username}' with role '${role}'`);
 
     // Initialize user storage arrays with mock clones
     localStorage.setItem(`gv_inventory_${username}`, JSON.stringify([]));
@@ -629,6 +648,7 @@ window.deleteUser = function(username) {
     localStorage.removeItem(`gv_expense_categories_${username}`);
 
     showToast(`User '${username}' deleted successfully.`, "success");
+    window.logAuditAction("Delete User", `Deleted account '${username}'`);
     renderAdminUsers();
   } catch (err) {
     console.error("Error deleting user:", err);
@@ -650,6 +670,7 @@ window.toggleUser2FA = function(username) {
     saveUsersToStorage(users);
     
     showToast(`2FA for '${username}' has been ${user.twoFactorEnabled ? 'enabled' : 'disabled'}.`, "success");
+    window.logAuditAction("Toggle 2FA (Admin)", `Toggled 2FA for '${username}' to ${user.twoFactorEnabled ? 'Enabled' : 'Disabled'}`);
     renderAdminUsers();
   } catch (err) {
     console.error("Error toggling user 2FA:", err);
@@ -669,6 +690,8 @@ window.triggerEditUser = function(username) {
   document.getElementById("edit-user-original-username").value = username;
   document.getElementById("edit-user-username").value = user.username;
   document.getElementById("edit-user-email").value = user.email;
+  const roleSelect = document.getElementById("edit-user-role");
+  if (roleSelect) roleSelect.value = user.role || "merchant";
   
   openModal("edit-user-modal");
 };
@@ -711,10 +734,14 @@ function handleEditUserSubmit(e) {
       return;
     }
 
-    // Update username/email in storage
+    const newRole = document.getElementById("edit-user-role")?.value || "merchant";
+
+    // Update username/email/role in storage
     user.username = newUsername;
     user.email = newEmail;
+    user.role = newRole;
     saveUsersToStorage(users);
+    window.logAuditAction("Edit User", `Updated account details for '${newUsername}' (Role: ${newRole})`);
 
     // Helper to migrate namespace data keys in localStorage
     const migrateKey = (oldPfx, newPfx) => {
@@ -817,6 +844,7 @@ function renderAdminUsers() {
 
 // Perform logout
 window.handleLogout = function() {
+  window.logAuditAction("User Logout", `Signed out session`);
   localStorage.removeItem("gv_active_user");
   sessionStorage.removeItem("gv_active_user");
   localStorage.setItem("gv_local_logout", "true");
@@ -4460,6 +4488,8 @@ function updateUI() {
     }
   }
 
+  applyRoleBasedAccessControls();
+
   // 1. Get filtered data
   const filteredSales = getFilteredSales();
   const filteredInventory = getFilteredInventory();
@@ -4542,8 +4572,29 @@ function updateUI() {
     renderRecycleBin();
   } 
   else if (activeViewId === "settings-view") {
+    applyRoleBasedAccessControls();
     renderSidebarCustomizationSettings();
     renderAdminUsers();
+    renderAuditLogs();
+    
+    // Bind profile values
+    const users = getUsersFromStorage();
+    const currentUserObj = users.find(u => u.username.toLowerCase() === state.currentUser?.toLowerCase());
+    if (currentUserObj) {
+      const emailInput = document.getElementById("profile-email-input");
+      const tfaInput = document.getElementById("profile-2fa-input");
+      const usernameDisplay = document.getElementById("profile-username-display");
+      const roleDisplay = document.getElementById("profile-role-display");
+      const profileAvatar = document.getElementById("profile-avatar");
+      
+      if (emailInput && !emailInput.value) emailInput.value = currentUserObj.email || "";
+      if (tfaInput) tfaInput.checked = currentUserObj.twoFactorEnabled || false;
+      if (usernameDisplay) usernameDisplay.textContent = state.currentUser;
+      if (roleDisplay) roleDisplay.textContent = currentUserObj.role || "merchant";
+      if (profileAvatar && state.currentUser) {
+        profileAvatar.textContent = state.currentUser.substring(0, 2).toUpperCase();
+      }
+    }
   }
 
   // 10. Reset bulk actions bar and select-all checkbox
@@ -10789,6 +10840,9 @@ function bindAdvancedSettingsControls() {
       btnCancelArtwork.textContent = "Stopping...";
     });
   }
+
+  // Bind Profile settings controls
+  bindProfileSettingsControls();
 }
 
 // Get state backup JSON payload
@@ -11467,3 +11521,160 @@ window.triggerBatchFetchArtworks = async function() {
     }
   }, 4000);
 };
+
+function applyRoleBasedAccessControls() {
+  const users = getUsersFromStorage();
+  const currentUserObj = users.find(u => u.username.toLowerCase() === state.currentUser?.toLowerCase());
+  const role = currentUserObj ? (currentUserObj.role || "merchant") : "merchant";
+  
+  const userMgmtCard = document.getElementById("settings-user-mgmt-card");
+  const auditLogCard = document.getElementById("settings-audit-log-card");
+  const btnDeleteAll = document.getElementById("btn-delete-all-inventory");
+  
+  if (role === "admin") {
+    if (userMgmtCard) userMgmtCard.classList.remove("hidden");
+    if (auditLogCard) auditLogCard.classList.remove("hidden");
+    if (btnDeleteAll) {
+      btnDeleteAll.disabled = false;
+      btnDeleteAll.style.opacity = "1";
+      btnDeleteAll.style.cursor = "pointer";
+      btnDeleteAll.title = "Delete all keys from local and cloud storage";
+    }
+  } else {
+    // Merchant role
+    if (userMgmtCard) userMgmtCard.classList.add("hidden");
+    if (auditLogCard) auditLogCard.classList.add("hidden");
+    if (btnDeleteAll) {
+      btnDeleteAll.disabled = true;
+      btnDeleteAll.style.opacity = "0.5";
+      btnDeleteAll.style.cursor = "not-allowed";
+      btnDeleteAll.title = "Delete All Inventory is restricted to Administrators only.";
+    }
+  }
+}
+
+function renderAuditLogs() {
+  const list = document.getElementById("admin-audit-log-list");
+  if (!list) return;
+  list.innerHTML = "";
+  
+  const logs = state.auditLogs || [];
+  if (logs.length === 0) {
+    list.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 15px;">No activity logs found.</td></tr>`;
+    return;
+  }
+  
+  logs.forEach(log => {
+    const tr = document.createElement("tr");
+    let dateStr = "";
+    try {
+      dateStr = new Date(log.timestamp).toLocaleString();
+    } catch (e) {
+      dateStr = log.timestamp;
+    }
+    
+    tr.innerHTML = `
+      <td style="color: var(--text-secondary); font-family: monospace;">${dateStr}</td>
+      <td><strong style="color: var(--accent-cyan);">${log.user}</strong></td>
+      <td><span class="badge" style="font-size: 0.72rem; padding: 2px 6px; background-color: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); font-weight: 600; text-transform: uppercase;">${log.action}</span></td>
+      <td style="color: var(--text-secondary); max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHTML(log.details || '')}">${escapeHTML(log.details || '')}</td>
+    `;
+    list.appendChild(tr);
+  });
+}
+
+window.clearAuditLogs = function() {
+  if (!confirm("Are you sure you want to clear all audit logs? This action is irreversible.")) return;
+  state.auditLogs = [];
+  localStorage.setItem("gv_audit_logs", JSON.stringify([]));
+  renderAuditLogs();
+  showToast("Activity audit logs cleared.", "success");
+};
+
+function bindProfileSettingsControls() {
+  const form = document.getElementById("profile-update-form");
+  if (!form) return;
+  
+  const users = getUsersFromStorage();
+  const currentUserObj = users.find(u => u.username.toLowerCase() === state.currentUser?.toLowerCase());
+  
+  const profileAvatar = document.getElementById("profile-avatar");
+  const usernameDisplay = document.getElementById("profile-username-display");
+  const roleDisplay = document.getElementById("profile-role-display");
+  const emailInput = document.getElementById("profile-email-input");
+  const tfaInput = document.getElementById("profile-2fa-input");
+  
+  if (profileAvatar && state.currentUser) {
+    profileAvatar.textContent = state.currentUser.substring(0, 2).toUpperCase();
+  }
+  if (usernameDisplay) usernameDisplay.textContent = state.currentUser;
+  if (roleDisplay && currentUserObj) {
+    roleDisplay.textContent = currentUserObj.role || "merchant";
+  }
+  
+  if (currentUserObj) {
+    if (emailInput && !emailInput.value) emailInput.value = currentUserObj.email || "";
+    if (tfaInput) tfaInput.checked = currentUserObj.twoFactorEnabled || false;
+  }
+  
+  const newForm = form.cloneNode(true);
+  form.parentNode.replaceChild(newForm, form);
+  
+  newForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    try {
+      const usersList = getUsersFromStorage();
+      const userObj = usersList.find(u => u.username.toLowerCase() === state.currentUser?.toLowerCase());
+      if (!userObj) {
+        showToast("User session mismatch.", "error");
+        return;
+      }
+      
+      const newEmail = document.getElementById("profile-email-input").value.trim();
+      const newPassword = document.getElementById("profile-password-input").value;
+      const confirmPassword = document.getElementById("profile-confirm-password-input").value;
+      const enable2FA = document.getElementById("profile-2fa-input").checked;
+      
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(newEmail)) {
+        showToast("Please enter a valid email address.", "warning");
+        return;
+      }
+      
+      if (newPassword) {
+        if (newPassword.length < 6) {
+          showToast("New password must be at least 6 characters long.", "warning");
+          return;
+        }
+        if (newPassword !== confirmPassword) {
+          showToast("Passwords do not match.", "error");
+          return;
+        }
+        userObj.password = newPassword;
+        window.logAuditAction("Change Password", "User updated password");
+      }
+      
+      const emailChanged = userObj.email !== newEmail;
+      const tfaChanged = userObj.twoFactorEnabled !== enable2FA;
+      
+      userObj.email = newEmail;
+      userObj.twoFactorEnabled = enable2FA;
+      
+      saveUsersToStorage(usersList);
+      
+      if (emailChanged) window.logAuditAction("Update Email", `Email updated to ${newEmail}`);
+      if (tfaChanged) window.logAuditAction("Toggle 2FA", `Toggled 2FA to ${enable2FA ? "Enabled" : "Disabled"}`);
+      
+      // Clear password inputs
+      document.getElementById("profile-password-input").value = "";
+      document.getElementById("profile-confirm-password-input").value = "";
+      
+      showToast("Profile settings updated successfully!", "success");
+      renderAdminUsers();
+      updateUI();
+    } catch (err) {
+      console.error("Profile update failed:", err);
+      showToast("An error occurred while updating profile.", "error");
+    }
+  });
+}

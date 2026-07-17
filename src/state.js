@@ -556,6 +556,7 @@ function getSupplierColorName(supplierName) {
 let state = {
   currentUser: null,
   favoriteGames: [],
+  auditLogs: [],
   entriesFilterFav: false,
   suppliersActiveTab: "supplier",
   lowStockThreshold: 5,
@@ -856,6 +857,10 @@ function initNotificationCenter() {
 function logActionNotification(text) {
   // If the app is still loading initial state, skip logging to avoid cluttering the recent 10 actions on reload/startup
   if (!window.appInitialized) return;
+
+  if (typeof window.logAuditAction === "function") {
+    window.logAuditAction("User Action", text);
+  }
 
   if (!state.notifications) {
     state.notifications = [];
@@ -1372,6 +1377,15 @@ function loadStateFromStorage() {
       state.menuOrder = ["dashboard", "inventory", "sales", "finance", "suppliers", "platforms", "entries", "recycle", "settings"];
     }
 
+    try {
+      const storedAuditLogs = localStorage.getItem("gv_audit_logs");
+      state.auditLogs = storedAuditLogs ? JSON.parse(storedAuditLogs) : [];
+      if (!Array.isArray(state.auditLogs)) state.auditLogs = [];
+    } catch (e) {
+      console.error("Error parsing audit logs, resetting:", e);
+      state.auditLogs = [];
+    }
+
     state.autoSyncInterval = localStorage.getItem("gv_auto_sync_interval") || "off";
     state.autoPushGitHub = localStorage.getItem("gv_auto_push_github") === "true";
     state.autoPullGitHub = localStorage.getItem("gv_auto_pull_github") === "true";
@@ -1404,6 +1418,7 @@ function saveStateToStorage() {
   localStorage.setItem("gv_payouts" + userSuffix, JSON.stringify(state.payouts));
   localStorage.setItem("gv_expense_categories" + userSuffix, JSON.stringify(state.expenseCategories));
   localStorage.setItem("gv_pending_deletes" + userSuffix, JSON.stringify(state.pendingDeletes));
+  localStorage.setItem("gv_audit_logs", JSON.stringify(state.auditLogs || []));
   localStorage.setItem("gv_inv_layout", state.inventoryLayout);
   localStorage.setItem("gv_entries_layout", state.entriesLayout);
   localStorage.setItem("gv_supplier_display_mode", state.supplierDisplayMode);

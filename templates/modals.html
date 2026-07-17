@@ -542,6 +542,14 @@
             <label for="edit-user-email" class="required">Email Address</label>
             <input type="email" id="edit-user-email" class="form-control" required placeholder="Email Address">
           </div>
+
+          <div class="form-group">
+            <label for="edit-user-role" class="required">User Role</label>
+            <select id="edit-user-role" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+              <option value="merchant">Merchant / Operator</option>
+              <option value="admin">Administrator</option>
+            </select>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline" data-close-modal="edit-user-modal">Cancel</button>

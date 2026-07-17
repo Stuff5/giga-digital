@@ -2371,6 +2371,49 @@
             <div class="responsive-grid-equal">
               <!-- Left Column: Theme & Currency -->
               <div style="display: flex; flex-direction: column; gap: 24px;">
+                <!-- My Profile Card -->
+                <div class="calc-card" style="margin-bottom: 0;">
+                  <h3>My Profile Settings</h3>
+                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+                    Manage your account security and credentials.
+                  </p>
+                  
+                  <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 15px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan)); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #fff; font-weight: bold;" id="profile-avatar">U</div>
+                    <div>
+                      <h4 style="margin: 0; color: var(--text-main); font-size: 1rem;" id="profile-username-display">Username</h4>
+                      <span class="badge" style="font-size: 0.7rem; background-color: var(--border-color); color: var(--text-secondary); padding: 2px 8px; margin-top: 4px; display: inline-block; text-transform: uppercase;" id="profile-role-display">Role</span>
+                    </div>
+                  </div>
+
+                  <form id="profile-update-form" style="display: flex; flex-direction: column; gap: 12px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <label for="profile-email-input" style="font-size: 0.8rem; margin-bottom: 4px;">Email Address</label>
+                      <input type="email" id="profile-email-input" class="form-control" style="height: 36px; padding: 6px 12px; font-size: 0.85rem;" required>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="profile-password-input" style="font-size: 0.8rem; margin-bottom: 4px;">New Password (Optional)</label>
+                        <input type="password" id="profile-password-input" class="form-control" style="height: 36px; padding: 6px 12px; font-size: 0.85rem;" placeholder="Leave blank to keep same" minlength="6">
+                      </div>
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="profile-confirm-password-input" style="font-size: 0.8rem; margin-bottom: 4px;">Confirm Password</label>
+                        <input type="password" id="profile-confirm-password-input" class="form-control" style="height: 36px; padding: 6px 12px; font-size: 0.85rem;" placeholder="Confirm new password">
+                      </div>
+                    </div>
+
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px; flex-wrap: wrap; gap: 12px;">
+                      <label class="checkbox-container" style="margin-bottom: 0;">
+                        <input type="checkbox" id="profile-2fa-input">
+                        <span class="checkbox-label" style="font-weight: 500; font-size: 0.85rem;">Enable 2FA Protection</span>
+                      </label>
+                      <button type="submit" class="btn btn-primary" style="height: 36px; padding: 0 16px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; width: auto; margin-top: 0;">
+                        <i class="fa-solid fa-user-gear"></i> Update Profile
+                      </button>
+                    </div>
+                  </form>
+                </div>
                                <div class="calc-card" style="margin-bottom: 0;">
                   <h3>Application Appearance</h3>
                   <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
@@ -2965,7 +3008,7 @@
                       </div>
                     </div>
                     
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 8px;">
                       <div class="form-group" style="margin-bottom: 0;">
                         <label for="admin-new-password" style="font-size: 0.8rem; margin-bottom: 4px;">Password</label>
                         <input type="password" id="admin-new-password" class="form-control" placeholder="Password" required minlength="6" style="height: 36px; padding: 6px 12px; font-size: 0.85rem;">
@@ -2973,6 +3016,13 @@
                       <div class="form-group" style="margin-bottom: 0;">
                         <label for="admin-confirm-password" style="font-size: 0.8rem; margin-bottom: 4px;">Confirm Password</label>
                         <input type="password" id="admin-confirm-password" class="form-control" placeholder="Confirm Password" required style="height: 36px; padding: 6px 12px; font-size: 0.85rem;">
+                      </div>
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="admin-new-role" style="font-size: 0.8rem; margin-bottom: 4px;">User Role</label>
+                        <select id="admin-new-role" class="form-control" style="height: 36px; padding: 6px 12px; font-size: 0.85rem; background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="merchant">Merchant / Operator</option>
+                          <option value="admin">Administrator</option>
+                        </select>
                       </div>
                     </div>
                     
@@ -3002,6 +3052,37 @@
                         <!-- Injected by JS -->
                       </tbody>
                     </table>
+                  </div>
+                  
+                  <!-- Activity Audit Log Settings Card (Admin only) -->
+                  <div class="calc-card" id="settings-audit-log-card" style="margin-top: 24px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                      <div>
+                        <h3 style="margin: 0;">Security Activity Audit Log</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 4px; margin-bottom: 0;">
+                          System history and security logs of user actions.
+                        </p>
+                      </div>
+                      <button type="button" class="btn btn-outline btn-sm" onclick="clearAuditLogs()" style="height: 32px; padding: 0 12px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px; border-color: var(--accent-danger); color: var(--accent-danger);">
+                        <i class="fa-solid fa-trash-can"></i> Clear Logs
+                      </button>
+                    </div>
+                    
+                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                      <table class="table" style="font-size: 0.82rem; min-width: 500px;">
+                        <thead>
+                          <tr>
+                            <th style="width: 150px;">Timestamp</th>
+                            <th style="width: 100px;">User</th>
+                            <th style="width: 150px;">Action</th>
+                            <th>Details</th>
+                          </tr>
+                        </thead>
+                        <tbody id="admin-audit-log-list">
+                          <!-- Injected by JS -->
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               </div>
