@@ -916,37 +916,67 @@ async function synchronizeCloudDatabase() {
   showToast("Starting cloud database sync...", "info");
   
   try {
-    // 1. Process pending deletions
-    if (state.pendingDeletes.inventory.length > 0) {
-      const { error } = await window.supabaseClient
-        .from('inventory')
-        .delete()
-        .in('id', state.pendingDeletes.inventory);
-      if (error) console.error("Error syncing inventory deletes:", error);
-    }
-    
+    // 1. Process pending deletions in batches of 200 to avoid URI length and PostgREST limits
+    const deleteBatchSize = 200;
+
+    // Delete sales first (to prevent foreign key constraint violations)
     if (state.pendingDeletes.sales.length > 0) {
-      const { error } = await window.supabaseClient
-        .from('sales')
-        .delete()
-        .in('id', state.pendingDeletes.sales);
-      if (error) console.error("Error syncing sales deletes:", error);
+      for (let j = 0; j < state.pendingDeletes.sales.length; j += deleteBatchSize) {
+        const batch = state.pendingDeletes.sales.slice(j, j + deleteBatchSize);
+        const { error } = await window.supabaseClient
+          .from('sales')
+          .delete()
+          .in('id', batch);
+        if (error) {
+          console.error("Error syncing sales deletes:", error);
+          throw error;
+        }
+      }
     }
     
+    // Delete inventory second
+    if (state.pendingDeletes.inventory.length > 0) {
+      for (let j = 0; j < state.pendingDeletes.inventory.length; j += deleteBatchSize) {
+        const batch = state.pendingDeletes.inventory.slice(j, j + deleteBatchSize);
+        const { error } = await window.supabaseClient
+          .from('inventory')
+          .delete()
+          .in('id', batch);
+        if (error) {
+          console.error("Error syncing inventory deletes:", error);
+          throw error;
+        }
+      }
+    }
+    
+    // Delete suppliers
     if (state.pendingDeletes.suppliers.length > 0) {
-      const { error } = await window.supabaseClient
-        .from('suppliers')
-        .delete()
-        .in('name', state.pendingDeletes.suppliers);
-      if (error) console.error("Error syncing suppliers deletes:", error);
+      for (let j = 0; j < state.pendingDeletes.suppliers.length; j += deleteBatchSize) {
+        const batch = state.pendingDeletes.suppliers.slice(j, j + deleteBatchSize);
+        const { error } = await window.supabaseClient
+          .from('suppliers')
+          .delete()
+          .in('name', batch);
+        if (error) {
+          console.error("Error syncing suppliers deletes:", error);
+          throw error;
+        }
+      }
     }
     
+    // Delete platforms
     if (state.pendingDeletes.platforms.length > 0) {
-      const { error } = await window.supabaseClient
-        .from('platforms')
-        .delete()
-        .in('name', state.pendingDeletes.platforms);
-      if (error) console.error("Error syncing platforms deletes:", error);
+      for (let j = 0; j < state.pendingDeletes.platforms.length; j += deleteBatchSize) {
+        const batch = state.pendingDeletes.platforms.slice(j, j + deleteBatchSize);
+        const { error } = await window.supabaseClient
+          .from('platforms')
+          .delete()
+          .in('name', batch);
+        if (error) {
+          console.error("Error syncing platforms deletes:", error);
+          throw error;
+        }
+      }
     }
     
     state.pendingDeletes = { inventory: [], sales: [], suppliers: [], platforms: [] };

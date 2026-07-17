@@ -3775,18 +3775,18 @@ window.triggerDeleteAllInventory = async function() {
         showToast("Deleting items from cloud database...", "info");
         const deleteBatchSize = 200;
         
+        // Delete sales items first in batches to satisfy foreign key constraints
+        for (let j = 0; j < saleIds.length; j += deleteBatchSize) {
+          const batch = saleIds.slice(j, j + deleteBatchSize);
+          const { error: saleErr } = await window.supabaseClient.from('sales').delete().in('id', batch);
+          if (saleErr) throw saleErr;
+        }
+
         // Delete inventory items in batches to avoid URL length limit errors
         for (let j = 0; j < ids.length; j += deleteBatchSize) {
           const batch = ids.slice(j, j + deleteBatchSize);
           const { error: invErr } = await window.supabaseClient.from('inventory').delete().in('id', batch);
           if (invErr) throw invErr;
-        }
-
-        // Delete sales items in batches to avoid URL length limit errors
-        for (let j = 0; j < saleIds.length; j += deleteBatchSize) {
-          const batch = saleIds.slice(j, j + deleteBatchSize);
-          const { error: saleErr } = await window.supabaseClient.from('sales').delete().in('id', batch);
-          if (saleErr) throw saleErr;
         }
       }
     } else if (state.syncMode === "manual") {
