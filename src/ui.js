@@ -10847,6 +10847,9 @@ window.triggerPurgeGame = async function(gameId) {
   }
 };
 
+// Module-level variable to persist expanded states
+let activeExpandedPublishers = new Set();
+
 function renderPublishersTab() {
   const tbody = DOM["publishers-table-body"] || document.getElementById("publishers-table-body");
   if (!tbody) return;
@@ -10914,7 +10917,12 @@ function renderPublishersTab() {
 
   publishersList.forEach(pub => {
     const tr = document.createElement("tr");
-    
+    tr.style.cursor = "pointer";
+    tr.setAttribute("title", "Click to view games breakdown");
+
+    const isExpanded = activeExpandedPublishers.has(pub.name);
+    const chevronIcon = `<i class="fa-solid fa-chevron-${isExpanded ? 'down' : 'right'}" style="margin-right: 8px; color: var(--accent-purple); width: 12px; display: inline-block; transition: transform 0.2s ease;"></i>`;
+
     const roi = pub.totalCostOfSales > 0 ? (pub.totalNetProfit / pub.totalCostOfSales) * 100 : 0;
     const avgDuration = pub.durationCount > 0 ? (pub.totalDuration / pub.durationCount).toFixed(1) : "—";
     const profitClass = pub.totalNetProfit >= 0 ? "text-success-neon" : "text-danger-soft";
@@ -10924,10 +10932,10 @@ function renderPublishersTab() {
     const escapedPubName = pub.name.replace(/'/g, "\\'").replace(/"/g, "&quot;");
     const editBtnHtml = isNoPublisher 
       ? "" 
-      : `<button class="btn btn-outline btn-xs" onclick="triggerEditPublisher('${escapeHTML(escapedPubName)}')" style="padding: 2px 6px; font-size: 0.75rem;"><i class="fa-solid fa-pen-to-square"></i> Edit</button>`;
+      : `<button class="btn btn-outline btn-xs" onclick="event.stopPropagation(); triggerEditPublisher('${escapeHTML(escapedPubName)}')" style="padding: 2px 6px; font-size: 0.75rem;"><i class="fa-solid fa-pen-to-square"></i> Edit</button>`;
 
     tr.innerHTML = `
-      <td><strong>${escapeHTML(pub.name)}</strong></td>
+      <td><span style="display: inline-flex; align-items: center;">${chevronIcon}<strong>${escapeHTML(pub.name)}</strong></span></td>
       <td>${pub.purchased}</td>
       <td>${pub.sold}</td>
       <td>${pub.inStock}</td>
@@ -10938,7 +10946,126 @@ function renderPublishersTab() {
       <td>${avgDuration} ${pub.durationCount > 0 ? 'days' : ''}</td>
       <td style="text-align: right;">${editBtnHtml}</td>
     `;
+
+    // Row Click toggle listener (excluding interactive buttons)
+    tr.addEventListener("click", (e) => {
+      if (e.target.closest("button") || e.target.closest("a")) return;
+      if (activeExpandedPublishers.has(pub.name)) {
+        activeExpandedPublishers.delete(pub.name);
+      } else {
+        activeExpandedPublishers.add(pub.name);
+      }
+      renderPublishersTab();
+    });
+
     tbody.appendChild(tr);
+
+    // Render detailed nested games sub-table if expanded
+    if (isExpanded) {
+      const trDetail = document.createElement("tr");
+      trDetail.className = "publisher-games-detail-row";
+      
+      // Extract all inventory entries matching this publisher name
+      const publisherItems = state.inventory.filter(item => {
+        const pubNameStr = String(item.publisher || "").trim() || "No Publisher";
+        return pubNameStr === pub.name;
+      });
+
+      // Group keys by game title
+      const gamesGroup = {};
+      publisherItems.forEach(item => {
+        const title = item.title.trim();
+        if (!gamesGroup[title]) {
+          gamesGroup[title] = {
+            title: title,
+            purchased: 0,
+            sold: 0,
+            inStock: 0,
+            totalSpent: 0,
+            totalRevenue: 0,
+            totalCostOfSales: 0,
+            totalNetProfit: 0,
+            imageUrl: item.imageUrl || null
+          };
+        }
+        const g = gamesGroup[title];
+        g.purchased++;
+        g.totalSpent += item.cost;
+        
+        if (item.status === "Sold") {
+          g.sold++;
+          const sale = salesMap.get(item.id);
+          if (sale) {
+            g.totalRevenue += sale.sellPrice;
+            g.totalCostOfSales += sale.cost;
+            g.totalNetProfit += sale.profit;
+          }
+        } else if (item.status !== "Rejected") {
+          g.inStock++;
+        }
+      });
+
+      const gamesList = Object.values(gamesGroup).sort((a, b) => a.title.localeCompare(b.title));
+
+      let gamesRowsHtml = "";
+      if (gamesList.length === 0) {
+        gamesRowsHtml = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">No game details resolved.</td></tr>`;
+      } else {
+        gamesList.forEach(g => {
+          const gRoi = g.totalCostOfSales > 0 ? (g.totalNetProfit / g.totalCostOfSales) * 100 : 0;
+          const gProfitClass = g.totalNetProfit >= 0 ? "text-success-neon" : "text-danger-soft";
+          const gProfitSign = g.totalNetProfit > 0 ? "+" : "";
+          const gameInitials = g.title.split(" ").map(w => w ? w[0] : "").join("").slice(0, 3) || "???";
+          
+          const titleCell = g.imageUrl
+            ? `<div class="game-title-cell" style="gap: 8px;"><img src="${escapeHTML(g.imageUrl)}" class="game-thumbnail" style="width: 24px; height: 32px; border-radius: 4px; object-fit: cover;" alt="${escapeHTML(g.title)}"><strong>${escapeHTML(g.title)}</strong></div>`
+            : `<div class="game-title-cell" style="gap: 8px;"><div class="game-thumbnail-placeholder" style="width: 24px; height: 32px; font-size: 0.65rem; border-radius: 4px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink)); color: #fff;">${escapeHTML(gameInitials)}</div><strong>${escapeHTML(g.title)}</strong></div>`;
+
+          gamesRowsHtml += `
+            <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.03);">
+              <td style="padding: 6px 12px; font-size: 0.8rem;">${titleCell}</td>
+              <td style="padding: 6px 12px; font-size: 0.8rem;">${g.purchased} keys</td>
+              <td style="padding: 6px 12px; font-size: 0.8rem;"><span class="badge ${g.inStock > 0 ? 'badge-available' : 'badge-sold'}" style="font-size: 0.7rem; padding: 2px 6px;">${g.inStock} in stock</span></td>
+              <td style="padding: 6px 12px; font-size: 0.8rem;">${g.sold} sold</td>
+              <td style="padding: 6px 12px; font-size: 0.8rem;">${formatCurrency(g.totalSpent)}</td>
+              <td style="padding: 6px 12px; font-size: 0.8rem;">${formatCurrency(g.totalRevenue)}</td>
+              <td style="padding: 6px 12px; font-size: 0.8rem;" class="${gProfitClass}"><strong>${gProfitSign}${formatCurrency(g.totalNetProfit)}</strong></td>
+              <td style="padding: 6px 12px; font-size: 0.8rem;" class="${gProfitClass}">${gRoi.toFixed(1)}%</td>
+            </tr>
+          `;
+        });
+      }
+
+      trDetail.innerHTML = `
+        <td colspan="10" style="padding: 12px 24px; background: rgba(0, 0, 0, 0.18);">
+          <div style="border-left: 3px solid var(--accent-purple); padding-left: 16px; margin: 4px 0;">
+            <h5 style="margin: 0 0 10px 0; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--accent-purple);">
+              <i class="fa-solid fa-gamepad" style="margin-right: 6px;"></i> Games Breakdown for ${escapeHTML(pub.name)}
+            </h5>
+            <div class="table-responsive" style="margin: 0; background: var(--bg-card); border-radius: var(--radius-md); border: 1px solid var(--border-color); box-shadow: inset 0 2px 8px rgba(0,0,0,0.2);">
+              <table class="table" style="font-size: 0.8rem; margin: 0; width: 100%;">
+                <thead>
+                  <tr style="background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border-color);">
+                    <th style="padding: 8px 12px;">Game Title</th>
+                    <th style="padding: 8px 12px;">Purchased</th>
+                    <th style="padding: 8px 12px;">Stock</th>
+                    <th style="padding: 8px 12px;">Sold</th>
+                    <th style="padding: 8px 12px;">Spent</th>
+                    <th style="padding: 8px 12px;">Revenue</th>
+                    <th style="padding: 8px 12px;">Profit</th>
+                    <th style="padding: 8px 12px;">ROI %</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${gamesRowsHtml}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(trDetail);
+    }
   });
 }
 
