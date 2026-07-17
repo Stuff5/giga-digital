@@ -238,6 +238,8 @@
               <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">How to Flag a Dispute</h5>
               <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
                 Navigate to the <strong>Sales Ledger</strong>. Next to any transaction, click the amber warning button (<i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-warning);"></i>). Confirmed flags will highlight the row in warning orange, slash out the selling price, and update the profit to a capital loss.
+                <br>
+                <i class="fa-solid fa-bell" style="color: var(--accent-danger); margin-right: 6px;"></i><strong>Pulsing Sidebar Alerts:</strong> Active disputes are dynamically tracked on your dashboard. A pulsing red dispute count badge will appear next to the <strong>Sales Ledger</strong> menu option in your sidebar to alert you of unresolved tickets.
               </p>
               
               <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">How Math Adjusts for Refunds</h5>
@@ -333,10 +335,22 @@
               </p>
 
               <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">6. Ending Stock Asset Valuation</h5>
-              <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 0;">
+              <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 12px;">
                 Calculated on the closing boundaries of any selected timeframe (e.g. month-end or year-end). It counts keys purchased on/before the cutoff that remain unsold or were sold after that cutoff:
                 <br>
                 <code style="font-family: monospace; color: var(--accent-cyan);">Ending Stock Cost Value = Sum(Item Purchase Cost of Open Keys)</code>
+              </p>
+
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">7. Lowest Sold Price</h5>
+              <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 12px;">
+                Calculates the lowest selling price recorded for any game title across all matching transaction logs. This establishes your historical floor value:
+                <br>
+                <code style="font-family: monospace; color: var(--accent-purple);">Lowest Sold Price = Min(Sale Price)</code>
+              </p>
+
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">8. Micro Visual Margin Bars</h5>
+              <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 0;">
+                Horizontal 3px bars represent ROI and margin proportions visually. Emerald bars stretch right for positive yield values; red bars stretch left for negative yield values, facilitating rapid visual analytics scans.
               </p>
             </div>
 
@@ -406,11 +420,25 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
-                <!-- v1.7.2 -->
+                <!-- v1.7.3 -->
                 <div style="border-left: 3px solid var(--accent-emerald); padding-left: 12px;">
                   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.7.2 — Codebase Modularization & Refactoring</strong>
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.7.3 — Dynamic Cover Gradients & Dashboard Visualizer Upgrades</strong>
                     <span style="font-size: 0.75rem; color: var(--accent-emerald); font-weight: bold;">Current Version</span>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
+                    <li><strong>Unique Hashed Gradients:</strong> Computes dynamic gradient cover backgrounds based on game title characters, colorizing empty image placeholders across all lists and gallery views.</li>
+                    <li><strong>Micro ROI & Margin Bars:</strong> Renders thin, responsive horizontal indicators under ROI/Margin percentages in Catalog and Publishers tables.</li>
+                    <li><strong>Pulsing Low-Stock Alerts:</strong> Adds a soft warning pulsation animation to highlight product shortages requiring re-orders.</li>
+                    <li><strong>Sidebar Dispute Badge:</strong> Displays a pulsing dispute notification counter next to the Sales Ledger navigation link whenever active customer disputes exist in the ledger.</li>
+                  </ul>
+                </div>
+
+                <!-- v1.7.2 -->
+                <div style="border-left: 3px solid var(--border-color); padding-left: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.7.2 — Codebase Modularization & Refactoring</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Previous Version</span>
                   </div>
                   <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
                     <li><strong>Javascript Codebase Splits:</strong> Divided the monolithic 18k lines of `app.js` into 5 clean sub-files under a separate `src/` directory, loaded sequentially in dependency order to retain global scope and offline double-click load capabilities.</li>

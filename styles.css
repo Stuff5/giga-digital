@@ -4978,4 +4978,51 @@ textarea.form-control {
   z-index: 2;
 }
 
+/* Sidebar Dispute Notification Badge */
+.sidebar-dispute-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--accent-danger, #ff4d4d);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  border-radius: 10px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  margin-left: auto;
+  box-shadow: 0 0 10px rgba(255, 77, 77, 0.4);
+}
+.sidebar-collapsed .sidebar-dispute-badge {
+  display: none !important;
+}
+
+/* Pulsing dispute and stock alert animations */
+.badge-pulse {
+  animation: dispute-pulse 1.8s infinite alternate ease-in-out;
+}
+@keyframes dispute-pulse {
+  0% {
+    box-shadow: 0 0 4px rgba(255, 77, 77, 0.4);
+    transform: scale(1);
+  }
+  100% {
+    box-shadow: 0 0 12px rgba(255, 77, 77, 0.8);
+    transform: scale(1.08);
+  }
+}
+
+.badge-pulse-warning {
+  animation: warning-pulse 1.8s infinite alternate ease-in-out;
+}
+@keyframes warning-pulse {
+  0% {
+    box-shadow: 0 0 4px rgba(255, 179, 0, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 12px rgba(255, 179, 0, 0.7);
+  }
+}
+
 

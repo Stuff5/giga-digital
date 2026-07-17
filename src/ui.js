@@ -30,6 +30,37 @@ window.loadHTMLTemplates = async () => {
   }));
 };
 
+// Generate unique dynamic gradient background based on string characters
+window.getHashGradient = function(str) {
+  if (!str) return 'linear-gradient(135deg, var(--accent-purple), var(--accent-cyan))';
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const h1 = Math.abs(hash % 360);
+  const h2 = (h1 + 45) % 360;
+  return `linear-gradient(135deg, hsl(${h1}, 70%, 40%) 0%, hsl(${h2}, 75%, 30%) 100%)`;
+};
+
+// Generate horizontal mini progress bar visualizer for percentage values (ROI/Margin)
+window.getMiniMarginBar = function(val) {
+  const capVal = Math.min(100, Math.max(-100, val));
+  const isPositive = capVal >= 0;
+  const barColor = isPositive ? 'var(--accent-emerald, #10b981)' : 'var(--accent-danger, #ff4d4d)';
+  const widthPercent = Math.abs(capVal);
+  
+  return `
+    <div style="font-size: 0.8rem; display: flex; flex-direction: column; gap: 4px; width: 100%; min-width: 75px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; line-height: 1;">
+        <span class="${isPositive ? 'text-success-neon' : 'text-danger-soft'}" style="font-weight: 600;">${isPositive ? '+' : ''}${val.toFixed(1)}%</span>
+      </div>
+      <div style="height: 3px; width: 100%; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; position: relative;">
+        <div style="height: 100%; width: ${widthPercent}%; background: ${barColor}; border-radius: 2px; margin-left: ${isPositive ? '0' : 'auto'};"></div>
+      </div>
+    </div>
+  `;
+};
+
 // Load data from LocalStorage
 function cleanupEmptyDatabaseRows() {
   try {
@@ -1187,11 +1218,22 @@ function renderSidebarMenu() {
     const isActive = (currentHash === `#${key}`);
     const activeClass = isActive ? "active" : "";
 
+    let badgeHtml = "";
+    if (key === "sales") {
+      const disputeCount = state.sales.filter(s => s.disputed === true).length;
+      if (disputeCount > 0) {
+        badgeHtml = `<span class="sidebar-dispute-badge badge-pulse" title="${disputeCount} active sales disputes">${disputeCount}</span>`;
+      }
+    }
+
     html += `
       <li>
-        <a href="#${key}" class="nav-link ${activeClass}" id="nav-${key}">
-          <i class="fa-solid ${iconClass}" id="sidebar-icon-${key}"></i>
-          <span id="sidebar-text-${key}">${titleText}</span>
+        <a href="#${key}" class="nav-link ${activeClass}" id="nav-${key}" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+          <span style="display: flex; align-items: center; gap: 10px;">
+            <i class="fa-solid ${iconClass}" id="sidebar-icon-${key}"></i>
+            <span id="sidebar-text-${key}">${titleText}</span>
+          </span>
+          ${badgeHtml}
         </a>
       </li>
     `;
@@ -6440,7 +6482,7 @@ function buildInventoryRowHTML(item, salesMap) {
   const initials = titleStr.split(" ").map(w => w ? w[0] : "").join("").slice(0, 3) || "???";
   const titleCell = item.imageUrl 
     ? `<div class="game-title-cell"><img src="${escapeHTML(item.imageUrl)}" class="game-thumbnail" alt="${escapeHTML(titleStr)}"><strong>${escapeHTML(titleStr)}</strong></div>`
-    : `<div class="game-title-cell"><div class="game-thumbnail-placeholder">${escapeHTML(initials)}</div><strong>${escapeHTML(titleStr)}</strong></div>`;
+    : `<div class="game-title-cell"><div class="game-thumbnail-placeholder" style="background: ${getHashGradient(titleStr)};">${escapeHTML(initials)}</div><strong>${escapeHTML(titleStr)}</strong></div>`;
 
   // Retrieve closing date if sold
   const saleItem = salesMap.get(item.id);
@@ -6838,7 +6880,7 @@ function renderEntriesGalleryLayout(entriesList) {
       // Cover art rendering
       const imageHtml = entry.imageUrl
         ? `<img src="${escapeHTML(entry.imageUrl)}" class="gallery-card-img" alt="${escapeHTML(titleStr)}">`
-        : `<div class="gallery-card-placeholder">${escapeHTML(initials)}</div>`;
+        : `<div class="gallery-card-placeholder" style="background: ${getHashGradient(titleStr)};">${escapeHTML(initials)}</div>`;
 
       // Favorite status & star icon
       const safeTitle = entry.title.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
@@ -6858,7 +6900,7 @@ function renderEntriesGalleryLayout(entriesList) {
         badgeClass = "badge-sold";
         badgeText = "0 in stock";
       } else if (entry.availableStock <= state.lowStockThreshold) {
-        badgeClass = "badge-low-stock";
+        badgeClass = "badge-low-stock badge-pulse-warning";
         badgeText = `${entry.availableStock} in stock (Low)`;
       }
 
@@ -6965,7 +7007,7 @@ function buildSalesRowHTML(sale, inventoryMap) {
   const saleImgUrl = gameInInv ? gameInInv.imageUrl : null;
   const titleCell = saleImgUrl 
     ? `<div class="game-title-cell"><img src="${escapeHTML(saleImgUrl)}" class="game-thumbnail" alt="${escapeHTML(sale.title)}"><strong>${escapeHTML(sale.title)}</strong></div>`
-    : `<div class="game-title-cell"><div class="game-thumbnail-placeholder">${escapeHTML(initials)}</div><strong>${escapeHTML(sale.title)}</strong></div>`;
+    : `<div class="game-title-cell"><div class="game-thumbnail-placeholder" style="background: ${getHashGradient(sale.title)};">${escapeHTML(initials)}</div><strong>${escapeHTML(sale.title)}</strong></div>`;
 
   const isDisputed = sale.disputed === true;
   const isSupplierRefunded = sale.supplierRefunded === true;
@@ -7289,7 +7331,7 @@ function renderDashboardDetails(filteredSalesList, filteredInventoryList) {
       const saleImgUrl = gameInInv ? gameInInv.imageUrl : null;
       const titleCell = saleImgUrl 
         ? `<div class="game-title-cell"><img src="${saleImgUrl}" class="game-thumbnail" alt="${sale.title}"><strong>${sale.title}</strong></div>`
-        : `<div class="game-title-cell"><div class="game-thumbnail-placeholder">${initials}</div><strong>${sale.title}</strong></div>`;
+        : `<div class="game-title-cell"><div class="game-thumbnail-placeholder" style="background: ${getHashGradient(sale.title)};">${initials}</div><strong>${sale.title}</strong></div>`;
 
       tr.innerHTML = `
         <td>${titleCell}</td>
@@ -7669,7 +7711,7 @@ function renderEntries() {
 
       const titleCell = entry.imageUrl
         ? `<div class="game-title-cell"><img src="${escapeHTML(entry.imageUrl)}" class="game-thumbnail" alt="${escapeHTML(entry.title)}"><div><div style="display: flex; align-items: center; gap: 4px;"><strong>${escapeHTML(entry.title)}</strong>${starBtn}</div>${publisherSubtitle}</div></div>`
-        : `<div class="game-title-cell"><div class="game-thumbnail-placeholder">${escapeHTML(initials)}</div><div><div style="display: flex; align-items: center; gap: 4px;"><strong>${escapeHTML(entry.title)}</strong>${starBtn}</div>${publisherSubtitle}</div></div>`;
+        : `<div class="game-title-cell"><div class="game-thumbnail-placeholder" style="background: ${getHashGradient(entry.title)};">${escapeHTML(initials)}</div><div><div style="display: flex; align-items: center; gap: 4px;"><strong>${escapeHTML(entry.title)}</strong>${starBtn}</div>${publisherSubtitle}</div></div>`;
 
       // Calculate Average Days to Sell
       const durations = entry.sellDurations || [];
@@ -7688,7 +7730,7 @@ function renderEntries() {
         badgeClass = "badge-sold";
         badgeText = "0 in stock";
       } else if (entry.availableStock <= state.lowStockThreshold) {
-        badgeClass = "badge-low-stock";
+        badgeClass = "badge-low-stock badge-pulse-warning";
         badgeText = `${entry.availableStock} in stock (Low)`;
       }
 
@@ -7701,8 +7743,8 @@ function renderEntries() {
         <td>${entry.lowestSoldPrice !== null ? formatCurrency(entry.lowestSoldPrice) : '<span class="text-muted">—</span>'}</td>
         <td>${formatCurrency(entry.totalRevenue)}</td>
         <td class="${entry.profit >= 0 ? 'text-success-neon' : 'text-danger-soft'}"><strong>${formatCurrency(entry.profit)}</strong></td>
-        <td class="${roiPercentage >= 0 ? 'text-success-neon' : 'text-danger-soft'}">${roiPercentage.toFixed(1)}%</td>
-        <td class="${marginPercentage >= 0 ? 'text-success-neon' : 'text-danger-soft'}">${marginPercentage.toFixed(1)}%</td>
+        <td>${getMiniMarginBar(roiPercentage)}</td>
+        <td>${getMiniMarginBar(marginPercentage)}</td>
         <td style="text-align: right;">
           <div style="display: inline-flex; gap: 8px; justify-content: flex-end; width: 100%;">
             <button class="btn btn-outline btn-sm" onclick="triggerEditCatalogEntry('${escapeHTML(safeTitle)}')" title="Edit Catalog Entry">
@@ -11029,7 +11071,7 @@ function renderPublishersTab() {
           
           const titleCell = g.imageUrl
             ? `<div class="game-title-cell" style="gap: 8px;"><img src="${escapeHTML(g.imageUrl)}" class="game-thumbnail" style="width: 24px; height: 32px; border-radius: 4px; object-fit: cover;" alt="${escapeHTML(g.title)}"><strong>${escapeHTML(g.title)}</strong></div>`
-            : `<div class="game-title-cell" style="gap: 8px;"><div class="game-thumbnail-placeholder" style="width: 24px; height: 32px; font-size: 0.65rem; border-radius: 4px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink)); color: #fff;">${escapeHTML(gameInitials)}</div><strong>${escapeHTML(g.title)}</strong></div>`;
+            : `<div class="game-title-cell" style="gap: 8px;"><div class="game-thumbnail-placeholder" style="width: 24px; height: 32px; font-size: 0.65rem; border-radius: 4px; display: flex; align-items: center; justify-content: center; background: ${getHashGradient(g.title)}; color: #fff;">${escapeHTML(gameInitials)}</div><strong>${escapeHTML(g.title)}</strong></div>`;
 
           gamesRowsHtml += `
             <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.03);">
@@ -11040,7 +11082,7 @@ function renderPublishersTab() {
               <td style="padding: 6px 12px; font-size: 0.8rem;">${formatCurrency(g.totalSpent)}</td>
               <td style="padding: 6px 12px; font-size: 0.8rem;">${formatCurrency(g.totalRevenue)}</td>
               <td style="padding: 6px 12px; font-size: 0.8rem;" class="${gProfitClass}"><strong>${gProfitSign}${formatCurrency(g.totalNetProfit)}</strong></td>
-              <td style="padding: 6px 12px; font-size: 0.8rem;" class="${gProfitClass}">${gRoi.toFixed(1)}%</td>
+              <td style="padding: 6px 12px; font-size: 0.8rem;">${getMiniMarginBar(gRoi)}</td>
             </tr>
           `;
         });
