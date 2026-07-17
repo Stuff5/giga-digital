@@ -4787,6 +4787,31 @@ function renderSupplierAnalytics() {
     inventoryMap.set(item.id, item);
   });
 
+  // Filter lists based on the selected timeframe
+  let filteredSales = [...state.sales];
+  let filteredInventory = [...state.inventory];
+  const activePeriod = state.supActivePeriod || "all";
+  const now = new Date();
+
+  if (activePeriod !== "all") {
+    if (activePeriod === "month") {
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      filteredSales = filteredSales.filter(item => new Date(item.saleDate) >= startOfMonth);
+      filteredInventory = filteredInventory.filter(item => item.purchaseDate && new Date(item.purchaseDate) >= startOfMonth);
+    } else if (activePeriod === "week") {
+      const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay())); // Sunday
+      filteredSales = filteredSales.filter(item => new Date(item.saleDate) >= startOfWeek);
+      filteredInventory = filteredInventory.filter(item => item.purchaseDate && new Date(item.purchaseDate) >= startOfWeek);
+    } else if (activePeriod === "today") {
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const todayStr = `${year}-${month}-${day}`;
+      filteredSales = filteredSales.filter(item => item.saleDate === todayStr);
+      filteredInventory = filteredInventory.filter(item => item.purchaseDate && item.purchaseDate.startsWith(todayStr));
+    }
+  }
+
   // Aggregate stats per supplier
   const supplierStats = {};
   
@@ -4805,8 +4830,8 @@ function renderSupplierAnalytics() {
     };
   });
 
-  // Process inventory
-  state.inventory.forEach(item => {
+  // Process filtered inventory
+  filteredInventory.forEach(item => {
     const sup = item.source || "";
     if (!supplierStats[sup]) {
       supplierStats[sup] = {
@@ -4828,8 +4853,8 @@ function renderSupplierAnalytics() {
     }
   });
 
-  // Process sales
-  state.sales.forEach(sale => {
+  // Process filtered sales
+  filteredSales.forEach(sale => {
     const game = inventoryMap.get(sale.inventoryId);
     if (game) {
       const sup = game.source || "";
