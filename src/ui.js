@@ -264,7 +264,7 @@ window.handleForgotPassword = async function(e) {
     return;
   }
 
-  const email = username.includes("@") ? username : `${username}@gamevault.local`;
+  const email = getUserEmail(username);
 
   if (window.supabaseClient) {
     showToast("Sending Supabase recovery link...", "info");
@@ -410,6 +410,18 @@ function getUsersFromStorage() {
   return arr;
 }
 
+function getUserEmail(username) {
+  if (username.includes("@")) {
+    return username;
+  }
+  const users = getUsersFromStorage();
+  const matchedUser = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+  if (matchedUser && matchedUser.email) {
+    return matchedUser.email;
+  }
+  return `${username}@gamevault.local`;
+}
+
 // Helper to save users list
 async function handleLoginSubmit(e) {
   e.preventDefault();
@@ -428,7 +440,7 @@ async function handleLoginSubmit(e) {
 
     if (window.supabaseClient) {
       // Supabase Auth
-      const email = username.includes("@") ? username : `${username}@gamevault.local`;
+      const email = getUserEmail(username);
       showToast("Signing in via Supabase...", "info");
       const { data, error } = await window.supabaseClient.auth.signInWithPassword({
         email: email,
@@ -466,7 +478,7 @@ async function handleLoginSubmit(e) {
       }
     } else if (window.firebaseApp && window.firebaseApp.auth) {
       // Firebase Auth
-      const email = username.includes("@") ? username : `${username}@gamevault.local`;
+      const email = getUserEmail(username);
       showToast("Signing in via Firebase...", "info");
       try {
         const userCredential = await window.firebaseApp.auth().signInWithEmailAndPassword(email, password);
