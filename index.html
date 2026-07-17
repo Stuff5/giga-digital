@@ -2608,6 +2608,26 @@
                         <i class="fa-solid fa-unlink"></i> Disconnect
                       </button>
                     </div>
+
+                    <!-- Setup Helper Wizard -->
+                    <div style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed var(--border-color);">
+                      <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 8px;">Firebase Setup Wizard</span>
+                      <p style="color: var(--text-secondary); font-size: 0.78rem; margin-bottom: 12px; line-height: 1.4;">
+                        Need to configure database access rules? Copy our security rules script, open your Firebase Console's <strong>Rules tab</strong> in Firestore, paste it in, and click <strong>Publish</strong>.
+                      </p>
+                      <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
+                        <button type="button" class="btn btn-outline btn-sm" onclick="copyFirebaseRules()" style="flex: 1; min-width: 110px; font-size: 0.75rem; padding: 6px 10px; height: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                          <i class="fa-solid fa-copy"></i> Copy Rules
+                        </button>
+                        <button type="button" class="btn btn-outline btn-sm" onclick="downloadFirebaseRules()" style="flex: 1; min-width: 110px; font-size: 0.75rem; padding: 6px 10px; height: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                          <i class="fa-solid fa-download"></i> Download Rules
+                        </button>
+                        <button type="button" class="btn btn-outline btn-sm" id="btn-run-firebase-diag" onclick="runFirebaseDiagnostics()" style="flex: 1; min-width: 110px; font-size: 0.75rem; padding: 6px 10px; height: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                          <i class="fa-solid fa-square-poll-horizontal"></i> Test Connection
+                        </button>
+                      </div>
+                      <div id="firebase-diag-output" class="hidden" style="background-color: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 10px; font-family: monospace; font-size: 0.72rem; max-height: 150px; overflow-y: auto; line-height: 1.5; color: var(--text-main);"></div>
+                    </div>
                   </div>
 
                   <!-- GitHub Panel -->

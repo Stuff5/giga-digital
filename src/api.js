@@ -296,6 +296,88 @@ function bindSupabaseSettingsControls() {
   }
 }
 
+// Firestore Security Rules configuration payload
+const FIREBASE_RULES_TXT = `rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true; // Allows local testing and quick connection checks
+    }
+  }
+}`;
+
+window.copyFirebaseRules = function() {
+  copyTextToClipboard(FIREBASE_RULES_TXT, "Firestore Security Rules copied to clipboard!");
+};
+
+window.downloadFirebaseRules = function() {
+  const blob = new Blob([FIREBASE_RULES_TXT], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "firestore.rules";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast("Downloaded firestore.rules file.", "success");
+};
+
+window.runFirebaseDiagnostics = async function() {
+  if (!window.firebaseApp) {
+    showToast("Please connect to Firebase first before running diagnostics.", "error");
+    return;
+  }
+  
+  showToast("Running Firebase Firestore diagnostics...", "info");
+  const report = [];
+  let success = false;
+  
+  try {
+    report.push(`<span style="color: var(--text-secondary);">Initializing Firestore client...</span>`);
+    const db = window.firebaseApp.firestore();
+    report.push(`<span style="color: var(--accent-teal);">✓ Firestore client initialized successfully</span>`);
+    
+    report.push(`<span style="color: var(--text-secondary);">Attempting write operation on "diagnostics" collection...</span>`);
+    const docRef = await db.collection("diagnostics").add({
+      test: true,
+      timestamp: Date.now()
+    });
+    report.push(`<span style="color: var(--accent-teal);">✓ Write operation passed (Doc ID: ${docRef.id})</span>`);
+    
+    report.push(`<span style="color: var(--text-secondary);">Attempting read operation on the written document...</span>`);
+    const docSnap = await docRef.get();
+    if (docSnap.exists) {
+      report.push(`<span style="color: var(--accent-teal);">✓ Read operation passed (Data: ${JSON.stringify(docSnap.data())})</span>`);
+      
+      report.push(`<span style="color: var(--text-secondary);">Attempting delete cleanup operation...</span>`);
+      await docRef.delete();
+      report.push(`<span style="color: var(--accent-teal);">✓ Delete cleanup operation passed</span>`);
+      success = true;
+    } else {
+      report.push(`<span style="color: var(--accent-danger);">✗ Document not found in read test</span>`);
+    }
+  } catch (err) {
+    console.error("Firebase diagnostics failed:", err);
+    report.push(`<span style="color: var(--accent-danger); font-weight: 500;">✗ Operation failed: ${err.message}</span>`);
+    if (err.code === "permission-denied") {
+      report.push(`<span style="color: var(--accent-warning); font-size: 0.68rem;">Suggestion: Please check your Firestore security rules in the Firebase console. By default, write permissions might be locked.</span>`);
+    }
+  }
+  
+  const diagOutput = document.getElementById("firebase-diag-output");
+  if (diagOutput) {
+    diagOutput.innerHTML = report.join("<br>");
+    diagOutput.classList.remove("hidden");
+  }
+  
+  if (success) {
+    showToast("Firebase diagnostics complete: Connection is fully active!", "success");
+  } else {
+    showToast("Firebase diagnostics failed. Check configuration and rules.", "error");
+  }
+};
+
 // Initialize Firebase Connection
 function initFirebaseConnection() {
   const apiKey = localStorage.getItem("gv_firebase_apikey") || "";
