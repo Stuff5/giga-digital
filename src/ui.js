@@ -435,12 +435,35 @@ async function handleLoginSubmit(e) {
         password: password
       });
       if (error) {
-        showToast(`Supabase Auth Failed: ${error.message}`, "error");
-        window.logAuditAction("Login Failed", `Failed Supabase sign in for '${username}': ${error.message}`);
-        return;
+        // Fallback to local auth check!
+        const users = getUsersFromStorage();
+        const matchedUser = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+        if (matchedUser && matchedUser.password === password) {
+          authenticatedUser = matchedUser.username;
+          authMethod = "Local (Supabase Auth Failed/Bypassed)";
+          
+          // Check if local user has 2FA enabled
+          if (matchedUser.twoFactorEnabled) {
+            const code = Math.floor(100000 + Math.random() * 900000).toString();
+            state.pending2FA = {
+              username: matchedUser.username,
+              code: code,
+              remember: remember
+            };
+            switchAuthTab("2fa");
+            showToast(`2FA Required! Code: ${code} (Simulating SMS/App)`, "info", 15000);
+            document.getElementById("login-password").value = "";
+            return;
+          }
+        } else {
+          showToast(`Supabase Auth Failed: ${error.message}`, "error");
+          window.logAuditAction("Login Failed", `Failed Supabase sign in for '${username}': ${error.message}`);
+          return;
+        }
+      } else {
+        authenticatedUser = data.user.email.split("@")[0];
+        authMethod = "Supabase";
       }
-      authenticatedUser = data.user.email.split("@")[0];
-      authMethod = "Supabase";
     } else if (window.firebaseApp && window.firebaseApp.auth) {
       // Firebase Auth
       const email = username.includes("@") ? username : `${username}@gamevault.local`;
@@ -450,9 +473,31 @@ async function handleLoginSubmit(e) {
         authenticatedUser = userCredential.user.email.split("@")[0];
         authMethod = "Firebase";
       } catch (error) {
-        showToast(`Firebase Auth Failed: ${error.message}`, "error");
-        window.logAuditAction("Login Failed", `Failed Firebase sign in for '${username}': ${error.message}`);
-        return;
+        // Fallback to local auth check!
+        const users = getUsersFromStorage();
+        const matchedUser = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+        if (matchedUser && matchedUser.password === password) {
+          authenticatedUser = matchedUser.username;
+          authMethod = "Local (Firebase Auth Failed/Bypassed)";
+          
+          // Check if local user has 2FA enabled
+          if (matchedUser.twoFactorEnabled) {
+            const code = Math.floor(100000 + Math.random() * 900000).toString();
+            state.pending2FA = {
+              username: matchedUser.username,
+              code: code,
+              remember: remember
+            };
+            switchAuthTab("2fa");
+            showToast(`2FA Required! Code: ${code} (Simulating SMS/App)`, "info", 15000);
+            document.getElementById("login-password").value = "";
+            return;
+          }
+        } else {
+          showToast(`Firebase Auth Failed: ${error.message}`, "error");
+          window.logAuditAction("Login Failed", `Failed Firebase sign in for '${username}': ${error.message}`);
+          return;
+        }
       }
     } else {
       // Local Auth Fallback
