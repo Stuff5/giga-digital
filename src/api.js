@@ -141,6 +141,7 @@ function initSupabaseConnection() {
   const urlInput = document.getElementById("settings-supabase-url");
   const keyInput = document.getElementById("settings-supabase-key");
   const statusBadge = document.getElementById("db-connection-status");
+  const storageBadge = document.getElementById("storage-status-badge");
   
   if (urlInput) urlInput.value = url;
   if (keyInput) keyInput.value = key;
@@ -152,6 +153,13 @@ function initSupabaseConnection() {
         statusBadge.textContent = "Connected";
         statusBadge.className = "badge badge-available";
       }
+      if (storageBadge) {
+        storageBadge.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Connecting...`;
+        storageBadge.className = "badge badge-low-stock";
+        storageBadge.style.background = "var(--accent-warning, #f59e0b)";
+        storageBadge.style.color = "#000";
+        storageBadge.style.border = "none";
+      }
       dbLoadState();
       logActionNotification("Connected to Supabase");
     } catch (e) {
@@ -161,12 +169,26 @@ function initSupabaseConnection() {
         statusBadge.textContent = "Error";
         statusBadge.className = "badge badge-sold";
       }
+      if (storageBadge) {
+        storageBadge.innerHTML = `<i class="fa-solid fa-hdd"></i> Local Storage`;
+        storageBadge.className = "badge";
+        storageBadge.style.background = "rgba(255, 255, 255, 0.04)";
+        storageBadge.style.color = "var(--text-secondary)";
+        storageBadge.style.border = "1px solid var(--border-color)";
+      }
     }
   } else {
     window.supabaseClient = null;
     if (statusBadge) {
       statusBadge.textContent = "Not Connected";
       statusBadge.className = "badge badge-sold";
+    }
+    if (storageBadge) {
+      storageBadge.innerHTML = `<i class="fa-solid fa-hdd"></i> Local Storage`;
+      storageBadge.className = "badge";
+      storageBadge.style.background = "rgba(255, 255, 255, 0.04)";
+      storageBadge.style.color = "var(--text-secondary)";
+      storageBadge.style.border = "1px solid var(--border-color)";
     }
   }
 }
@@ -893,6 +915,14 @@ async function dbLoadState() {
   } catch (err) {
     console.error("Error loading state from Supabase:", err);
     showToast("Failed to sync cloud database. Check project tables.", "error");
+    const storageBadge = document.getElementById("storage-status-badge");
+    if (storageBadge) {
+      storageBadge.innerHTML = `<i class="fa-solid fa-hdd"></i> Local Storage`;
+      storageBadge.className = "badge";
+      storageBadge.style.background = "rgba(255, 255, 255, 0.04)";
+      storageBadge.style.color = "var(--text-secondary)";
+      storageBadge.style.border = "1px solid var(--border-color)";
+    }
   }
 }
 
