@@ -950,7 +950,8 @@ async function synchronizeCloudDatabase() {
     }
     
     state.pendingDeletes = { inventory: [], sales: [], suppliers: [], platforms: [] };
-    localStorage.setItem("gv_pending_deletes", JSON.stringify(state.pendingDeletes));
+    const userSuffix = (state.currentUser && state.currentUser !== "guest") ? `_${state.currentUser}` : "";
+    localStorage.setItem("gv_pending_deletes" + userSuffix, JSON.stringify(state.pendingDeletes));
     
     // 2. Upsert current active lists
     if (state.inventory.length > 0) {

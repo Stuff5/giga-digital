@@ -1321,6 +1321,18 @@ function loadStateFromStorage() {
     }
 
     try {
+      const storedPending = localStorage.getItem("gv_pending_deletes" + userSuffix);
+      state.pendingDeletes = storedPending ? JSON.parse(storedPending) : { inventory: [], sales: [], suppliers: [], platforms: [] };
+      if (!state.pendingDeletes.inventory) state.pendingDeletes.inventory = [];
+      if (!state.pendingDeletes.sales) state.pendingDeletes.sales = [];
+      if (!state.pendingDeletes.suppliers) state.pendingDeletes.suppliers = [];
+      if (!state.pendingDeletes.platforms) state.pendingDeletes.platforms = [];
+    } catch (e) {
+      console.error("Error parsing pending deletes, using defaults:", e);
+      state.pendingDeletes = { inventory: [], sales: [], suppliers: [], platforms: [] };
+    }
+
+    try {
       const storedPayouts = localStorage.getItem("gv_payouts" + userSuffix);
       state.payouts = storedPayouts ? JSON.parse(storedPayouts) : [];
       if (!Array.isArray(state.payouts)) state.payouts = [];
@@ -1391,6 +1403,7 @@ function saveStateToStorage() {
   localStorage.setItem("gv_recycle_bin" + userSuffix, JSON.stringify(state.recycleBin));
   localStorage.setItem("gv_payouts" + userSuffix, JSON.stringify(state.payouts));
   localStorage.setItem("gv_expense_categories" + userSuffix, JSON.stringify(state.expenseCategories));
+  localStorage.setItem("gv_pending_deletes" + userSuffix, JSON.stringify(state.pendingDeletes));
   localStorage.setItem("gv_inv_layout", state.inventoryLayout);
   localStorage.setItem("gv_entries_layout", state.entriesLayout);
   localStorage.setItem("gv_supplier_display_mode", state.supplierDisplayMode);
