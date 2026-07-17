@@ -223,6 +223,7 @@ window.switchAuthTab = function(tab) {
   const secLogin = document.getElementById("auth-login-section");
   const secRegister = document.getElementById("auth-register-section");
   const sec2fa = document.getElementById("auth-2fa-section");
+  const secRecovery = document.getElementById("auth-recovery-section");
 
   if (tab === "login") {
     if (tabLogin) tabLogin.classList.add("active");
@@ -230,29 +231,106 @@ window.switchAuthTab = function(tab) {
     if (secLogin) secLogin.classList.add("active");
     if (secRegister) secRegister.classList.remove("active");
     if (sec2fa) sec2fa.classList.remove("active");
+    if (secRecovery) secRecovery.classList.remove("active");
   } else if (tab === "register") {
     if (tabRegister) tabRegister.classList.add("active");
     if (tabLogin) tabLogin.classList.remove("active");
     if (secRegister) secRegister.classList.add("active");
     if (secLogin) secLogin.classList.remove("active");
     if (sec2fa) sec2fa.classList.remove("active");
+    if (secRecovery) secRecovery.classList.remove("active");
   } else if (tab === "2fa") {
     if (tabLogin) tabLogin.classList.remove("active");
     if (tabRegister) tabRegister.classList.remove("active");
     if (secLogin) secLogin.classList.remove("active");
     if (secRegister) secRegister.classList.remove("active");
     if (sec2fa) sec2fa.classList.add("active");
+    if (secRecovery) secRecovery.classList.remove("active");
+  } else if (tab === "recovery") {
+    if (tabLogin) tabLogin.classList.remove("active");
+    if (tabRegister) tabRegister.classList.remove("active");
+    if (secLogin) secLogin.classList.remove("active");
+    if (secRegister) secRegister.classList.remove("active");
+    if (sec2fa) sec2fa.classList.remove("active");
+    if (secRecovery) secRecovery.classList.add("active");
   }
 };
 
-// Handle mock forgot password trigger
 window.handleForgotPassword = function(e) {
   e.preventDefault();
   const username = document.getElementById("login-username").value.trim();
-  if (username) {
-    showToast(`Password recovery instructions sent to the email associated with '${username}' (Mock).`, "info");
-  } else {
+  if (!username) {
     showToast("Please enter your username first to retrieve your password.", "warning");
+    return;
+  }
+
+  const users = getUsersFromStorage();
+  const matchedUser = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+  if (!matchedUser) {
+    showToast("Username not found.", "error");
+    return;
+  }
+
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  state.pendingRecovery = {
+    username: matchedUser.username,
+    code: code
+  };
+
+  document.getElementById("recovery-username").value = matchedUser.username;
+  switchAuthTab("recovery");
+  showToast(`Recovery Code: ${code} (Sent to ${matchedUser.email})`, "info", 15000);
+};
+
+window.handleRecoverySubmit = function(e) {
+  e.preventDefault();
+  try {
+    const username = document.getElementById("recovery-username").value;
+    const code = document.getElementById("recovery-code").value.trim();
+    const newPassword = document.getElementById("recovery-new-password").value;
+    const confirmPassword = document.getElementById("recovery-confirm-password").value;
+
+    if (!state.pendingRecovery || state.pendingRecovery.username !== username) {
+      showToast("Session expired. Please request recovery again.", "error");
+      switchAuthTab("login");
+      return;
+    }
+
+    if (code !== state.pendingRecovery.code) {
+      showToast("Invalid verification code.", "error");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      showToast("Password must be at least 6 characters long.", "warning");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      showToast("Passwords do not match.", "error");
+      return;
+    }
+
+    const users = getUsersFromStorage();
+    const user = users.find(u => u.username === username);
+    if (!user) {
+      showToast("User not found.", "error");
+      return;
+    }
+
+    user.password = newPassword;
+    saveUsersToStorage(users);
+
+    state.pendingRecovery = null;
+    document.getElementById("recovery-form").reset();
+
+    window.logAuditAction("Password Reset", `Password reset completed for '${username}'`);
+
+    showToast("Password reset successfully! Please sign in with your new password.", "success");
+    switchAuthTab("login");
+  } catch (err) {
+    console.error("Password recovery failed:", err);
+    showToast("An error occurred during password reset.", "error");
   }
 };
 

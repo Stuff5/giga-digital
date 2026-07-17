@@ -56,6 +56,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (twofaForm) {
       twofaForm.addEventListener("submit", handleVerify2FASubmit);
     }
+    const recoveryForm = document.getElementById("recovery-form");
+    if (recoveryForm) {
+      recoveryForm.addEventListener("submit", handleRecoverySubmit);
+    }
     const adminCreateUserForm = document.getElementById("admin-create-user-form");
     if (adminCreateUserForm) {
       adminCreateUserForm.addEventListener("submit", handleAdminCreateUser);

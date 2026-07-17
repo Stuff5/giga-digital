@@ -3166,6 +3166,53 @@
           </div>
         </form>
       </div>
+
+      <!-- Password Recovery Section -->
+      <div id="auth-recovery-section" class="auth-section">
+        <form id="recovery-form">
+          <div style="text-align: center; margin-bottom: 20px;">
+            <div style="font-size: 2.4rem; color: var(--accent-purple); margin-bottom: 10px;">
+              <i class="fa-solid fa-envelope-open-text"></i>
+            </div>
+            <h4 style="margin-bottom: 5px; font-weight: 600; color: var(--text-main);">Reset Password</h4>
+            <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;" id="recovery-instructions">Enter the verification code sent to your email and your new password.</p>
+          </div>
+          
+          <input type="hidden" id="recovery-username">
+          
+          <div class="form-group">
+            <label for="recovery-code">Verification Code</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-shield-halved"></i>
+              <input type="text" id="recovery-code" class="form-control" placeholder="000000" required maxlength="6" pattern="\\d{6}" style="text-align: center; font-size: 1.5rem; letter-spacing: 4px; font-weight: bold; height: 42px;">
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="recovery-new-password">New Password</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-lock"></i>
+              <input type="password" id="recovery-new-password" class="form-control" placeholder="Enter new password" required minlength="6" autocomplete="new-password">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="recovery-confirm-password">Confirm Password</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-lock"></i>
+              <input type="password" id="recovery-confirm-password" class="form-control" placeholder="Confirm new password" required>
+            </div>
+          </div>
+          
+          <button type="submit" class="btn btn-primary btn-block" id="btn-submit-recovery">
+            <i class="fa-solid fa-key"></i> Update Password
+          </button>
+          
+          <div style="text-align: center; margin-top: 20px;">
+            <a href="#" class="forgot-password-link" onclick="switchAuthTab('login')">Back to Sign In</a>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 
