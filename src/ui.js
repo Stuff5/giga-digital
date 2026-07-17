@@ -6923,6 +6923,10 @@ function renderEntriesGalleryLayout(entriesList) {
               <strong class="${marginPercentage >= 0 ? 'text-success-neon' : 'text-danger-soft'}">${marginPercentage.toFixed(1)}%</strong>
             </div>
             <div class="gallery-card-hover-meta-item">
+              <span>Lowest Sold:</span>
+              <strong style="color: var(--text-main);">${entry.lowestSoldPrice !== null ? formatCurrency(entry.lowestSoldPrice) : '—'}</strong>
+            </div>
+            <div class="gallery-card-hover-meta-item">
               <span>Avg Speed:</span>
               <strong style="color: var(--accent-cyan);">${avgDurationStr}</strong>
             </div>
@@ -7527,7 +7531,8 @@ function renderEntries() {
         profit: 0,
         imageUrl: item.imageUrl || null,
         publisher: null,
-        sellDurations: []
+        sellDurations: [],
+        lowestSoldPrice: null
       };
     }
     titleGroups[titleKey].totalAdded++;
@@ -7558,7 +7563,8 @@ function renderEntries() {
         profit: 0,
         imageUrl: null,
         publisher: null,
-        sellDurations: []
+        sellDurations: [],
+        lowestSoldPrice: null
       };
     }
     if (!titleGroups[titleKey].sellDurations) {
@@ -7568,6 +7574,9 @@ function renderEntries() {
     titleGroups[titleKey].totalRevenue += sale.sellPrice;
     titleGroups[titleKey].totalCostOfSold += sale.cost;
     titleGroups[titleKey].profit += sale.profit;
+    if (titleGroups[titleKey].lowestSoldPrice === null || sale.sellPrice < titleGroups[titleKey].lowestSoldPrice) {
+      titleGroups[titleKey].lowestSoldPrice = sale.sellPrice;
+    }
 
     // Retrieve corresponding inventory purchaseDate & publisher
     const invItem = inventoryMap.get(sale.inventoryId);
@@ -7689,6 +7698,7 @@ function renderEntries() {
         <td><span class="badge ${badgeClass}">${badgeText}</span></td>
         <td><span style="font-weight: 600;">${entry.totalSold}</span> sold</td>
         <td>${avgDaysCell}</td>
+        <td>${entry.lowestSoldPrice !== null ? formatCurrency(entry.lowestSoldPrice) : '<span class="text-muted">—</span>'}</td>
         <td>${formatCurrency(entry.totalRevenue)}</td>
         <td class="${entry.profit >= 0 ? 'text-success-neon' : 'text-danger-soft'}"><strong>${formatCurrency(entry.profit)}</strong></td>
         <td class="${roiPercentage >= 0 ? 'text-success-neon' : 'text-danger-soft'}">${roiPercentage.toFixed(1)}%</td>

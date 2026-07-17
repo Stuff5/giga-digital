@@ -2541,7 +2541,7 @@ textarea.form-control {
   padding: 24px;
 }
 .gallery-card {
-  height: 340px;
+  height: 350px;
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
