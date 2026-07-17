@@ -256,7 +256,7 @@ window.switchAuthTab = function(tab) {
   }
 };
 
-window.handleForgotPassword = function(e) {
+window.handleForgotPassword = async function(e) {
   e.preventDefault();
   const username = document.getElementById("login-username").value.trim();
   if (!username) {
@@ -264,22 +264,49 @@ window.handleForgotPassword = function(e) {
     return;
   }
 
-  const users = getUsersFromStorage();
-  const matchedUser = users.find(u => u.username.toLowerCase() === username.toLowerCase());
-  if (!matchedUser) {
-    showToast("Username not found.", "error");
-    return;
+  const email = username.includes("@") ? username : `${username}@gamevault.local`;
+
+  if (window.supabaseClient) {
+    showToast("Sending Supabase recovery link...", "info");
+    const { error } = await window.supabaseClient.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin
+    });
+    if (error) {
+      showToast(`Supabase Recovery Failed: ${error.message}`, "error");
+      window.logAuditAction("Recovery Failed", `Failed Supabase password reset request for '${username}': ${error.message}`);
+    } else {
+      showToast(`Password reset link sent to your email address: ${email}!`, "success");
+      window.logAuditAction("Recovery Request", `Supabase password reset requested for '${username}'`);
+    }
+  } else if (window.firebaseApp && window.firebaseApp.auth) {
+    showToast("Sending Firebase recovery link...", "info");
+    try {
+      await window.firebaseApp.auth().sendPasswordResetEmail(email);
+      showToast(`Password reset link sent to your email address: ${email}!`, "success");
+      window.logAuditAction("Recovery Request", `Firebase password reset requested for '${username}'`);
+    } catch (error) {
+      showToast(`Firebase Recovery Failed: ${error.message}`, "error");
+      window.logAuditAction("Recovery Failed", `Failed Firebase password reset request for '${username}': ${error.message}`);
+    }
+  } else {
+    // Local Fallback Simulation
+    const users = getUsersFromStorage();
+    const matchedUser = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+    if (!matchedUser) {
+      showToast("Username not found.", "error");
+      return;
+    }
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    state.pendingRecovery = {
+      username: matchedUser.username,
+      code: code
+    };
+
+    document.getElementById("recovery-username").value = matchedUser.username;
+    switchAuthTab("recovery");
+    showToast(`Recovery Code: ${code} (Sent to ${matchedUser.email})`, "info", 15000);
   }
-
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
-  state.pendingRecovery = {
-    username: matchedUser.username,
-    code: code
-  };
-
-  document.getElementById("recovery-username").value = matchedUser.username;
-  switchAuthTab("recovery");
-  showToast(`Recovery Code: ${code} (Sent to ${matchedUser.email})`, "info", 15000);
 };
 
 window.handleRecoverySubmit = function(e) {
@@ -384,7 +411,7 @@ function getUsersFromStorage() {
 }
 
 // Helper to save users list
-function handleLoginSubmit(e) {
+async function handleLoginSubmit(e) {
   e.preventDefault();
   try {
     const username = document.getElementById("login-username").value.trim();
@@ -396,62 +423,92 @@ function handleLoginSubmit(e) {
       return;
     }
 
-    const users = getUsersFromStorage();
-    console.log("[Auth Debug] Current registered users in storage:", users);
-    const matchedUser = users.find(u => u.username.toLowerCase() === username.toLowerCase());
-    console.log("[Auth Debug] Attempted login for:", username, "Matched User found:", matchedUser);
+    let authenticatedUser = null;
+    let authMethod = "Local";
 
-    if (!matchedUser || matchedUser.password !== password) {
-      console.warn("[Auth Debug] Invalid login credentials mismatch:", { enteredUser: username, enteredPass: password, storedUser: matchedUser ? matchedUser.username : null, storedPass: matchedUser ? matchedUser.password : null });
-      showToast("Invalid username or password.", "error");
-      window.logAuditAction("Login Failed", `Failed sign in attempt for username '${username}'`);
-      return;
-    }
+    if (window.supabaseClient) {
+      // Supabase Auth
+      const email = username.includes("@") ? username : `${username}@gamevault.local`;
+      showToast("Signing in via Supabase...", "info");
+      const { data, error } = await window.supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: password
+      });
+      if (error) {
+        showToast(`Supabase Auth Failed: ${error.message}`, "error");
+        window.logAuditAction("Login Failed", `Failed Supabase sign in for '${username}': ${error.message}`);
+        return;
+      }
+      authenticatedUser = data.user.email.split("@")[0];
+      authMethod = "Supabase";
+    } else if (window.firebaseApp && window.firebaseApp.auth) {
+      // Firebase Auth
+      const email = username.includes("@") ? username : `${username}@gamevault.local`;
+      showToast("Signing in via Firebase...", "info");
+      try {
+        const userCredential = await window.firebaseApp.auth().signInWithEmailAndPassword(email, password);
+        authenticatedUser = userCredential.user.email.split("@")[0];
+        authMethod = "Firebase";
+      } catch (error) {
+        showToast(`Firebase Auth Failed: ${error.message}`, "error");
+        window.logAuditAction("Login Failed", `Failed Firebase sign in for '${username}': ${error.message}`);
+        return;
+      }
+    } else {
+      // Local Auth Fallback
+      const users = getUsersFromStorage();
+      const matchedUser = users.find(u => u.username.toLowerCase() === username.toLowerCase());
 
-    // Check if 2FA is enabled for the user
-    if (matchedUser.twoFactorEnabled) {
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-      state.pending2FA = {
-        username: matchedUser.username,
-        code: code,
-        remember: remember
-      };
-      
-      switchAuthTab("2fa");
-      showToast(`2FA Required! Code: ${code} (Simulating SMS/App)`, "info", 15000);
-      
-      // Clear password field for security
-      document.getElementById("login-password").value = "";
-      return;
+      if (!matchedUser || matchedUser.password !== password) {
+        showToast("Invalid username or password.", "error");
+        window.logAuditAction("Login Failed", `Failed local sign in attempt for username '${username}'`);
+        return;
+      }
+
+      // Check if 2FA is enabled for the user
+      if (matchedUser.twoFactorEnabled) {
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        state.pending2FA = {
+          username: matchedUser.username,
+          code: code,
+          remember: remember
+        };
+        switchAuthTab("2fa");
+        showToast(`2FA Required! Code: ${code} (Simulating SMS/App)`, "info", 15000);
+        document.getElementById("login-password").value = "";
+        return;
+      }
+      authenticatedUser = matchedUser.username;
     }
 
     // Set active session
     localStorage.removeItem("gv_local_logout");
     if (remember) {
-      localStorage.setItem("gv_active_user", matchedUser.username);
+      localStorage.setItem("gv_active_user", authenticatedUser);
       sessionStorage.removeItem("gv_active_user");
     } else {
-      sessionStorage.setItem("gv_active_user", matchedUser.username);
+      sessionStorage.setItem("gv_active_user", authenticatedUser);
       localStorage.removeItem("gv_active_user");
     }
+    localStorage.setItem("gv_last_active_user", authenticatedUser);
 
     // Set state and load data
-    state.currentUser = matchedUser.username;
+    state.currentUser = authenticatedUser;
     loadStateFromStorage();
-    window.logAuditAction("User Login", `Sign in succeeded for '${matchedUser.username}'`);
-    
+    window.logAuditAction("User Login", `Sign in succeeded for '${authenticatedUser}' via ${authMethod}`);
+
     // Transition to main dashboard
     const authContainer = document.getElementById("auth-container");
     const appContainer = document.getElementById("app-container");
     const logoutBtn = document.getElementById("btn-logout");
-    
+
     if (authContainer) authContainer.classList.add("hidden");
     if (appContainer) appContainer.classList.remove("hidden");
     if (logoutBtn) logoutBtn.classList.remove("hidden");
-    
+
     // Update sidebar display name
     const nameDisplay = document.getElementById("user-display-name");
-    if (nameDisplay) nameDisplay.textContent = matchedUser.username;
+    if (nameDisplay) nameDisplay.textContent = authenticatedUser;
 
     // Clear form inputs
     const loginForm = document.getElementById("login-form");
@@ -459,7 +516,7 @@ function handleLoginSubmit(e) {
 
     // Draw UI & charts
     updateUI();
-    showToast(`Welcome back, ${matchedUser.username}!`, "success");
+    showToast(`Welcome back, ${authenticatedUser}!`, "success");
   } catch (err) {
     console.error("Login Error:", err);
     showToast("An error occurred during sign in. Check developer logs.", "error");
@@ -631,7 +688,7 @@ function handleRegisterSubmit(e) {
 }
 
 // Admin panel: Manually create a user
-function handleAdminCreateUser(e) {
+async function handleAdminCreateUser(e) {
   e.preventDefault();
   try {
     const username = document.getElementById("admin-new-username").value.trim();
@@ -675,6 +732,29 @@ function handleAdminCreateUser(e) {
 
     const twoFactorEnabled = document.getElementById("admin-new-2fa")?.checked || false;
     const role = document.getElementById("admin-new-role")?.value || "merchant";
+
+    // Attempt backend registration if connected
+    if (window.supabaseClient) {
+      showToast("Creating user credentials in Supabase...", "info");
+      const { error } = await window.supabaseClient.auth.signUp({
+        email: email,
+        password: password,
+        options: {
+          data: { role: role }
+        }
+      });
+      if (error) {
+        showToast(`Warning: Supabase registration skipped: ${error.message}`, "warning");
+      }
+    } else if (window.firebaseApp && window.firebaseApp.auth) {
+      showToast("Creating user credentials in Firebase...", "info");
+      try {
+        await window.firebaseApp.auth().createUserWithEmailAndPassword(email, password);
+      } catch (error) {
+        showToast(`Warning: Firebase registration skipped: ${error.message}`, "warning");
+      }
+    }
+
     const newUser = { username, email, password, role, twoFactorEnabled };
     users.push(newUser);
     saveUsersToStorage(users);

@@ -165,7 +165,11 @@ window.logAuditAction = function(action, details = "") {
 
 // Recalculates metrics specifically for the Suppliers view
 function initSupabaseConnection() {
-  const userSuffix = (state.currentUser && state.currentUser !== "guest") ? `_${state.currentUser}` : "";
+  let activeUser = state.currentUser;
+  if (!activeUser) {
+    activeUser = localStorage.getItem("gv_last_active_user") || "";
+  }
+  const userSuffix = (activeUser && activeUser !== "guest") ? `_${activeUser}` : "";
   let url = localStorage.getItem("gv_supabase_url" + userSuffix);
   let key = localStorage.getItem("gv_supabase_key" + userSuffix);
   
@@ -429,7 +433,11 @@ window.runFirebaseDiagnostics = async function() {
 
 // Initialize Firebase Connection
 function initFirebaseConnection() {
-  const userSuffix = (state.currentUser && state.currentUser !== "guest") ? `_${state.currentUser}` : "";
+  let activeUser = state.currentUser;
+  if (!activeUser) {
+    activeUser = localStorage.getItem("gv_last_active_user") || "";
+  }
+  const userSuffix = (activeUser && activeUser !== "guest") ? `_${activeUser}` : "";
   let apiKey = localStorage.getItem("gv_firebase_apikey" + userSuffix);
   let projectId = localStorage.getItem("gv_firebase_projectid" + userSuffix);
   let authDomain = localStorage.getItem("gv_firebase_authdomain" + userSuffix);
