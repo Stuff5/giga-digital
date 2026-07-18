@@ -983,42 +983,63 @@ async function synchronizeCloudDatabase() {
     const userSuffix = (state.currentUser && state.currentUser !== "guest") ? `_${state.currentUser}` : "";
     localStorage.setItem("gv_pending_deletes" + userSuffix, JSON.stringify(state.pendingDeletes));
     
-    // 2. Upsert current active lists
+    // 2. Upsert current active lists in batches of 200 to prevent payload size and timeout errors
+    const upsertBatchSize = 200;
+    
     if (state.inventory.length > 0) {
-      const { error } = await window.supabaseClient
-        .from('inventory')
-        .upsert(state.inventory.map(item => ({
-          id: item.id,
-          title: item.title,
-          platform: item.platform,
-          key: item.key,
-          cost: item.cost,
-          source: item.source,
-          purchaseDate: item.purchaseDate,
-          imageUrl: item.imageUrl || null,
-          status: item.status,
-          notes: item.notes || null
-        })));
-      if (error) throw error;
+      const mappedInventory = state.inventory.map(item => ({
+        id: item.id,
+        title: item.title,
+        platform: item.platform,
+        key: item.key,
+        cost: item.cost,
+        source: item.source,
+        purchaseDate: item.purchaseDate,
+        imageUrl: item.imageUrl || null,
+        status: item.status,
+        notes: item.notes || null,
+        publisher: item.publisher || null
+      }));
+      
+      for (let i = 0; i < mappedInventory.length; i += upsertBatchSize) {
+        const batch = mappedInventory.slice(i, i + upsertBatchSize);
+        const { error } = await window.supabaseClient
+          .from('inventory')
+          .upsert(batch);
+        if (error) {
+          console.error("Error syncing inventory batch:", error);
+          throw error;
+        }
+      }
     }
     
     if (state.sales.length > 0) {
-      const { error } = await window.supabaseClient
-        .from('sales')
-        .upsert(state.sales.map(sale => ({
-          id: sale.id,
-          inventoryId: sale.inventoryId,
-          title: sale.title,
-          platform: sale.platform,
-          cost: sale.cost,
-          sellPrice: sale.sellPrice,
-          platformSold: sale.platformSold,
-          fees: sale.fees,
-          profit: sale.profit,
-          saleDate: sale.saleDate,
-          notes: sale.notes || null
-        })));
-      if (error) throw error;
+      const mappedSales = state.sales.map(sale => ({
+        id: sale.id,
+        inventoryId: sale.inventoryId,
+        title: sale.title,
+        platform: sale.platform,
+        cost: sale.cost,
+        sellPrice: sale.sellPrice,
+        platformSold: sale.platformSold,
+        fees: sale.fees,
+        profit: sale.profit,
+        saleDate: sale.saleDate,
+        notes: sale.notes || null,
+        disputed: sale.disputed || false,
+        supplierRefunded: sale.supplierRefunded || false
+      }));
+      
+      for (let i = 0; i < mappedSales.length; i += upsertBatchSize) {
+        const batch = mappedSales.slice(i, i + upsertBatchSize);
+        const { error } = await window.supabaseClient
+          .from('sales')
+          .upsert(batch);
+        if (error) {
+          console.error("Error syncing sales batch:", error);
+          throw error;
+        }
+      }
     }
     
     if (state.suppliers.length > 0) {
@@ -1032,20 +1053,16 @@ async function synchronizeCloudDatabase() {
           logo: s.logo || null
         })));
       if (error) {
-        if (error.message && error.message.includes('column "logo" of relation "suppliers" does not exist')) {
-          console.warn("Supabase relation 'suppliers' is missing the 'logo' column. Falling back to sync without logo.");
-          const { error: fallbackErr } = await window.supabaseClient
-            .from('suppliers')
-            .upsert(state.suppliers.map(s => ({
-              name: s.name,
-              dateAdded: s.dateAdded,
-              color: s.color,
-              enabled: s.enabled !== false
-            })));
-          if (fallbackErr) throw fallbackErr;
-        } else {
-          throw error;
-        }
+        console.warn("Supabase suppliers sync failed with logo, attempting fallback sync without logo:", error);
+        const { error: fallbackErr } = await window.supabaseClient
+          .from('suppliers')
+          .upsert(state.suppliers.map(s => ({
+            name: s.name,
+            dateAdded: s.dateAdded,
+            color: s.color,
+            enabled: s.enabled !== false
+          })));
+        if (fallbackErr) throw fallbackErr;
       }
     }
     
