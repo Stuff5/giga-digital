@@ -3064,6 +3064,7 @@ textarea.form-control {
 .sidebar-collapsed .nav-link div {
   justify-content: center;
   width: 100%;
+  gap: 0 !important;
 }
 
 .sidebar-collapsed .sidebar-footer {

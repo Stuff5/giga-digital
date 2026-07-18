@@ -1497,9 +1497,11 @@ function renderSidebarMenu() {
   const collapseIcon = isCollapsed ? "fa-circle-chevron-right" : "fa-circle-chevron-left";
   html += `
     <li>
-      <a href="#" class="nav-link" id="nav-collapse-sidebar" title="${collapseTitle}">
-        <i class="fa-solid ${collapseIcon}" id="collapse-icon"></i>
-        <span>Collapse Menu</span>
+      <a href="#" class="nav-link" id="nav-collapse-sidebar" title="${collapseTitle}" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <i class="fa-solid ${collapseIcon}" id="collapse-icon"></i>
+          <span>Collapse Menu</span>
+        </div>
       </a>
     </li>
   `;
