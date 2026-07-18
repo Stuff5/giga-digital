@@ -1481,10 +1481,10 @@ function renderSidebarMenu() {
     html += `
       <li>
         <a href="#${key}" class="nav-link ${activeClass}" id="nav-${key}" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-          <span style="display: flex; align-items: center; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
             <i class="fa-solid ${iconClass}" id="sidebar-icon-${key}"></i>
             <span id="sidebar-text-${key}">${titleText}</span>
-          </span>
+          </div>
           ${badgeHtml}
         </a>
       </li>
