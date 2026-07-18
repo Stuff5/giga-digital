@@ -5,6 +5,54 @@
 
 document.addEventListener("DOMContentLoaded", async () => {
   try {
+    // Parse URL setup configuration parameters (if shared via link/QR code)
+    const urlParams = new URLSearchParams(window.location.search);
+    let importedParams = false;
+    
+    if (urlParams.has("sbUrl") && urlParams.has("sbKey")) {
+      const sbUrl = decodeURIComponent(urlParams.get("sbUrl"));
+      const sbKey = decodeURIComponent(urlParams.get("sbKey"));
+      
+      localStorage.setItem("gv_supabase_url", sbUrl);
+      localStorage.setItem("gv_supabase_key", sbKey);
+      localStorage.setItem("gv_supabase_url_admin", sbUrl);
+      localStorage.setItem("gv_supabase_key_admin", sbKey);
+      
+      importedParams = true;
+    }
+    
+    if (urlParams.has("fbApiKey") && urlParams.has("fbProjId")) {
+      const fbApiKey = decodeURIComponent(urlParams.get("fbApiKey"));
+      const fbProjId = decodeURIComponent(urlParams.get("fbProjId"));
+      const fbAuthDom = decodeURIComponent(urlParams.get("fbAuthDom") || "");
+      const fbAppId = decodeURIComponent(urlParams.get("fbAppId") || "");
+      
+      localStorage.setItem("gv_firebase_apikey", fbApiKey);
+      localStorage.setItem("gv_firebase_projectid", fbProjId);
+      localStorage.setItem("gv_firebase_authdomain", fbAuthDom);
+      localStorage.setItem("gv_firebase_appid", fbAppId);
+      
+      localStorage.setItem("gv_firebase_apikey_admin", fbApiKey);
+      localStorage.setItem("gv_firebase_projectid_admin", fbProjId);
+      localStorage.setItem("gv_firebase_authdomain_admin", fbAuthDom);
+      localStorage.setItem("gv_firebase_appid_admin", fbAppId);
+      
+      importedParams = true;
+    }
+    
+    if (importedParams) {
+      // Clear URL parameters from browser history for security
+      const cleanUrl = window.location.origin + window.location.pathname + window.location.hash;
+      window.history.replaceState({}, document.title, cleanUrl);
+      
+      // Delay toast until UI is fully initialized
+      setTimeout(() => {
+        if (typeof showToast === "function") {
+          showToast("Cloud Connection imported and configured! Please sign in.", "success");
+        }
+      }, 1500);
+    }
+
     // Load HTML templates dynamically
     await loadHTMLTemplates();
 

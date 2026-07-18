@@ -11067,6 +11067,109 @@ function bindAdvancedSettingsControls() {
     });
   }
 
+  // Bind Setup Connection Sharing controls
+  const btnCopySetup = document.getElementById("btn-copy-setup-link");
+  const btnShowSetupQR = document.getElementById("btn-show-setup-qr");
+  
+  if (btnCopySetup) {
+    btnCopySetup.addEventListener("click", () => {
+      let activeUser = state.currentUser;
+      if (!activeUser) activeUser = localStorage.getItem("gv_last_active_user") || "admin";
+      const suffix = `_${activeUser}`;
+      
+      let sbUrl = localStorage.getItem("gv_supabase_url" + suffix) || localStorage.getItem("gv_supabase_url") || "";
+      let sbKey = localStorage.getItem("gv_supabase_key" + suffix) || localStorage.getItem("gv_supabase_key") || "";
+      let fbApiKey = localStorage.getItem("gv_firebase_apikey" + suffix) || localStorage.getItem("gv_firebase_apikey") || "";
+      let fbProjId = localStorage.getItem("gv_firebase_projectid" + suffix) || localStorage.getItem("gv_firebase_projectid") || "";
+      let fbAuthDom = localStorage.getItem("gv_firebase_authdomain" + suffix) || localStorage.getItem("gv_firebase_authdomain") || "";
+      let fbAppId = localStorage.getItem("gv_firebase_appid" + suffix) || localStorage.getItem("gv_firebase_appid") || "";
+      
+      if (!sbUrl && !fbApiKey) {
+        showToast("Please connect to Supabase or Firebase first before sharing settings.", "warning");
+        return;
+      }
+      
+      let urlParams = new URLSearchParams();
+      if (sbUrl) {
+        urlParams.set("sbUrl", encodeURIComponent(sbUrl));
+        urlParams.set("sbKey", encodeURIComponent(sbKey));
+      } else if (fbApiKey) {
+        urlParams.set("fbApiKey", encodeURIComponent(fbApiKey));
+        urlParams.set("fbProjId", encodeURIComponent(fbProjId));
+        if (fbAuthDom) urlParams.set("fbAuthDom", encodeURIComponent(fbAuthDom));
+        if (fbAppId) urlParams.set("fbAppId", encodeURIComponent(fbAppId));
+      }
+      
+      const setupUrl = window.location.origin + window.location.pathname + "?" + urlParams.toString() + window.location.hash;
+      
+      // Copy to clipboard
+      navigator.clipboard.writeText(setupUrl).then(() => {
+        const msg = document.getElementById("setup-link-copied-msg");
+        const box = document.getElementById("setup-share-output-box");
+        const qrWrapper = document.getElementById("setup-qr-code-wrapper");
+        const qrInstructions = document.getElementById("setup-qr-instructions");
+        
+        if (box) box.classList.remove("hidden");
+        if (msg) msg.classList.remove("hidden");
+        if (qrWrapper) qrWrapper.classList.add("hidden");
+        if (qrInstructions) qrInstructions.classList.add("hidden");
+        
+        showToast("Setup Link copied! Share it securely.", "success");
+      }).catch(err => {
+        console.error("Clipboard copy failed:", err);
+        showToast("Failed to copy link automatically. Check logs.", "error");
+      });
+    });
+  }
+  
+  if (btnShowSetupQR) {
+    btnShowSetupQR.addEventListener("click", () => {
+      let activeUser = state.currentUser;
+      if (!activeUser) activeUser = localStorage.getItem("gv_last_active_user") || "admin";
+      const suffix = `_${activeUser}`;
+      
+      let sbUrl = localStorage.getItem("gv_supabase_url" + suffix) || localStorage.getItem("gv_supabase_url") || "";
+      let sbKey = localStorage.getItem("gv_supabase_key" + suffix) || localStorage.getItem("gv_supabase_key") || "";
+      let fbApiKey = localStorage.getItem("gv_firebase_apikey" + suffix) || localStorage.getItem("gv_firebase_apikey") || "";
+      let fbProjId = localStorage.getItem("gv_firebase_projectid" + suffix) || localStorage.getItem("gv_firebase_projectid") || "";
+      let fbAuthDom = localStorage.getItem("gv_firebase_authdomain" + suffix) || localStorage.getItem("gv_firebase_authdomain") || "";
+      let fbAppId = localStorage.getItem("gv_firebase_appid" + suffix) || localStorage.getItem("gv_firebase_appid") || "";
+      
+      if (!sbUrl && !fbApiKey) {
+        showToast("Please connect to Supabase or Firebase first before sharing settings.", "warning");
+        return;
+      }
+      
+      let urlParams = new URLSearchParams();
+      if (sbUrl) {
+        urlParams.set("sbUrl", encodeURIComponent(sbUrl));
+        urlParams.set("sbKey", encodeURIComponent(sbKey));
+      } else if (fbApiKey) {
+        urlParams.set("fbApiKey", encodeURIComponent(fbApiKey));
+        urlParams.set("fbProjId", encodeURIComponent(fbProjId));
+        if (fbAuthDom) urlParams.set("fbAuthDom", encodeURIComponent(fbAuthDom));
+        if (fbAppId) urlParams.set("fbAppId", encodeURIComponent(fbAppId));
+      }
+      
+      const setupUrl = window.location.origin + window.location.pathname + "?" + urlParams.toString() + window.location.hash;
+      const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(setupUrl)}`;
+      
+      const img = document.getElementById("setup-qr-code-img");
+      const box = document.getElementById("setup-share-output-box");
+      const qrWrapper = document.getElementById("setup-qr-code-wrapper");
+      const qrInstructions = document.getElementById("setup-qr-instructions");
+      const msg = document.getElementById("setup-link-copied-msg");
+      
+      if (img) img.src = qrApiUrl;
+      if (box) box.classList.remove("hidden");
+      if (qrWrapper) qrWrapper.classList.remove("hidden");
+      if (qrInstructions) qrInstructions.classList.remove("hidden");
+      if (msg) msg.classList.add("hidden");
+      
+      showToast("QR Code generated successfully!", "success");
+    });
+  }
+
   // Bind Profile settings controls
   bindProfileSettingsControls();
 }
