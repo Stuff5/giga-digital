@@ -3046,6 +3046,11 @@ textarea.form-control {
   padding: 0;
 }
 
+.sidebar-collapsed .brand-text,
+.sidebar-collapsed .profile-info {
+  display: none !important;
+}
+
 .sidebar-collapsed .sidebar-brand {
   justify-content: center;
   padding: 0 0 0 3px;
