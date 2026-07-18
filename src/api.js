@@ -184,6 +184,13 @@ function initSupabaseConnection() {
       localStorage.setItem("gv_supabase_key" + userSuffix, key);
     }
   }
+  
+  // Fallback to GV_CONFIG if empty (especially for initial load on new devices or GitHub Pages)
+  if (!url && !key && window.GV_CONFIG && window.GV_CONFIG.supabaseUrl) {
+    url = window.GV_CONFIG.supabaseUrl;
+    key = window.GV_CONFIG.supabaseKey;
+  }
+  
   url = url || "";
   key = key || "";
   
@@ -456,6 +463,15 @@ function initFirebaseConnection() {
       localStorage.setItem("gv_firebase_appid" + userSuffix, appId);
     }
   }
+
+  // Fallback to GV_CONFIG if empty (especially for initial load on new devices or GitHub Pages)
+  if (!apiKey && !projectId && window.GV_CONFIG && window.GV_CONFIG.firebaseConfig) {
+    apiKey = window.GV_CONFIG.firebaseConfig.apiKey || "";
+    projectId = window.GV_CONFIG.firebaseConfig.projectId || "";
+    authDomain = window.GV_CONFIG.firebaseConfig.authDomain || "";
+    appId = window.GV_CONFIG.firebaseConfig.appId || "";
+  }
+
   apiKey = apiKey || "";
   projectId = projectId || "";
   authDomain = authDomain || "";
