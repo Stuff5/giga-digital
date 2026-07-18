@@ -567,9 +567,18 @@ async function handleLoginSubmit(e) {
     const nameDisplay = document.getElementById("user-display-name");
     if (nameDisplay) nameDisplay.textContent = authenticatedUser;
 
-    // Clear form inputs
+    // Clear form inputs and any browser autofill values in search bars
     const loginForm = document.getElementById("login-form");
     if (loginForm) loginForm.reset();
+
+    const globalSearch = document.getElementById("global-search");
+    if (globalSearch) globalSearch.value = "";
+    const invSearch = document.getElementById("inv-search-input");
+    if (invSearch) invSearch.value = "";
+    const salesSearch = document.getElementById("sales-search-input");
+    if (salesSearch) salesSearch.value = "";
+    const entriesSearch = document.getElementById("entries-search-input");
+    if (entriesSearch) entriesSearch.value = "";
 
     // Draw UI & charts
     updateUI();
