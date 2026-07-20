@@ -1,0 +1,838 @@
+  <div class="modal-backdrop" id="edit-game-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-pen-to-square text-purple"></i> Edit Game Info</h3>
+        <button class="modal-close-btn" data-close-modal="edit-game-modal">&times;</button>
+      </div>
+      <form id="edit-game-form">
+        <input type="hidden" id="edit-game-id">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="edit-game-title" class="required">Game Title</label>
+            <input type="text" id="edit-game-title" class="form-control" required placeholder="e.g. Elden Ring, Resident Evil 4">
+          </div>
+
+          <div class="form-group">
+            <label>Game Artwork / Cover Image</label>
+            <div class="image-input-container" style="display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; gap: 8px; width: 100%;">
+                <input type="text" id="edit-game-image-url" class="form-control form-control-sm" placeholder="Paste image URL (HTTPS)..." style="flex: 1;">
+                <button type="button" class="btn btn-outline btn-sm" id="btn-edit-fetch-steam" onclick="triggerAutoFetchSteamCover('edit-game-title', 'edit-game-image-url', 'btn-edit-fetch-steam')" style="white-space: nowrap; height: 32px; display: flex; align-items: center; gap: 4px;">
+                  <i class="fa-brands fa-steam"></i> Fetch Steam
+                </button>
+              </div>
+              <div class="image-divider" style="margin: 4px 0;"><span>OR</span></div>
+              <label class="btn btn-outline btn-sm file-upload-label" style="width: 100%; display: flex; justify-content: center; align-items: center; margin: 0;">
+                <i class="fa-solid fa-upload"></i> Upload Image
+                <input type="file" id="edit-game-image-file" accept="image/*" style="display: none;">
+              </label>
+            </div>
+            <small class="form-help">Paste cover artwork URL, fetch from Steam, or upload a local image.</small>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="edit-game-platform" class="required">Platform</label>
+              <select id="edit-game-platform" class="form-control" required>
+                <option value="Steam">Steam</option>
+                <option value="PlayStation 5">PlayStation 5</option>
+                <option value="Xbox Series X/S">Xbox Series X/S</option>
+                <option value="Nintendo Switch">Nintendo Switch</option>
+                <option value="Epic Games">Epic Games</option>
+                <option value="GOG">GOG</option>
+                <option value="Ubisoft Connect">Ubisoft Connect</option>
+                <option value="EA App">EA App</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="edit-game-cost" class="required">Purchase Price (<span class="currency-symbol">€</span>)</label>
+              <div class="input-with-icon">
+                <i class="fa-solid fa-euro-sign currency-icon"></i>
+                <input type="number" id="edit-game-cost" class="form-control" required step="0.01" min="0" placeholder="0.00">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-game-status" class="required">Inventory Status</label>
+            <select id="edit-game-status" class="form-control" required>
+              <option value="Available">Available</option>
+              <option value="Reserved">Reserved</option>
+              <option value="Sold">Sold</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-game-key" class="required">Digital Activation Key</label>
+            <input type="text" id="edit-game-key" class="form-control font-code" required placeholder="e.g. AAAA-BBBB-CCCC-DDDD">
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+            <label for="edit-game-source" class="required">Supplier</label>
+            <select id="edit-game-source" class="form-control" required>
+              <!-- Dynamically populated from JS -->
+            </select>
+          </div>
+
+            <div class="form-group">
+              <label for="edit-game-purchase-date" class="required">Purchase Date</label>
+              <input type="date" id="edit-game-purchase-date" class="form-control" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-game-publisher">Publisher</label>
+            <input type="text" id="edit-game-publisher" class="form-control" placeholder="e.g. Bandai Namco, Ubisoft">
+          </div>
+
+          <div class="form-group">
+            <label for="edit-game-notes">Inventory Notes</label>
+            <textarea id="edit-game-notes" class="form-control" rows="2" placeholder="Bundle details..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close-modal="edit-game-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- EDIT CATALOG ENTRY MODAL -->
+  <div class="modal-backdrop" id="edit-catalog-entry-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-pen-to-square text-cyan"></i> Edit Catalog Entry</h3>
+        <button class="modal-close-btn" data-close-modal="edit-catalog-entry-modal">&times;</button>
+      </div>
+      <form id="edit-catalog-entry-form">
+        <input type="hidden" id="edit-entry-old-title">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="edit-entry-title" class="required">Game Title</label>
+            <input type="text" id="edit-entry-title" class="form-control" required placeholder="e.g. Elden Ring">
+          </div>
+
+          <div class="form-group">
+            <label for="edit-entry-publisher">Publisher</label>
+            <input type="text" id="edit-entry-publisher" list="edit-entry-publisher-list" class="form-control" placeholder="Select or type publisher name...">
+            <datalist id="edit-entry-publisher-list"></datalist>
+            <small class="form-help">Assign an existing publisher from the list or type a new one.</small>
+          </div>
+
+          <div class="form-group">
+            <label>Game Artwork / Cover Image</label>
+            <div class="image-input-container" style="display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; gap: 8px; width: 100%;">
+                <input type="text" id="edit-entry-image-url" class="form-control form-control-sm" placeholder="Paste image URL (HTTPS)..." style="flex: 1;">
+                <button type="button" class="btn btn-outline btn-sm" id="btn-catalog-fetch-steam" onclick="triggerAutoFetchSteamCover('edit-entry-title', 'edit-entry-image-url', 'btn-catalog-fetch-steam')" style="white-space: nowrap; height: 32px; display: flex; align-items: center; gap: 4px;">
+                  <i class="fa-brands fa-steam"></i> Fetch Steam
+                </button>
+              </div>
+              <div class="image-divider" style="margin: 4px 0;"><span>OR</span></div>
+              <label class="btn btn-outline btn-sm file-upload-label" style="width: 100%; display: flex; justify-content: center; align-items: center; margin: 0;">
+                <i class="fa-solid fa-upload"></i> Upload Image
+                <input type="file" id="edit-entry-image-file" accept="image/*" style="display: none;">
+              </label>
+            </div>
+            <small class="form-help">Updating this will update the cover artwork for all matching keys in inventory.</small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close-modal="edit-catalog-entry-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="fa-solid fa-floppy-disk"></i> Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADD GAME KEY MODAL -->
+  <div class="modal-backdrop" id="add-game-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-key text-teal"></i> Add Digital Game Key</h3>
+        <button class="modal-close-btn" data-close-modal="add-game-modal">&times;</button>
+      </div>
+      <form id="add-game-form">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="game-title" class="required">Game Title</label>
+            <div class="autocomplete-wrapper">
+              <input type="text" id="game-title" class="form-control" required placeholder="e.g. Elden Ring, Resident Evil 4" autocomplete="off">
+              <div id="game-title-suggestions" class="autocomplete-suggestions"></div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Game Artwork / Cover Image</label>
+            <div class="image-input-container" style="display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; gap: 8px; width: 100%;">
+                <input type="text" id="game-image-url" class="form-control form-control-sm" placeholder="Paste image URL (HTTPS)..." style="flex: 1;">
+                <button type="button" class="btn btn-outline btn-sm" id="btn-add-fetch-steam" onclick="triggerAutoFetchSteamCover('game-title', 'game-image-url', 'btn-add-fetch-steam')" style="white-space: nowrap; height: 32px; display: flex; align-items: center; gap: 4px;">
+                  <i class="fa-brands fa-steam"></i> Fetch Steam
+                </button>
+              </div>
+              <div class="image-divider" style="margin: 4px 0;"><span>OR</span></div>
+              <label class="btn btn-outline btn-sm file-upload-label" style="width: 100%; display: flex; justify-content: center; align-items: center; margin: 0;">
+                <i class="fa-solid fa-upload"></i> Upload Image
+                <input type="file" id="game-image-file" accept="image/*" style="display: none;">
+              </label>
+            </div>
+            <small class="form-help">Paste cover artwork URL, fetch from Steam, or upload a local image.</small>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="game-platform" class="required">Platform</label>
+              <select id="game-platform" class="form-control" required>
+                <option value="" disabled selected>Select Platform</option>
+                <option value="Steam">Steam</option>
+                <option value="PlayStation 5">PlayStation 5</option>
+                <option value="Xbox Series X/S">Xbox Series X/S</option>
+                <option value="Nintendo Switch">Nintendo Switch</option>
+                <option value="Epic Games">Epic Games</option>
+                <option value="GOG">GOG</option>
+                <option value="Ubisoft Connect">Ubisoft Connect</option>
+                <option value="EA App">EA App</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="game-cost" class="required">Purchase Price (<span class="currency-symbol">€</span>)</label>
+              <div class="input-with-icon">
+                <i class="fa-solid fa-euro-sign currency-icon"></i>
+                <input type="number" id="game-cost" class="form-control" required step="0.01" min="0" placeholder="0.00">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="game-key" class="required">Digital Activation Key(s)</label>
+            <textarea id="game-key" class="form-control font-code" required placeholder="Enter keys (one per line)..." rows="3" style="resize: vertical;"></textarea>
+            <span class="form-help">Enter one key per line to add multiple keys at once with the same details.</span>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="game-source" class="required">Supplier</label>
+              <select id="game-source" class="form-control" required>
+                <!-- Dynamically populated from JS -->
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="game-purchase-date" class="required">Purchase Date</label>
+              <input type="date" id="game-purchase-date" class="form-control" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="game-publisher">Publisher</label>
+            <input type="text" id="game-publisher" class="form-control" placeholder="e.g. Bandai Namco, Ubisoft">
+          </div>
+
+          <div class="form-group">
+            <label for="game-notes">Inventory Notes</label>
+            <textarea id="game-notes" class="form-control" rows="2" placeholder="Bundle details, region locks, expiration dates..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close-modal="add-game-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Key to Stock</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- SELL GAME MODAL -->
+  <div class="modal-backdrop" id="sell-game-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-euro-sign currency-icon text-pink"></i> Record Key Sale</h3>
+        <button class="modal-close-btn" data-close-modal="sell-game-modal">&times;</button>
+      </div>
+      <form id="sell-game-form">
+        <input type="hidden" id="sell-game-id">
+        <input type="hidden" id="sale-fees" value="0.00">
+        <div class="modal-body">
+          <div class="form-group" id="sell-search-container" style="margin-bottom: 16px;">
+            <label for="sell-game-search" class="required">Search In-Stock Game</label>
+            <div class="input-with-icon" style="position: relative;">
+              <i class="fa-solid fa-magnifying-glass search-icon" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.85rem;"></i>
+              <input type="text" id="sell-game-search" class="form-control" placeholder="Type game title or key..." style="padding-left: 36px;" autocomplete="off" required>
+              <div id="sell-autocomplete-list" class="glass-panel" style="position: absolute; top: 100%; left: 0; right: 0; max-height: 220px; overflow-y: auto; z-index: 1000; border: 1px solid var(--border-color); border-radius: 6px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); display: none; background: var(--bg-card); padding: 4px 0;"></div>
+            </div>
+          </div>
+
+          <div class="sale-summary-card" id="sell-selected-game-card" style="display: none; margin-bottom: 16px;">
+            <h4 id="sell-modal-title">Game Title Here</h4>
+            <p>Platform: <span id="sell-modal-platform">Steam</span> | Buy Cost: <span id="sell-modal-cost">€0.00</span></p>
+            <p style="font-size: 0.75rem; margin-top: 4px; color: var(--text-muted);">Key: <code id="sell-modal-key" style="font-size: 0.75rem;">-</code></p>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="sale-price" class="required">Sale Price (<span class="currency-symbol">€</span>)</label>
+              <div class="input-with-icon">
+                <i class="fa-solid fa-euro-sign currency-icon"></i>
+                <input type="number" id="sale-price" class="form-control" required step="0.01" min="0" placeholder="0.00">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="sale-platform" class="required">Selling Platform</label>
+              <select id="sale-platform" class="form-control" required>
+                <option value="Kinguin" selected>Kinguin</option>
+                <option value="G2A">G2A</option>
+                <option value="eBay">eBay</option>
+                <option value="PlayerAuctions">PlayerAuctions</option>
+                <option value="Kinguin API">Kinguin API</option>
+                <option value="Discord">Discord Direct</option>
+                <option value="Other">Other Platform</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="sale-date" class="required">Sale Date</label>
+            <input type="date" id="sale-date" class="form-control" required>
+          </div>
+
+          <div class="form-group">
+            <label for="sale-notes">Transaction / Buyer Notes</label>
+            <input type="text" id="sale-notes" class="form-control" placeholder="e.g. Sold to user#1234, buyer order id">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close-modal="sell-game-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-pink">Record Sale</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- VIEW KEY DETAILS MODAL -->
+  <div class="modal-backdrop" id="view-key-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-shield-halved text-cyan"></i> Secure Key Viewer</h3>
+        <button class="modal-close-btn" data-close-modal="view-key-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="key-display-card">
+          <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;" id="view-modal-artwork-row">
+            <!-- Injected by JS -->
+          </div>
+          <div class="key-reveal-container">
+            <input type="password" id="view-modal-key-input" class="form-control key-code-input" readonly value="REVEAL-ME-NOW-SAMPLE">
+            <button class="btn btn-outline" id="btn-toggle-view-key" title="Toggle visibility">
+              <i class="fa-solid fa-eye" id="toggle-key-eye-icon"></i>
+            </button>
+            <button class="btn btn-primary" id="btn-copy-view-key" title="Copy key to clipboard">
+              <i class="fa-solid fa-copy"></i> Copy
+            </button>
+          </div>
+        </div>
+        
+        <div class="key-metadata-grid">
+          <div class="meta-item">
+            <span class="meta-label">Platform</span>
+            <strong id="view-modal-platform">Steam</strong>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Supplier</span>
+            <strong id="view-modal-source">Humble Bundle</strong>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Acquisition Cost</span>
+            <strong id="view-modal-cost">€0.00</strong>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Purchase Date</span>
+            <strong id="view-modal-date">2026-06-05</strong>
+          </div>
+        </div>
+
+        <div class="key-notes-box">
+          <h5>Distributor/Listing Notes:</h5>
+          <p id="view-modal-notes">No notes available.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-close-modal="view-key-modal">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CATALOG KEYS LIST MODAL -->
+  <div class="modal-backdrop" id="catalog-keys-modal">
+    <div class="modal-card" style="max-width: 850px; width: 95%;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-key text-teal"></i> <span id="catalog-keys-modal-title">Game Title Keys</span></h3>
+        <button class="modal-close-btn" data-close-modal="catalog-keys-modal">&times;</button>
+      </div>
+      <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+        <div class="table-responsive">
+          <table class="table" id="catalog-keys-table">
+            <thead>
+              <tr>
+                <th>Platform</th>
+                <th>Digital Key</th>
+                <th>Cost</th>
+                <th>Sale Price</th>
+                <th>Selling Platform</th>
+                <th>Status</th>
+                <th style="text-align: right; width: 120px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="catalog-keys-table-body">
+              <!-- Injected by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+        <div class="table-footer" style="margin-top: 10px;">
+          <span id="catalog-keys-count-text">Showing 0 keys</span>
+          <div class="pagination-controls" style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <div class="page-size-selector" style="display: flex; align-items: center; gap: 8px;">
+              <label for="catalog-keys-page-size" style="white-space: nowrap; margin-bottom: 0; font-size: 0.8rem;">Show:</label>
+              <select id="catalog-keys-page-size" class="form-control form-control-sm" style="width: auto; padding: 4px 8px; height: 32px;">
+                <option value="25" selected>25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+            <div class="pagination-buttons" id="catalog-keys-pagination" style="display: flex; align-items: center; gap: 4px;">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-close-modal="catalog-keys-modal">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT SUPPLIER MODAL -->
+  <div class="modal-backdrop" id="edit-supplier-modal">
+    <div class="modal-card" style="max-width: 450px;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-truck-ramp-box text-purple"></i> Edit Supplier</h3>
+        <button class="modal-close-btn" data-close-modal="edit-supplier-modal">&times;</button>
+      </div>
+      <form id="edit-supplier-form">
+        <input type="hidden" id="edit-supplier-old-name">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="edit-supplier-name" class="required">Supplier Name</label>
+            <input type="text" id="edit-supplier-name" class="form-control" required placeholder="e.g. Humble Bundle, Fanatical">
+          </div>
+          <div class="form-group">
+            <label class="required">Supplier Tag Color</label>
+            <div class="color-palette-grid" id="edit-supplier-color-grid"></div>
+            <input type="hidden" id="edit-supplier-color-input" required>
+          </div>
+          <div class="form-group">
+            <label>Supplier Logo</label>
+            <div class="image-input-container">
+              <input type="text" id="edit-supplier-logo-url" class="form-control form-control-sm" placeholder="Paste logo image URL...">
+              <div class="image-divider"><span>OR</span></div>
+              <label class="btn btn-outline btn-sm file-upload-label" style="width: 100%; justify-content: center;">
+                <i class="fa-solid fa-upload"></i> Upload Logo
+                <input type="file" id="edit-supplier-logo-file" accept="image/*" style="display: none;">
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close-modal="edit-supplier-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- EDIT PLATFORM MODAL -->
+  <div class="modal-backdrop" id="edit-platform-modal">
+    <div class="modal-card" style="max-width: 450px;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-gamepad text-purple"></i> Edit Platform</h3>
+        <button class="modal-close-btn" data-close-modal="edit-platform-modal">&times;</button>
+      </div>
+      <form id="edit-platform-form">
+        <input type="hidden" id="edit-platform-old-name">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="edit-platform-name" class="required">Platform Name</label>
+            <input type="text" id="edit-platform-name" class="form-control" required placeholder="e.g. Steam, Epic Games">
+          </div>
+          <div class="form-group">
+            <label>Platform Logo / Icon</label>
+            <div class="image-input-container">
+              <input type="text" id="edit-platform-logo-url" class="form-control form-control-sm" placeholder="Paste logo image URL...">
+              <div class="image-divider"><span>OR</span></div>
+              <label class="btn btn-outline btn-sm file-upload-label" style="width: 100%; justify-content: center;">
+                <i class="fa-solid fa-upload"></i> Upload Logo
+                <input type="file" id="edit-platform-logo-file" accept="image/*" style="display: none;">
+              </label>
+            </div>
+          </div>
+          <div class="form-group" style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
+            <label>Logo Preview</label>
+            <div id="edit-platform-logo-preview" class="logo-preview-box" style="display: flex; align-items: center; justify-content: center; width: 72px; height: 72px; border-radius: var(--radius-md); border: 2px dashed var(--border-color); background-color: var(--bg-input); font-size: 1.5rem; color: var(--text-muted); overflow: hidden;">
+              <i class="fa-solid fa-gamepad"></i>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close-modal="edit-platform-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- EDIT PUBLISHER MODAL -->
+  <div class="modal-backdrop" id="edit-publisher-modal">
+    <div class="modal-card" style="max-width: 450px;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-building text-purple"></i> Edit Publisher</h3>
+        <button class="modal-close-btn" data-close-modal="edit-publisher-modal">&times;</button>
+      </div>
+      <form id="edit-publisher-form">
+        <input type="hidden" id="edit-publisher-old-name">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="edit-publisher-new-name" class="required">Publisher Name</label>
+            <input type="text" id="edit-publisher-new-name" class="form-control" required placeholder="e.g. Ubisoft, Electronic Arts">
+          </div>
+          <div style="margin-top: 10px; font-size: 0.8rem; color: var(--text-secondary);">
+            <i class="fa-solid fa-circle-info text-teal"></i> This will rename the publisher across all keys in your inventory.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close-modal="edit-publisher-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- EDIT USER MODAL -->
+  <div class="modal-backdrop" id="edit-user-modal">
+    <div class="modal-card" style="max-width: 450px;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-user-gear text-purple"></i> Edit User Account</h3>
+        <button class="modal-close-btn" data-close-modal="edit-user-modal">&times;</button>
+      </div>
+      <form id="edit-user-form">
+        <input type="hidden" id="edit-user-original-username">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="edit-user-username" class="required">Username</label>
+            <input type="text" id="edit-user-username" class="form-control" required placeholder="Username" minlength="3" maxlength="15">
+          </div>
+
+          <div class="form-group">
+            <label for="edit-user-email" class="required">Email Address</label>
+            <input type="email" id="edit-user-email" class="form-control" required placeholder="Email Address">
+          </div>
+
+          <div class="form-group">
+            <label for="edit-user-role" class="required">User Role</label>
+            <select id="edit-user-role" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+              <option value="merchant">Merchant / Operator</option>
+              <option value="admin">Administrator</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close-modal="edit-user-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- CSV IMPORT WIZARD MODAL -->
+  <div class="modal-backdrop" id="csv-import-wizard-modal">
+    <div class="modal-card" style="max-width: 800px; width: 95%;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-file-import text-teal"></i> CSV Import Wizard</h3>
+        <button class="modal-close-btn" data-close-modal="csv-import-wizard-modal">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 24px; overflow-y: auto; max-height: 70vh;">
+        <!-- Step Indicators -->
+        <div class="import-wizard-steps" style="display: flex; justify-content: space-around; margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 16px;">
+          <div class="wizard-step active" id="import-step-1-indicator" style="display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--accent-purple);">
+            <span class="step-num" style="background: var(--accent-purple); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">1</span>
+            <span>Upload File</span>
+          </div>
+          <div class="wizard-step" id="import-step-2-indicator" style="display: flex; align-items: center; gap: 8px; font-weight: 500; color: var(--text-muted);">
+            <span class="step-num" style="background: var(--border-color); color: var(--text-muted); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">2</span>
+            <span>Map Columns</span>
+          </div>
+          <div class="wizard-step" id="import-step-3-indicator" style="display: flex; align-items: center; gap: 8px; font-weight: 500; color: var(--text-muted);">
+            <span class="step-num" style="background: var(--border-color); color: var(--text-muted); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">3</span>
+            <span>Preview & Import</span>
+          </div>
+        </div>
+
+        <!-- STEP 1: UPLOAD FILE -->
+        <div class="wizard-section active" id="import-wizard-section-1">
+          <div class="file-drop-zone" id="csv-drop-zone" style="border: 2px dashed var(--border-color); border-radius: 8px; padding: 40px; text-align: center; cursor: pointer; transition: all 0.2s ease; background: var(--bg-card);">
+            <i class="fa-solid fa-cloud-arrow-up" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 16px;"></i>
+            <h4 style="margin-bottom: 8px; font-weight: 600; color: var(--text-main);">Drag and drop your CSV file here</h4>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 16px;">or click to browse your files</p>
+            <button type="button" class="btn btn-outline btn-sm" id="btn-browse-csv">Browse CSV</button>
+            <input type="file" id="csv-wizard-file-input" accept=".csv" style="display: none;">
+          </div>
+          <div id="csv-file-info" style="margin-top: 16px; display: none; align-items: center; justify-content: space-between; background: var(--bg-input); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <i class="fa-solid fa-file-csv" style="font-size: 2rem; color: #0284c7;"></i>
+              <div>
+                <strong id="csv-file-name" style="display: block; color: var(--text-main);">file.csv</strong>
+                <span id="csv-file-size" style="font-size: 0.8rem; color: var(--text-muted);">0 KB</span>
+              </div>
+            </div>
+            <button type="button" class="btn btn-danger btn-sm" id="btn-remove-csv" style="padding: 6px 10px;"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+
+        <!-- STEP 2: MAP COLUMNS -->
+        <div class="wizard-section" id="import-wizard-section-2" style="display: none;">
+          <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 16px;">
+            Map the fields in your CSV columns to the GameVault database fields. Fields marked with <span class="text-danger">*</span> are required.
+          </p>
+          <div class="table-responsive" style="max-height: 320px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 16px;">
+            <table class="table" style="margin-bottom: 0;">
+              <thead>
+                <tr>
+                  <th>Database Field</th>
+                  <th>CSV Column Header</th>
+                  <th>Default Value (If unmapped)</th>
+                </tr>
+              </thead>
+              <tbody id="csv-mapping-tbody">
+                <!-- Injected dynamically by JS -->
+              </tbody>
+            </table>
+          </div>
+          <div id="csv-mapping-warning" class="alert alert-danger" style="display: none; margin-top: 12px;">
+            <i class="fa-solid fa-circle-exclamation"></i> Please map the required fields: <strong>Game Title</strong> and <strong>Digital Key</strong>.
+          </div>
+        </div>
+
+        <!-- STEP 3: PREVIEW DATA -->
+        <div class="wizard-section" id="import-wizard-section-3" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0;">
+              Preview the first 5 records of your import. Total rows to import: <strong id="csv-total-rows-count" class="text-teal">0</strong>
+            </p>
+          </div>
+          <div class="table-responsive" style="border: 1px solid var(--border-color); border-radius: 6px; overflow-x: auto; max-height: 320px;">
+            <table class="table table-striped" style="margin-bottom: 0; font-size: 0.85rem; min-width: 600px;">
+              <thead id="csv-preview-thead">
+                <!-- Injected dynamically by JS -->
+              </thead>
+              <tbody id="csv-preview-tbody">
+                <!-- Injected dynamically by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: space-between; border-top: 1px solid var(--border-color); padding: 16px 24px; background: var(--bg-modal-footer);">
+        <button type="button" class="btn btn-outline" id="btn-import-wizard-back" style="visibility: hidden;">Back</button>
+        <div style="display: flex; gap: 12px;">
+          <button type="button" class="btn btn-outline" data-close-modal="csv-import-wizard-modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="btn-import-wizard-next" disabled>Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD SUPPLIER MODAL -->
+  <div class="modal-backdrop" id="add-supplier-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-truck-ramp-box text-purple"></i> Add New Supplier</h3>
+        <button class="modal-close-btn" data-close-modal="add-supplier-modal">&times;</button>
+      </div>
+      <form id="add-supplier-form">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="supplier-name-input" class="required">Supplier Name</label>
+            <input type="text" id="supplier-name-input" class="form-control" required placeholder="e.g. Humble Bundle, Fanatical">
+          </div>
+          <div class="form-group">
+            <label class="required">Supplier Tag Color</label>
+            <div class="color-palette-grid" id="add-supplier-color-grid"></div>
+            <input type="hidden" id="add-supplier-color-input" required value="purple">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label>Supplier Logo</label>
+            <div class="image-input-container">
+              <input type="text" id="supplier-logo-url-input" class="form-control form-control-sm" placeholder="Paste logo image URL...">
+              <div class="image-divider"><span>OR</span></div>
+              <label class="btn btn-outline btn-sm file-upload-label" style="width: 100%; justify-content: center;">
+                <i class="fa-solid fa-upload"></i> Upload Logo
+                <input type="file" id="supplier-logo-file-input" accept="image/*" style="display: none;">
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid var(--border-color); padding: 16px 24px; background: var(--bg-modal-footer);">
+          <button type="button" class="btn btn-outline" data-close-modal="add-supplier-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Supplier</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- HELP & DOCUMENTATION MODAL -->
+
+
+
+  <!-- DISPUTE / REFUND MODAL -->
+  <div class="modal-backdrop" id="dispute-sale-modal">
+    <div class="modal-card" style="max-width: 460px; width: 95%;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-triangle-exclamation text-warning"></i> Flag Sale as Disputed</h3>
+        <button class="modal-close-btn" data-close-modal="dispute-sale-modal">&times;</button>
+      </div>
+      <form id="dispute-sale-form">
+        <input type="hidden" id="dispute-sale-id">
+        <div class="modal-body">
+          <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 20px;">
+            You are flagging the sale of <strong id="dispute-sale-title-label"></strong> as disputed/refunded. This will zero out the sale revenue and update the activation key status to "Disputed".
+          </p>
+          
+          <div class="form-group" style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 16px; border-radius: var(--radius-md); display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px;">
+            <input type="checkbox" id="dispute-cost-refunded" style="width: 18px; height: 18px; cursor: pointer; margin-top: 2px;">
+            <div style="flex: 1;">
+              <label for="dispute-cost-refunded" style="font-weight: 600; cursor: pointer; color: var(--text-main); font-size: 0.9rem; display: block; margin-bottom: 4px;">Cost refunded by supplier</label>
+              <p style="color: var(--text-secondary); font-size: 0.8rem; line-height: 1.4; margin: 0;">
+                Check this option if the supplier refunded the cost (<strong id="dispute-sale-cost-label"></strong>) of this key. 
+                <br>
+                If unchecked, the cost will be recorded as a capital loss (-cost).
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close-modal="dispute-sale-modal">Cancel</button>
+          <button type="submit" class="btn btn-warning">Confirm Dispute</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- BULK PRICE ADJUSTMENT MODAL -->
+  <!-- BULK PRICE ADJUSTMENT MODAL -->
+  <div class="modal-backdrop" id="bulk-price-adjust-modal">
+    <div class="modal-card" style="max-width: 520px; width: 95%;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-calculator"></i> Bulk Price Adjustment</h3>
+        <button class="modal-close-btn" data-close-modal="bulk-price-adjust-modal">&times;</button>
+      </div>
+      <form id="bulk-price-adjust-form" novalidate>
+        <div class="modal-body">
+          <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 20px;">
+            Apply modifications to the cost and sell price of <strong id="bulk-adjust-count-label">0</strong> selected inventory key(s).
+          </p>
+
+          <!-- Acquisition Cost Adjustments -->
+          <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; margin-bottom: 16px; background-color: rgba(255,255,255,0.02);">
+            <h4 style="margin-top: 0; margin-bottom: 12px; font-size: 0.95rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+              <span style="background-color: var(--accent-purple)20; color: var(--accent-purple); width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem;">1</span>
+              Acquisition Cost (Buy Price)
+            </h4>
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label for="bulk-cost-action">Modification Mode</label>
+              <select id="bulk-cost-action" class="form-control">
+                <option value="none">No Change</option>
+                <option value="set">Set Fixed Value</option>
+                <option value="adjust">Adjust (Add/Subtract)</option>
+              </select>
+            </div>
+            <div class="form-row" id="bulk-cost-value-row" style="display: none; gap: 12px;">
+              <div class="form-group" style="flex: 2; margin-bottom: 0;">
+                <label for="bulk-cost-value">Amount (<span class="currency-symbol">€</span>)</label>
+                <input type="number" id="bulk-cost-value" class="form-control" placeholder="0.00" step="0.01">
+              </div>
+              <div class="form-group" style="flex: 1; margin-bottom: 0; display: flex; align-items: flex-end;">
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-weight: 500; font-size: 0.85rem; color: var(--text-secondary);">
+                  <input type="checkbox" id="bulk-cost-percent" style="cursor: pointer; width: 16px; height: 16px;"> Percentage
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Target Sell Price Adjustments -->
+          <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; background-color: rgba(255,255,255,0.02);">
+            <h4 style="margin-top: 0; margin-bottom: 12px; font-size: 0.95rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+              <span style="background-color: var(--accent-pink)20; color: var(--accent-pink); width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem;">2</span>
+              Target Sell Price
+            </h4>
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label for="bulk-sell-action">Modification Mode</label>
+              <select id="bulk-sell-action" class="form-control">
+                <option value="none">No Change</option>
+                <option value="set">Set Fixed Value</option>
+                <option value="adjust">Adjust (Add/Subtract)</option>
+              </select>
+            </div>
+            <div class="form-row" id="bulk-sell-value-row" style="display: none; gap: 12px;">
+              <div class="form-group" style="flex: 2; margin-bottom: 0;">
+                <label for="bulk-sell-value">Amount (<span class="currency-symbol">€</span>)</label>
+                <input type="number" id="bulk-sell-value" class="form-control" placeholder="0.00" step="0.01">
+              </div>
+              <div class="form-group" style="flex: 1; margin-bottom: 0; display: flex; align-items: flex-end;">
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-weight: 500; font-size: 0.85rem; color: var(--text-secondary);">
+                  <input type="checkbox" id="bulk-sell-percent" style="cursor: pointer; width: 16px; height: 16px;"> Percentage
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid var(--border-color); padding: 16px 24px; background: var(--bg-modal-footer);">
+          <button type="button" class="btn btn-outline" data-close-modal="bulk-price-adjust-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Apply Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MANAGE EXPENSE CATEGORIES MODAL -->
+  <div class="modal-backdrop" id="payout-categories-modal">
+    <div class="modal-card" style="max-width: 450px; width: 95%;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-tags text-purple"></i> Manage Expense Categories</h3>
+        <button class="modal-close-btn" data-close-modal="payout-categories-modal">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 20px;">
+        <form id="form-add-payout-category" style="display: flex; gap: 8px; margin-bottom: 16px;">
+          <input type="text" id="new-payout-category-name" class="form-control" placeholder="New category name..." required style="flex-grow: 1;">
+          <button type="submit" class="btn btn-primary" style="padding: 8px 16px; display: flex; align-items: center; gap: 4px;">
+            <i class="fa-solid fa-plus"></i> Add
+          </button>
+        </form>
+        
+        <div style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); background-color: var(--bg-input);">
+          <ul id="payout-categories-list" style="list-style: none; padding: 0; margin: 0;">
+            <!-- Injected dynamically by JavaScript -->
+          </ul>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; padding: 12px 20px; border-top: 1px solid var(--border-color); background: var(--bg-modal-footer);">
+        <button type="button" class="btn btn-outline" data-close-modal="payout-categories-modal">Close</button>
+      </div>
+    </div>
+  </div>
+

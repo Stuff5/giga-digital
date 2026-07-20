@@ -1,0 +1,566 @@
+  <div class="modal-backdrop" id="help-modal">
+    <div class="modal-card" style="max-width: 800px; width: 95%;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-circle-question text-purple"></i> Help & Documentation Center</h3>
+        <button class="modal-close-btn" data-close-modal="help-modal">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 20px; overflow-y: hidden;">
+        <div class="help-modal-grid" style="display: flex; gap: 24px; min-height: 420px;">
+          <!-- Sidebar tabs -->
+          <div class="help-modal-sidebar" style="width: 220px; flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; border-right: 1px solid var(--border-color); padding-right: 16px;">
+            <div style="position: relative; margin-bottom: 8px;">
+              <input type="text" id="help-search-input" placeholder="Search docs..." style="width: 100%; padding: 8px 12px 8px 30px; font-size: 0.8rem; background-color: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-main);">
+              <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 10px; top: 11px; font-size: 0.75rem; color: var(--text-muted);"></i>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm help-tab-btn active" data-help-tab="help-tab-general" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background-color: var(--bg-input); color: var(--text-main); width: 100%;">
+              <i class="fa-solid fa-book" style="margin-right: 8px; width: 16px; color: var(--accent-cyan);"></i> General Guide
+            </button>
+            <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-widgets" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
+              <i class="fa-solid fa-square-poll-vertical" style="margin-right: 8px; width: 16px; color: var(--accent-purple);"></i> Widget Console
+            </button>
+            <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-import" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
+              <i class="fa-solid fa-file-excel" style="margin-right: 8px; width: 16px; color: var(--accent-emerald);"></i> Bulk Import Tips
+            </button>
+            <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-sync" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
+              <i class="fa-solid fa-arrows-rotate" style="margin-right: 8px; width: 16px; color: var(--accent-teal);"></i> Cloud & Auto-Sync
+            </button>
+            <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-supabase-setup" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
+              <i class="fa-solid fa-cloud" style="margin-right: 8px; width: 16px; color: var(--accent-teal);"></i> Supabase Guide
+            </button>
+            <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-disputes" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
+              <i class="fa-solid fa-triangle-exclamation" style="margin-right: 8px; width: 16px; color: var(--accent-warning);"></i> Disputes & Refunds
+            </button>
+            <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-environments" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
+              <i class="fa-solid fa-server" style="margin-right: 8px; width: 16px; color: var(--accent-cyan);"></i> Dev vs. Prod Mode
+            </button>
+            <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-business-math" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
+              <i class="fa-solid fa-calculator" style="margin-right: 8px; width: 16px; color: var(--accent-warning);"></i> Formulas & Logic
+            </button>
+            <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-notifications" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
+              <i class="fa-solid fa-bell" style="margin-right: 8px; width: 16px; color: var(--accent-pink);"></i> Notification Center
+            </button>
+            <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-changelog" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
+              <i class="fa-solid fa-code-branch" style="margin-right: 8px; width: 16px; color: var(--accent-cyan);"></i> Version Progress
+            </button>
+            <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-shortcuts" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
+              <i class="fa-solid fa-keyboard" style="margin-right: 8px; width: 16px; color: var(--accent-pink);"></i> Keyboard Hotkeys
+            </button>
+          </div>
+          <!-- Pane contents -->
+          <div style="flex: 1; min-width: 0; max-height: 420px; overflow-y: auto; padding-right: 8px; text-align: left;">
+            
+            <!-- Pane 1: General -->
+            <div id="help-tab-general" class="help-tab-pane">
+              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Key Merchant Pro Overview</h4>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                GameVault Key Merchant Pro is a high-performance inventory and sales pipeline management dashboard. It helps you track game activation keys, analyze financial records, monitor stock durations, and manage supplier transactions.
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Key Activation States</h5>
+              <ul style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.6; padding-left: 20px; margin-bottom: 16px;">
+                <li><strong style="color: var(--accent-teal);">Available:</strong> Keys currently active in stock and ready to be sold.</li>
+                <li><strong style="color: var(--accent-purple);">Sold:</strong> Dispatched keys. These are logged in the Sales Ledger and calculate profit margin.</li>
+                <li><strong style="color: var(--accent-pink);">Reserved:</strong> Keys held back for customer orders or pending deals.</li>
+                <li><strong style="color: var(--accent-warning);">Rejected:</strong> Revoked, faulty, or returned keys. Capital cost is tracked but they represent no profit.</li>
+              </ul>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Inventory Aging Alerts</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                To prevent stock depreciation, the app categorizes key storage duration:
+                <br>
+                <span class="badge badge-age-fresh" style="margin-top: 4px; display: inline-block;">Fresh</span> (under 30 days), 
+                <span class="badge badge-age-aging" style="display: inline-block;">Aging</span> (30-90 days), 
+                <span class="badge badge-age-stale" style="display: inline-block;">Stale</span> (90-180 days), and 
+                <span class="badge badge-age-verystale" style="display: inline-block;">Very Stale</span> (180+ days).
+              </p>
+
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Catalog Cover Artworks</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 0;">
+                GameVault fetches game covers dynamically via the CheapShark / Steam API:
+                <br>
+                - <strong>Single Fetch:</strong> Clicking the "Fetch Steam" button next to cover art inputs queries artwork links in real-time.
+                <br>
+                - <strong>Bulk Fetcher:</strong> Located in the unified <strong>Data Tools & Utilities</strong> card in Settings. It runs in safe batches of <strong>100 entries</strong> at a time to prevent rate-limiting and tab lag, featuring a Steam fallback search via <code>corsproxy.io</code> if CheapShark is blocked.
+              </p>
+            </div>
+
+            <!-- Pane Widgets: Widget Console -->
+            <div id="help-tab-widgets" class="help-tab-pane hidden">
+              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Dashboard Widget Console</h4>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                Customize your analytical workflow by transforming the charts layout into an interactive grid of modular widgets.
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Interactive Features</h5>
+              <ul style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.6; padding-left: 20px; margin-bottom: 16px;">
+                <li><strong>Drag-and-Drop Order:</strong> Click and drag any card header to swap visual positions on the grid. Custom positions are saved instantly.</li>
+                <li><strong>Variable Width Spans:</strong> Click the card options menu <i class="fa-solid fa-ellipsis-vertical"></i> and select 1, 2, or 3 columns to scale the card width dynamically.</li>
+                <li><strong>Minimize/Expand:</strong> Click <i class="fa-solid fa-chevron-down"></i> to collapse the chart body down to a clean header, or click <i class="fa-solid fa-chevron-up"></i> to restore it.</li>
+                <li><strong>Fullscreen Focus Overlay:</strong> Click <i class="fa-solid fa-expand"></i> to pop the widget into a maximized glassmorphic overlay for detailed focus views.</li>
+                <li><strong>3D Config Card Flip:</strong> Click **Configure** in options to rotate the card in 3D. Setup custom timeframe overrides (e.g. Last 30 Days, This Year) or change chart styles on the fly.</li>
+                <li><strong>Widget Gallery Drawer:</strong> Click **Remove Widget** in options to hide a card. Open the sidebar **+ Add Widget** gallery drawer to place inactive widgets back in real-time.</li>
+              </ul>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Finances View Grid Spanning</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 0;">
+                All accounting widgets (including Monthly Trend, Performance Averages, Outflow Allocation, Cost & Revenue, and Markup Analysis) are consolidated inside the **Finances** tab. Just like the dashboard, you can click the ellipsis menu <i class="fa-solid fa-ellipsis-vertical"></i> on any Finance card header to choose between 1, 2, or 3 columns to lay out your accounting view.
+              </p>
+            </div>
+
+            <!-- Pane 2: Import -->
+            <div id="help-tab-import" class="help-tab-pane hidden">
+              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Bulk Spreadsheet Ingestion</h4>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                You can import huge files directly from Excel/CSV workbooks. The parser reads standard files and updates your lists in batches.
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Expected Column Mappings</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 12px;">
+                The importer matches your sheet columns automatically. Make sure your file contains headers similar to:
+              </p>
+              <table style="width: 100%; border-collapse: collapse; font-size: 0.825rem; color: var(--text-secondary); margin-bottom: 16px;">
+                <thead>
+                  <tr style="border-bottom: 1px solid var(--border-color); text-align: left;">
+                    <th style="padding: 6px;">Excel Header</th>
+                    <th style="padding: 6px;">Maps To</th>
+                    <th style="padding: 6px;">Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 6px; font-weight: 600; color: var(--text-main);">Name / Title</td>
+                    <td style="padding: 6px;">Game Title</td>
+                    <td style="padding: 6px;">Required to group entries</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 6px; font-weight: 600; color: var(--text-main);">Vendor / Supplier</td>
+                    <td style="padding: 6px;">Supplier Source</td>
+                    <td style="padding: 6px;">Defaults to "Direct" if empty</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 6px; font-weight: 600; color: var(--text-main);">Key / Code</td>
+                    <td style="padding: 6px;">Activation Key</td>
+                    <td style="padding: 6px;">Stored encrypted locally</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 6px; font-weight: 600; color: var(--text-main);">Cost / Sell</td>
+                    <td style="padding: 6px;">Prices</td>
+                    <td style="padding: 6px;">Must be positive numbers</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 6px; font-weight: 600; color: var(--text-main);">Status</td>
+                    <td style="padding: 6px;">State</td>
+                    <td style="padding: 6px;">"Open" ➔ Available, "Closed" ➔ Sold, "Rejected"</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div style="background-color: rgba(255, 179, 0, 0.05); border-left: 3px solid var(--accent-warning); padding: 10px; border-radius: var(--radius-sm); margin-bottom: 12px;">
+                <p style="color: var(--text-main); font-size: 0.8rem; margin: 0; line-height: 1.4; margin-bottom: 6px;">
+                  <strong>Pro Tip:</strong> Use the **Excel/CSV Bulk Import** card in Settings. The importer handles large batches asynchronously, so the browser stays responsive.
+                </p>
+                <p style="color: var(--text-secondary); font-size: 0.775rem; margin: 0; line-height: 1.4;">
+                  <strong>Date Formats:</strong> The importer parses standard (YYYY-MM-DD) and international (D/M/YYYY or DD-MM-YYYY) formats. Midnight boundaries are timezone-corrected automatically to prevent date shifts.
+                </p>
+              </div>
+              
+              <div style="background-color: rgba(57, 73, 171, 0.05); border-left: 3px solid var(--accent-cyan); padding: 10px; border-radius: var(--radius-sm); margin-bottom: 20px;">
+                <p style="color: var(--text-main); font-size: 0.8rem; margin: 0; line-height: 1.4;">
+                  <strong>Duplicates Check:</strong> The importer checks all incoming activation keys against your current catalog. Any duplicates found will be reported as a warning alert when the import concludes.
+                </p>
+              </div>
+
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Catalog Cover Artwork Utilities</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 12px;">
+                You can dynamically retrieve cover images for all games in your catalog inside the unified **Data Tools & Utilities** card in Settings:
+              </p>
+              <ul style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; padding-left: 20px; margin: 0;">
+                <li style="margin-bottom: 6px;"><strong>Dual-Source Fallback Pipeline:</strong> Queries CheapShark API first. If CheapShark is rate-limited (429) or blocked by your browser's ad-blocker, the utility instantly queries Steam's Store Search API via <code>corsproxy.io</code>.</li>
+                <li style="margin-bottom: 6px;"><strong>100-Item Batching Safeguard:</strong> Runs up to 100 entries per click to protect API rate limits and keep browser tabs responsive. If you have more than 100 items remaining, simply click <em>Fetch Catalog Images</em> again to process the next batch.</li>
+                <li><strong>Overwrite Filter:</strong> Turn on <em>Overwrite existing covers</em> to fetch new Steam covers for all listings. If unchecked, only entries lacking cover images are queried.</li>
+              </ul>
+            </div>
+
+            <!-- Pane 3: Sync -->
+            <div id="help-tab-sync" class="help-tab-pane hidden">
+              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Cloud Synchronization & Backups</h4>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                Secure your database and collaborate across devices by configuring cloud sync services.
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Supabase & Firebase Sync</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                - <strong>Real-time mode:</strong> All edits (add, edit, sell, delete) instantly update your cloud tables.
+                <br>
+                - <strong>Manual mode:</strong> Edits are saved offline. An "Unsynced Changes" badge will display, allowing you to trigger a batch push via the **Synchronize Now** button.
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">GitHub Repositories Sync</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 0;">
+                Configure a Personal Access Token (PAT) to commit your database backups directly to your GitHub repo as a JSON file. Use **Auto-Push on Change** to sync silently in the background, or **Auto-Push on Startup** to download the latest state automatically.
+              </p>
+            </div>
+
+            <!-- Pane Supabase Setup Guide -->
+            <div id="help-tab-supabase-setup" class="help-tab-pane hidden">
+              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Supabase Database Integration Guide</h4>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                Connecting GameVault to a remote Supabase project enables cross-device synchronization and secures database backups. Follow these simple steps to configure your database:
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Step 1: Create a Supabase Project</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                Sign in to <a href="https://supabase.com" target="_blank" style="color: var(--accent-cyan); text-decoration: underline;">Supabase Console</a> and click <strong>New Project</strong>. Choose a name, database password, and server region.
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Step 2: Initialize Database Tables</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                Open your project dashboard, navigate to the <strong>SQL Editor</strong> in the left sidebar, click <strong>New Query</strong>, paste the initialization script, and click <strong>Run</strong>. You can copy or download the SQL schema script directly from the <strong>Supabase Setup Wizard</strong> inside our Settings view.
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Step 3: Retrieve and Paste Credentials</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                Go to project <strong>Settings &gt; API</strong>. Copy the <strong>Project URL</strong> and <strong>anon (public) Key</strong>. Paste them in Settings &gt; Supabase Database panel and click <strong>Connect &amp; Sync</strong>.
+              </p>
+
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Step 4: Check Table Status</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 0;">
+                Click <strong>Test Schema</strong> inside our settings setup card to run remote queries against each table and verify the setup is successful.
+              </p>
+            </div>
+
+            <!-- Pane Disputes & Refunds -->
+            <div id="help-tab-disputes" class="help-tab-pane hidden">
+              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Disputes & Refunds Workflow</h4>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                License keys sold to buyers are sometimes disputed due to issues like duplicate redemption, regional locks, or publisher revocation. GameVault provides a built-in workflow to log these disputes and adjust your financial sheets automatically.
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">How to Flag a Dispute</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                Navigate to the <strong>Sales Ledger</strong>. Next to any transaction, click the amber warning button (<i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-warning);"></i>). Confirmed flags will highlight the row in warning orange, slash out the selling price, and update the profit to a capital loss.
+                <br>
+                <i class="fa-solid fa-bell" style="color: var(--accent-danger); margin-right: 6px;"></i><strong>Pulsing Sidebar Alerts:</strong> Active disputes are dynamically tracked on your dashboard. A pulsing red dispute count badge will appear next to the <strong>Sales Ledger</strong> menu option in your sidebar to alert you of unresolved tickets.
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">How Math Adjusts for Refunds</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                To keep accounting accurate, a disputed/refunded key behaves depending on supplier refund status:
+                <br>
+                - <strong>Revenue:</strong> Drops to $0 (since the customer was refunded).
+                <br>
+                - <strong>Platform Fees:</strong> Drops to $0.
+                <br>
+                - <strong>Absorbed Loss (Supplier Refund: No):</strong> Cost stays at the purchase price, and Net Profit drops to negative (<code>-Cost</code>), showing a capital loss.
+                <br>
+                - <strong>Refunded (Supplier Refund: Yes):</strong> Cost is treated as $0.00, and Net Profit drops to $0.00 (no net profit loss is incurred).
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Resolving a Dispute</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 0;">
+                If a dispute is resolved (e.g., the customer withdrew the claim or the publisher restored the key), click the green check mark button (<i class="fa-solid fa-circle-check" style="color: var(--accent-teal);"></i>) on the disputed row. This restores the transaction's original selling price, fee calculations, and profit margins.
+              </p>
+            </div>
+
+            <!-- Pane Dev vs Prod Environments -->
+            <div id="help-tab-environments" class="help-tab-pane hidden">
+              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Development vs. Production Environments</h4>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                GameVault features automated environment segregation to isolate local developer trials from live production inventory configurations and database sync channels.
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">How Environment Switching Works</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                The application inspects the active browser bar URL hostname on load:
+                <br>
+                - <strong>Development Mode:</strong> Triggered on <code>localhost</code> or <code>127.0.0.1</code>. The amber <code>DEV MODE</code> badge is shown in the top bar.
+                <br>
+                - <strong>Production Mode:</strong> Triggered on all other domains (e.g., GitHub Pages, custom hosted domains). The top bar looks clean and standard.
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Namespace Virtualization</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                In Development Mode, storage queries (LocalStorage reads, writes, and deletions) are virtualized:
+                <br>
+                - Standard <code>gv_</code> keys are automatically redirected to <code>gv_dev_</code> keys (e.g., <code>gv_dev_inventory</code>).
+                <br>
+                - This ensures that local feature testing or mock imports never overwrite, modify, or corrupt your real live production data in the browser cache.
+              </p>
+
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Checking Active Status</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 0;">
+                Press <code>F12</code> or right-click and choose <strong>Inspect</strong>, then view the console. The application logs its current environment status on startup.
+              </p>
+            </div>
+
+            <!-- Pane Business Math: Formulas & Logic -->
+            <div id="help-tab-business-math" class="help-tab-pane hidden">
+              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Formulas & Business Logic</h4>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                Review how analytical metrics are calculated inside Key Merchant Pro:
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">1. Gross Revenue</h5>
+              <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 12px;">
+                The sum of listing prices for all keys sold in the active filters period:
+                <br>
+                <code style="font-family: monospace; color: var(--accent-cyan);">Gross Revenue = Sum(Sale Price)</code>
+              </p>
+
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">2. Net Net Profit</h5>
+              <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 12px;">
+                Calculated by subtracting acquisition costs, platform commission fees, payment processor charges, and other overhead expenses:
+                <br>
+                <code style="font-family: monospace; color: var(--accent-purple);">Net Profit = Revenue - Cost - Commission Fees - Overhead Expenses</code>
+              </p>
+
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">3. Return on Investment (ROI)</h5>
+              <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 12px;">
+                Measures the percentage yield relative to capital spent:
+                <br>
+                <code style="font-family: monospace; color: var(--accent-teal);">ROI % = (Net Profit / Total Expense Costs) * 100</code>
+              </p>
+
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">4. Sell-Through Rate (STR)</h5>
+              <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 12px;">
+                The velocity proportion of total inventory that has successfully been sold:
+                <br>
+                <code style="font-family: monospace; color: var(--accent-pink);">STR % = (Total Sold Keys / Total Added Keys) * 100</code>
+              </p>
+
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">5. Stock Speed / Shelf-life Aging</h5>
+              <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 12px;">
+                Calculated per key as the duration between when a key is added and when it is marked sold:
+                <br>
+                <code style="font-family: monospace; color: var(--accent-warning);">Days to Sell = Sale Date - Purchase Date</code>
+              </p>
+
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">6. Ending Stock Asset Valuation</h5>
+              <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 12px;">
+                Calculated on the closing boundaries of any selected timeframe (e.g. month-end or year-end). It counts keys purchased on/before the cutoff that remain unsold or were sold after that cutoff:
+                <br>
+                <code style="font-family: monospace; color: var(--accent-cyan);">Ending Stock Cost Value = Sum(Item Purchase Cost of Open Keys)</code>
+              </p>
+
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">7. Lowest Sold Price</h5>
+              <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 12px;">
+                Calculates the lowest selling price recorded for any game title across all matching transaction logs. This establishes your historical floor value:
+                <br>
+                <code style="font-family: monospace; color: var(--accent-purple);">Lowest Sold Price = Min(Sale Price)</code>
+              </p>
+
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">8. Micro Visual Margin Bars</h5>
+              <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 0;">
+                Horizontal 3px bars represent ROI and margin proportions visually. Emerald bars stretch right for positive yield values; red bars stretch left for negative yield values, facilitating rapid visual analytics scans.
+              </p>
+            </div>
+
+            <!-- Pane 4: Shortcuts -->
+            <div id="help-tab-shortcuts" class="help-tab-pane hidden">
+              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Keyboard Hotkeys</h4>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                Speed up your catalog operations with these global keyboard shortcuts:
+              </p>
+              
+              <table style="width: 100%; border-collapse: collapse; font-size: 0.875rem; color: var(--text-secondary);">
+                <thead>
+                  <tr style="border-bottom: 1px solid var(--border-color); text-align: left; font-weight: 600; color: var(--text-main);">
+                    <th style="padding: 8px 6px;">Shortcut</th>
+                    <th style="padding: 8px 6px;">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 8px 6px;"><kbd style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 6px; font-family: monospace;">Ctrl + Z</kbd></td>
+                    <td style="padding: 8px 6px;">Undo last change (creates, edits, sales, deletes, bulk actions)</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 8px 6px;"><kbd style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 6px; font-family: monospace;">Ctrl + Y</kbd></td>
+                    <td style="padding: 8px 6px;">Redo last undone change</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 8px 6px;"><kbd style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 6px; font-family: monospace;">F1</kbd> or <kbd style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 6px; font-family: monospace;">?</kbd></td>
+                    <td style="padding: 8px 6px;">Launch Help & Documentation Center (this overlay)</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 8px 6px;"><kbd style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 6px; font-family: monospace;">Escape</kbd></td>
+                    <td style="padding: 8px 6px;">Instantly close any active modal dialog or popup list</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Pane 5: Notifications -->
+            <div id="help-tab-notifications" class="help-tab-pane hidden">
+              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Action Notification Center</h4>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                The Action Notification Center keeps a ledger of recent operations performed inside the application. It acts as an audit log to verify that actions were successfully written or synced.
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">Features & Capabilities:</h5>
+              <ul style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.6; padding-left: 20px; margin-bottom: 16px;">
+                <li><strong>Unread Count Badge:</strong> A red badge appears over the bell icon in the top header when there are new events. Opening the dropdown automatically clears the unread count.</li>
+                <li><strong>Display Limit:</strong> You can choose to show either the last 5 or 10 notifications using the dropdown selection next to "Clear All" in the notification header.</li>
+                <li><strong>Recent 10 Actions:</strong> The underlying history buffer tracks up to the last 10 actions to remain clean, fast, and token-efficient.</li>
+                <li><strong>Timestamps:</strong> Each event displays a localized timestamp indicating precisely when the action occurred.</li>
+                <li><strong>Logged Actions:</strong> Logs are triggered on key creations, sale recordings, catalog edits, item restorations, bulk adjustments, backup actions, database sync connections, and undo/redo operations.</li>
+                <li><strong>Reload Persistence:</strong> Action logs and display preferences are cached in the browser's LocalStorage so they persist if you refresh the page.</li>
+              </ul>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">Auditing and Maintenance:</h5>
+              <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 0;">
+                Clicking <strong>Clear All</strong> at the top of the notification card wipes all events from storage.
+              </p>
+            </div>
+
+            <!-- Pane Changelog / Version Progress -->
+            <div id="help-tab-changelog" class="help-tab-pane hidden">
+              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Version Progress & Changelog</h4>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                Track the active developmental history and milestone progression of GameVault.
+              </p>
+              
+              <div style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- v1.7.3 -->
+                <div style="border-left: 3px solid var(--accent-emerald); padding-left: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.7.3 — Dynamic Cover Gradients & Dashboard Visualizer Upgrades</strong>
+                    <span style="font-size: 0.75rem; color: var(--accent-emerald); font-weight: bold;">Current Version</span>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
+                    <li><strong>Unique Hashed Gradients:</strong> Computes dynamic gradient cover backgrounds based on game title characters, colorizing empty image placeholders across all lists and gallery views.</li>
+                    <li><strong>Micro ROI & Margin Bars:</strong> Renders thin, responsive horizontal indicators under ROI/Margin percentages in Catalog and Publishers tables.</li>
+                    <li><strong>Pulsing Low-Stock Alerts:</strong> Adds a soft warning pulsation animation to highlight product shortages requiring re-orders.</li>
+                    <li><strong>Sidebar Dispute Badge:</strong> Displays a pulsing dispute notification counter next to the Sales Ledger navigation link whenever active customer disputes exist in the ledger.</li>
+                  </ul>
+                </div>
+
+                <!-- v1.7.2 -->
+                <div style="border-left: 3px solid var(--border-color); padding-left: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.7.2 — Codebase Modularization & Refactoring</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Previous Version</span>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
+                    <li><strong>Javascript Codebase Splits:</strong> Divided the monolithic 18k lines of `app.js` into 5 clean sub-files under a separate `src/` directory, loaded sequentially in dependency order to retain global scope and offline double-click load capabilities.</li>
+                    <li><strong>HTML Modals and Help Extraction:</strong> Extracted over 1,350 lines of static settings forms, manuals, and dialog boxes into external templates dynamically loaded and cached at startup.</li>
+                    <li><strong>Offline fallback systems:</strong> Implemented CORS local file indicators warning users of local system loading constraints when loading from `file://` protocol.</li>
+                  </ul>
+                </div>
+
+                <!-- v1.7.1 -->
+                <div style="border-left: 3px solid var(--border-color); padding-left: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.7.1 — Catalog Gallery View & Month-End Valuations</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Previous Version</span>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
+                    <li><strong>Catalog Entries Gallery View:</strong> Replaced the old individual-key inventory gallery with an aggregated product-level poster card gallery layout inside the Catalog tab (Table vs Gallery toggles).</li>
+                    <li><strong>Ending Inventory Asset Valuations:</strong> Automatically computes unsold stock counts and purchase cost values on period closing dates, integrated directly into all 5 layout views of the Monthly Ledger Breakdown card.</li>
+                    <li><strong>Dedicated Bestseller Widgets:</strong> Replaced the single legacy bestseller widget with three separate specialized widgets: *Top Bestselling Games (Net Profit)*, *Top Bestselling Games (Revenue)*, and *Top Bestselling Games (Sales Volume)*, each with customizable timeframe limits.</li>
+                    <li><strong>Yearly Benchmark Splits:</strong> Introduced a mode toggle to compare total finance sums against monthly averages, styled with dual gradient highlights and split lines.</li>
+                  </ul>
+                </div>
+
+                <!-- v1.6.0 -->
+                <div style="border-left: 3px solid var(--border-color); padding-left: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.6.0 — Modular Finances Grid & Platform Analytics</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Previous Version</span>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
+                    <li><strong>Finance Grid Column Spanning:</strong> Resize any of the 5 consolidated Finance view chart cards to span 1, 2, or 3 columns in the grid. Layout states are cached and synced.</li>
+                    <li><strong>Platforms Metrics Summary:</strong> Added a real-time summary card row at the top of the Platforms tab tracking configured channel counts, keys in stock, top platform by volume, and top platform by sales profit.</li>
+                    <li><strong>Interactive Form Logo Previews:</strong> Live dashed preview boxes inside the Add and Edit Platform forms render thumbnails instantly upon URL paste or file upload.</li>
+                    <li><strong>Mobile Sizing & Overflow Adjustments:</strong> Enhanced layout responsiveness for the Help center modal and card header select boxes on small mobile viewports.</li>
+                  </ul>
+                </div>
+
+                <!-- v1.5.0 -->
+                <div style="border-left: 3px solid var(--border-color); padding-left: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.5.0 — Business Analytics & Outflow Allocation</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Previous Version</span>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0;">
+                    <li><strong>Inventory Stock Aging Widget:</strong> Segments available unsold keys into four distinct age categories with dynamic toggles and supplier overrides.</li>
+                    <li><strong>Finances Outflow Allocation:</strong> Allocation doughnut chart on the Finances view grouping key purchase costs and operational overhead payouts by category.</li>
+                    <li><strong>Turnover Timeline Enhancements:</strong> Added "This Month" configuration timeframe filter and fixed keys purchased data line rendering calculations.</li>
+                    <li><strong>Header Placement Customization:</strong> Adjusted 1-column layout header settings to keep buttons aligned on the right on small widths.</li>
+                  </ul>
+                </div>
+
+                <!-- v1.4.0 -->
+                <div style="border-left: 3px solid var(--accent-warning); padding-left: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.4.0 — Data Toolbox & Advanced Auditing</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">Previous Version</span>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0;">
+                    <li><strong>Data Tools Settings Panel:</strong> Merged JSON backups, Excel spreadsheet imports, cover fetchers, and database resets into one unified card layout.</li>
+                    <li><strong>Sliced Artwork Batches (100 Entries):</strong> Restricts bulk fetches to 100 items per run to prevent browser hangs, adding a button resume prompt.</li>
+                    <li><strong>API Fetch Fallback Strategy:</strong> Resolves cover art using CheapShark first and falls back to Steam search via <code>corsproxy.io</code> if rate-limited or ad-blocked.</li>
+                    <li><strong>Sales Ledger Supplier Filter:</strong> Filter past transaction logs by the supplier source of the sold key.</li>
+                    <li><strong>Live Filtered Sales Stats:</strong> Real-time calculations of total revenue, cost, net profit, and profit margins for any active filtered ledger subset.</li>
+                  </ul>
+                </div>
+
+                <!-- v1.3.0 -->
+                <div style="border-left: 3px solid var(--accent-warning); padding-left: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.3.0 — Audit & Control Release</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">Previous Version</span>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0;">
+                    <li><strong>Action Notification Center:</strong> Logs recent user operations in a persistent history dropdown, with option to toggle between showing the last 5 or 10 actions.</li>
+                    <li><strong>Dispute Cost Options Modal:</strong> Added a custom modal dialog when flagging disputes to select if the cost of the key was refunded by the supplier, zeroing out net loss metrics.</li>
+                    <li><strong>Bulk Catalog Artwork Fetcher:</strong> Built a batch utility in Settings to query CheapShark / Steam API sequentially to resolve cover images for all catalog games.</li>
+                    <li><strong>Development Mode Isolation:</strong> Virtualized LocalStorage key mappings when running on localhost to separate test states from production backend schemas.</li>
+                  </ul>
+                </div>
+
+                <!-- v1.2.0 -->
+                <div style="border-left: 3px solid var(--accent-warning); padding-left: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.2.0 — Disputes & Integrations</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">Previous Version</span>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0;">
+                    <li><strong>Dispute Tracking:</strong> Built standard dispute flagging, zeroing out transaction revenue and marking keys as "Disputed" to audit capital loss sheet metrics.</li>
+                    <li><strong>Steam Artwork Auto-Fetcher:</strong> Direct API lookup to fetch game cover thumbnails using the CheapShark endpoint in browser.</li>
+                    <li><strong>Supabase Diagnostic Wizard:</strong> Onboarding assistant in Settings with copy-paste DDL setup schemas and test diagnostics tools.</li>
+                  </ul>
+                </div>
+
+                <!-- v1.1.0 -->
+                <div style="border-left: 3px solid var(--accent-purple); padding-left: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.1.0 — Widgets Console Upgrade</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">Previous Version</span>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0;">
+                    <li><strong>Interactive Widgets:</strong> Created the draggable widgets grid with customization flips, minimizes, maximize overlay focuses, and dynamic drawer gallery.</li>
+                    <li><strong>5 New Widgets:</strong> Added stock aging speed doughnut, recent sales timeline feed, monthly balance sheets comparison card, markup cost analytics, and turnover timelines.</li>
+                  </ul>
+                </div>
+
+                <!-- v1.0.0 -->
+                <div style="border-left: 3px solid var(--accent-emerald); padding-left: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.0.0 — Base Release</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">Initial Version</span>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0;">
+                    <li><strong>Core Management:</strong> Full digital activation keys inventory, sales ledger logs, multi-currency payouts tracking, bulk spreadsheet imports, and backup synchronizations.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; padding: 16px 24px; border-top: 1px solid var(--border-color); background: var(--bg-modal-footer);">
+        <button type="button" class="btn btn-primary" data-close-modal="help-modal">Got it!</button>
+      </div>
+    </div>
+  </div>

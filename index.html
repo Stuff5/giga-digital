@@ -23,13 +23,35 @@
   <!-- Firebase JS Client compat CDN -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=4">
+  
+  <!-- Early theme application to prevent FOUC / light theme flicker -->
+  <script>
+    (function() {
+      const mode = localStorage.getItem("gv_theme_mode") || "dark";
+      const color = localStorage.getItem("gv_theme_color") || "classic";
+      document.documentElement.setAttribute("data-theme-mode", mode);
+      document.documentElement.setAttribute("data-theme-color", color);
+    })();
+  </script>
 </head>
-<body>
+<body class="no-transition">
+  <!-- Premium App Loading Screen -->
+  <div id="app-loading-screen" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: var(--bg-app, #0a0c12); display: flex; align-items: center; justify-content: center; z-index: 99999; transition: opacity 0.4s ease, visibility 0.4s ease;">
+    <div style="text-align: center;">
+      <div style="width: 54px; height: 54px; border-radius: 12px; background: linear-gradient(135deg, hsl(270, 85%, 60%), hsl(175, 90%, 48%)); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.5rem; margin: 0 auto 16px auto; box-shadow: 0 0 20px rgba(138, 43, 226, 0.3);">
+        <i class="fa-solid fa-gamepad"></i>
+      </div>
+      <div style="font-family: 'Outfit', sans-serif; font-weight: 600; color: #fff; font-size: 1.2rem; letter-spacing: -0.02em;">Game<span style="background: linear-gradient(120deg, hsl(175, 90%, 48%) 0%, hsl(195, 90%, 50%) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Vault</span></div>
+      <div style="color: hsl(220, 10%, 45%); font-size: 0.68rem; margin-top: 6px; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 700;">Loading System...</div>
+    </div>
+  </div>
+
   <!-- App Shell Container -->
-  <div class="app-container" id="app-container">
+  <div class="app-container hidden" id="app-container">
     
     <!-- Sidebar Navigation -->
     <aside class="sidebar" id="app-sidebar">
@@ -45,7 +67,7 @@
       </div>
       
       <nav class="sidebar-nav">
-        <ul>
+        <ul id="sidebar-menu-list">
           <li>
             <a href="#dashboard" class="nav-link active" id="nav-dashboard">
               <i class="fa-solid fa-chart-line" id="sidebar-icon-dashboard"></i>
@@ -110,7 +132,7 @@
         </ul>
       </nav>
 
-      <div class="sidebar-footer">
+      <div class="sidebar-footer" style="display: flex; flex-direction: column; gap: 8px;">
         <div class="user-profile">
           <div class="avatar">
             <i class="fa-solid fa-user-astronaut"></i>
@@ -123,6 +145,11 @@
             <i class="fa-solid fa-right-from-bracket"></i>
           </button>
         </div>
+        <div class="version-info" style="text-align: center; font-size: 0.7rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; overflow: hidden; white-space: nowrap;">
+          <span class="version-label">GameVault</span>
+          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v1.7.3</a>
+        </div>
+
       </div>
     </aside>
 
@@ -137,11 +164,15 @@
           </button>
           <div class="search-bar">
             <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" id="global-search" placeholder="Search keys, games, platforms...">
+            <input type="text" id="global-search" placeholder="Search keys, games, platforms..." autocomplete="off">
           </div>
         </div>
         
         <div class="topbar-right">
+          <div id="dev-mode-badge" class="badge badge-disputed hidden" style="font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; padding: 4px 10px; border-radius: var(--radius-sm); align-self: center; text-transform: uppercase;">Dev Mode</div>
+          <div id="storage-status-badge" class="badge" style="font-size: 0.72rem; font-weight: 600; letter-spacing: 0.03em; padding: 4px 10px; border-radius: var(--radius-sm); align-self: center; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;" onclick="document.getElementById('nav-settings').click();" title="Click to view database settings">
+            <i class="fa-solid fa-database"></i> Loading...
+          </div>
           <div class="time-widget">
             <i class="fa-regular fa-clock"></i>
             <span id="current-time">00:00:00</span>
@@ -156,6 +187,29 @@
             <button class="btn btn-icon btn-outline" id="btn-open-help" title="Help & Documentation (F1)">
               <i class="fa-solid fa-circle-question"></i>
             </button>
+            <div style="position: relative;" id="notification-bell-container">
+              <button class="btn btn-icon btn-outline" id="btn-notification-bell" title="Notification Center">
+                <i class="fa-solid fa-bell"></i>
+                <span id="notification-badge" class="badge" style="position: absolute; top: -4px; right: -4px; background-color: var(--accent-danger, #f44336); color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 0.65rem; display: flex; align-items: center; justify-content: center; font-weight: 700; border: 2px solid var(--bg-card); display: none;">0</span>
+              </button>
+              
+              <!-- Notification Dropdown Panel -->
+              <div id="notification-dropdown" class="glass-panel" style="position: absolute; top: 40px; right: 0; width: 300px; max-height: 400px; overflow-y: auto; z-index: 1000; border: 1px solid var(--border-color); border-radius: 6px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); display: none; background: var(--bg-card); padding: 8px 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--border-color); margin-bottom: 6px;">
+                  <span style="font-weight: 700; font-size: 0.9rem; color: var(--text-main);">Recent Actions</span>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <div class="notif-limit-bubbles" style="display: flex; align-items: center; gap: 4px; background: var(--bg-input); padding: 2px; border-radius: 20px; border: 1px solid var(--border-color);">
+                      <button type="button" class="btn-notif-limit-bubble active" data-limit="5" style="width: 20px; height: 20px; border-radius: 50%; border: none; background: var(--accent-cyan); color: #000; font-size: 0.7rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: all 0.2s;" title="Show last 5 actions">5</button>
+                      <button type="button" class="btn-notif-limit-bubble" data-limit="10" style="width: 20px; height: 20px; border-radius: 50%; border: none; background: transparent; color: var(--text-secondary); font-size: 0.7rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: all 0.2s;" title="Show last 10 actions">10</button>
+                    </div>
+                    <button type="button" id="btn-clear-notifications" style="background: none; border: none; color: var(--accent-cyan); font-size: 0.75rem; cursor: pointer;">Clear All</button>
+                  </div>
+                </div>
+                <div id="notification-list" style="display: flex; flex-direction: column;">
+                  <div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 0.8rem;">No actions recorded yet</div>
+                </div>
+              </div>
+            </div>
             <button class="btn btn-icon btn-outline" id="btn-theme-toggle" title="Toggle Light/Dark Mode">
               <i class="fa-solid fa-sun" id="theme-toggle-icon"></i>
             </button>
@@ -187,36 +241,12 @@
             </div>
             <div class="header-controls">
 
+              <!-- Add Widget Gallery Drawer Button -->
+              <button class="btn btn-primary btn-sm" id="btn-open-widget-gallery" title="Add new widgets to dashboard" style="display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-plus"></i> <span>Add Widget</span>
+              </button>
 
-              <!-- Customize Figures Dropdown -->
-              <div class="dropdown-container" id="figures-customize-dropdown">
-                <button class="btn btn-outline btn-sm" id="btn-toggle-figures-panel" title="Customize Figures">
-                  <i class="fa-solid fa-chart-simple"></i> <span>Figures</span>
-                </button>
-                <div class="dropdown-menu glass-panel" id="figures-customize-panel">
-                  <h5>Show/Hide Figures</h5>
-                  <label class="checkbox-container">
-                    <input type="checkbox" id="toggle-figure-salesProfit" checked>
-                    <span class="checkbox-label">Sales & Profit Trend</span>
-                  </label>
-                  <label class="checkbox-container">
-                    <input type="checkbox" id="toggle-figure-platformSplit" checked>
-                    <span class="checkbox-label">Platform Sales Split</span>
-                  </label>
-                  <label class="checkbox-container">
-                    <input type="checkbox" id="toggle-figure-costRevenue" checked>
-                    <span class="checkbox-label">Cost vs Revenue</span>
-                  </label>
-                  <label class="checkbox-container">
-                    <input type="checkbox" id="toggle-figure-supplierSplit" checked>
-                    <span class="checkbox-label">Supplier Stock Distribution</span>
-                  </label>
-                  <label class="checkbox-container">
-                    <input type="checkbox" id="toggle-figure-topBestsellers" checked>
-                    <span class="checkbox-label">Top Bestsellers</span>
-                  </label>
-                </div>
-              </div>
+
 
 
 
@@ -404,80 +434,773 @@
 
 
 
-          <!-- Charts Grid -->
-          <div class="charts-grid" id="charts-grid-row-1">
-            <div class="chart-card large-chart" id="card-chart-salesProfit">
-              <div class="chart-card-header">
-                <h4>Sales vs Profit Trend</h4>
-                <i class="fa-solid fa-ellipsis-vertical"></i>
-              </div>
-              <div class="chart-body">
-                <canvas id="salesProfitChart"></canvas>
-              </div>
-            </div>
-
-            <div class="chart-card small-chart" id="card-chart-platformSplit">
-              <div class="chart-card-header">
-                <h4>Platform Sales Split</h4>
-                <i class="fa-solid fa-ellipsis-vertical"></i>
-              </div>
-              <div class="chart-body doughnut-container">
-                <canvas id="platformSplitChart"></canvas>
-              </div>
-            </div>
-          </div>
-
-          <!-- Charts Grid Row 2 -->
-          <div class="charts-grid" id="charts-grid-row-2">
-            <div class="chart-card large-chart" id="card-chart-costRevenue">
-              <div class="chart-card-header">
-                <h4>Monthly Cost vs Revenue Comparison</h4>
-                <i class="fa-solid fa-ellipsis-vertical"></i>
-              </div>
-              <div class="chart-body">
-                <canvas id="costRevenueChart"></canvas>
-              </div>
-            </div>
-
-            <div class="chart-card small-chart" id="card-chart-supplierSplit">
-              <div class="chart-card-header">
-                <h4>Supplier Stock Distribution</h4>
-                <i class="fa-solid fa-ellipsis-vertical"></i>
-              </div>
-              <div class="chart-body doughnut-container">
-                <canvas id="supplierSplitChart"></canvas>
-              </div>
-            </div>
-          </div>
-
-          <!-- Charts Grid Row 3 (Full Width) -->
-          <div class="charts-grid" id="charts-grid-row-3">
-            <div class="chart-card large-chart" id="card-chart-topBestsellers" style="grid-column: 1 / -1;">
-              <div class="chart-card-header" style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                <h4 id="bestsellers-chart-title">Top 5 Bestselling Games by Net Profit</h4>
-                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                  <select id="bestsellers-limit-select" class="form-control form-control-sm" style="width: auto; height: 32px; padding: 2px 8px; margin: 0; font-size: 0.8rem; background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
-                    <option value="5">Top 5</option>
-                    <option value="10">Top 10</option>
-                    <option value="20">Top 20</option>
-                  </select>
-                  <select id="bestsellers-metric-select" class="form-control form-control-sm" style="width: auto; height: 32px; padding: 2px 8px; margin: 0; font-size: 0.8rem; background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
-                    <option value="profit">By Net Profit</option>
-                    <option value="revenue">By Revenue</option>
-                    <option value="sales">By Sales Volume</option>
-                  </select>
+          <!-- Dashboard Unified Charts Container (Draggable) -->
+          <div id="dashboard-charts-container">
+            
+            <div class="chart-card" id="card-chart-salesProfit" data-figure="salesProfit">
+              <div class="card-inner">
+                <div class="card-front">
+                  <div class="chart-card-header">
+                    <h4>Sales vs Profit Trend</h4>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                      <div class="card-actions-dropdown">
+                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
+                        <div class="card-actions-menu">
+                          <button type="button" class="card-actions-item btn-widget-configure">
+                            <i class="fa-solid fa-sliders"></i> Configure
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-remove">
+                            <i class="fa-solid fa-trash-can"></i> Remove Widget
+                          </button>
+                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                          <button type="button" class="card-actions-item" data-span="1">
+                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="2">
+                            <i class="fa-solid fa-table-columns"></i> 2 Columns
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="3">
+                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chart-body">
+                    <canvas id="salesProfitChart"></canvas>
+                  </div>
+                </div>
+                <div class="card-back">
+                  <form class="widget-config-form" data-widget="salesProfit">
+                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
+                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
+                    </div>
+                    <div class="config-form-body">
+                      <div class="config-field-group">
+                        <label for="config-salesProfit-chartType">Chart Type</label>
+                        <select id="config-salesProfit-chartType" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="line">Line Chart</option>
+                          <option value="bar">Bar Chart</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-salesProfit-timeframe">Time Period</label>
+                        <select id="config-salesProfit-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="global">Global Dashboard Filter</option>
+                          <option value="30">Last 30 Days</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="year">This Year</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="config-form-actions">
+                      <button type="submit" class="btn-widget-save">Save Changes</button>
+                      <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
+                    </div>
+                  </form>
                 </div>
               </div>
-              <div class="chart-body" style="min-height: auto; max-height: none;">
-                <div id="top-bestsellers-list" class="bestsellers-list"></div>
+            </div>
+
+            <div class="chart-card" id="card-chart-platformSplit" data-figure="platformSplit">
+              <div class="card-inner">
+                <div class="card-front">
+                  <div class="chart-card-header">
+                    <h4>Platform Sales Split</h4>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                      <div class="card-actions-dropdown">
+                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
+                        <div class="card-actions-menu">
+                          <button type="button" class="card-actions-item btn-widget-configure">
+                            <i class="fa-solid fa-sliders"></i> Configure
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-remove">
+                            <i class="fa-solid fa-trash-can"></i> Remove Widget
+                          </button>
+                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                          <button type="button" class="card-actions-item" data-span="1">
+                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="2">
+                            <i class="fa-solid fa-table-columns"></i> 2 Columns
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="3">
+                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chart-body doughnut-container">
+                    <canvas id="platformSplitChart"></canvas>
+                  </div>
+                </div>
+                <div class="card-back">
+                  <form class="widget-config-form" data-widget="platformSplit">
+                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
+                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
+                    </div>
+                    <div class="config-form-body">
+                      <div class="config-field-group">
+                        <label for="config-platformSplit-chartType">Chart Style</label>
+                        <select id="config-platformSplit-chartType" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="doughnut">Doughnut Chart</option>
+                          <option value="pie">Pie Chart</option>
+                          <option value="polarArea">Polar Area Chart</option>
+                          <option value="bar">Bar Chart</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-platformSplit-timeframe">Time Period</label>
+                        <select id="config-platformSplit-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="global">Global Dashboard Filter</option>
+                          <option value="30">Last 30 Days</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="year">This Year</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="config-form-actions">
+                      <button type="submit" class="btn-widget-save">Save Changes</button>
+                      <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
+                    </div>
+                  </form>
+                </div>
               </div>
             </div>
+
+            <div class="chart-card" id="card-chart-supplierSplit" data-figure="supplierSplit">
+              <div class="card-inner">
+                <div class="card-front">
+                  <div class="chart-card-header">
+                    <h4>Supplier Stock Distribution</h4>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                      <div class="card-actions-dropdown">
+                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
+                        <div class="card-actions-menu">
+                          <button type="button" class="card-actions-item btn-widget-configure">
+                            <i class="fa-solid fa-sliders"></i> Configure
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-remove">
+                            <i class="fa-solid fa-trash-can"></i> Remove Widget
+                          </button>
+                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                          <button type="button" class="card-actions-item" data-span="1">
+                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="2">
+                            <i class="fa-solid fa-table-columns"></i> 2 Columns
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="3">
+                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chart-body doughnut-container">
+                    <canvas id="supplierSplitChart"></canvas>
+                  </div>
+                </div>
+                <div class="card-back">
+                  <form class="widget-config-form" data-widget="supplierSplit">
+                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
+                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
+                    </div>
+                    <div class="config-form-body">
+                      <div class="config-field-group">
+                        <label for="config-supplierSplit-chartType">Chart Style</label>
+                        <select id="config-supplierSplit-chartType" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="doughnut">Doughnut Chart</option>
+                          <option value="pie">Pie Chart</option>
+                          <option value="polarArea">Polar Area Chart</option>
+                          <option value="bar">Bar Chart</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-supplierSplit-timeframe">Time Period</label>
+                        <select id="config-supplierSplit-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="global">Global Dashboard Filter</option>
+                          <option value="30">Last 30 Days</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="year">This Year</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="config-form-actions">
+                      <button type="submit" class="btn-widget-save">Save Changes</button>
+                      <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <div class="chart-card" id="card-chart-topBestsellers" data-figure="topBestsellers" style="min-height: 580px;">
+              <div class="card-inner">
+                <div class="card-front">
+                  <div class="chart-card-header">
+                    <h4 id="bestsellers-chart-title">Top Bestselling Games (Net Profit)</h4>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                      <div class="card-actions-dropdown">
+                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
+                        <div class="card-actions-menu">
+                          <button type="button" class="card-actions-item btn-widget-configure">
+                            <i class="fa-solid fa-sliders"></i> Configure
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-remove">
+                            <i class="fa-solid fa-trash-can"></i> Remove Widget
+                          </button>
+                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                          <button type="button" class="card-actions-item" data-span="1">
+                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="2">
+                            <i class="fa-solid fa-table-columns"></i> 2 Columns
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="3">
+                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chart-body" style="min-height: auto; max-height: none; overflow-y: auto;">
+                    <div id="top-bestsellers-list" class="bestsellers-list"></div>
+                  </div>
+                </div>
+                <div class="card-back">
+                  <form class="widget-config-form" data-widget="topBestsellers">
+                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
+                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
+                    </div>
+                    <div class="config-form-body">
+                      <div class="config-field-group">
+                        <label for="config-topBestsellers-limit">Show Quantity</label>
+                        <select id="config-topBestsellers-limit" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="5">Top 5 Games</option>
+                          <option value="10">Top 10 Games</option>
+                          <option value="20">Top 20 Games</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-topBestsellers-timeframe">Time Period</label>
+                        <select id="config-topBestsellers-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="global">Global Dashboard Filter</option>
+                          <option value="month">This Month</option>
+                          <option value="30">Last 30 Days</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="year">This Year</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="config-form-actions">
+                      <button type="submit" class="btn-widget-save">Save Changes</button>
+                      <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <div class="chart-card" id="card-chart-topBestsellersRevenue" data-figure="topBestsellersRevenue" style="min-height: 580px;">
+              <div class="card-inner">
+                <div class="card-front">
+                  <div class="chart-card-header">
+                    <h4 id="bestsellers-revenue-chart-title">Top Bestselling Games (Revenue)</h4>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                      <div class="card-actions-dropdown">
+                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
+                        <div class="card-actions-menu">
+                          <button type="button" class="card-actions-item btn-widget-configure">
+                            <i class="fa-solid fa-sliders"></i> Configure
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-remove">
+                            <i class="fa-solid fa-trash-can"></i> Remove Widget
+                          </button>
+                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                          <button type="button" class="card-actions-item" data-span="1">
+                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="2">
+                            <i class="fa-solid fa-table-columns"></i> 2 Columns
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="3">
+                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chart-body" style="min-height: auto; max-height: none; overflow-y: auto;">
+                    <div id="top-bestsellers-revenue-list" class="bestsellers-list"></div>
+                  </div>
+                </div>
+                <div class="card-back">
+                  <form class="widget-config-form" data-widget="topBestsellersRevenue">
+                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
+                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
+                    </div>
+                    <div class="config-form-body">
+                      <div class="config-field-group">
+                        <label for="config-topBestsellersRevenue-limit">Show Quantity</label>
+                        <select id="config-topBestsellersRevenue-limit" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="5">Top 5 Games</option>
+                          <option value="10">Top 10 Games</option>
+                          <option value="20">Top 20 Games</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-topBestsellersRevenue-timeframe">Time Period</label>
+                        <select id="config-topBestsellersRevenue-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="global">Global Dashboard Filter</option>
+                          <option value="month">This Month</option>
+                          <option value="30">Last 30 Days</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="year">This Year</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="config-form-actions">
+                      <button type="submit" class="btn-widget-save">Save Changes</button>
+                      <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <div class="chart-card" id="card-chart-topBestsellersSales" data-figure="topBestsellersSales" style="min-height: 580px;">
+              <div class="card-inner">
+                <div class="card-front">
+                  <div class="chart-card-header">
+                    <h4 id="bestsellers-sales-chart-title">Top Bestselling Games (Sales Volume)</h4>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                      <div class="card-actions-dropdown">
+                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
+                        <div class="card-actions-menu">
+                          <button type="button" class="card-actions-item btn-widget-configure">
+                            <i class="fa-solid fa-sliders"></i> Configure
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-remove">
+                            <i class="fa-solid fa-trash-can"></i> Remove Widget
+                          </button>
+                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                          <button type="button" class="card-actions-item" data-span="1">
+                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="2">
+                            <i class="fa-solid fa-table-columns"></i> 2 Columns
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="3">
+                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chart-body" style="min-height: auto; max-height: none; overflow-y: auto;">
+                    <div id="top-bestsellers-sales-list" class="bestsellers-list"></div>
+                  </div>
+                </div>
+                <div class="card-back">
+                  <form class="widget-config-form" data-widget="topBestsellersSales">
+                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
+                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
+                    </div>
+                    <div class="config-form-body">
+                      <div class="config-field-group">
+                        <label for="config-topBestsellersSales-limit">Show Quantity</label>
+                        <select id="config-topBestsellersSales-limit" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="5">Top 5 Games</option>
+                          <option value="10">Top 10 Games</option>
+                          <option value="20">Top 20 Games</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-topBestsellersSales-timeframe">Time Period</label>
+                        <select id="config-topBestsellersSales-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="global">Global Dashboard Filter</option>
+                          <option value="month">This Month</option>
+                          <option value="30">Last 30 Days</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="year">This Year</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="config-form-actions">
+                      <button type="submit" class="btn-widget-save">Save Changes</button>
+                      <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <div class="chart-card" id="card-chart-dailyProfitMonth" data-figure="dailyProfitMonth">
+              <div class="card-inner">
+                <div class="card-front">
+                  <div class="chart-card-header">
+                    <h4>Daily Profit of the Month</h4>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                      <div class="card-actions-dropdown">
+                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
+                        <div class="card-actions-menu">
+                          <button type="button" class="card-actions-item btn-widget-configure">
+                            <i class="fa-solid fa-sliders"></i> Configure
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-remove">
+                            <i class="fa-solid fa-trash-can"></i> Remove Widget
+                          </button>
+                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                          <button type="button" class="card-actions-item" data-span="1">
+                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="2">
+                            <i class="fa-solid fa-table-columns"></i> 2 Columns
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="3">
+                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chart-body">
+                    <canvas id="dailyProfitMonthChart"></canvas>
+                  </div>
+                </div>
+                <div class="card-back">
+                  <form class="widget-config-form" data-widget="dailyProfitMonth">
+                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
+                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
+                    </div>
+                    <div class="config-form-body">
+                      <div class="config-field-group">
+                        <label for="config-dailyProfitMonth-chartType">Chart Type</label>
+                        <select id="config-dailyProfitMonth-chartType" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="bar">Bar Chart</option>
+                          <option value="line">Line Chart</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-dailyProfitMonth-timeframe">Time Period</label>
+                        <select id="config-dailyProfitMonth-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="global">Global Dashboard Filter</option>
+                          <option value="30">Last 30 Days</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="year">This Year</option>
+                        </select>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <!-- Widget 7: Stock Speed & Aging Analytics -->
+            <div class="chart-card" id="card-chart-stockSpeed" data-figure="stockSpeed">
+              <div class="card-inner">
+                <div class="card-front">
+                  <div class="chart-card-header">
+                    <h4>Stock Speed & Aging Analytics</h4>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                      <div class="card-actions-dropdown">
+                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
+                        <div class="card-actions-menu">
+                          <button type="button" class="card-actions-item btn-widget-configure">
+                            <i class="fa-solid fa-sliders"></i> Configure
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-remove">
+                            <i class="fa-solid fa-trash-can"></i> Remove Widget
+                          </button>
+                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                          <button type="button" class="card-actions-item" data-span="1">
+                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="2">
+                            <i class="fa-solid fa-table-columns"></i> 2 Columns
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="3">
+                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chart-body doughnut-container">
+                    <canvas id="stockSpeedChart"></canvas>
+                  </div>
+                </div>
+                <div class="card-back">
+                  <form class="widget-config-form" data-widget="stockSpeed">
+                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
+                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
+                    </div>
+                    <div class="config-form-body">
+                      <div class="config-field-group">
+                        <label for="config-stockSpeed-chartType">Chart Style</label>
+                        <select id="config-stockSpeed-chartType" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="doughnut">Doughnut Chart</option>
+                          <option value="pie">Pie Chart</option>
+                          <option value="bar">Bar Chart</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-stockSpeed-timeframe">Time Period</label>
+                        <select id="config-stockSpeed-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="global">Global Dashboard Filter</option>
+                          <option value="30">Last 30 Days</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="year">This Year</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="config-form-actions">
+                      <button type="submit" class="btn-widget-save">Save Changes</button>
+                      <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <!-- Widget 8: Recent Sales Activity Feed -->
+            <div class="chart-card" id="card-chart-salesFeed" data-figure="salesFeed">
+              <div class="card-inner">
+                <div class="card-front">
+                  <div class="chart-card-header">
+                    <h4>Recent Sales Activity Feed</h4>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                      <div class="card-actions-dropdown">
+                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
+                        <div class="card-actions-menu">
+                          <button type="button" class="card-actions-item btn-widget-configure">
+                            <i class="fa-solid fa-sliders"></i> Configure
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-remove">
+                            <i class="fa-solid fa-trash-can"></i> Remove Widget
+                          </button>
+                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                          <button type="button" class="card-actions-item" data-span="1">
+                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="2">
+                            <i class="fa-solid fa-table-columns"></i> 2 Columns
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="3">
+                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chart-body" style="min-height: auto; max-height: none; overflow-y: auto; padding: 4px 8px;">
+                    <div id="sales-feed-list" class="sales-feed-list"></div>
+                  </div>
+                </div>
+                <div class="card-back">
+                  <form class="widget-config-form" data-widget="salesFeed">
+                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
+                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
+                    </div>
+                    <div class="config-form-body">
+                      <div class="config-field-group">
+                        <label for="config-salesFeed-limit">Show Quantity</label>
+                        <select id="config-salesFeed-limit" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="3">Latest 3 Sales</option>
+                          <option value="5">Latest 5 Sales</option>
+                          <option value="10">Latest 10 Sales</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-salesFeed-timeframe">Time Period</label>
+                        <select id="config-salesFeed-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="global">Global Dashboard Filter</option>
+                          <option value="30">Last 30 Days</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="year">This Year</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="config-form-actions">
+                      <button type="submit" class="btn-widget-save">Save Changes</button>
+                      <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <!-- Widget 11: Inventory Stock Turnover Timeline -->
+            <div class="chart-card" id="card-chart-stockTurnover" data-figure="stockTurnover">
+              <div class="card-inner">
+                <div class="card-front">
+                  <div class="chart-card-header">
+                    <h4>Stock Turnover Timeline</h4>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                      <div class="card-actions-dropdown">
+                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
+                        <div class="card-actions-menu">
+                          <button type="button" class="card-actions-item btn-widget-configure">
+                            <i class="fa-solid fa-sliders"></i> Configure
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-remove">
+                            <i class="fa-solid fa-trash-can"></i> Remove Widget
+                          </button>
+                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                          <button type="button" class="card-actions-item" data-span="1">
+                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="2">
+                            <i class="fa-solid fa-table-columns"></i> 2 Columns
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="3">
+                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chart-body">
+                    <canvas id="stockTurnoverChart"></canvas>
+                  </div>
+                </div>
+                <div class="card-back">
+                  <form class="widget-config-form" data-widget="stockTurnover">
+                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
+                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
+                    </div>
+                    <div class="config-form-body">
+                      <div class="config-field-group">
+                        <label for="config-stockTurnover-chartType">Chart Type</label>
+                        <select id="config-stockTurnover-chartType" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="line">Line Chart</option>
+                          <option value="bar">Bar Chart</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-stockTurnover-timeframe">Time Period</label>
+                        <select id="config-stockTurnover-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="global">Global Dashboard Filter</option>
+                          <option value="month">This Month</option>
+                          <option value="30">Last 30 Days</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="year">This Year</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="config-form-actions">
+                      <button type="submit" class="btn-widget-save">Save Changes</button>
+                      <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <!-- Widget 12: Inventory Stock Aging Distribution -->
+            <div class="chart-card" id="card-chart-stockAging" data-figure="stockAging">
+              <div class="card-inner">
+                <div class="card-front">
+                  <div class="chart-card-header">
+                    <h4>Stock Aging Analysis</h4>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                      <div class="card-actions-dropdown">
+                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
+                        <div class="card-actions-menu">
+                          <button type="button" class="card-actions-item btn-widget-configure">
+                            <i class="fa-solid fa-sliders"></i> Configure
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-remove">
+                            <i class="fa-solid fa-trash-can"></i> Remove Widget
+                          </button>
+                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                          <button type="button" class="card-actions-item" data-span="1">
+                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="2">
+                            <i class="fa-solid fa-table-columns"></i> 2 Columns
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="3">
+                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chart-body">
+                    <canvas id="stockAgingChart"></canvas>
+                  </div>
+                </div>
+                <div class="card-back">
+                  <form class="widget-config-form" data-widget="stockAging">
+                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
+                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
+                    </div>
+                    <div class="config-form-body">
+                      <div class="config-field-group">
+                        <label for="config-stockAging-chartType">Chart Type</label>
+                        <select id="config-stockAging-chartType" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="bar">Bar Chart</option>
+                          <option value="doughnut">Doughnut Chart</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-stockAging-supplier">Supplier Filter</label>
+                        <select id="config-stockAging-supplier" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="all">All Suppliers</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="config-form-actions">
+                      <button type="submit" class="btn-widget-save">Save Changes</button>
+                      <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
           </div>
 
 
 
           <!-- Dashboard Subsections -->
-          <div class="dashboard-details-grid">
+          <div style="margin-bottom: 24px;">
             <!-- Recent Activity Table -->
             <div class="detail-card">
               <div class="detail-card-header">
@@ -502,39 +1225,6 @@
                 </table>
               </div>
             </div>
-
-            <!-- Column 2 (Stacked smaller cards) -->
-            <div style="display: flex; flex-direction: column; gap: 24px;">
-              <!-- Inventory Status Overview -->
-              <div class="detail-card">
-                <div class="detail-card-header">
-                  <h4>Inventory Status Overview</h4>
-                  <a href="#inventory" class="view-all-link">Manage Stock</a>
-                </div>
-                
-                <!-- Inventory Overview Grid (Option 2 Counters) -->
-                <div class="inventory-overview-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;">
-                  <div class="inventory-overview-stat-card" style="background-color: var(--bg-mini-metric); padding: 12px; border-radius: var(--radius-md); text-align: center; border: 1px solid var(--border-color);">
-                    <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 4px;">Active Keys</span>
-                    <h3 id="overview-active-keys" style="margin: 0; font-size: 1.4rem; font-weight: 800; color: var(--accent-emerald);">0</h3>
-                  </div>
-                  <div class="inventory-overview-stat-card" style="background-color: var(--bg-mini-metric); padding: 12px; border-radius: var(--radius-md); text-align: center; border: 1px solid var(--border-color);">
-                    <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 4px;">Sold Keys</span>
-                    <h3 id="overview-sold-keys" style="margin: 0; font-size: 1.4rem; font-weight: 800; color: var(--accent-purple);">0</h3>
-                  </div>
-                  <div class="inventory-overview-stat-card" style="background-color: var(--bg-mini-metric); padding: 12px; border-radius: var(--radius-md); text-align: center; border: 1px solid var(--border-color);">
-                    <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 4px;">Recycle Bin</span>
-                    <h3 id="overview-recycled-keys" style="margin: 0; font-size: 1.4rem; font-weight: 800; color: var(--accent-pink);">0</h3>
-                  </div>
-                </div>
-
-                <h5 style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Out of Stock Alerts</h5>
-
-                <div class="inventory-summary-list" id="inventory-summary-list">
-                  <!-- Injected by JavaScript -->
-                </div>
-              </div>
-            </div>
           </div>
         </section>
 
@@ -553,9 +1243,6 @@
                 </button>
                 <button class="btn btn-outline btn-sm" id="btn-layout-grid" title="Grid View" onclick="setInvLayout('grid')">
                   <i class="fa-solid fa-border-all"></i>
-                </button>
-                <button class="btn btn-outline btn-sm" id="btn-layout-gallery" title="Gallery View" onclick="setInvLayout('gallery')">
-                  <i class="fa-solid fa-image"></i>
                 </button>
               </div>
               <button class="btn btn-outline" id="btn-import-inventory">
@@ -636,7 +1323,7 @@
 
             <div class="filter-group search-filter">
               <label for="inv-search-input">Search Title/Key</label>
-              <input type="text" id="inv-search-input" class="form-control form-control-sm" placeholder="Type game title, key, or source...">
+              <input type="text" id="inv-search-input" class="form-control form-control-sm" placeholder="Type game title, key, or source..." autocomplete="off">
             </div>
 
             <div class="filter-group reset-group">
@@ -679,10 +1366,7 @@
               <!-- Injected by JS -->
             </div>
 
-            <!-- Gallery View Container -->
-            <div class="inventory-gallery-container" id="inventory-gallery-container" style="display: none;">
-              <!-- Injected by JS -->
-            </div>
+
             
             <div class="table-footer">
               <span id="inventory-count-text">Showing 0 of 0 inventory items</span>
@@ -712,7 +1396,10 @@
               <p class="view-subtitle">Historical records of all sold digital keys, platforms, and fee structures.</p>
             </div>
             <div class="action-buttons">
-              <button class="btn btn-outline" id="btn-export-sales">
+              <button class="btn btn-primary btn-sm" id="btn-sales-record-sale" onclick="triggerSellGameManual()" style="display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-plus"></i> <span>Record Sale</span>
+              </button>
+              <button class="btn btn-outline btn-sm" id="btn-export-sales" style="display: flex; align-items: center; gap: 6px;">
                 <i class="fa-solid fa-download"></i> <span>Export CSV</span>
               </button>
             </div>
@@ -734,9 +1421,16 @@
               </select>
             </div>
 
+            <div class="filter-group">
+              <label for="sales-filter-supplier">Key Supplier</label>
+              <select id="sales-filter-supplier" class="form-control form-control-sm">
+                <option value="all">All Suppliers</option>
+              </select>
+            </div>
+
             <div class="filter-group search-filter">
               <label for="sales-search-input">Search Sales</label>
-              <input type="text" id="sales-search-input" class="form-control form-control-sm" placeholder="Search game, key, buyer, notes...">
+              <input type="text" id="sales-search-input" class="form-control form-control-sm" placeholder="Search game, key, buyer, notes..." autocomplete="off">
             </div>
 
             <div class="filter-group reset-group">
@@ -748,12 +1442,14 @@
 
           <!-- Sales Ledger Table -->
           <div class="ledger-table-card">
+            <div id="sales-ledger-summary"></div>
             <div class="table-responsive" id="sales-table-container">
               <table class="table" id="sales-table">
                 <thead>
                   <tr>
                     <th>Game Title</th>
                     <th>Platform</th>
+                    <th>License Key</th>
                     <th>Cost</th>
                     <th>Sale Price</th>
                     <th>Sold On</th>
@@ -1068,6 +1764,11 @@
               <p class="view-subtitle">Add, enable, disable, edit or delete gaming platforms for your key inventory.</p>
             </div>
 
+            <!-- Platforms view metrics summary -->
+            <div class="metrics-grid" id="platforms-metrics-grid" style="margin-bottom: 24px;">
+              <!-- Rendered dynamically -->
+            </div>
+
             <div class="responsive-grid-2">
               <!-- Add Platform Card -->
               <div class="calc-card">
@@ -1086,6 +1787,12 @@
                         <i class="fa-solid fa-upload"></i> Upload Logo
                         <input type="file" id="platform-logo-file-input" accept="image/*" style="display: none;">
                       </label>
+                    </div>
+                  </div>
+                  <div class="form-group" style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
+                    <label>Logo Preview</label>
+                    <div id="add-platform-logo-preview" class="logo-preview-box" style="display: flex; align-items: center; justify-content: center; width: 72px; height: 72px; border-radius: var(--radius-md); border: 2px dashed var(--border-color); background-color: var(--bg-input); font-size: 1.5rem; color: var(--text-muted); overflow: hidden;">
+                      <i class="fa-solid fa-gamepad"></i>
                     </div>
                   </div>
                   <button type="submit" class="btn btn-primary btn-block">
@@ -1136,9 +1843,21 @@
                 <p class="view-subtitle">Track sales performance, purchase counts, and available stock per unique game title.</p>
               </div>
               <div class="action-buttons">
+                <!-- Catalog View Toggles -->
+                <div class="layout-toggle-group">
+                  <button class="btn btn-outline btn-sm active" id="btn-entries-layout-table" title="Table View" onclick="setEntriesLayout('table')">
+                    <i class="fa-solid fa-table"></i>
+                  </button>
+                  <button class="btn btn-outline btn-sm" id="btn-entries-layout-gallery" title="Gallery View" onclick="setEntriesLayout('gallery')">
+                    <i class="fa-solid fa-image"></i>
+                  </button>
+                </div>
+                <button type="button" class="btn btn-outline btn-sm" id="btn-entries-fav-filter" style="height: 36px; padding: 0 12px; display: flex; align-items: center; gap: 6px; font-weight: 600;" title="Filter by Favorites">
+                  <i class="fa-regular fa-star" id="entries-fav-filter-icon" style="color: var(--accent-warning);"></i> <span id="entries-fav-filter-text">Favorites</span>
+                </button>
                 <div class="search-bar" style="margin-bottom: 0;">
                   <i class="fa-solid fa-magnifying-glass"></i>
-                  <input type="text" id="entries-search-input" placeholder="Search game title...">
+                  <input type="text" id="entries-search-input" placeholder="Search game title..." autocomplete="off">
                 </div>
               </div>
             </div>
@@ -1153,6 +1872,7 @@
                       <th>Available Stock</th>
                       <th>Total Sold</th>
                       <th>Avg Days to Sell</th>
+                      <th>Lowest Sold</th>
                       <th>Total Revenue</th>
                       <th>Net Profit</th>
                       <th>ROI %</th>
@@ -1165,6 +1885,12 @@
                   </tbody>
                 </table>
               </div>
+
+              <!-- Catalog Gallery Container -->
+              <div class="inventory-gallery-container" id="entries-gallery-container" style="display: none; padding: 24px; gap: 24px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
+                <!-- Injected dynamically by JS -->
+              </div>
+
               <div class="table-footer">
                 <span id="entries-count-text">Showing 0 unique game titles</span>
                 <div class="pagination-controls" style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
@@ -1203,18 +1929,291 @@
               <!-- Rendered dynamically -->
             </div>
 
-            <!-- Monthly trend chart -->
-            <div class="chart-card" style="margin-bottom: 24px;">
-              <div class="chart-card-header">
-                <h4 id="finance-chart-title">Monthly Financial Trend</h4>
-                <select id="finance-chart-breakdown-type" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
-                  <option value="month">By Month</option>
-                  <option value="year">By Year</option>
-                  <option value="all">All Time</option>
-                </select>
+            <!-- Financial charts section -->
+            <div id="finance-charts-container" class="finance-charts-grid" style="margin-bottom: 24px;">
+              <!-- Chart 1: Monthly trend totals -->
+              <div class="chart-card" id="card-chart-financeMonthly" data-figure="financeMonthly" style="margin-bottom: 0;">
+                <div class="card-inner">
+                  <div class="card-front">
+                    <div class="chart-card-header">
+                      <h4 id="finance-chart-title">Monthly Financial Trend</h4>
+                      <div style="display: flex; gap: 8px; align-items: center;">
+                        <select id="finance-chart-breakdown-type" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
+                          <option value="month">By Month</option>
+                          <option value="year">By Year</option>
+                          <option value="all">All Time</option>
+                        </select>
+                        <select id="finance-chart-year-filter" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
+                          <option value="all">All Years</option>
+                        </select>
+                        <label id="finance-chart-compare-label" style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer; user-select: none; margin: 0 4px; display: none;">
+                          <input type="checkbox" id="finance-chart-compare-prior" style="accent-color: var(--accent-purple); width: 14px; height: 14px; margin: 0;"> Compare Prior Year
+                        </label>
+                        <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                        <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                        <div class="card-actions-dropdown">
+                          <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Chart options"></i>
+                          <div class="card-actions-menu">
+                            <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                            <button type="button" class="card-actions-item" data-span="1">
+                              <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                            </button>
+                            <button type="button" class="card-actions-item" data-span="2">
+                              <i class="fa-solid fa-table-columns"></i> 2 Columns
+                            </button>
+                            <button type="button" class="card-actions-item" data-span="3">
+                              <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="chart-body">
+                      <canvas id="financeMonthlyChart"></canvas>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div class="chart-body">
-                <canvas id="financeMonthlyChart"></canvas>
+
+              <!-- Chart 2: Monthly performance averages -->
+              <div class="chart-card" id="card-chart-financeAverages" data-figure="financeAverages" style="margin-bottom: 0;">
+                <div class="card-inner">
+                  <div class="card-front">
+                    <div class="chart-card-header">
+                      <h4 id="finance-avg-chart-title">Unit Performance Averages</h4>
+                      <div style="display: flex; gap: 8px; align-items: center;">
+                        <select id="finance-avg-chart-metric-type" class="form-control form-control-sm" style="width: auto; min-width: 140px; height: 32px; padding: 2px 8px; margin: 0;">
+                          <option value="financial">Avg Prices & Profit</option>
+                          <option value="duration">Avg Days in Stock</option>
+                          <option value="margin">Avg Profit Margin (%)</option>
+                        </select>
+                        <select id="finance-avg-chart-year-filter" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
+                          <option value="all">All Years</option>
+                        </select>
+                        <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                        <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                        <div class="card-actions-dropdown">
+                          <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Chart options"></i>
+                          <div class="card-actions-menu">
+                            <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                            <button type="button" class="card-actions-item" data-span="1">
+                              <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                            </button>
+                            <button type="button" class="card-actions-item" data-span="2">
+                              <i class="fa-solid fa-table-columns"></i> 2 Columns
+                            </button>
+                            <button type="button" class="card-actions-item" data-span="3">
+                              <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="chart-body">
+                      <canvas id="financeAveragesChart"></canvas>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Chart 3: Outflow & Expense Allocation -->
+              <div class="chart-card" id="card-chart-financeOutflow" data-figure="financeOutflow" style="margin-bottom: 0;">
+                <div class="card-inner">
+                  <div class="card-front">
+                    <div class="chart-card-header">
+                      <h4 id="finance-outflow-chart-title">Outflow & Expense Allocation</h4>
+                      <div style="display: flex; gap: 8px; align-items: center;">
+                        <select id="finance-outflow-chart-year-filter" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
+                          <option value="all">All Years</option>
+                        </select>
+                        <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                        <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                        <div class="card-actions-dropdown">
+                          <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Chart options"></i>
+                          <div class="card-actions-menu">
+                            <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                            <button type="button" class="card-actions-item" data-span="1">
+                              <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                            </button>
+                            <button type="button" class="card-actions-item" data-span="2">
+                              <i class="fa-solid fa-table-columns"></i> 2 Columns
+                            </button>
+                            <button type="button" class="card-actions-item" data-span="3">
+                              <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="chart-body">
+                      <canvas id="financeOutflowChart"></canvas>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Chart 4: Cost & Revenue Comparison -->
+              <div class="chart-card" id="card-chart-costRevenue" data-figure="costRevenue" style="margin-bottom: 0;">
+                <div class="card-inner">
+                  <div class="card-front">
+                    <div class="chart-card-header">
+                      <h4 id="finance-costRevenue-chart-title">Cost & Revenue Comparison</h4>
+                      <div style="display: flex; gap: 8px; align-items: center;">
+                        <select id="finance-costRevenue-chartType" class="form-control form-control-sm" style="width: auto; min-width: 110px; height: 32px; padding: 2px 8px; margin: 0;">
+                          <option value="bar">Bar Chart</option>
+                          <option value="line">Line Chart</option>
+                        </select>
+                        <select id="finance-costRevenue-timeframe" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
+                          <option value="global">Global Filter</option>
+                          <option value="month">This Month</option>
+                          <option value="30">Last 30 Days</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="year">This Year</option>
+                        </select>
+                        <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                        <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                        <div class="card-actions-dropdown">
+                          <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Chart options"></i>
+                          <div class="card-actions-menu">
+                            <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                            <button type="button" class="card-actions-item" data-span="1">
+                              <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                            </button>
+                            <button type="button" class="card-actions-item" data-span="2">
+                              <i class="fa-solid fa-table-columns"></i> 2 Columns
+                            </button>
+                            <button type="button" class="card-actions-item" data-span="3">
+                              <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="chart-body">
+                      <canvas id="costRevenueChart"></canvas>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Chart 5: Markup & Pricing Analysis -->
+              <div class="chart-card" id="card-chart-markupAnalysis" data-figure="markupAnalysis" style="margin-bottom: 0;">
+                <div class="card-inner">
+                  <div class="card-front">
+                    <div class="chart-card-header">
+                      <h4 id="finance-markupAnalysis-chart-title">Markup & Pricing Analysis</h4>
+                      <div style="display: flex; gap: 8px; align-items: center;">
+                        <select id="finance-markupAnalysis-chartType" class="form-control form-control-sm" style="width: auto; min-width: 110px; height: 32px; padding: 2px 8px; margin: 0;">
+                          <option value="bar">Bar Chart</option>
+                          <option value="line">Line Chart</option>
+                        </select>
+                        <select id="finance-markupAnalysis-groupBy" class="form-control form-control-sm" style="width: auto; min-width: 130px; height: 32px; padding: 2px 8px; margin: 0;">
+                          <option value="publisher">By Publisher</option>
+                          <option value="supplier">By Supplier</option>
+                        </select>
+                        <select id="finance-markupAnalysis-timeframe" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
+                          <option value="global">Global Filter</option>
+                          <option value="month">This Month</option>
+                          <option value="30">Last 30 Days</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="year">This Year</option>
+                        </select>
+                        <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                        <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                        <div class="card-actions-dropdown">
+                          <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Chart options"></i>
+                          <div class="card-actions-menu">
+                            <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                            <button type="button" class="card-actions-item" data-span="1">
+                              <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                            </button>
+                            <button type="button" class="card-actions-item" data-span="2">
+                              <i class="fa-solid fa-table-columns"></i> 2 Columns
+                            </button>
+                            <button type="button" class="card-actions-item" data-span="3">
+                              <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="chart-body">
+                      <canvas id="markupAnalysisChart"></canvas>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card 6: Yearly Head-to-Head Benchmark -->
+              <div class="chart-card" id="card-chart-financeBenchmark" data-figure="financeBenchmark" style="margin-bottom: 0; min-height: 540px;">
+                <div class="card-inner">
+                  <div class="card-front">
+                    <div class="chart-card-header">
+                      <h4 style="display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-code-compare text-purple"></i> Yearly Benchmark
+                      </h4>
+                      <div style="display: flex; gap: 8px; align-items: center;">
+                        <select id="benchmark-mode" class="form-control form-control-sm" style="width: auto; min-width: 130px; height: 32px; padding: 2px 8px; margin: 0;">
+                          <option value="averages">Monthly Averages</option>
+                          <option value="totals">Yearly Totals</option>
+                        </select>
+                        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent-pink);"></span>
+                        <select id="benchmark-year-a" class="form-control form-control-sm" style="width: auto; min-width: 90px; height: 32px; padding: 2px 8px; margin: 0;">
+                          <!-- Populated dynamically -->
+                        </select>
+                        <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">VS</span>
+                        <select id="benchmark-year-b" class="form-control form-control-sm" style="width: auto; min-width: 90px; height: 32px; padding: 2px 8px; margin: 0;">
+                          <!-- Populated dynamically -->
+                        </select>
+                        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent-cyan);"></span>
+                        <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                        <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                        <div class="card-actions-dropdown">
+                          <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Card options"></i>
+                          <div class="card-actions-menu">
+                            <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                            <button type="button" class="card-actions-item" data-span="1">
+                              <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                            </button>
+                            <button type="button" class="card-actions-item" data-span="2">
+                              <i class="fa-solid fa-table-columns"></i> 2 Columns
+                            </button>
+                            <button type="button" class="card-actions-item" data-span="3">
+                              <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="chart-body" style="padding: 12px 16px 16px 16px; overflow-y: auto; flex: 1;">
+                      <div id="finance-benchmark-list" style="display: flex; flex-direction: column; gap: 16px;">
+                        <!-- Injected dynamically by JavaScript -->
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Monthly Finance & Payouts Tracker -->
+            <div class="detail-card" style="margin-bottom: 24px; padding: 16px 20px;">
+              <div class="detail-card-header flex-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px; align-items: center; justify-content: space-between;">
+                <h4 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                  <i class="fa-solid fa-calculator" style="color: var(--accent-cyan);"></i> Monthly Finance & Payouts Comparison
+                </h4>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <select id="finance-financeTracker-timeframe" class="form-control form-control-sm" style="width: auto; min-width: 120px; height: 32px; padding: 2px 8px; margin: 0;">
+                    <option value="global">Global Filter</option>
+                    <option value="month">This Month</option>
+                    <option value="30">Last 30 Days</option>
+                    <option value="90">Last 90 Days</option>
+                    <option value="year">This Year</option>
+                  </select>
+                </div>
+              </div>
+              <div style="min-height: auto; max-height: none; overflow-y: auto;">
+                <div id="finance-tracker-card" class="finance-tracker-card"></div>
               </div>
             </div>
 
@@ -1256,10 +2255,10 @@
             <!-- Payouts & Fees Section -->
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
               <!-- Log New Payout / Fee Form -->
-              <div class="detail-card">
+              <div class="detail-card" style="height: 420px;">
                 <div class="detail-card-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
                   <h4 style="margin: 0; display: flex; align-items: center; gap: 8px;">
-                    <i class="fa-solid fa-file-invoice-dollar" style="color: var(--accent-purple);"></i> Record Monthly Payout / Fee
+                    <i class="fa-solid fa-file-invoice-dollar" style="color: var(--accent-purple);"></i> Record Expense
                   </h4>
                 </div>
                 <form id="form-add-payout" style="display: flex; flex-direction: column; gap: 12px;">
@@ -1268,8 +2267,19 @@
                     <input type="date" id="payout-date" class="form-control" required style="width: 100%;">
                   </div>
                   <div class="form-group">
-                    <label for="payout-description">Description / Type</label>
-                    <input type="text" id="payout-description" class="form-control" placeholder="e.g. PayPal Fee, Overhead Expenses" required style="width: 100%;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                      <label for="payout-category" style="margin: 0;">Expense Category</label>
+                      <button type="button" class="btn btn-outline btn-xs" id="btn-manage-categories" style="padding: 2px 6px; font-size: 0.72rem; display: flex; align-items: center; gap: 4px;">
+                        <i class="fa-solid fa-gear"></i> Manage
+                      </button>
+                    </div>
+                    <select id="payout-category" class="form-control" required style="width: 100%;">
+                      <!-- Dynamically Populated -->
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="payout-description">Description / Notes</label>
+                    <input type="text" id="payout-description" class="form-control" placeholder="e.g. PayPal Fee transaction, server host overhead" style="width: 100%;">
                   </div>
                   <div class="form-group">
                     <label for="payout-amount">Amount</label>
@@ -1282,17 +2292,18 @@
               </div>
 
               <!-- Payouts & Fees Ledger Table -->
-              <div class="detail-card">
+              <div class="detail-card" style="display: flex; flex-direction: column; height: 420px;">
                 <div class="detail-card-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
                   <h4 style="margin: 0; display: flex; align-items: center; gap: 8px;">
-                    <i class="fa-solid fa-list-check" style="color: var(--accent-cyan);"></i> Registered Monthly Payouts & Fees
+                    <i class="fa-solid fa-list-check" style="color: var(--accent-cyan);"></i> Operational Expenses Ledger
                   </h4>
                 </div>
-                <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                <div class="table-responsive" style="flex-grow: 1; overflow-y: auto;">
                   <table class="table" id="payouts-ledger-table">
                     <thead>
                       <tr>
                         <th>Date</th>
+                        <th>Category</th>
                         <th>Description</th>
                         <th style="text-align: right;">Amount</th>
                         <th style="text-align: center; width: 60px;">Action</th>
@@ -1372,6 +2383,49 @@
             <div class="responsive-grid-equal">
               <!-- Left Column: Theme & Currency -->
               <div style="display: flex; flex-direction: column; gap: 24px;">
+                <!-- My Profile Card -->
+                <div class="calc-card" style="margin-bottom: 0;">
+                  <h3>My Profile Settings</h3>
+                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+                    Manage your account security and credentials.
+                  </p>
+                  
+                  <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 15px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan)); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #fff; font-weight: bold;" id="profile-avatar">U</div>
+                    <div>
+                      <h4 style="margin: 0; color: var(--text-main); font-size: 1rem;" id="profile-username-display">Username</h4>
+                      <span class="badge" style="font-size: 0.7rem; background-color: var(--border-color); color: var(--text-secondary); padding: 2px 8px; margin-top: 4px; display: inline-block; text-transform: uppercase;" id="profile-role-display">Role</span>
+                    </div>
+                  </div>
+
+                  <form id="profile-update-form" style="display: flex; flex-direction: column; gap: 12px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <label for="profile-email-input" style="font-size: 0.8rem; margin-bottom: 4px;">Email Address</label>
+                      <input type="email" id="profile-email-input" class="form-control" style="height: 36px; padding: 6px 12px; font-size: 0.85rem;" required>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="profile-password-input" style="font-size: 0.8rem; margin-bottom: 4px;">New Password (Optional)</label>
+                        <input type="password" id="profile-password-input" class="form-control" style="height: 36px; padding: 6px 12px; font-size: 0.85rem;" placeholder="Leave blank to keep same" minlength="6">
+                      </div>
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="profile-confirm-password-input" style="font-size: 0.8rem; margin-bottom: 4px;">Confirm Password</label>
+                        <input type="password" id="profile-confirm-password-input" class="form-control" style="height: 36px; padding: 6px 12px; font-size: 0.85rem;" placeholder="Confirm new password">
+                      </div>
+                    </div>
+
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px; flex-wrap: wrap; gap: 12px;">
+                      <label class="checkbox-container" style="margin-bottom: 0;">
+                        <input type="checkbox" id="profile-2fa-input">
+                        <span class="checkbox-label" style="font-weight: 500; font-size: 0.85rem;">Enable 2FA Protection</span>
+                      </label>
+                      <button type="submit" class="btn btn-primary" style="height: 36px; padding: 0 16px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; width: auto; margin-top: 0;">
+                        <i class="fa-solid fa-user-gear"></i> Update Profile
+                      </button>
+                    </div>
+                  </form>
+                </div>
                                <div class="calc-card" style="margin-bottom: 0;">
                   <h3>Application Appearance</h3>
                   <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
@@ -1545,6 +2599,26 @@
                         <i class="fa-solid fa-unlink"></i> Disconnect
                       </button>
                     </div>
+
+                    <!-- Setup Helper Wizard -->
+                    <div style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed var(--border-color);">
+                      <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 8px;">Supabase Setup Wizard</span>
+                      <p style="color: var(--text-secondary); font-size: 0.78rem; margin-bottom: 12px; line-height: 1.4;">
+                        Missing tables in your Supabase project? Copy or download our setup SQL schema script, open your Supabase project's <strong>SQL Editor</strong>, paste it in, and click <strong>Run</strong>.
+                      </p>
+                      <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
+                        <button type="button" class="btn btn-outline btn-sm" onclick="copySupabaseSQL()" style="flex: 1; min-width: 110px; font-size: 0.75rem; padding: 6px 10px; height: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                          <i class="fa-solid fa-copy"></i> Copy Schema SQL
+                        </button>
+                        <button type="button" class="btn btn-outline btn-sm" onclick="downloadSupabaseSQL()" style="flex: 1; min-width: 110px; font-size: 0.75rem; padding: 6px 10px; height: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                          <i class="fa-solid fa-download"></i> Download SQL
+                        </button>
+                        <button type="button" class="btn btn-outline btn-sm" id="btn-run-supabase-diag" onclick="runSupabaseDiagnostics()" style="flex: 1; min-width: 110px; font-size: 0.75rem; padding: 6px 10px; height: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                          <i class="fa-solid fa-square-poll-horizontal"></i> Test Schema
+                        </button>
+                      </div>
+                      <div id="supabase-diag-output" class="hidden" style="background-color: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 10px; font-family: monospace; font-size: 0.72rem; max-height: 150px; overflow-y: auto; line-height: 1.5; color: var(--text-main);"></div>
+                    </div>
                   </div>
 
                   <!-- Firebase Panel -->
@@ -1588,6 +2662,26 @@
                       <button type="button" class="btn btn-outline btn-sm" id="btn-disconnect-firebase" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; font-size: 0.85rem;">
                         <i class="fa-solid fa-unlink"></i> Disconnect
                       </button>
+                    </div>
+
+                    <!-- Setup Helper Wizard -->
+                    <div style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed var(--border-color);">
+                      <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 8px;">Firebase Setup Wizard</span>
+                      <p style="color: var(--text-secondary); font-size: 0.78rem; margin-bottom: 12px; line-height: 1.4;">
+                        Need to configure database access rules? Copy our security rules script, open your Firebase Console's <strong>Rules tab</strong> in Firestore, paste it in, and click <strong>Publish</strong>.
+                      </p>
+                      <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
+                        <button type="button" class="btn btn-outline btn-sm" onclick="copyFirebaseRules()" style="flex: 1; min-width: 110px; font-size: 0.75rem; padding: 6px 10px; height: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                          <i class="fa-solid fa-copy"></i> Copy Rules
+                        </button>
+                        <button type="button" class="btn btn-outline btn-sm" onclick="downloadFirebaseRules()" style="flex: 1; min-width: 110px; font-size: 0.75rem; padding: 6px 10px; height: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                          <i class="fa-solid fa-download"></i> Download Rules
+                        </button>
+                        <button type="button" class="btn btn-outline btn-sm" id="btn-run-firebase-diag" onclick="runFirebaseDiagnostics()" style="flex: 1; min-width: 110px; font-size: 0.75rem; padding: 6px 10px; height: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                          <i class="fa-solid fa-square-poll-horizontal"></i> Test Connection
+                        </button>
+                      </div>
+                      <div id="firebase-diag-output" class="hidden" style="background-color: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 10px; font-family: monospace; font-size: 0.72rem; max-height: 150px; overflow-y: auto; line-height: 1.5; color: var(--text-main);"></div>
                     </div>
                   </div>
 
@@ -1755,31 +2849,6 @@
                   </button>
                 </div>
 
-                <!-- Feature Visibility Settings Card -->
-                <div class="calc-card">
-                  <h3>Menu Visibility</h3>
-                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
-                    Customize sidebar navigation menus.
-                  </p>
-                  
-                  <!-- Sales Ledger Toggle -->
-                  <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background-color: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: 12px;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                      <i class="fa-solid fa-receipt" style="font-size: 1.25rem; color: var(--accent-cyan);"></i>
-                      <div style="display: flex; flex-direction: column; text-align: left;">
-                        <strong style="font-size: 0.9rem; color: var(--text-main);">Sales Ledger</strong>
-                        <span style="font-size: 0.75rem; color: var(--text-muted);">Enable transaction records log</span>
-                      </div>
-                    </div>
-                    <div>
-                      <label class="switch-toggle" style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer; margin: 0;">
-                        <input type="checkbox" id="toggle-show-sales-ledger" style="opacity: 0; width: 0; height: 0;" checked>
-                        <span class="switch-slider" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: hsla(0, 0%, 100%, 0.1); border-radius: 34px; transition: 0.3s ease;"></span>
-                      </label>
-                    </div>
-                  </div>
-
-                </div>
 
                 <!-- Inventory Display Preferences Card -->
                 <div class="calc-card">
@@ -1808,62 +2877,125 @@
                   </div>
                 </div>
 
-                <!-- Data Maintenance Settings Card -->
+                <!-- Data Tools & Utilities Card -->
                 <div class="calc-card">
-                  <h3>Data Maintenance</h3>
+                  <h3>Data Tools & Utilities</h3>
                   <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
-                    Backup or restore all game vault configurations and records via JSON.
+                    Import inventory sheets, batch fetch covers, and manage local database backups.
                   </p>
-                  
-                  <div class="backup-restore-group" style="margin-bottom: 24px;">
-                    <button type="button" class="btn btn-primary btn-block" id="btn-export-backup" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-                      <i class="fa-solid fa-download"></i> Export Backup (JSON)
-                    </button>
-                    
-                    <button type="button" class="btn btn-outline btn-block" id="btn-restore-backup" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-                      <i class="fa-solid fa-upload"></i> Restore Backup (JSON)
-                    </button>
-                    <input type="file" id="settings-backup-file" accept=".json" style="display: none;">
-                  </div>
 
-                  <!-- Danger Zone -->
-                  <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-danger); margin-bottom: 12px; border-top: 1px solid var(--border-color); padding-top: 16px;">Danger Zone</h4>
-                  <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 16px;">
-                    Irreversibly delete all items currently stored in your inventory. This action cannot be undone.
-                  </p>
-                  <button type="button" class="btn btn-danger btn-block" id="btn-delete-all-inventory" style="display: flex; align-items: center; justify-content: center; gap: 8px; background-color: var(--accent-danger); border-color: var(--accent-danger); color: #fff;">
-                    <i class="fa-solid fa-trash-can"></i> Delete All Inventory Items
-                  </button>
-                </div>
+                  <div style="display: flex; flex-direction: column; gap: 24px;">
+                    <!-- Section A: Imports & Covers -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                      <!-- Column 1: Excel/CSV Import -->
+                      <div style="background: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px; display: flex; flex-direction: column; justify-content: space-between; gap: 16px;">
+                        <div>
+                          <h4 style="margin: 0 0 6px 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-file-excel" style="color: var(--accent-emerald);"></i> Excel/CSV Bulk Import
+                          </h4>
+                          <p style="color: var(--text-secondary); font-size: 0.8rem; margin: 0 0 12px 0; line-height: 1.4;">
+                            Import raw inventory data from an Excel workbook (.xlsx, .xls) or standard CSV file.
+                          </p>
+                          
+                          <div class="file-drop-zone" style="border: 2px dashed var(--border-color); border-radius: var(--radius-md); padding: 20px 10px; text-align: center; background: hsla(0, 0%, 100%, 0.01); transition: var(--transition-smooth); cursor: pointer;" id="import-drop-zone">
+                            <i class="fa-solid fa-file-excel" style="font-size: 1.8rem; color: var(--accent-emerald); margin-bottom: 8px;"></i>
+                            <p style="font-size: 0.8rem; font-weight: 500; margin-bottom: 2px;" id="import-file-name">Drag & drop sheet here, or browse</p>
+                            <p style="font-size: 0.7rem; color: var(--text-muted);">Supports XLSX, XLS, and CSV</p>
+                            <input type="file" id="settings-import-file" accept=".xlsx,.xls,.csv" style="display: none;">
+                          </div>
 
-                <!-- Excel/CSV Bulk Import Card -->
-                <div class="calc-card">
-                  <h3>Excel/CSV Bulk Import</h3>
-                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
-                    Import raw inventory data from an Excel workbook (.xlsx, .xls) or a standard CSV file.
-                  </p>
-                  
-                  <div style="display: flex; flex-direction: column; gap: 16px;">
-                    <div class="file-drop-zone" style="border: 2px dashed var(--border-color); border-radius: var(--radius-lg); padding: 30px 20px; text-align: center; background: hsla(0, 0%, 100%, 0.01); transition: var(--transition-smooth); cursor: pointer;" id="import-drop-zone">
-                      <i class="fa-solid fa-file-excel" style="font-size: 2.5rem; color: var(--accent-emerald); margin-bottom: 12px;"></i>
-                      <p style="font-size: 0.9rem; font-weight: 500; margin-bottom: 4px;" id="import-file-name">Drag & drop your file here, or click to browse</p>
-                      <p style="font-size: 0.75rem; color: var(--text-secondary);">Supports XLSX, XLS, and CSV formats</p>
-                      <input type="file" id="settings-import-file" accept=".xlsx,.xls,.csv" style="display: none;">
-                    </div>
-                    
-                    <div id="import-progress-container" class="hidden" style="display: flex; flex-direction: column; gap: 6px;">
-                      <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
-                        <span id="import-progress-status" style="color: var(--text-secondary);">Processing rows...</span>
-                        <span id="import-progress-percent" style="font-weight: 600; color: var(--text-main);">0%</span>
+                          <div id="import-progress-container" class="hidden" style="display: flex; flex-direction: column; gap: 4px; margin-top: 10px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.75rem;">
+                              <span id="import-progress-status" style="color: var(--text-secondary);">Processing...</span>
+                              <span id="import-progress-percent" style="font-weight: 600; color: var(--text-main);">0%</span>
+                            </div>
+                            <div style="width: 100%; height: 4px; background: var(--bg-input); border-radius: 2px; overflow: hidden;">
+                              <div id="import-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent-emerald), var(--accent-teal)); transition: width 0.1s ease;"></div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <button type="button" class="btn btn-primary btn-block btn-sm" id="btn-import-sheet" disabled style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px;">
+                          <i class="fa-solid fa-file-import"></i> Start Import
+                        </button>
                       </div>
-                      <div style="width: 100%; height: 6px; background: var(--bg-input); border-radius: 3px; overflow: hidden;">
-                        <div id="import-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent-emerald), var(--accent-teal)); transition: width 0.1s ease;"></div>
+
+                      <!-- Column 2: Catalog Artwork Utilities -->
+                      <div style="background: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px; display: flex; flex-direction: column; justify-content: space-between; gap: 16px;">
+                        <div>
+                          <h4 style="margin: 0 0 6px 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent-cyan);"></i> Catalog Artwork Utilities
+                          </h4>
+                          <p style="color: var(--text-secondary); font-size: 0.8rem; margin: 0 0 12px 0; line-height: 1.4;">
+                            Query Steam API dynamically to fetch covers in batches of 100 entries.
+                          </p>
+
+                          <div style="display: flex; align-items: flex-start; gap: 8px; background: var(--bg-input); padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 12px;">
+                            <input type="checkbox" id="settings-artwork-overwrite" style="width: 14px; height: 14px; margin-top: 2px; cursor: pointer;">
+                            <div style="flex: 1;">
+                              <label for="settings-artwork-overwrite" style="font-size: 0.78rem; font-weight: 600; color: var(--text-main); cursor: pointer; display: block;">Overwrite existing covers</label>
+                              <span style="color: var(--text-muted); font-size: 0.68rem; line-height: 1.2; display: block; margin-top: 1px;">
+                                Replaces set covers. If unchecked, only updates games without an image.
+                              </span>
+                            </div>
+                          </div>
+
+                          <div id="artwork-fetch-progress-container" class="hidden" style="display: flex; flex-direction: column; gap: 6px; background: var(--bg-input); padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; font-weight: 500;">
+                              <span id="artwork-fetch-progress-status" style="color: var(--text-secondary); max-width: 65%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Initializing...</span>
+                              <div style="display: flex; align-items: center; gap: 6px;">
+                                <span id="artwork-fetch-progress-percent" style="color: var(--accent-cyan);">0%</span>
+                                <button type="button" id="btn-cancel-artwork-fetch" style="background: var(--accent-danger); border: none; border-radius: 4px; color: #fff; font-size: 0.6rem; padding: 1px 4px; cursor: pointer; font-weight: 700;">Stop</button>
+                              </div>
+                            </div>
+                            <div style="width: 100%; height: 4px; background: var(--border-color); border-radius: 2px; overflow: hidden;">
+                              <div id="artwork-fetch-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent-cyan), var(--accent-teal)); transition: width 0.15s ease;"></div>
+                            </div>
+                            <span id="artwork-fetch-detail-status" style="font-size: 0.65rem; color: var(--text-muted);">0 of 0 processed</span>
+                          </div>
+                        </div>
+
+                        <button type="button" class="btn btn-primary btn-block btn-sm" id="btn-fetch-all-artworks" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px;">
+                          <i class="fa-solid fa-wand-magic-sparkles"></i> Fetch Catalog Images
+                        </button>
                       </div>
                     </div>
-                    
-                    <button type="button" class="btn btn-primary btn-block" id="btn-import-sheet" disabled style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-                      <i class="fa-solid fa-file-import"></i> Start Import
-                    </button>
+
+                    <!-- Section B: Backup & Maintenance -->
+                    <div style="border-top: 1px solid var(--border-color); padding-top: 20px;">
+                      <h4 style="margin: 0 0 12px 0; color: var(--text-main); font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Database Maintenance & Resets</h4>
+                      
+                      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; align-items: start;">
+                        <!-- Local JSON Backup -->
+                        <div>
+                          <p style="color: var(--text-secondary); font-size: 0.8rem; margin: 0 0 12px 0; line-height: 1.4;">
+                            Export a full snapshot of your configurations and listings to a JSON file, or restore from a previous save.
+                          </p>
+                          <div style="display: flex; gap: 10px;">
+                            <button type="button" class="btn btn-primary btn-sm" id="btn-export-backup" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.8rem; padding: 8px;">
+                              <i class="fa-solid fa-download"></i> Export JSON
+                            </button>
+                            <button type="button" class="btn btn-outline btn-sm" id="btn-restore-backup" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.8rem; padding: 8px;">
+                              <i class="fa-solid fa-upload"></i> Restore JSON
+                            </button>
+                            <input type="file" id="settings-backup-file" accept=".json" style="display: none;">
+                          </div>
+                        </div>
+
+                        <!-- Danger Zone -->
+                        <div style="border-left: 1px dashed var(--border-color); padding-left: 20px;">
+                          <p style="color: var(--accent-danger); font-weight: 600; font-size: 0.8rem; margin: 0 0 6px 0; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-triangle-exclamation"></i> Danger Zone
+                          </p>
+                          <p style="color: var(--text-secondary); font-size: 0.78rem; margin: 0 0 12px 0; line-height: 1.4;">
+                            Irreversibly delete all items currently stored in your inventory database. This action is final.
+                          </p>
+                          <button type="button" class="btn btn-danger btn-block btn-sm" id="btn-delete-all-inventory" style="display: flex; align-items: center; justify-content: center; gap: 6px; background-color: var(--accent-danger); border-color: var(--accent-danger); color: #fff; font-size: 0.8rem; padding: 8px;">
+                            <i class="fa-solid fa-trash-can"></i> Empty Inventory Database
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -1888,7 +3020,7 @@
                       </div>
                     </div>
                     
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 8px;">
                       <div class="form-group" style="margin-bottom: 0;">
                         <label for="admin-new-password" style="font-size: 0.8rem; margin-bottom: 4px;">Password</label>
                         <input type="password" id="admin-new-password" class="form-control" placeholder="Password" required minlength="6" style="height: 36px; padding: 6px 12px; font-size: 0.85rem;">
@@ -1896,6 +3028,13 @@
                       <div class="form-group" style="margin-bottom: 0;">
                         <label for="admin-confirm-password" style="font-size: 0.8rem; margin-bottom: 4px;">Confirm Password</label>
                         <input type="password" id="admin-confirm-password" class="form-control" placeholder="Confirm Password" required style="height: 36px; padding: 6px 12px; font-size: 0.85rem;">
+                      </div>
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="admin-new-role" style="font-size: 0.8rem; margin-bottom: 4px;">User Role</label>
+                        <select id="admin-new-role" class="form-control" style="height: 36px; padding: 6px 12px; font-size: 0.85rem; background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="merchant">Merchant / Operator</option>
+                          <option value="admin">Administrator</option>
+                        </select>
                       </div>
                     </div>
                     
@@ -1925,6 +3064,37 @@
                         <!-- Injected by JS -->
                       </tbody>
                     </table>
+                  </div>
+                  
+                  <!-- Activity Audit Log Settings Card (Admin only) -->
+                  <div class="calc-card" id="settings-audit-log-card" style="margin-top: 24px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                      <div>
+                        <h3 style="margin: 0;">Security Activity Audit Log</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 4px; margin-bottom: 0;">
+                          System history and security logs of user actions.
+                        </p>
+                      </div>
+                      <button type="button" class="btn btn-outline btn-sm" onclick="clearAuditLogs()" style="height: 32px; padding: 0 12px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px; border-color: var(--accent-danger); color: var(--accent-danger);">
+                        <i class="fa-solid fa-trash-can"></i> Clear Logs
+                      </button>
+                    </div>
+                    
+                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                      <table class="table" style="font-size: 0.82rem; min-width: 500px;">
+                        <thead>
+                          <tr>
+                            <th style="width: 150px;">Timestamp</th>
+                            <th style="width: 100px;">User</th>
+                            <th style="width: 150px;">Action</th>
+                            <th>Details</th>
+                          </tr>
+                        </thead>
+                        <tbody id="admin-audit-log-list">
+                          <!-- Injected by JS -->
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2008,914 +3178,61 @@
           </div>
         </form>
       </div>
+
+      <!-- Password Recovery Section -->
+      <div id="auth-recovery-section" class="auth-section">
+        <form id="recovery-form">
+          <div style="text-align: center; margin-bottom: 20px;">
+            <div style="font-size: 2.4rem; color: var(--accent-purple); margin-bottom: 10px;">
+              <i class="fa-solid fa-envelope-open-text"></i>
+            </div>
+            <h4 style="margin-bottom: 5px; font-weight: 600; color: var(--text-main);">Reset Password</h4>
+            <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;" id="recovery-instructions">Enter the verification code sent to your email and your new password.</p>
+          </div>
+          
+          <input type="hidden" id="recovery-username">
+          
+          <div class="form-group">
+            <label for="recovery-code">Verification Code</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-shield-halved"></i>
+              <input type="text" id="recovery-code" class="form-control" placeholder="000000" required maxlength="6" pattern="\\d{6}" style="text-align: center; font-size: 1.5rem; letter-spacing: 4px; font-weight: bold; height: 42px;">
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="recovery-new-password">New Password</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-lock"></i>
+              <input type="password" id="recovery-new-password" class="form-control" placeholder="Enter new password" required minlength="6" autocomplete="new-password">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="recovery-confirm-password">Confirm Password</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-lock"></i>
+              <input type="password" id="recovery-confirm-password" class="form-control" placeholder="Confirm new password" required>
+            </div>
+          </div>
+          
+          <button type="submit" class="btn btn-primary btn-block" id="btn-submit-recovery">
+            <i class="fa-solid fa-key"></i> Update Password
+          </button>
+          
+          <div style="text-align: center; margin-top: 20px;">
+            <a href="#" class="forgot-password-link" onclick="switchAuthTab('login')">Back to Sign In</a>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 
   <!-- EDIT GAME MODAL -->
-  <div class="modal-backdrop" id="edit-game-modal">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3><i class="fa-solid fa-pen-to-square text-purple"></i> Edit Game Info</h3>
-        <button class="modal-close-btn" data-close-modal="edit-game-modal">&times;</button>
-      </div>
-      <form id="edit-game-form">
-        <input type="hidden" id="edit-game-id">
-        <div class="modal-body">
-          <div class="form-group">
-            <label for="edit-game-title" class="required">Game Title</label>
-            <input type="text" id="edit-game-title" class="form-control" required placeholder="e.g. Elden Ring, Resident Evil 4">
-          </div>
 
-          <div class="form-group">
-            <label>Game Artwork / Cover Image</label>
-            <div class="image-input-container">
-              <input type="text" id="edit-game-image-url" class="form-control form-control-sm" placeholder="Paste image URL (HTTPS)...">
-              <div class="image-divider"><span>OR</span></div>
-              <label class="btn btn-outline btn-sm file-upload-label">
-                <i class="fa-solid fa-upload"></i> Upload Image
-                <input type="file" id="edit-game-image-file" accept="image/*" style="display: none;">
-              </label>
-            </div>
-            <small class="form-help">Paste cover artwork URL or upload a local image file.</small>
-          </div>
-
-          <div class="form-row-2">
-            <div class="form-group">
-              <label for="edit-game-platform" class="required">Platform</label>
-              <select id="edit-game-platform" class="form-control" required>
-                <option value="Steam">Steam</option>
-                <option value="PlayStation 5">PlayStation 5</option>
-                <option value="Xbox Series X/S">Xbox Series X/S</option>
-                <option value="Nintendo Switch">Nintendo Switch</option>
-                <option value="Epic Games">Epic Games</option>
-                <option value="GOG">GOG</option>
-                <option value="Ubisoft Connect">Ubisoft Connect</option>
-                <option value="EA App">EA App</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label for="edit-game-cost" class="required">Purchase Price (<span class="currency-symbol">€</span>)</label>
-              <div class="input-with-icon">
-                <i class="fa-solid fa-euro-sign currency-icon"></i>
-                <input type="number" id="edit-game-cost" class="form-control" required step="0.01" min="0" placeholder="0.00">
-              </div>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="edit-game-status" class="required">Inventory Status</label>
-            <select id="edit-game-status" class="form-control" required>
-              <option value="Available">Available</option>
-              <option value="Reserved">Reserved</option>
-              <option value="Sold">Sold</option>
-              <option value="Rejected">Rejected</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="edit-game-key" class="required">Digital Activation Key</label>
-            <input type="text" id="edit-game-key" class="form-control font-code" required placeholder="e.g. AAAA-BBBB-CCCC-DDDD">
-          </div>
-
-          <div class="form-row-2">
-            <div class="form-group">
-            <label for="edit-game-source" class="required">Supplier</label>
-            <select id="edit-game-source" class="form-control" required>
-              <!-- Dynamically populated from JS -->
-            </select>
-          </div>
-
-            <div class="form-group">
-              <label for="edit-game-purchase-date" class="required">Purchase Date</label>
-              <input type="date" id="edit-game-purchase-date" class="form-control" required>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="edit-game-publisher">Publisher</label>
-            <input type="text" id="edit-game-publisher" class="form-control" placeholder="e.g. Bandai Namco, Ubisoft">
-          </div>
-
-          <div class="form-group">
-            <label for="edit-game-notes">Inventory Notes</label>
-            <textarea id="edit-game-notes" class="form-control" rows="2" placeholder="Bundle details..."></textarea>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline" data-close-modal="edit-game-modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save Changes</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- EDIT CATALOG ENTRY MODAL -->
-  <div class="modal-backdrop" id="edit-catalog-entry-modal">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3><i class="fa-solid fa-pen-to-square text-cyan"></i> Edit Catalog Entry</h3>
-        <button class="modal-close-btn" data-close-modal="edit-catalog-entry-modal">&times;</button>
-      </div>
-      <form id="edit-catalog-entry-form">
-        <input type="hidden" id="edit-entry-old-title">
-        <div class="modal-body">
-          <div class="form-group">
-            <label for="edit-entry-title" class="required">Game Title</label>
-            <input type="text" id="edit-entry-title" class="form-control" required placeholder="e.g. Elden Ring">
-          </div>
-
-          <div class="form-group">
-            <label for="edit-entry-publisher">Publisher</label>
-            <input type="text" id="edit-entry-publisher" list="edit-entry-publisher-list" class="form-control" placeholder="Select or type publisher name...">
-            <datalist id="edit-entry-publisher-list"></datalist>
-            <small class="form-help">Assign an existing publisher from the list or type a new one.</small>
-          </div>
-
-          <div class="form-group">
-            <label>Game Artwork / Cover Image</label>
-            <div class="image-input-container">
-              <input type="text" id="edit-entry-image-url" class="form-control form-control-sm" placeholder="Paste image URL (HTTPS)...">
-              <div class="image-divider"><span>OR</span></div>
-              <label class="btn btn-outline btn-sm file-upload-label">
-                <i class="fa-solid fa-upload"></i> Upload Image
-                <input type="file" id="edit-entry-image-file" accept="image/*" style="display: none;">
-              </label>
-            </div>
-            <small class="form-help">Updating this will update the cover artwork for all matching keys in inventory.</small>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline" data-close-modal="edit-catalog-entry-modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">
-            <i class="fa-solid fa-floppy-disk"></i> Save Changes
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- ADD GAME KEY MODAL -->
-  <div class="modal-backdrop" id="add-game-modal">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3><i class="fa-solid fa-key text-teal"></i> Add Digital Game Key</h3>
-        <button class="modal-close-btn" data-close-modal="add-game-modal">&times;</button>
-      </div>
-      <form id="add-game-form">
-        <div class="modal-body">
-          <div class="form-group">
-            <label for="game-title" class="required">Game Title</label>
-            <div class="autocomplete-wrapper">
-              <input type="text" id="game-title" class="form-control" required placeholder="e.g. Elden Ring, Resident Evil 4" autocomplete="off">
-              <div id="game-title-suggestions" class="autocomplete-suggestions"></div>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Game Artwork / Cover Image</label>
-            <div class="image-input-container">
-              <input type="text" id="game-image-url" class="form-control form-control-sm" placeholder="Paste image URL (HTTPS)...">
-              <div class="image-divider"><span>OR</span></div>
-              <label class="btn btn-outline btn-sm file-upload-label">
-                <i class="fa-solid fa-upload"></i> Upload Image
-                <input type="file" id="game-image-file" accept="image/*" style="display: none;">
-              </label>
-            </div>
-            <small class="form-help">Paste cover artwork URL or upload a local image file.</small>
-          </div>
-
-          <div class="form-row-2">
-            <div class="form-group">
-              <label for="game-platform" class="required">Platform</label>
-              <select id="game-platform" class="form-control" required>
-                <option value="" disabled selected>Select Platform</option>
-                <option value="Steam">Steam</option>
-                <option value="PlayStation 5">PlayStation 5</option>
-                <option value="Xbox Series X/S">Xbox Series X/S</option>
-                <option value="Nintendo Switch">Nintendo Switch</option>
-                <option value="Epic Games">Epic Games</option>
-                <option value="GOG">GOG</option>
-                <option value="Ubisoft Connect">Ubisoft Connect</option>
-                <option value="EA App">EA App</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label for="game-cost" class="required">Purchase Price (<span class="currency-symbol">€</span>)</label>
-              <div class="input-with-icon">
-                <i class="fa-solid fa-euro-sign currency-icon"></i>
-                <input type="number" id="game-cost" class="form-control" required step="0.01" min="0" placeholder="0.00">
-              </div>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="game-key" class="required">Digital Activation Key(s)</label>
-            <textarea id="game-key" class="form-control font-code" required placeholder="Enter keys (one per line)..." rows="3" style="resize: vertical;"></textarea>
-            <span class="form-help">Enter one key per line to add multiple keys at once with the same details.</span>
-          </div>
-
-          <div class="form-row-2">
-            <div class="form-group">
-              <label for="game-source" class="required">Supplier</label>
-              <select id="game-source" class="form-control" required>
-                <!-- Dynamically populated from JS -->
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label for="game-purchase-date" class="required">Purchase Date</label>
-              <input type="date" id="game-purchase-date" class="form-control" required>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="game-publisher">Publisher</label>
-            <input type="text" id="game-publisher" class="form-control" placeholder="e.g. Bandai Namco, Ubisoft">
-          </div>
-
-          <div class="form-group">
-            <label for="game-notes">Inventory Notes</label>
-            <textarea id="game-notes" class="form-control" rows="2" placeholder="Bundle details, region locks, expiration dates..."></textarea>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline" data-close-modal="add-game-modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save Key to Stock</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- SELL GAME MODAL -->
-  <div class="modal-backdrop" id="sell-game-modal">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3><i class="fa-solid fa-euro-sign currency-icon text-pink"></i> Record Key Sale</h3>
-        <button class="modal-close-btn" data-close-modal="sell-game-modal">&times;</button>
-      </div>
-      <form id="sell-game-form">
-        <input type="hidden" id="sell-game-id">
-        <input type="hidden" id="sale-fees" value="0.00">
-        <div class="modal-body">
-          <div class="sale-summary-card">
-            <h4 id="sell-modal-title">Game Title Here</h4>
-            <p>Platform: <span id="sell-modal-platform">Steam</span> | Buy Cost: <span id="sell-modal-cost">€0.00</span></p>
-          </div>
-
-          <div class="form-row-2">
-            <div class="form-group">
-              <label for="sale-price" class="required">Sale Price (<span class="currency-symbol">€</span>)</label>
-              <div class="input-with-icon">
-                <i class="fa-solid fa-euro-sign currency-icon"></i>
-                <input type="number" id="sale-price" class="form-control" required step="0.01" min="0" placeholder="0.00">
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label for="sale-platform" class="required">Selling Platform</label>
-              <select id="sale-platform" class="form-control" required>
-                <option value="Kinguin" selected>Kinguin</option>
-                <option value="G2A">G2A</option>
-                <option value="eBay">eBay</option>
-                <option value="PlayerAuctions">PlayerAuctions</option>
-                <option value="Kinguin API">Kinguin API</option>
-                <option value="Discord">Discord Direct</option>
-                <option value="Other">Other Platform</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="sale-date" class="required">Sale Date</label>
-            <input type="date" id="sale-date" class="form-control" required>
-          </div>
-
-          <div class="form-group">
-            <label for="sale-notes">Transaction / Buyer Notes</label>
-            <input type="text" id="sale-notes" class="form-control" placeholder="e.g. Sold to user#1234, buyer order id">
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline" data-close-modal="sell-game-modal">Cancel</button>
-          <button type="submit" class="btn btn-primary btn-pink">Record Sale</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- VIEW KEY DETAILS MODAL -->
-  <div class="modal-backdrop" id="view-key-modal">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3><i class="fa-solid fa-shield-halved text-cyan"></i> Secure Key Viewer</h3>
-        <button class="modal-close-btn" data-close-modal="view-key-modal">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="key-display-card">
-          <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;" id="view-modal-artwork-row">
-            <!-- Injected by JS -->
-          </div>
-          <div class="key-reveal-container">
-            <input type="password" id="view-modal-key-input" class="form-control key-code-input" readonly value="REVEAL-ME-NOW-SAMPLE">
-            <button class="btn btn-outline" id="btn-toggle-view-key" title="Toggle visibility">
-              <i class="fa-solid fa-eye" id="toggle-key-eye-icon"></i>
-            </button>
-            <button class="btn btn-primary" id="btn-copy-view-key" title="Copy key to clipboard">
-              <i class="fa-solid fa-copy"></i> Copy
-            </button>
-          </div>
-        </div>
-        
-        <div class="key-metadata-grid">
-          <div class="meta-item">
-            <span class="meta-label">Platform</span>
-            <strong id="view-modal-platform">Steam</strong>
-          </div>
-          <div class="meta-item">
-            <span class="meta-label">Supplier</span>
-            <strong id="view-modal-source">Humble Bundle</strong>
-          </div>
-          <div class="meta-item">
-            <span class="meta-label">Acquisition Cost</span>
-            <strong id="view-modal-cost">€0.00</strong>
-          </div>
-          <div class="meta-item">
-            <span class="meta-label">Purchase Date</span>
-            <strong id="view-modal-date">2026-06-05</strong>
-          </div>
-        </div>
-
-        <div class="key-notes-box">
-          <h5>Distributor/Listing Notes:</h5>
-          <p id="view-modal-notes">No notes available.</p>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-primary" data-close-modal="view-key-modal">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- CATALOG KEYS LIST MODAL -->
-  <div class="modal-backdrop" id="catalog-keys-modal">
-    <div class="modal-card" style="max-width: 850px; width: 95%;">
-      <div class="modal-header">
-        <h3><i class="fa-solid fa-key text-teal"></i> <span id="catalog-keys-modal-title">Game Title Keys</span></h3>
-        <button class="modal-close-btn" data-close-modal="catalog-keys-modal">&times;</button>
-      </div>
-      <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
-        <div class="table-responsive">
-          <table class="table" id="catalog-keys-table">
-            <thead>
-              <tr>
-                <th>Platform</th>
-                <th>Digital Key</th>
-                <th>Cost</th>
-                <th>Sale Price</th>
-                <th>Selling Platform</th>
-                <th>Status</th>
-                <th style="text-align: right; width: 120px;">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="catalog-keys-table-body">
-              <!-- Injected by JavaScript -->
-            </tbody>
-          </table>
-        </div>
-        <div class="table-footer" style="margin-top: 10px;">
-          <span id="catalog-keys-count-text">Showing 0 keys</span>
-          <div class="pagination-controls" style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
-            <div class="page-size-selector" style="display: flex; align-items: center; gap: 8px;">
-              <label for="catalog-keys-page-size" style="white-space: nowrap; margin-bottom: 0; font-size: 0.8rem;">Show:</label>
-              <select id="catalog-keys-page-size" class="form-control form-control-sm" style="width: auto; padding: 4px 8px; height: 32px;">
-                <option value="25" selected>25</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-              </select>
-            </div>
-            <div class="pagination-buttons" id="catalog-keys-pagination" style="display: flex; align-items: center; gap: 4px;">
-              <!-- Injected by JS -->
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-primary" data-close-modal="catalog-keys-modal">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- EDIT SUPPLIER MODAL -->
-  <div class="modal-backdrop" id="edit-supplier-modal">
-    <div class="modal-card" style="max-width: 450px;">
-      <div class="modal-header">
-        <h3><i class="fa-solid fa-truck-ramp-box text-purple"></i> Edit Supplier</h3>
-        <button class="modal-close-btn" data-close-modal="edit-supplier-modal">&times;</button>
-      </div>
-      <form id="edit-supplier-form">
-        <input type="hidden" id="edit-supplier-old-name">
-        <div class="modal-body">
-          <div class="form-group">
-            <label for="edit-supplier-name" class="required">Supplier Name</label>
-            <input type="text" id="edit-supplier-name" class="form-control" required placeholder="e.g. Humble Bundle, Fanatical">
-          </div>
-          <div class="form-group">
-            <label class="required">Supplier Tag Color</label>
-            <div class="color-palette-grid" id="edit-supplier-color-grid"></div>
-            <input type="hidden" id="edit-supplier-color-input" required>
-          </div>
-          <div class="form-group">
-            <label>Supplier Logo</label>
-            <div class="image-input-container">
-              <input type="text" id="edit-supplier-logo-url" class="form-control form-control-sm" placeholder="Paste logo image URL...">
-              <div class="image-divider"><span>OR</span></div>
-              <label class="btn btn-outline btn-sm file-upload-label" style="width: 100%; justify-content: center;">
-                <i class="fa-solid fa-upload"></i> Upload Logo
-                <input type="file" id="edit-supplier-logo-file" accept="image/*" style="display: none;">
-              </label>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline" data-close-modal="edit-supplier-modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save Changes</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- EDIT PLATFORM MODAL -->
-  <div class="modal-backdrop" id="edit-platform-modal">
-    <div class="modal-card" style="max-width: 450px;">
-      <div class="modal-header">
-        <h3><i class="fa-solid fa-gamepad text-purple"></i> Edit Platform</h3>
-        <button class="modal-close-btn" data-close-modal="edit-platform-modal">&times;</button>
-      </div>
-      <form id="edit-platform-form">
-        <input type="hidden" id="edit-platform-old-name">
-        <div class="modal-body">
-          <div class="form-group">
-            <label for="edit-platform-name" class="required">Platform Name</label>
-            <input type="text" id="edit-platform-name" class="form-control" required placeholder="e.g. Steam, Epic Games">
-          </div>
-          <div class="form-group">
-            <label>Platform Logo / Icon</label>
-            <div class="image-input-container">
-              <input type="text" id="edit-platform-logo-url" class="form-control form-control-sm" placeholder="Paste logo image URL...">
-              <div class="image-divider"><span>OR</span></div>
-              <label class="btn btn-outline btn-sm file-upload-label" style="width: 100%; justify-content: center;">
-                <i class="fa-solid fa-upload"></i> Upload Logo
-                <input type="file" id="edit-platform-logo-file" accept="image/*" style="display: none;">
-              </label>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline" data-close-modal="edit-platform-modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save Changes</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- EDIT PUBLISHER MODAL -->
-  <div class="modal-backdrop" id="edit-publisher-modal">
-    <div class="modal-card" style="max-width: 450px;">
-      <div class="modal-header">
-        <h3><i class="fa-solid fa-building text-purple"></i> Edit Publisher</h3>
-        <button class="modal-close-btn" data-close-modal="edit-publisher-modal">&times;</button>
-      </div>
-      <form id="edit-publisher-form">
-        <input type="hidden" id="edit-publisher-old-name">
-        <div class="modal-body">
-          <div class="form-group">
-            <label for="edit-publisher-new-name" class="required">Publisher Name</label>
-            <input type="text" id="edit-publisher-new-name" class="form-control" required placeholder="e.g. Ubisoft, Electronic Arts">
-          </div>
-          <div style="margin-top: 10px; font-size: 0.8rem; color: var(--text-secondary);">
-            <i class="fa-solid fa-circle-info text-teal"></i> This will rename the publisher across all keys in your inventory.
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline" data-close-modal="edit-publisher-modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save Changes</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- EDIT USER MODAL -->
-  <div class="modal-backdrop" id="edit-user-modal">
-    <div class="modal-card" style="max-width: 450px;">
-      <div class="modal-header">
-        <h3><i class="fa-solid fa-user-gear text-purple"></i> Edit User Account</h3>
-        <button class="modal-close-btn" data-close-modal="edit-user-modal">&times;</button>
-      </div>
-      <form id="edit-user-form">
-        <input type="hidden" id="edit-user-original-username">
-        <div class="modal-body">
-          <div class="form-group">
-            <label for="edit-user-username" class="required">Username</label>
-            <input type="text" id="edit-user-username" class="form-control" required placeholder="Username" minlength="3" maxlength="15">
-          </div>
-
-          <div class="form-group">
-            <label for="edit-user-email" class="required">Email Address</label>
-            <input type="email" id="edit-user-email" class="form-control" required placeholder="Email Address">
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline" data-close-modal="edit-user-modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save Changes</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- CSV IMPORT WIZARD MODAL -->
-  <div class="modal-backdrop" id="csv-import-wizard-modal">
-    <div class="modal-card" style="max-width: 800px; width: 95%;">
-      <div class="modal-header">
-        <h3><i class="fa-solid fa-file-import text-teal"></i> CSV Import Wizard</h3>
-        <button class="modal-close-btn" data-close-modal="csv-import-wizard-modal">&times;</button>
-      </div>
-      <div class="modal-body" style="padding: 24px; overflow-y: auto; max-height: 70vh;">
-        <!-- Step Indicators -->
-        <div class="import-wizard-steps" style="display: flex; justify-content: space-around; margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 16px;">
-          <div class="wizard-step active" id="import-step-1-indicator" style="display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--accent-purple);">
-            <span class="step-num" style="background: var(--accent-purple); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">1</span>
-            <span>Upload File</span>
-          </div>
-          <div class="wizard-step" id="import-step-2-indicator" style="display: flex; align-items: center; gap: 8px; font-weight: 500; color: var(--text-muted);">
-            <span class="step-num" style="background: var(--border-color); color: var(--text-muted); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">2</span>
-            <span>Map Columns</span>
-          </div>
-          <div class="wizard-step" id="import-step-3-indicator" style="display: flex; align-items: center; gap: 8px; font-weight: 500; color: var(--text-muted);">
-            <span class="step-num" style="background: var(--border-color); color: var(--text-muted); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">3</span>
-            <span>Preview & Import</span>
-          </div>
-        </div>
-
-        <!-- STEP 1: UPLOAD FILE -->
-        <div class="wizard-section active" id="import-wizard-section-1">
-          <div class="file-drop-zone" id="csv-drop-zone" style="border: 2px dashed var(--border-color); border-radius: 8px; padding: 40px; text-align: center; cursor: pointer; transition: all 0.2s ease; background: var(--bg-card);">
-            <i class="fa-solid fa-cloud-arrow-up" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 16px;"></i>
-            <h4 style="margin-bottom: 8px; font-weight: 600; color: var(--text-main);">Drag and drop your CSV file here</h4>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 16px;">or click to browse your files</p>
-            <button type="button" class="btn btn-outline btn-sm" id="btn-browse-csv">Browse CSV</button>
-            <input type="file" id="csv-wizard-file-input" accept=".csv" style="display: none;">
-          </div>
-          <div id="csv-file-info" style="margin-top: 16px; display: none; align-items: center; justify-content: space-between; background: var(--bg-input); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color);">
-            <div style="display: flex; align-items: center; gap: 12px;">
-              <i class="fa-solid fa-file-csv" style="font-size: 2rem; color: #0284c7;"></i>
-              <div>
-                <strong id="csv-file-name" style="display: block; color: var(--text-main);">file.csv</strong>
-                <span id="csv-file-size" style="font-size: 0.8rem; color: var(--text-muted);">0 KB</span>
-              </div>
-            </div>
-            <button type="button" class="btn btn-danger btn-sm" id="btn-remove-csv" style="padding: 6px 10px;"><i class="fa-solid fa-trash"></i></button>
-          </div>
-        </div>
-
-        <!-- STEP 2: MAP COLUMNS -->
-        <div class="wizard-section" id="import-wizard-section-2" style="display: none;">
-          <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 16px;">
-            Map the fields in your CSV columns to the GameVault database fields. Fields marked with <span class="text-danger">*</span> are required.
-          </p>
-          <div class="table-responsive" style="max-height: 320px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 16px;">
-            <table class="table" style="margin-bottom: 0;">
-              <thead>
-                <tr>
-                  <th>Database Field</th>
-                  <th>CSV Column Header</th>
-                  <th>Default Value (If unmapped)</th>
-                </tr>
-              </thead>
-              <tbody id="csv-mapping-tbody">
-                <!-- Injected dynamically by JS -->
-              </tbody>
-            </table>
-          </div>
-          <div id="csv-mapping-warning" class="alert alert-danger" style="display: none; margin-top: 12px;">
-            <i class="fa-solid fa-circle-exclamation"></i> Please map the required fields: <strong>Game Title</strong> and <strong>Digital Key</strong>.
-          </div>
-        </div>
-
-        <!-- STEP 3: PREVIEW DATA -->
-        <div class="wizard-section" id="import-wizard-section-3" style="display: none;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0;">
-              Preview the first 5 records of your import. Total rows to import: <strong id="csv-total-rows-count" class="text-teal">0</strong>
-            </p>
-          </div>
-          <div class="table-responsive" style="border: 1px solid var(--border-color); border-radius: 6px; overflow-x: auto; max-height: 320px;">
-            <table class="table table-striped" style="margin-bottom: 0; font-size: 0.85rem; min-width: 600px;">
-              <thead id="csv-preview-thead">
-                <!-- Injected dynamically by JS -->
-              </thead>
-              <tbody id="csv-preview-tbody">
-                <!-- Injected dynamically by JS -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer" style="display: flex; justify-content: space-between; border-top: 1px solid var(--border-color); padding: 16px 24px; background: var(--bg-modal-footer);">
-        <button type="button" class="btn btn-outline" id="btn-import-wizard-back" style="visibility: hidden;">Back</button>
-        <div style="display: flex; gap: 12px;">
-          <button type="button" class="btn btn-outline" data-close-modal="csv-import-wizard-modal">Cancel</button>
-          <button type="button" class="btn btn-primary" id="btn-import-wizard-next" disabled>Next</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ADD SUPPLIER MODAL -->
-  <div class="modal-backdrop" id="add-supplier-modal">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3><i class="fa-solid fa-truck-ramp-box text-purple"></i> Add New Supplier</h3>
-        <button class="modal-close-btn" data-close-modal="add-supplier-modal">&times;</button>
-      </div>
-      <form id="add-supplier-form">
-        <div class="modal-body">
-          <div class="form-group">
-            <label for="supplier-name-input" class="required">Supplier Name</label>
-            <input type="text" id="supplier-name-input" class="form-control" required placeholder="e.g. Humble Bundle, Fanatical">
-          </div>
-          <div class="form-group">
-            <label class="required">Supplier Tag Color</label>
-            <div class="color-palette-grid" id="add-supplier-color-grid"></div>
-            <input type="hidden" id="add-supplier-color-input" required value="purple">
-          </div>
-          <div class="form-group" style="margin-bottom: 0;">
-            <label>Supplier Logo</label>
-            <div class="image-input-container">
-              <input type="text" id="supplier-logo-url-input" class="form-control form-control-sm" placeholder="Paste logo image URL...">
-              <div class="image-divider"><span>OR</span></div>
-              <label class="btn btn-outline btn-sm file-upload-label" style="width: 100%; justify-content: center;">
-                <i class="fa-solid fa-upload"></i> Upload Logo
-                <input type="file" id="supplier-logo-file-input" accept="image/*" style="display: none;">
-              </label>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid var(--border-color); padding: 16px 24px; background: var(--bg-modal-footer);">
-          <button type="button" class="btn btn-outline" data-close-modal="add-supplier-modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">Add Supplier</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- HELP & DOCUMENTATION MODAL -->
-  <div class="modal-backdrop" id="help-modal">
-    <div class="modal-card" style="max-width: 800px; width: 95%;">
-      <div class="modal-header">
-        <h3><i class="fa-solid fa-circle-question text-purple"></i> Help & Documentation Center</h3>
-        <button class="modal-close-btn" data-close-modal="help-modal">&times;</button>
-      </div>
-      <div class="modal-body" style="padding: 20px; overflow-y: hidden;">
-        <div style="display: grid; grid-template-columns: 200px 1fr; gap: 24px; min-height: 400px;">
-          <!-- Sidebar tabs -->
-          <div style="display: flex; flex-direction: column; gap: 6px; border-right: 1px solid var(--border-color); padding-right: 16px;">
-            <button type="button" class="btn btn-outline btn-sm help-tab-btn active" data-help-tab="help-tab-general" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background-color: var(--bg-input); color: var(--text-main); width: 100%;">
-              <i class="fa-solid fa-book" style="margin-right: 8px; width: 16px; color: var(--accent-cyan);"></i> General Guide
-            </button>
-            <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-import" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
-              <i class="fa-solid fa-file-excel" style="margin-right: 8px; width: 16px; color: var(--accent-emerald);"></i> Bulk Import Tips
-            </button>
-            <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-sync" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
-              <i class="fa-solid fa-arrows-rotate" style="margin-right: 8px; width: 16px; color: var(--accent-purple);"></i> Cloud & Auto-Sync
-            </button>
-            <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-shortcuts" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
-              <i class="fa-solid fa-keyboard" style="margin-right: 8px; width: 16px; color: var(--accent-pink);"></i> Keyboard Hotkeys
-            </button>
-          </div>
-          <!-- Pane contents -->
-          <div style="max-height: 420px; overflow-y: auto; padding-right: 8px; text-align: left;">
-            
-            <!-- Pane 1: General -->
-            <div id="help-tab-general" class="help-tab-pane">
-              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Key Merchant Pro Overview</h4>
-              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
-                GameVault Key Merchant Pro is a high-performance inventory and sales pipeline management dashboard. It helps you track game activation keys, analyze financial records, monitor stock durations, and manage supplier transactions.
-              </p>
-              
-              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Key Activation States</h5>
-              <ul style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.6; padding-left: 20px; margin-bottom: 16px;">
-                <li><strong style="color: var(--accent-teal);">Available:</strong> Keys currently active in stock and ready to be sold.</li>
-                <li><strong style="color: var(--accent-purple);">Sold:</strong> Dispatched keys. These are logged in the Sales Ledger and calculate profit margin.</li>
-                <li><strong style="color: var(--accent-pink);">Reserved:</strong> Keys held back for customer orders or pending deals.</li>
-                <li><strong style="color: var(--accent-warning);">Rejected:</strong> Revoked, faulty, or returned keys. Capital cost is tracked but they represent no profit.</li>
-              </ul>
-              
-              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Inventory Aging Alerts</h5>
-              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 0;">
-                To prevent stock depreciation, the app categorizes key storage duration:
-                <br>
-                <span class="badge badge-age-fresh" style="margin-top: 4px; display: inline-block;">Fresh</span> (under 30 days), 
-                <span class="badge badge-age-aging" style="display: inline-block;">Aging</span> (30-90 days), 
-                <span class="badge badge-age-stale" style="display: inline-block;">Stale</span> (90-180 days), and 
-                <span class="badge badge-age-verystale" style="display: inline-block;">Very Stale</span> (180+ days).
-              </p>
-            </div>
-
-            <!-- Pane 2: Import -->
-            <div id="help-tab-import" class="help-tab-pane hidden">
-              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Bulk Spreadsheet Ingestion</h4>
-              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
-                You can import huge files directly from Excel/CSV workbooks. The parser reads standard files and updates your lists in batches.
-              </p>
-              
-              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Expected Column Mappings</h5>
-              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 12px;">
-                The importer matches your sheet columns automatically. Make sure your file contains headers similar to:
-              </p>
-              <table style="width: 100%; border-collapse: collapse; font-size: 0.825rem; color: var(--text-secondary); margin-bottom: 16px;">
-                <thead>
-                  <tr style="border-bottom: 1px solid var(--border-color); text-align: left;">
-                    <th style="padding: 6px;">Excel Header</th>
-                    <th style="padding: 6px;">Maps To</th>
-                    <th style="padding: 6px;">Notes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr style="border-bottom: 1px solid var(--border-color);">
-                    <td style="padding: 6px; font-weight: 600; color: var(--text-main);">Name / Title</td>
-                    <td style="padding: 6px;">Game Title</td>
-                    <td style="padding: 6px;">Required to group entries</td>
-                  </tr>
-                  <tr style="border-bottom: 1px solid var(--border-color);">
-                    <td style="padding: 6px; font-weight: 600; color: var(--text-main);">Vendor / Supplier</td>
-                    <td style="padding: 6px;">Supplier Source</td>
-                    <td style="padding: 6px;">Defaults to "Direct" if empty</td>
-                  </tr>
-                  <tr style="border-bottom: 1px solid var(--border-color);">
-                    <td style="padding: 6px; font-weight: 600; color: var(--text-main);">Key / Code</td>
-                    <td style="padding: 6px;">Activation Key</td>
-                    <td style="padding: 6px;">Stored encrypted locally</td>
-                  </tr>
-                  <tr style="border-bottom: 1px solid var(--border-color);">
-                    <td style="padding: 6px; font-weight: 600; color: var(--text-main);">Cost / Sell</td>
-                    <td style="padding: 6px;">Prices</td>
-                    <td style="padding: 6px;">Must be positive numbers</td>
-                  </tr>
-                  <tr style="border-bottom: 1px solid var(--border-color);">
-                    <td style="padding: 6px; font-weight: 600; color: var(--text-main);">Status</td>
-                    <td style="padding: 6px;">State</td>
-                    <td style="padding: 6px;">"Open" ➔ Available, "Closed" ➔ Sold, "Rejected"</td>
-                  </tr>
-                </tbody>
-              </table>
-              <div style="background-color: rgba(255, 179, 0, 0.05); border-left: 3px solid var(--accent-warning); padding: 10px; border-radius: var(--radius-sm);">
-                <p style="color: var(--text-main); font-size: 0.8rem; margin: 0; line-height: 1.4;">
-                  <strong>Pro Tip:</strong> Use the **Excel/CSV Bulk Import** card in Settings. The importer handles large batches asynchronously, so the browser stays responsive.
-                </p>
-              </div>
-            </div>
-
-            <!-- Pane 3: Sync -->
-            <div id="help-tab-sync" class="help-tab-pane hidden">
-              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Cloud Synchronization & Backups</h4>
-              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
-                Secure your database and collaborate across devices by configuring cloud sync services.
-              </p>
-              
-              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Supabase & Firebase Sync</h5>
-              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
-                - <strong>Real-time mode:</strong> All edits (add, edit, sell, delete) instantly update your cloud tables.
-                <br>
-                - <strong>Manual mode:</strong> Edits are saved offline. An "Unsynced Changes" badge will display, allowing you to trigger a batch push via the **Synchronize Now** button.
-              </p>
-              
-              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">GitHub Repositories Sync</h5>
-              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 0;">
-                Configure a Personal Access Token (PAT) to commit your database backups directly to your GitHub repo as a JSON file. Use **Auto-Push on Change** to sync silently in the background, or **Auto-Pull on Startup** to download the latest state automatically.
-              </p>
-            </div>
-
-            <!-- Pane 4: Shortcuts -->
-            <div id="help-tab-shortcuts" class="help-tab-pane hidden">
-              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Keyboard Hotkeys</h4>
-              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
-                Speed up your catalog operations with these global keyboard shortcuts:
-              </p>
-              
-              <table style="width: 100%; border-collapse: collapse; font-size: 0.875rem; color: var(--text-secondary);">
-                <thead>
-                  <tr style="border-bottom: 1px solid var(--border-color); text-align: left; font-weight: 600; color: var(--text-main);">
-                    <th style="padding: 8px 6px;">Shortcut</th>
-                    <th style="padding: 8px 6px;">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr style="border-bottom: 1px solid var(--border-color);">
-                    <td style="padding: 8px 6px;"><kbd style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 6px; font-family: monospace;">Ctrl + Z</kbd></td>
-                    <td style="padding: 8px 6px;">Undo last change (creates, edits, sales, deletes, bulk actions)</td>
-                  </tr>
-                  <tr style="border-bottom: 1px solid var(--border-color);">
-                    <td style="padding: 8px 6px;"><kbd style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 6px; font-family: monospace;">Ctrl + Y</kbd></td>
-                    <td style="padding: 8px 6px;">Redo last undone change</td>
-                  </tr>
-                  <tr style="border-bottom: 1px solid var(--border-color);">
-                    <td style="padding: 8px 6px;"><kbd style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 6px; font-family: monospace;">F1</kbd> or <kbd style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 6px; font-family: monospace;">?</kbd></td>
-                    <td style="padding: 8px 6px;">Launch Help & Documentation Center (this overlay)</td>
-                  </tr>
-                  <tr style="border-bottom: 1px solid var(--border-color);">
-                    <td style="padding: 8px 6px;"><kbd style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 6px; font-family: monospace;">Escape</kbd></td>
-                    <td style="padding: 8px 6px;">Instantly close any active modal dialog or popup list</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer" style="display: flex; justify-content: flex-end; padding: 16px 24px; border-top: 1px solid var(--border-color); background: var(--bg-modal-footer);">
-        <button type="button" class="btn btn-primary" data-close-modal="help-modal">Got it!</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- BULK PRICE ADJUSTMENT MODAL -->
-  <div class="modal hidden" id="bulk-price-adjust-modal">
-    <div class="modal-backdrop" data-close-modal="bulk-price-adjust-modal"></div>
-    <div class="modal-content modal-md">
-      <div class="modal-header">
-        <h3><i class="fa-solid fa-calculator"></i> Bulk Price Adjustment</h3>
-        <button class="modal-close-btn" data-close-modal="bulk-price-adjust-modal">&times;</button>
-      </div>
-      <form id="bulk-price-adjust-form" novalidate>
-        <div class="modal-body">
-          <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 20px;">
-            Apply modifications to the cost and sell price of <strong id="bulk-adjust-count-label">0</strong> selected inventory key(s).
-          </p>
-
-          <!-- Acquisition Cost Adjustments -->
-          <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; margin-bottom: 16px; background-color: rgba(255,255,255,0.02);">
-            <h4 style="margin-top: 0; margin-bottom: 12px; font-size: 0.95rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
-              <span style="background-color: var(--accent-purple)20; color: var(--accent-purple); width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem;">1</span>
-              Acquisition Cost (Buy Price)
-            </h4>
-            <div class="form-group" style="margin-bottom: 12px;">
-              <label for="bulk-cost-action">Modification Mode</label>
-              <select id="bulk-cost-action" class="form-control">
-                <option value="none">No Change</option>
-                <option value="set">Set Fixed Value</option>
-                <option value="adjust">Adjust (Add/Subtract)</option>
-              </select>
-            </div>
-            <div class="form-row" id="bulk-cost-value-row" style="display: none; gap: 12px;">
-              <div class="form-group" style="flex: 2; margin-bottom: 0;">
-                <label for="bulk-cost-value">Amount (<span class="currency-symbol">€</span>)</label>
-                <input type="number" id="bulk-cost-value" class="form-control" placeholder="0.00" step="0.01">
-              </div>
-              <div class="form-group" style="flex: 1; margin-bottom: 0; display: flex; align-items: flex-end;">
-                <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-weight: 500; font-size: 0.85rem; color: var(--text-secondary);">
-                  <input type="checkbox" id="bulk-cost-percent" style="cursor: pointer; width: 16px; height: 16px;"> Percentage
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <!-- Target Sell Price Adjustments -->
-          <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; background-color: rgba(255,255,255,0.02);">
-            <h4 style="margin-top: 0; margin-bottom: 12px; font-size: 0.95rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
-              <span style="background-color: var(--accent-pink)20; color: var(--accent-pink); width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem;">2</span>
-              Target Sell Price
-            </h4>
-            <div class="form-group" style="margin-bottom: 12px;">
-              <label for="bulk-sell-action">Modification Mode</label>
-              <select id="bulk-sell-action" class="form-control">
-                <option value="none">No Change</option>
-                <option value="set">Set Fixed Value</option>
-                <option value="adjust">Adjust (Add/Subtract)</option>
-              </select>
-            </div>
-            <div class="form-row" id="bulk-sell-value-row" style="display: none; gap: 12px;">
-              <div class="form-group" style="flex: 2; margin-bottom: 0;">
-                <label for="bulk-sell-value">Amount (<span class="currency-symbol">€</span>)</label>
-                <input type="number" id="bulk-sell-value" class="form-control" placeholder="0.00" step="0.01">
-              </div>
-              <div class="form-group" style="flex: 1; margin-bottom: 0; display: flex; align-items: flex-end;">
-                <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-weight: 500; font-size: 0.85rem; color: var(--text-secondary);">
-                  <input type="checkbox" id="bulk-sell-percent" style="cursor: pointer; width: 16px; height: 16px;"> Percentage
-                </label>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline" data-close-modal="bulk-price-adjust-modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">Apply Changes</button>
-        </div>
-      </form>
-    </div>
-  </div>
+  <!-- Modal Placeholders -->
+  <div id="modals-placeholder"></div>
+  <div id="help-modal-placeholder"></div>
 
   <!-- BULK ACTIONS BAR -->
   <div id="bulk-actions-bar" class="bulk-actions-bar glass-panel hidden">
@@ -2976,7 +3293,29 @@
   <!-- TOAST NOTIFICATION CONTAINER -->
   <div class="toast-container" id="toast-container"></div>
 
-  <!-- Main JavaScript File -->
-  <script src="app.js?v=3"></script>
+  <!-- WIDGET SIDEBAR GALLERY DRAWER -->
+  <div class="widget-gallery-drawer" id="widget-gallery-drawer">
+    <div class="drawer-header">
+      <h3>Add Dashboard Widgets</h3>
+      <button type="button" class="btn-close-drawer" id="btn-close-widget-gallery-drawer">&times;</button>
+    </div>
+    <div class="drawer-body" id="widget-gallery-list">
+      <!-- Injected dynamically by JavaScript -->
+    </div>
+  </div>
+
+  <!-- WIDGET FULLSCREEN OVERLAY FOCUS MODE -->
+  <div class="widget-fullscreen-overlay" id="widget-fullscreen-overlay">
+    <!-- Focussed widget is appended here dynamically -->
+  </div>
+
+  <!-- Modular Application Scripts loaded sequentially to share the global scope -->
+  <script src="config.js?v=5"></script>
+  <script src="src/state.js?v=5"></script>
+  <script src="src/api.js?v=5"></script>
+  <script src="src/charts.js?v=5"></script>
+  <script src="src/ui.js?v=5"></script>
+  <script src="src/importer.js?v=5"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>
