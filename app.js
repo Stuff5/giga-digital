@@ -77,7 +77,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     startClock();
 
     // Enforce Authentication (Always Required)
-    const activeUser = localStorage.getItem("gv_active_user");
+    let activeUser = localStorage.getItem("gv_active_user");
+    const sessionExpiry = localStorage.getItem("gv_session_expiry");
+    
+    if (activeUser && sessionExpiry) {
+      if (Date.now() > parseInt(sessionExpiry)) {
+        // Session expired, clear and log out
+        localStorage.removeItem("gv_active_user");
+        localStorage.removeItem("gv_session_expiry");
+        activeUser = null;
+      } else {
+        // Extend session sliding window (2 hours)
+        localStorage.setItem("gv_session_expiry", (Date.now() + 2 * 60 * 60 * 1000).toString());
+      }
+    }
+
     const appContainer = document.getElementById("app-container");
     const authContainer = document.getElementById("auth-container");
 
