@@ -979,15 +979,82 @@ async function synchronizeCloudDatabase() {
       }
     }
     
+    // Reset pending deletes queue locally
     state.pendingDeletes = { inventory: [], sales: [], suppliers: [], platforms: [] };
     const userSuffix = (state.currentUser && state.currentUser !== "guest") ? `_${state.currentUser}` : "";
     localStorage.setItem("gv_pending_deletes" + userSuffix, JSON.stringify(state.pendingDeletes));
+
+    // 2. Fetch current cloud data for bidirectional merging
+    showToast("Downloading latest cloud data...", "info");
+    const { data: cloudInventory, error: ciErr } = await window.supabaseClient.from('inventory').select('*');
+    if (ciErr) throw ciErr;
+    const { data: cloudSales, error: csErr } = await window.supabaseClient.from('sales').select('*');
+    if (csErr) throw csErr;
+    const { data: cloudSuppliers, error: csupErr } = await window.supabaseClient.from('suppliers').select('*');
+    if (csupErr) throw csupErr;
     
-    // 2. Upsert current active lists in batches of 200 to prevent payload size and timeout errors
+    let fetchedCloudPlatforms = [];
+    try {
+      const { data, error } = await window.supabaseClient.from('platforms').select('*');
+      if (!error && data) fetchedCloudPlatforms = data;
+    } catch (e) {
+      console.warn("Could not retrieve platforms table during sync:", e);
+    }
+
     const upsertBatchSize = 200;
-    
-    if (state.inventory.length > 0) {
-      const mappedInventory = state.inventory.map(item => ({
+
+    // --- Merge Inventory ---
+    const cloudInvMap = new Map(cloudInventory.map(item => [item.id, item]));
+    const localInvMap = new Map(state.inventory.map(item => [item.id, item]));
+    const toPushInv = [];
+    const toPullInv = [];
+
+    // Push local updates/creates
+    for (const localItem of state.inventory) {
+      const cloudItem = cloudInvMap.get(localItem.id);
+      if (!cloudItem) {
+        toPushInv.push(localItem);
+      } else {
+        const isDifferent = localItem.title !== cloudItem.title ||
+                            localItem.status !== cloudItem.status ||
+                            localItem.key !== cloudItem.key ||
+                            Number(localItem.cost) !== Number(cloudItem.cost) ||
+                            localItem.platform !== cloudItem.platform ||
+                            localItem.imageUrl !== cloudItem.imageUrl ||
+                            localItem.notes !== cloudItem.notes ||
+                            localItem.publisher !== cloudItem.publisher;
+        if (isDifferent) {
+          toPushInv.push(localItem);
+        }
+      }
+    }
+
+    // Pull cloud updates/creates
+    for (const cloudItem of cloudInventory) {
+      if (!localInvMap.has(cloudItem.id)) {
+        toPullInv.push({
+          id: cloudItem.id,
+          title: cloudItem.title,
+          platform: cloudItem.platform,
+          key: cloudItem.key,
+          cost: Number(cloudItem.cost),
+          source: cloudItem.source,
+          purchaseDate: cloudItem.purchaseDate,
+          imageUrl: cloudItem.imageUrl,
+          status: cloudItem.status,
+          notes: cloudItem.notes,
+          publisher: cloudItem.publisher
+        });
+      }
+    }
+
+    // Apply Pull
+    if (toPullInv.length > 0) {
+      state.inventory = [...state.inventory, ...toPullInv];
+    }
+    // Apply Push
+    if (toPushInv.length > 0) {
+      const mappedPushInv = toPushInv.map(item => ({
         id: item.id,
         title: item.title,
         platform: item.platform,
@@ -1000,21 +1067,68 @@ async function synchronizeCloudDatabase() {
         notes: item.notes || null,
         publisher: item.publisher || null
       }));
-      
-      for (let i = 0; i < mappedInventory.length; i += upsertBatchSize) {
-        const batch = mappedInventory.slice(i, i + upsertBatchSize);
-        const { error } = await window.supabaseClient
-          .from('inventory')
-          .upsert(batch);
-        if (error) {
-          console.error("Error syncing inventory batch:", error);
-          throw error;
+      for (let i = 0; i < mappedPushInv.length; i += upsertBatchSize) {
+        const batch = mappedPushInv.slice(i, i + upsertBatchSize);
+        const { error } = await window.supabaseClient.from('inventory').upsert(batch);
+        if (error) throw error;
+      }
+    }
+
+    // --- Merge Sales ---
+    const cloudSalesMap = new Map(cloudSales.map(s => [s.id, s]));
+    const localSalesMap = new Map(state.sales.map(s => [s.id, s]));
+    const toPushSales = [];
+    const toPullSales = [];
+
+    // Push local updates/creates
+    for (const localSale of state.sales) {
+      const cloudSale = cloudSalesMap.get(localSale.id);
+      if (!cloudSale) {
+        toPushSales.push(localSale);
+      } else {
+        const isDifferent = localSale.title !== cloudSale.title ||
+                            localSale.platform !== cloudSale.platform ||
+                            Number(localSale.cost) !== Number(cloudSale.cost) ||
+                            Number(localSale.sellPrice) !== Number(cloudSale.sellPrice) ||
+                            localSale.platformSold !== cloudSale.platformSold ||
+                            Number(localSale.fees) !== Number(cloudSale.fees) ||
+                            localSale.disputed !== cloudSale.disputed ||
+                            localSale.supplierRefunded !== cloudSale.supplierRefunded ||
+                            localSale.notes !== cloudSale.notes;
+        if (isDifferent) {
+          toPushSales.push(localSale);
         }
       }
     }
-    
-    if (state.sales.length > 0) {
-      const mappedSales = state.sales.map(sale => ({
+
+    // Pull cloud updates/creates
+    for (const cloudSale of cloudSales) {
+      if (!localSalesMap.has(cloudSale.id)) {
+        toPullSales.push({
+          id: cloudSale.id,
+          inventoryId: cloudSale.inventoryId,
+          title: cloudSale.title,
+          platform: cloudSale.platform,
+          cost: Number(cloudSale.cost),
+          sellPrice: Number(cloudSale.sellPrice),
+          platformSold: cloudSale.platformSold,
+          fees: Number(cloudSale.fees),
+          profit: Number(cloudSale.profit),
+          saleDate: cloudSale.saleDate,
+          notes: cloudSale.notes,
+          disputed: cloudSale.disputed === true,
+          supplierRefunded: cloudSale.supplierRefunded === true
+        });
+      }
+    }
+
+    // Apply Pull
+    if (toPullSales.length > 0) {
+      state.sales = [...state.sales, ...toPullSales];
+    }
+    // Apply Push
+    if (toPushSales.length > 0) {
+      const mappedPushSales = toPushSales.map(sale => ({
         id: sale.id,
         inventoryId: sale.inventoryId,
         title: sale.title,
@@ -1029,23 +1143,53 @@ async function synchronizeCloudDatabase() {
         disputed: sale.disputed || false,
         supplierRefunded: sale.supplierRefunded || false
       }));
-      
-      for (let i = 0; i < mappedSales.length; i += upsertBatchSize) {
-        const batch = mappedSales.slice(i, i + upsertBatchSize);
-        const { error } = await window.supabaseClient
-          .from('sales')
-          .upsert(batch);
-        if (error) {
-          console.error("Error syncing sales batch:", error);
-          throw error;
+      for (let i = 0; i < mappedPushSales.length; i += upsertBatchSize) {
+        const batch = mappedPushSales.slice(i, i + upsertBatchSize);
+        const { error } = await window.supabaseClient.from('sales').upsert(batch);
+        if (error) throw error;
+      }
+    }
+
+    // --- Merge Suppliers ---
+    const cloudSupMap = new Map(cloudSuppliers.map(s => [s.name, s]));
+    const localSupMap = new Map(state.suppliers.map(s => [s.name, s]));
+    const toPushSuppliers = [];
+    const toPullSuppliers = [];
+
+    for (const localSup of state.suppliers) {
+      const cloudSup = cloudSupMap.get(localSup.name);
+      if (!cloudSup) {
+        toPushSuppliers.push(localSup);
+      } else {
+        const isDifferent = localSup.color !== cloudSup.color ||
+                            localSup.enabled !== cloudSup.enabled ||
+                            localSup.logo !== cloudSup.logo;
+        if (isDifferent) {
+          toPushSuppliers.push(localSup);
         }
       }
     }
-    
-    if (state.suppliers.length > 0) {
+
+    for (const cloudSup of cloudSuppliers) {
+      if (!localSupMap.has(cloudSup.name)) {
+        toPullSuppliers.push({
+          name: cloudSup.name,
+          dateAdded: Number(cloudSup.dateAdded),
+          color: cloudSup.color,
+          enabled: cloudSup.enabled !== false,
+          logo: cloudSup.logo || null
+        });
+      }
+    }
+
+    if (toPullSuppliers.length > 0) {
+      state.suppliers = [...state.suppliers, ...toPullSuppliers];
+    }
+
+    if (toPushSuppliers.length > 0) {
       const { error } = await window.supabaseClient
         .from('suppliers')
-        .upsert(state.suppliers.map(s => ({
+        .upsert(toPushSuppliers.map(s => ({
           name: s.name,
           dateAdded: s.dateAdded,
           color: s.color,
@@ -1056,7 +1200,7 @@ async function synchronizeCloudDatabase() {
         console.warn("Supabase suppliers sync failed with logo, attempting fallback sync without logo:", error);
         const { error: fallbackErr } = await window.supabaseClient
           .from('suppliers')
-          .upsert(state.suppliers.map(s => ({
+          .upsert(toPushSuppliers.map(s => ({
             name: s.name,
             dateAdded: s.dateAdded,
             color: s.color,
@@ -1065,12 +1209,46 @@ async function synchronizeCloudDatabase() {
         if (fallbackErr) throw fallbackErr;
       }
     }
-    
-    if (state.platforms.length > 0) {
+
+    // --- Merge Platforms ---
+    const cloudPlatMap = new Map(fetchedCloudPlatforms.map(p => [p.name, p]));
+    const localPlatMap = new Map(state.platforms.map(p => [p.name, p]));
+    const toPushPlatforms = [];
+    const toPullPlatforms = [];
+
+    for (const localPlat of state.platforms) {
+      const cloudPlat = cloudPlatMap.get(localPlat.name);
+      if (!cloudPlat) {
+        toPushPlatforms.push(localPlat);
+      } else {
+        const isDifferent = localPlat.enabled !== cloudPlat.enabled ||
+                            localPlat.logo !== cloudPlat.logo;
+        if (isDifferent) {
+          toPushPlatforms.push(localPlat);
+        }
+      }
+    }
+
+    for (const cloudPlat of fetchedCloudPlatforms) {
+      if (!localPlatMap.has(cloudPlat.name)) {
+        toPullPlatforms.push({
+          name: cloudPlat.name,
+          dateAdded: Number(cloudPlat.dateAdded),
+          enabled: cloudPlat.enabled !== false,
+          logo: cloudPlat.logo || null
+        });
+      }
+    }
+
+    if (toPullPlatforms.length > 0) {
+      state.platforms = [...state.platforms, ...toPullPlatforms];
+    }
+
+    if (toPushPlatforms.length > 0) {
       try {
         const { error } = await window.supabaseClient
           .from('platforms')
-          .upsert(state.platforms.map(p => ({
+          .upsert(toPushPlatforms.map(p => ({
             name: p.name,
             dateAdded: p.dateAdded,
             enabled: p.enabled !== false,
@@ -1081,7 +1259,7 @@ async function synchronizeCloudDatabase() {
             console.warn("Supabase relation 'platforms' is missing the 'logo' column. Falling back to sync without logo.");
             const { error: fallbackErr } = await window.supabaseClient
               .from('platforms')
-              .upsert(state.platforms.map(p => ({
+              .upsert(toPushPlatforms.map(p => ({
                 name: p.name,
                 dateAdded: p.dateAdded,
                 enabled: p.enabled !== false
@@ -1095,7 +1273,7 @@ async function synchronizeCloudDatabase() {
         console.warn("Could not upsert platforms in Supabase:", err);
       }
     }
-    
+
     // 3. Sync customizations
     const menus = ["dashboard", "inventory", "sales", "finance", "suppliers", "entries", "settings"];
     const customData = menus.map(m => ({
@@ -1107,7 +1285,7 @@ async function synchronizeCloudDatabase() {
       .from('menu_customization')
       .upsert(customData);
     if (customErr) throw customErr;
-    
+
     // 4. Sync settings
     const settings = [
       { key: "themeMode", value: state.themeMode },
@@ -1132,13 +1310,19 @@ async function synchronizeCloudDatabase() {
       { key: "inventorySortBy", value: state.inventorySortBy },
       { key: "platformFeePresets", value: PLATFORM_FEE_PRESETS }
     ];
-    
+
     for (const s of settings) {
       await window.supabaseClient
         .from('app_settings')
         .upsert({ key: s.key, value: s.value });
     }
-    
+
+    // Save merged lists and settings locally to localStorage/IndexedDB
+    saveStateToStorage();
+
+    // Re-render UI with merged records
+    updateUI();
+
     setUnsyncedChanges(false);
     showToast("Cloud database successfully synchronized!", "success");
   } catch (err) {
