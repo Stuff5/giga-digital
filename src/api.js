@@ -896,15 +896,6 @@ async function dbLoadState() {
       console.warn("Error querying platforms from Supabase:", e);
     }
 
-    // Seed database if empty
-    if ((!inventoryData || inventoryData.length === 0) && 
-        (!salesData || salesData.length === 0) && 
-        (!suppliersData || suppliersData.length === 0)) {
-      showToast("Syncing: Cloud database is empty. Seeding with initial data...", "info");
-      await dbSeedDatabase();
-      return;
-    }
-
     state.inventory = inventoryData || [];
     state.sales = salesData || [];
     
