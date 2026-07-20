@@ -540,14 +540,9 @@ async function handleLoginSubmit(e) {
 
     // Set active session
     localStorage.removeItem("gv_local_logout");
-    if (remember) {
-      localStorage.setItem("gv_active_user", authenticatedUser);
-      sessionStorage.removeItem("gv_active_user");
-    } else {
-      sessionStorage.setItem("gv_active_user", authenticatedUser);
-      localStorage.removeItem("gv_active_user");
-    }
+    localStorage.setItem("gv_active_user", authenticatedUser);
     localStorage.setItem("gv_last_active_user", authenticatedUser);
+    sessionStorage.removeItem("gv_active_user");
 
     // Set state and load data
     state.currentUser = authenticatedUser;
@@ -610,13 +605,8 @@ function handleVerify2FASubmit(e) {
 
     // Set active session
     localStorage.removeItem("gv_local_logout");
-    if (remember) {
-      localStorage.setItem("gv_active_user", username);
-      sessionStorage.removeItem("gv_active_user");
-    } else {
-      sessionStorage.setItem("gv_active_user", username);
-      localStorage.removeItem("gv_active_user");
-    }
+    localStorage.setItem("gv_active_user", username);
+    sessionStorage.removeItem("gv_active_user");
 
     // Clear pending state
     state.pending2FA = null;

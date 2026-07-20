@@ -77,7 +77,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     startClock();
 
     // Enforce Authentication (Always Required)
-    const activeUser = localStorage.getItem("gv_active_user") || sessionStorage.getItem("gv_active_user");
+    const activeUser = localStorage.getItem("gv_active_user");
     const appContainer = document.getElementById("app-container");
     const authContainer = document.getElementById("auth-container");
 
@@ -372,8 +372,28 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     window.appInitialized = true;
     document.body.classList.remove("no-transition");
+
+    // Fade out and remove the premium loader
+    const loadingScreen = document.getElementById("app-loading-screen");
+    if (loadingScreen) {
+      loadingScreen.style.opacity = "0";
+      loadingScreen.style.visibility = "hidden";
+      setTimeout(() => {
+        loadingScreen.remove();
+      }, 400);
+    }
   } catch (err) {
     console.error("Initialization Error:", err);
     document.body.classList.remove("no-transition");
+    
+    // Safety fallback: ensure loader is removed even if startup throws an exception
+    const loadingScreen = document.getElementById("app-loading-screen");
+    if (loadingScreen) {
+      loadingScreen.style.opacity = "0";
+      loadingScreen.style.visibility = "hidden";
+      setTimeout(() => {
+        loadingScreen.remove();
+      }, 400);
+    }
   }
 });
