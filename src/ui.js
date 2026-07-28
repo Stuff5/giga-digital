@@ -552,6 +552,11 @@ async function handleLoginSubmit(e) {
     // Set state and load data
     state.currentUser = authenticatedUser;
     loadStateFromStorage();
+    
+    // Re-initialize database connection for the authenticated user session
+    if (typeof initSupabaseConnection === "function") initSupabaseConnection();
+    if (typeof initFirebaseConnection === "function") initFirebaseConnection();
+    
     window.logAuditAction("User Login", `Sign in succeeded for '${authenticatedUser}' via ${authMethod}`);
 
     // Transition to main dashboard
@@ -624,6 +629,11 @@ function handleVerify2FASubmit(e) {
     // Set state and load data
     state.currentUser = username;
     loadStateFromStorage();
+    
+    // Re-initialize database connection for the authenticated user session
+    if (typeof initSupabaseConnection === "function") initSupabaseConnection();
+    if (typeof initFirebaseConnection === "function") initFirebaseConnection();
+    
     window.logAuditAction("User Login (2FA)", `Sign in (2FA passed) for '${username}'`);
     
     // Transition to main dashboard

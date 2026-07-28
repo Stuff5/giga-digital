@@ -1119,9 +1119,9 @@ function loadStateFromStorage() {
       state.favoriteGames = [];
     }
     
-    const storedInventory = localStorage.getItem("gv_inventory" + userSuffix);
-    const storedSales = localStorage.getItem("gv_sales" + userSuffix);
-    const storedSuppliers = localStorage.getItem("gv_suppliers" + userSuffix);
+    const hasSupabase = (localStorage.getItem("gv_supabase_url" + userSuffix) || (window.GV_CONFIG && window.GV_CONFIG.supabaseUrl));
+    const hasFirebase = (localStorage.getItem("gv_firebase_apikey" + userSuffix) || (window.GV_CONFIG && window.GV_CONFIG.firebaseConfig));
+    const isCloud = !!(hasSupabase || hasFirebase);
 
     if (storedInventory && storedSales) {
       try {
@@ -1129,16 +1129,16 @@ function loadStateFromStorage() {
         state.sales = JSON.parse(storedSales) || [];
       } catch (e) {
         console.error("Error parsing user inventory/sales data, resetting to defaults", e);
-        state.inventory = [...MOCK_INVENTORY];
-        state.sales = [...MOCK_SALES];
+        state.inventory = isCloud ? [] : [...MOCK_INVENTORY];
+        state.sales = isCloud ? [] : [...MOCK_SALES];
       }
     } else {
-      state.inventory = [...MOCK_INVENTORY];
-      state.sales = [...MOCK_SALES];
+      state.inventory = isCloud ? [] : [...MOCK_INVENTORY];
+      state.sales = isCloud ? [] : [...MOCK_SALES];
     }
 
-    if (!Array.isArray(state.inventory)) state.inventory = [...MOCK_INVENTORY];
-    if (!Array.isArray(state.sales)) state.sales = [...MOCK_SALES];
+    if (!Array.isArray(state.inventory)) state.inventory = isCloud ? [] : [...MOCK_INVENTORY];
+    if (!Array.isArray(state.sales)) state.sales = isCloud ? [] : [...MOCK_SALES];
 
     try {
       if (storedSuppliers) {
