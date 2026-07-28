@@ -12,7 +12,7 @@ window.loadHTMLTemplates = async () => {
   await Promise.all(templates.map(async t => {
     try {
       // Use cache-busting parameter to ensure the latest HTML is loaded
-      const res = await fetch(t.url + "?v=4");
+      const res = await fetch(t.url + "?v=8");
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
       const placeholder = document.getElementById(t.targetId);

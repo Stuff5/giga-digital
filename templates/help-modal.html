@@ -420,11 +420,25 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
-                <!-- v1.7.3 -->
+                <!-- v1.8.0 -->
                 <div style="border-left: 3px solid var(--accent-emerald); padding-left: 12px;">
                   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.7.3 — Dynamic Cover Gradients & Dashboard Visualizer Upgrades</strong>
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.8.0 — Bidirectional Database Sync & Session Persistence Upgrades</strong>
                     <span style="font-size: 0.75rem; color: var(--accent-emerald); font-weight: bold;">Current Version</span>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
+                    <li><strong>Bidirectional Merge Cloud Sync:</strong> Compares local and cloud items by ID, performs a non-destructive merge, and syncs updates in batch sizes of 200 to prevent payload limitations.</li>
+                    <li><strong>Persistent Login Sessions ("Remember Me"):</strong> Replaced volatile sessions with localStorage sliding-window timestamps, allowing users to stay logged in permanently across page refreshes.</li>
+                    <li><strong>Anti-Flicker Asynchronous Startup:</strong> Integrated an async page-loader screen that waits for the cloud database sync to resolve before rendering the dashboard, avoiding flashes of blank data.</li>
+                    <li><strong>Auto-Seeding Removal & Shadow Profiles:</strong> Disabled database auto-seeding on clean connections, and added automatic local profile mapping on cloud auth login to resolve settings page session mismatches.</li>
+                  </ul>
+                </div>
+
+                <!-- v1.7.3 -->
+                <div style="border-left: 3px solid var(--border-color); padding-left: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.7.3 — Dynamic Cover Gradients & Dashboard Visualizer Upgrades</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Previous Version</span>
                   </div>
                   <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
                     <li><strong>Unique Hashed Gradients:</strong> Computes dynamic gradient cover backgrounds based on game title characters, colorizing empty image placeholders across all lists and gallery views.</li>
