@@ -164,7 +164,7 @@ window.logAuditAction = function(action, details = "") {
 };
 
 // Recalculates metrics specifically for the Suppliers view
-function initSupabaseConnection() {
+async function initSupabaseConnection() {
   let activeUser = state.currentUser;
   if (!activeUser) {
     activeUser = localStorage.getItem("gv_last_active_user") || "";
@@ -216,7 +216,7 @@ function initSupabaseConnection() {
         storageBadge.style.color = "#000";
         storageBadge.style.border = "none";
       }
-      dbLoadState();
+      await dbLoadState();
       logActionNotification("Connected to Supabase");
     } catch (e) {
       console.error("Supabase initialization error:", e);

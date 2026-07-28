@@ -191,7 +191,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     applyMenuIcons();
     applyMenuTitles();
     renderSidebarCustomizationSettings();
-    initSupabaseConnection();
+    await initSupabaseConnection();
     bindSupabaseSettingsControls();
     initFirebaseConnection();
     bindFirebaseSettingsControls();
