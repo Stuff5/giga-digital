@@ -538,6 +538,27 @@ async function handleLoginSubmit(e) {
       authenticatedUser = matchedUser.username;
     }
 
+    // Ensure the authenticated user has a local profile in gv_users
+    const allUsers = getUsersFromStorage();
+    let localUserObj = allUsers.find(u => u.username.toLowerCase() === authenticatedUser.toLowerCase());
+    if (!localUserObj) {
+      let emailVal = `${authenticatedUser}@gamevault.local`;
+      if (authMethod === "Supabase" && typeof data !== "undefined" && data && data.user) {
+        emailVal = data.user.email;
+      } else if (authMethod === "Firebase" && typeof userCredential !== "undefined" && userCredential && userCredential.user) {
+        emailVal = userCredential.user.email;
+      }
+      localUserObj = {
+        username: authenticatedUser,
+        email: emailVal,
+        password: "", // Cloud-managed
+        role: authenticatedUser.toLowerCase() === "admin" ? "admin" : "merchant",
+        twoFactorEnabled: false
+      };
+      allUsers.push(localUserObj);
+      localStorage.setItem("gv_users", JSON.stringify(allUsers));
+    }
+
     // Set active session
     localStorage.removeItem("gv_local_logout");
     localStorage.setItem("gv_active_user", authenticatedUser);
