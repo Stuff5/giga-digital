@@ -12,7 +12,7 @@ window.loadHTMLTemplates = async () => {
   await Promise.all(templates.map(async t => {
     try {
       // Use cache-busting parameter to ensure the latest HTML is loaded
-      const res = await fetch(t.url + "?v=12");
+      const res = await fetch(t.url + "?v=13");
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
       const placeholder = document.getElementById(t.targetId);
@@ -405,6 +405,23 @@ function getUsersFromStorage() {
       localStorage.setItem("gv_users", JSON.stringify(arr));
     } catch (e) {
       console.error("Failed to seed default admin to storage:", e);
+    }
+  }
+
+  if (state.currentUser) {
+    const hasCurrent = arr.some(u => u.username.toLowerCase() === state.currentUser.toLowerCase());
+    if (!hasCurrent) {
+      const shadowUser = {
+        username: state.currentUser,
+        email: state.currentUser.includes("@") ? state.currentUser : `${state.currentUser}@gamevault.local`,
+        password: "cloud_authenticated_user_placeholder_pwd",
+        role: "merchant",
+        twoFactorEnabled: false
+      };
+      arr.push(shadowUser);
+      try {
+        localStorage.setItem("gv_users", JSON.stringify(arr));
+      } catch (e) {}
     }
   }
   return arr;
