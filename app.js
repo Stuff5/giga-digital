@@ -22,6 +22,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     
     // Initialize IndexedDB storage and populate memory cache
     await initIndexedDBStorage();
+    console.log("[GameVault] AFTER IndexedDB Load - gv_active_user:", localStorage.getItem("gv_active_user"));
     
     // Load State and check session
     loadStateFromStorage();
