@@ -2,6 +2,9 @@
  * GameVault - Excel / CSV Import Pipelines & Tools (importer.js)
  */
 
+const localStorage = window.safeStorage || window.localStorage;
+const sessionStorage = window.safeStorage || window.sessionStorage;
+
 function applyDateFormat(format) {
   const dateFormatSelect = document.getElementById("settings-date-format");
   if (dateFormatSelect) {

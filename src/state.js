@@ -210,6 +210,7 @@ const safeStorage = (() => {
     }
   };
 })();
+window.safeStorage = safeStorage;
 
 // Override localStorage and sessionStorage locally within this script's scope
 const localStorage = safeStorage;
@@ -1119,6 +1120,10 @@ function loadStateFromStorage() {
       state.favoriteGames = [];
     }
     
+    const storedInventory = localStorage.getItem("gv_inventory" + userSuffix);
+    const storedSales = localStorage.getItem("gv_sales" + userSuffix);
+    const storedSuppliers = localStorage.getItem("gv_suppliers" + userSuffix);
+
     const hasSupabase = (localStorage.getItem("gv_supabase_url" + userSuffix) || (window.GV_CONFIG && window.GV_CONFIG.supabaseUrl));
     const hasFirebase = (localStorage.getItem("gv_firebase_apikey" + userSuffix) || (window.GV_CONFIG && window.GV_CONFIG.firebaseConfig));
     const isCloud = !!(hasSupabase || hasFirebase);

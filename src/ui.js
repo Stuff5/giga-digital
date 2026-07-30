@@ -2,6 +2,9 @@
  * GameVault - User Interface Renderers & Routers (ui.js)
  */
 
+const localStorage = window.safeStorage || window.localStorage;
+const sessionStorage = window.safeStorage || window.sessionStorage;
+
 // Asynchronously loads external HTML templates and injects them into placeholder containers
 window.loadHTMLTemplates = async () => {
   const templates = [
@@ -12,7 +15,7 @@ window.loadHTMLTemplates = async () => {
   await Promise.all(templates.map(async t => {
     try {
       // Use cache-busting parameter to ensure the latest HTML is loaded
-      const res = await fetch(t.url + "?v=8");
+      const res = await fetch(t.url + "?v=9");
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
       const placeholder = document.getElementById(t.targetId);
@@ -564,11 +567,6 @@ async function handleLoginSubmit(e) {
     localStorage.setItem("gv_active_user", authenticatedUser);
     localStorage.setItem("gv_last_active_user", authenticatedUser);
     sessionStorage.removeItem("gv_active_user");
-    if (remember) {
-      localStorage.removeItem("gv_session_expiry");
-    } else {
-      localStorage.setItem("gv_session_expiry", (Date.now() + 2 * 60 * 60 * 1000).toString());
-    }
 
     // Set state and load data
     state.currentUser = authenticatedUser;
@@ -638,11 +636,6 @@ function handleVerify2FASubmit(e) {
     localStorage.removeItem("gv_local_logout");
     localStorage.setItem("gv_active_user", username);
     sessionStorage.removeItem("gv_active_user");
-    if (remember) {
-      localStorage.removeItem("gv_session_expiry");
-    } else {
-      localStorage.setItem("gv_session_expiry", (Date.now() + 2 * 60 * 60 * 1000).toString());
-    }
 
     // Clear pending state
     state.pending2FA = null;
@@ -1101,7 +1094,6 @@ function renderAdminUsers() {
 window.handleLogout = function() {
   window.logAuditAction("User Logout", `Signed out session`);
   localStorage.removeItem("gv_active_user");
-  localStorage.removeItem("gv_session_expiry");
   sessionStorage.removeItem("gv_active_user");
   localStorage.setItem("gv_local_logout", "true");
   
