@@ -12,7 +12,7 @@ window.loadHTMLTemplates = async () => {
   await Promise.all(templates.map(async t => {
     try {
       // Use cache-busting parameter to ensure the latest HTML is loaded
-      const res = await fetch(t.url + "?v=11");
+      const res = await fetch(t.url + "?v=12");
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
       const placeholder = document.getElementById(t.targetId);
@@ -560,10 +560,10 @@ async function handleLoginSubmit(e) {
     }
 
     // Set active session
-    localStorage.removeItem("gv_local_logout");
-    localStorage.setItem("gv_active_user", authenticatedUser);
-    localStorage.setItem("gv_last_active_user", authenticatedUser);
-    sessionStorage.removeItem("gv_active_user");
+    window.localStorage.removeItem("gv_local_logout");
+    window.localStorage.setItem("gv_active_user", authenticatedUser);
+    window.localStorage.setItem("gv_last_active_user", authenticatedUser);
+    window.sessionStorage.removeItem("gv_active_user");
 
     // Set state and load data
     state.currentUser = authenticatedUser;
@@ -630,9 +630,9 @@ function handleVerify2FASubmit(e) {
     const remember = state.pending2FA.remember;
 
     // Set active session
-    localStorage.removeItem("gv_local_logout");
-    localStorage.setItem("gv_active_user", username);
-    sessionStorage.removeItem("gv_active_user");
+    window.localStorage.removeItem("gv_local_logout");
+    window.localStorage.setItem("gv_active_user", username);
+    window.sessionStorage.removeItem("gv_active_user");
 
     // Clear pending state
     state.pending2FA = null;
@@ -727,8 +727,8 @@ function handleRegisterSubmit(e) {
     console.log("[Auth Debug] Users in storage after save:", getUsersFromStorage());
 
     // Set active session
-    localStorage.removeItem("gv_local_logout");
-    localStorage.setItem("gv_active_user", username);
+    window.localStorage.removeItem("gv_local_logout");
+    window.localStorage.setItem("gv_active_user", username);
     
     // Set state, clone default datasets into isolated namespace
     state.currentUser = username;
@@ -1010,7 +1010,7 @@ function handleEditUserSubmit(e) {
 
     // If this is the current active session user, update session state!
     if (originalUsername === state.currentUser) {
-      localStorage.setItem("gv_active_user", newUsername);
+      window.localStorage.setItem("gv_active_user", newUsername);
       state.currentUser = newUsername;
       
       // Update sidebar display name
@@ -1090,9 +1090,9 @@ function renderAdminUsers() {
 // Perform logout
 window.handleLogout = function() {
   window.logAuditAction("User Logout", `Signed out session`);
-  localStorage.removeItem("gv_active_user");
-  sessionStorage.removeItem("gv_active_user");
-  localStorage.setItem("gv_local_logout", "true");
+  window.localStorage.removeItem("gv_active_user");
+  window.sessionStorage.removeItem("gv_active_user");
+  window.localStorage.setItem("gv_local_logout", "true");
   
   state.currentUser = null;
   state.inventory = [];

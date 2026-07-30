@@ -5,8 +5,7 @@
 
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("[GameVault] DOMContentLoaded - Booting v1.8.0...");
-  console.log("[GameVault] localStorage keys:", Object.keys(localStorage));
-  console.log("[GameVault] gv_active_user:", localStorage.getItem("gv_active_user"));
+  console.log("[GameVault] Native gv_active_user:", window.localStorage.getItem("gv_active_user"));
   try {
     // Load HTML templates dynamically
     await loadHTMLTemplates();
@@ -22,7 +21,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     
     // Initialize IndexedDB storage and populate memory cache
     await initIndexedDBStorage();
-    console.log("[GameVault] AFTER IndexedDB Load - gv_active_user:", localStorage.getItem("gv_active_user"));
+    console.log("[GameVault] AFTER IndexedDB Load - Native gv_active_user:", window.localStorage.getItem("gv_active_user"));
     
     // Load State and check session
     loadStateFromStorage();
@@ -81,7 +80,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     startClock();
 
     // Enforce Authentication (Always Required)
-    let activeUser = localStorage.getItem("gv_active_user");
+    let activeUser = window.localStorage.getItem("gv_active_user");
 
     const appContainer = document.getElementById("app-container");
     const authContainer = document.getElementById("auth-container");
