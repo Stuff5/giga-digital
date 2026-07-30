@@ -2,9 +2,6 @@
  * GameVault - User Interface Renderers & Routers (ui.js)
  */
 
-const localStorage = window.safeStorage || window.localStorage;
-const sessionStorage = window.safeStorage || window.sessionStorage;
-
 // Asynchronously loads external HTML templates and injects them into placeholder containers
 window.loadHTMLTemplates = async () => {
   const templates = [
@@ -15,7 +12,7 @@ window.loadHTMLTemplates = async () => {
   await Promise.all(templates.map(async t => {
     try {
       // Use cache-busting parameter to ensure the latest HTML is loaded
-      const res = await fetch(t.url + "?v=9");
+      const res = await fetch(t.url + "?v=10");
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
       const placeholder = document.getElementById(t.targetId);

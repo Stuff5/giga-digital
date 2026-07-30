@@ -3,9 +3,6 @@
  * This file boots the application after loading all modular dependencies.
  */
 
-const localStorage = window.safeStorage || window.localStorage;
-const sessionStorage = window.safeStorage || window.sessionStorage;
-
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("[GameVault] DOMContentLoaded - Booting v1.8.0...");
   console.log("[GameVault] localStorage keys:", Object.keys(localStorage));

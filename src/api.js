@@ -2,9 +2,6 @@
  * GameVault - API & Database Integrations (api.js)
  */
 
-const localStorage = window.safeStorage || window.localStorage;
-const sessionStorage = window.safeStorage || window.sessionStorage;
-
 function renderPeriodSummary(dbFilteredSales, dbFilteredInventory) {
   // 1. Calculate metrics from the pre-filtered sales list
   const soldCount = dbFilteredSales.length;

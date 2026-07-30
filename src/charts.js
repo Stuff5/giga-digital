@@ -2,9 +2,6 @@
  * GameVault - Dashboard Widgets & Chart.js Config (charts.js)
  */
 
-const localStorage = window.safeStorage || window.localStorage;
-const sessionStorage = window.safeStorage || window.sessionStorage;
-
 function renderRoiMatrixChart(activeSuppliers) {
   if (supplierRoiMatrixChartInstance) {
     try {
