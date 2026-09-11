@@ -1056,9 +1056,9 @@ async function synchronizeCloudDatabase() {
     if (toPushInv.length > 0) {
       const mappedPushInv = toPushInv.map(item => ({
         id: item.id,
-        title: item.title,
-        platform: item.platform,
-        key: item.key,
+        title: item.title || "Untitled Game",
+        platform: item.platform || "PC",
+        key: (item.key && String(item.key).trim()) ? String(item.key).trim() : "NO-KEY",
         cost: item.cost,
         source: item.source,
         purchaseDate: item.purchaseDate,
@@ -1539,9 +1539,9 @@ async function importStateFromSpreadsheet(file) {
                 for (let j = 0; j < importedGames.length; j += syncBatchSize) {
                   const batch = importedGames.slice(j, j + syncBatchSize).map(item => ({
                     id: item.id,
-                    title: item.title,
-                    platform: item.platform,
-                    key: item.key,
+                    title: item.title || "Untitled Game",
+                    platform: item.platform || "PC",
+                    key: (item.key && String(item.key).trim()) ? String(item.key).trim() : "NO-KEY",
                     cost: item.cost,
                     source: item.source,
                     purchaseDate: item.purchaseDate,

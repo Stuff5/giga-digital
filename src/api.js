@@ -1095,6 +1095,13 @@ async function dbLoadState() {
           if (invSortInput) {
             invSortInput.value = state.inventorySortBy || "date-desc";
           }
+        } else if (s.key === "catalogArtwork") {
+          try {
+            state.catalogArtwork = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+            localStorage.setItem("gv_catalog_artwork", JSON.stringify(state.catalogArtwork || {}));
+          } catch(e) {
+            console.error("Error parsing catalogArtwork from database sync:", e);
+          }
         }
       });
     }
@@ -1246,14 +1253,14 @@ async function dbSaveInventory(item) {
       .from('inventory')
       .upsert({
         id: item.id,
-        title: item.title,
-        platform: item.platform,
-        key: item.key,
-        cost: item.cost,
-        source: item.source,
-        purchaseDate: item.purchaseDate,
+        title: item.title || "Untitled Game",
+        platform: item.platform || "PC",
+        key: (item.key && String(item.key).trim()) ? String(item.key).trim() : "NO-KEY",
+        cost: item.cost !== undefined ? item.cost : 0,
+        source: item.source || "Direct",
+        purchaseDate: item.purchaseDate || new Date().toISOString().split("T")[0],
         imageUrl: item.imageUrl || null,
-        status: item.status,
+        status: item.status || "Available",
         notes: item.notes || null,
         publisher: item.publisher || null
       });

@@ -66,21 +66,23 @@ function cleanupEmptyDatabaseRows() {
   try {
     const initialInvLength = state.inventory.length;
     
-    // An item is invalid if it has no title or no key or title/key are completely blank
+    // An item is invalid if it has no title or title is completely blank (key is optional)
     state.inventory = state.inventory.filter(item => {
       if (!item) return false;
       const title = String(item.title || "").trim();
-      const key = String(item.key || "").trim();
-      // Keep only rows that have a title and key
-      return title !== "" && key !== "";
+      // Keep rows that have a title (key can be blank/optional)
+      if (title === "") return false;
+      if (!item.key) item.key = "NO-KEY";
+      return true;
     });
 
     const initialSalesLength = state.sales.length;
-    // Keep only sales associated with valid inventory items
+    // Keep valid sales (either associated with an existing inventory item or with a valid title)
     const validInvIds = new Set(state.inventory.map(item => item.id));
     state.sales = state.sales.filter(sale => {
       if (!sale) return false;
-      return sale.inventoryId && validInvIds.has(sale.inventoryId);
+      if (!sale.title || String(sale.title).trim() === "") return false;
+      return sale.inventoryId ? validInvIds.has(sale.inventoryId) : true;
     });
 
     if (state.inventory.length !== initialInvLength || state.sales.length !== initialSalesLength) {
@@ -3794,15 +3796,14 @@ async function handleAddGameSubmit(e) {
   const publisherInput = document.getElementById("game-publisher");
   const publisher = publisherInput ? publisherInput.value.trim() : "";
 
-  // Split and filter keys
-  const keys = keyInput.split(/[\n,;]+/).map(k => k.trim()).filter(k => k.length > 0);
+  // Split and filter keys (defaults to "NO-KEY" if left blank)
+  let keys = keyInput.split(/[\n,;]+/).map(k => k.trim()).filter(k => k.length > 0);
   if (keys.length === 0) {
-    showToast("Please enter at least one digital game key.", "error");
-    return;
+    keys = ["NO-KEY"];
   }
 
-  // Check for duplicate keys in inventory
-  const duplicateKeys = keys.filter(k => state.inventory.some(item => item.key.trim().toLowerCase() === k.toLowerCase()));
+  // Check for duplicate keys in inventory (ignoring NO-KEY placeholders)
+  const duplicateKeys = keys.filter(k => k !== "NO-KEY" && state.inventory.some(item => item.key && item.key !== "NO-KEY" && item.key.trim().toLowerCase() === k.toLowerCase()));
   if (duplicateKeys.length > 0) {
     const proceed = confirm(`Warning: The following keys already exist in your inventory:\n${duplicateKeys.join("\n")}\n\nAre you sure you want to add them anyway?`);
     if (!proceed) return;
@@ -4297,7 +4298,7 @@ async function handleEditGameSubmit(e) {
   const title = document.getElementById("edit-game-title").value.trim();
   const platform = document.getElementById("edit-game-platform").value;
   const cost = parseFloat(document.getElementById("edit-game-cost").value) || 0;
-  const key = document.getElementById("edit-game-key").value.trim();
+  const key = document.getElementById("edit-game-key").value.trim() || "NO-KEY";
   const source = document.getElementById("edit-game-source").value.trim() || "Direct";
   const purchaseDate = document.getElementById("edit-game-purchase-date").value;
   const notes = document.getElementById("edit-game-notes").value.trim();
@@ -4311,10 +4312,10 @@ async function handleEditGameSubmit(e) {
     return;
   }
 
-  // Check if edited key exists on another game item
-  const currentKey = state.inventory[gameIndex].key;
-  if (key && key.toLowerCase() !== currentKey.toLowerCase()) {
-    const isDuplicate = state.inventory.some(item => item.id !== gameId && item.key.trim().toLowerCase() === key.toLowerCase());
+  // Check if edited key exists on another game item (ignoring NO-KEY placeholders)
+  const currentKey = state.inventory[gameIndex].key || "NO-KEY";
+  if (key && key !== "NO-KEY" && key.toLowerCase() !== currentKey.toLowerCase()) {
+    const isDuplicate = state.inventory.some(item => item.id !== gameId && item.key && item.key !== "NO-KEY" && item.key.trim().toLowerCase() === key.toLowerCase());
     if (isDuplicate) {
       const proceed = confirm(`Warning: The key "${key}" already exists in your inventory for another game.\n\nAre you sure you want to save this key?`);
       if (!proceed) return;
@@ -4592,7 +4593,10 @@ window.triggerViewCatalogKeys = function(title, openModalFlag = true) {
     const salePriceText = sale ? formatCurrency(sale.sellPrice) : "—";
     const sellPlatformText = sale ? sale.platform : "—";
     
-    const maskedKey = `${item.key.slice(0, 4)}-****-****-${item.key.slice(-4)}`;
+    const keyStr = String(item.key || "");
+    const maskedKey = keyStr.length >= 8 
+      ? `${keyStr.slice(0, 4)}-****-****-${keyStr.slice(-4)}`
+      : keyStr || "—";
     
     let badgeClass = "badge-available";
     if (item.status === "Sold") badgeClass = "badge-sold";
@@ -4606,7 +4610,7 @@ window.triggerViewCatalogKeys = function(title, openModalFlag = true) {
         <button class="btn-action btn-action-view" onclick="closeModal('catalog-keys-modal'); triggerViewKey('${item.id}')" title="View Secure Key Details">
           <i class="fa-solid fa-eye"></i>
         </button>
-        <button class="btn-action btn-action-edit" onclick="closeModal('catalog-keys-modal'); copyTextToClipboard('${item.key.replace(/'/g, "\\'")}', 'Key copied to clipboard!')" title="Copy Key">
+        <button class="btn-action btn-action-edit" onclick="closeModal('catalog-keys-modal'); copyTextToClipboard('${escapeHTML(keyStr).replace(/'/g, "\\'")}', 'Key copied to clipboard!')" title="Copy Key">
           <i class="fa-solid fa-copy"></i>
         </button>
     `;
@@ -4744,7 +4748,7 @@ async function handleEditCatalogEntrySubmit(e) {
 
   let updatedCount = 0;
   state.inventory.forEach(item => {
-    if (item.title.trim().toLowerCase() === oldTitle.toLowerCase()) {
+    if (item.title && item.title.trim().toLowerCase() === oldTitle.toLowerCase()) {
       item.title = newTitle;
       if (imageUrl !== undefined && imageUrl !== "") {
         item.imageUrl = imageUrl;
@@ -4755,11 +4759,21 @@ async function handleEditCatalogEntrySubmit(e) {
   });
 
   state.sales.forEach(sale => {
-    if (sale.title.trim().toLowerCase() === oldTitle.toLowerCase()) {
+    if (sale.title && sale.title.trim().toLowerCase() === oldTitle.toLowerCase()) {
       sale.title = newTitle;
+      if (imageUrl !== undefined && imageUrl !== "") {
+        sale.imageUrl = imageUrl;
+      }
       sale.profit = sale.sellPrice - sale.cost - sale.fees;
     }
   });
+
+  if (imageUrl !== undefined && imageUrl !== "") {
+    if (oldTitle.toLowerCase() !== newTitle.toLowerCase()) {
+      window.setCatalogArtwork(oldTitle, null);
+    }
+    window.setCatalogArtwork(newTitle, imageUrl);
+  }
 
   saveStateToStorage();
   if (window.supabaseClient) {
@@ -4774,7 +4788,11 @@ async function handleEditCatalogEntrySubmit(e) {
   }
   updateUI();
   closeModal("edit-catalog-entry-modal");
-  showToast(`Updated "${oldTitle}" to "${newTitle}" across ${updatedCount} keys.`, "success");
+  if (updatedCount > 0) {
+    showToast(`Updated "${oldTitle}" to "${newTitle}" across ${updatedCount} keys.`, "success");
+  } else {
+    showToast(`Updated catalog entry metadata for "${newTitle}".`, "success");
+  }
   logActionNotification(`Edited catalog: "${oldTitle}" to "${newTitle}"`);
 }
 
@@ -8042,6 +8060,7 @@ function renderEntries() {
 
   // Group sales data
   state.sales.forEach(sale => {
+    if (!sale || !sale.title) return;
     const titleKey = sale.title.trim().toLowerCase();
     if (!titleGroups[titleKey]) {
       titleGroups[titleKey] = {
@@ -8052,11 +8071,14 @@ function renderEntries() {
         totalRevenue: 0,
         totalCostOfSold: 0,
         profit: 0,
-        imageUrl: null,
+        imageUrl: sale.imageUrl || null,
         publisher: null,
         sellDurations: [],
         lowestSoldPrice: null
       };
+    }
+    if (sale.imageUrl && !titleGroups[titleKey].imageUrl) {
+      titleGroups[titleKey].imageUrl = sale.imageUrl;
     }
     if (!titleGroups[titleKey].sellDurations) {
       titleGroups[titleKey].sellDurations = [];
@@ -8084,6 +8106,14 @@ function renderEntries() {
         const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
         titleGroups[titleKey].sellDurations.push(diffDays);
       }
+    }
+  });
+
+  // Check catalog artwork cache fallback
+  const catalogArtMap = typeof window.getCatalogArtworkMap === "function" ? window.getCatalogArtworkMap() : (state.catalogArtwork || {});
+  Object.keys(titleGroups).forEach(tk => {
+    if (!titleGroups[tk].imageUrl && catalogArtMap[tk]) {
+      titleGroups[tk].imageUrl = catalogArtMap[tk];
     }
   });
 
@@ -11239,8 +11269,10 @@ function renderRecycleBin() {
   }
 
   state.recycleBin.inventory.forEach(item => {
-    const tr = document.createElement("tr");
-    const maskedKey = `${item.key.slice(0, 4)}-****-****-${item.key.slice(-4)}`;
+    const keyStr = String(item.key || "");
+    const maskedKey = keyStr.length >= 8 
+      ? `${keyStr.slice(0, 4)}-****-****-${keyStr.slice(-4)}`
+      : keyStr || "—";
 
     const supplierObj = state.suppliers.find(s => s.name === item.source);
     const colorName = supplierObj ? (supplierObj.color || getSupplierColorName(item.source)) : getSupplierColorName(item.source);
@@ -11597,12 +11629,16 @@ window.getDuplicateKeyMap = function() {
   const map = new Map();
   if (!state.inventory || !Array.isArray(state.inventory)) return map;
   state.inventory.forEach(item => {
-    if (item && item.key && item.key.trim() !== "") {
-      const k = item.key.trim().toLowerCase();
-      if (!map.has(k)) {
-        map.set(k, []);
+    if (item && item.key) {
+      const cleanKey = item.key.trim();
+      const upper = cleanKey.toUpperCase();
+      if (cleanKey !== "" && upper !== "NO-KEY" && upper !== "NO-KEY-PROVIDED" && upper !== "-" && upper !== "NONE") {
+        const k = cleanKey.toLowerCase();
+        if (!map.has(k)) {
+          map.set(k, []);
+        }
+        map.get(k).push(item);
       }
-      map.get(k).push(item);
     }
   });
   return map;
@@ -11764,6 +11800,34 @@ window.deleteDuplicateGameItem = function(id, key) {
 // ==========================================================================
 // CATALOG ARTWORK UTILITIES - CACHE & STATE HELPERS
 // ==========================================================================
+window.getCatalogArtworkMap = function() {
+  try {
+    const raw = localStorage.getItem("gv_catalog_artwork");
+    return raw ? JSON.parse(raw) : (state.catalogArtwork || {});
+  } catch (e) {
+    return state.catalogArtwork || {};
+  }
+};
+
+window.setCatalogArtwork = function(title, imageUrl) {
+  if (!title) return;
+  if (!state.catalogArtwork) state.catalogArtwork = {};
+  const t = title.trim().toLowerCase();
+  if (imageUrl) {
+    state.catalogArtwork[t] = imageUrl;
+  } else {
+    delete state.catalogArtwork[t];
+  }
+  try {
+    localStorage.setItem("gv_catalog_artwork", JSON.stringify(state.catalogArtwork));
+  } catch (e) {
+    console.warn("Could not save catalog artwork to localStorage:", e);
+  }
+  if (window.supabaseClient && typeof dbSaveSettings === "function") {
+    dbSaveSettings("catalogArtwork", state.catalogArtwork).catch(() => {});
+  }
+};
+
 window.getArtworkNotFoundCache = function() {
   try {
     const raw = localStorage.getItem("gv_artwork_not_found");
@@ -11810,20 +11874,34 @@ window.triggerBatchFetchArtworks = async function() {
   const skipFailed = document.getElementById("settings-artwork-skip-failed")?.checked !== false;
   const notFoundCache = window.getArtworkNotFoundCache();
   
-  // Find all unique game titles in inventory ONLY (sales items do not store cover images)
+  // Find all unique game titles across inventory and sales
   const uniqueTitles = new Set();
   state.inventory.forEach(item => {
-    if (item.title && item.title.trim()) {
+    if (item && item.title && item.title.trim()) {
       uniqueTitles.add(item.title.trim());
     }
   });
+  state.sales.forEach(sale => {
+    if (sale && sale.title && sale.title.trim()) {
+      uniqueTitles.add(sale.title.trim());
+    }
+  });
   
-  // Find which titles already have cover images in state.inventory
+  // Find which titles already have cover images
   const titleHasImage = new Set();
   state.inventory.forEach(item => {
-    if (item.title && item.imageUrl && item.imageUrl.trim() !== "") {
+    if (item && item.title && item.imageUrl && item.imageUrl.trim() !== "") {
       titleHasImage.add(item.title.trim().toLowerCase());
     }
+  });
+  state.sales.forEach(sale => {
+    if (sale && sale.title && sale.imageUrl && sale.imageUrl.trim() !== "") {
+      titleHasImage.add(sale.title.trim().toLowerCase());
+    }
+  });
+  const catalogArtMap = typeof window.getCatalogArtworkMap === "function" ? window.getCatalogArtworkMap() : (state.catalogArtwork || {});
+  Object.keys(catalogArtMap).forEach(k => {
+    if (catalogArtMap[k]) titleHasImage.add(k.toLowerCase());
   });
 
   const titlesToFetch = [];
@@ -12028,13 +12106,22 @@ window.triggerBatchFetchArtworks = async function() {
           if (imageUrl) {
             // Update all matching items in inventory
             state.inventory.forEach(item => {
-              if (item.title.trim().toLowerCase() === title.toLowerCase()) {
+              if (item && item.title && item.title.trim().toLowerCase() === title.toLowerCase()) {
                 item.imageUrl = imageUrl;
+                if (!item.key) item.key = "NO-KEY";
                 if (!modifiedInventoryItems.includes(item)) {
                   modifiedInventoryItems.push(item);
                 }
               }
             });
+            // Update all matching sales items
+            state.sales.forEach(sale => {
+              if (sale && sale.title && sale.title.trim().toLowerCase() === title.toLowerCase()) {
+                sale.imageUrl = imageUrl;
+              }
+            });
+            // Update persistent catalog artwork map
+            window.setCatalogArtwork(title, imageUrl);
             successCount++;
             notFoundCache.delete(title.toLowerCase());
           } else {
@@ -12067,25 +12154,25 @@ window.triggerBatchFetchArtworks = async function() {
   if (progressStatus) progressStatus.textContent = window.artworkFetchCancelled ? "Save complete. Stopped." : "Save complete. Finished.";
 
   // Save changes
-  if (modifiedInventoryItems.length > 0) {
+  if (successCount > 0 || modifiedInventoryItems.length > 0) {
     pushToUndoStack();
     saveStateToStorage();
     
     // Sync to Supabase in batches of 200
-    if (window.supabaseClient && state.syncMode !== "manual") {
+    if (window.supabaseClient && state.syncMode !== "manual" && modifiedInventoryItems.length > 0) {
       try {
         const syncBatchSize = 200;
         for (let j = 0; j < modifiedInventoryItems.length; j += syncBatchSize) {
           const batch = modifiedInventoryItems.slice(j, j + syncBatchSize).map(item => ({
             id: item.id,
-            title: item.title,
-            platform: item.platform,
-            key: item.key,
-            cost: item.cost,
-            source: item.source,
-            purchaseDate: item.purchaseDate,
+            title: item.title || "Untitled Game",
+            platform: item.platform || "PC",
+            key: (item.key && String(item.key).trim()) ? String(item.key).trim() : "NO-KEY",
+            cost: item.cost !== undefined ? item.cost : 0,
+            source: item.source || "Direct",
+            purchaseDate: item.purchaseDate || new Date().toISOString().split("T")[0],
             imageUrl: item.imageUrl || null,
-            status: item.status,
+            status: item.status || "Available",
             notes: item.notes || null,
             publisher: item.publisher || null
           }));
