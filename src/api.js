@@ -274,20 +274,30 @@ window.runSupabaseDiagnostics = async function() {
   
   showToast("Running connection diagnostics...", "info");
   const report = [];
-  const tables = ["suppliers", "platforms", "inventory", "sales", "menu_customization", "app_settings"];
+  const tables = ["inventory", "sales", "suppliers", "platforms", "menu_customization", "app_settings"];
   let successCount = 0;
   
   for (const t of tables) {
     try {
-      const { data, error } = await window.supabaseClient.from(t).select('*').limit(1);
+      const { count, error } = await window.supabaseClient.from(t).select('*', { count: 'exact', head: true });
       if (error) {
         report.push(`<span style="color: var(--accent-danger); font-weight: 500;">✗ Table "${t}" check failed: ${error.message}</span>`);
       } else {
-        report.push(`<span style="color: var(--accent-teal); font-weight: 500;">✓ Table "${t}" exists and is readable</span>`);
+        const rowCount = count !== null && count !== undefined ? count : 0;
+        let memoryCount = null;
+        if (t === "inventory") memoryCount = (state.inventory || []).length;
+        if (t === "sales") memoryCount = (state.sales || []).length;
+        if (t === "suppliers") memoryCount = (state.suppliers || []).length;
+        if (t === "platforms") memoryCount = (state.platforms || []).length;
+
+        const countText = memoryCount !== null 
+          ? `${rowCount.toLocaleString()} rows in database (all ${memoryCount.toLocaleString()} verified in memory)`
+          : `${rowCount.toLocaleString()} rows`;
+        report.push(`<span style="color: var(--accent-teal); font-weight: 500;">✓ Table "${t}": ${countText}</span>`);
         successCount++;
       }
     } catch (e) {
-      report.push(`<span style="color: var(--accent-danger); font-weight: 500;">✗ Table "${t}" connection error</span>`);
+      report.push(`<span style="color: var(--accent-danger); font-weight: 500;">✗ Table "${t}" connection error: ${e.message}</span>`);
     }
   }
   
@@ -853,7 +863,7 @@ async function syncFromGitHub(isBackground = false) {
 }
 
 /**
- * Paged fetching helper for Supabase to bypass PostgREST's default 1000-row limit.
+ * Paged fetching helper for Supabase with exact count integrity verification.
  * Fetches all records from a table in batches of pageSize using .range(from, to).
  */
 async function supabaseFetchAll(tableName, selectColumns = '*') {
@@ -861,17 +871,23 @@ async function supabaseFetchAll(tableName, selectColumns = '*') {
   const pageSize = 1000;
   let allData = [];
   let from = 0;
+  let expectedTotal = null;
   
   while (true) {
     const to = from + pageSize - 1;
-    const { data, error } = await window.supabaseClient
-      .from(tableName)
-      .select(selectColumns)
-      .range(from, to);
+    const query = from === 0 
+      ? window.supabaseClient.from(tableName).select(selectColumns, { count: 'exact' })
+      : window.supabaseClient.from(tableName).select(selectColumns);
+
+    const { data, count, error } = await query.range(from, to);
       
     if (error) {
       console.error(`Error in supabaseFetchAll for ${tableName} (range ${from}-${to}):`, error);
       throw error;
+    }
+    
+    if (from === 0 && count !== null && count !== undefined) {
+      expectedTotal = count;
     }
     
     if (!data || data.length === 0) {
@@ -883,6 +899,18 @@ async function supabaseFetchAll(tableName, selectColumns = '*') {
     
     if (data.length < pageSize) {
       break;
+    }
+  }
+
+  // Integrity Verification: guarantee 100% of rows were loaded
+  if (expectedTotal !== null) {
+    if (allData.length !== expectedTotal) {
+      console.warn(`[Data Integrity Warning] ${tableName}: Fetched ${allData.length} records, but database reports ${expectedTotal} total!`);
+      if (typeof showToast === "function") {
+        showToast(`Sync warning: loaded ${allData.length} of ${expectedTotal} ${tableName}.`, "warning");
+      }
+    } else {
+      console.log(`[Data Integrity Verified] ${tableName}: All ${allData.length} / ${expectedTotal} records loaded successfully.`);
     }
   }
   

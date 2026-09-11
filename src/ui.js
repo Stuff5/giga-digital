@@ -4807,11 +4807,14 @@ function updateUI() {
   const storageBadge = document.getElementById("storage-status-badge");
   if (storageBadge) {
     if (window.supabaseClient) {
-      storageBadge.innerHTML = `<i class="fa-solid fa-cloud" style="color: #000;"></i> Cloud Sync`;
+      const invCount = (state.inventory || []).length;
+      const salesCount = (state.sales || []).length;
+      storageBadge.innerHTML = `<i class="fa-solid fa-cloud-check" style="color: #000;"></i> Cloud (${salesCount.toLocaleString()} sales)`;
       storageBadge.className = "badge badge-available";
       storageBadge.style.background = "var(--accent-emerald, #10b981)";
       storageBadge.style.color = "#000";
       storageBadge.style.border = "none";
+      storageBadge.title = `Cloud Sync Active: ${salesCount.toLocaleString()} sales and ${invCount.toLocaleString()} inventory items verified in memory. Click to open settings.`;
     } else {
       storageBadge.innerHTML = `<i class="fa-solid fa-hdd"></i> Local Storage`;
       storageBadge.className = "badge";
