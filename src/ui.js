@@ -10921,10 +10921,9 @@ function initAdvancedSettings() {
   }
   updateAutoSyncUI();
   setupAutoSyncTimer();
-
-
-
-
+  if (typeof window.updateArtworkSkippedBadge === "function") {
+    window.updateArtworkSkippedBadge();
+  }
 }
 
 // Update Sync Pending Indicator visual state
@@ -11104,6 +11103,19 @@ function bindAdvancedSettingsControls() {
       btnCancelArtwork.textContent = "Stopping...";
     });
   }
+
+  const btnClearSkipped = document.getElementById("btn-clear-artwork-skipped");
+  if (btnClearSkipped) {
+    btnClearSkipped.addEventListener("click", () => {
+      if (typeof window.clearArtworkNotFoundCache === "function") {
+        window.clearArtworkNotFoundCache();
+      }
+    });
+  }
+  if (typeof window.updateArtworkSkippedBadge === "function") {
+    window.updateArtworkSkippedBadge();
+  }
+
   // Bind Profile settings controls
   bindProfileSettingsControls();
 }
@@ -11489,6 +11501,42 @@ document.addEventListener("click", (e) => {
   }
 });
 
+// ==========================================================================
+// CATALOG ARTWORK UTILITIES - CACHE & STATE HELPERS
+// ==========================================================================
+window.getArtworkNotFoundCache = function() {
+  try {
+    const raw = localStorage.getItem("gv_artwork_not_found");
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch (e) {
+    return new Set();
+  }
+};
+
+window.saveArtworkNotFoundCache = function(set) {
+  try {
+    localStorage.setItem("gv_artwork_not_found", JSON.stringify(Array.from(set)));
+  } catch (e) {
+    console.warn("Could not save artwork not-found cache:", e);
+  }
+};
+
+window.updateArtworkSkippedBadge = function() {
+  const countEl = document.getElementById("artwork-skipped-count");
+  if (countEl) {
+    const cache = window.getArtworkNotFoundCache();
+    countEl.textContent = cache.size.toString();
+  }
+};
+
+window.clearArtworkNotFoundCache = function() {
+  localStorage.removeItem("gv_artwork_not_found");
+  window.updateArtworkSkippedBadge();
+  if (typeof showToast === "function") {
+    showToast("Cleared skipped games cache. All catalog games will be checked again.", "info");
+  }
+};
+
 // Auto fetch game cover image from Steam Web Store API via CheapShark or Steam Search fallback
 window.triggerBatchFetchArtworks = async function() {
   window.artworkFetchCancelled = false;
@@ -11499,31 +11547,43 @@ window.triggerBatchFetchArtworks = async function() {
   }
 
   const overwrite = document.getElementById("settings-artwork-overwrite")?.checked === true;
+  const skipFailed = document.getElementById("settings-artwork-skip-failed")?.checked !== false;
+  const notFoundCache = window.getArtworkNotFoundCache();
   
-  // Find all unique game titles in inventory/sales
+  // Find all unique game titles in inventory ONLY (sales items do not store cover images)
   const uniqueTitles = new Set();
   state.inventory.forEach(item => {
-    if (item.title) uniqueTitles.add(item.title.trim());
-  });
-  state.sales.forEach(sale => {
-    if (sale.title) uniqueTitles.add(sale.title.trim());
+    if (item.title && item.title.trim()) {
+      uniqueTitles.add(item.title.trim());
+    }
   });
   
   // Find which titles already have cover images in state.inventory
-  const titleHasImage = {};
+  const titleHasImage = new Set();
   state.inventory.forEach(item => {
     if (item.title && item.imageUrl && item.imageUrl.trim() !== "") {
-      titleHasImage[item.title.trim().toLowerCase()] = item.imageUrl.trim();
+      titleHasImage.add(item.title.trim().toLowerCase());
     }
   });
 
   const titlesToFetch = [];
   uniqueTitles.forEach(title => {
-    const hasImg = titleHasImage[title.toLowerCase()];
-    if (overwrite || !hasImg) {
-      titlesToFetch.push(title);
+    const lower = title.toLowerCase();
+    const hasImg = titleHasImage.has(lower);
+    const isUnfound = notFoundCache.has(lower);
+
+    if (hasImg && !overwrite) {
+      return; // Skip: already has artwork
     }
+    if (isUnfound && skipFailed && !overwrite) {
+      return; // Skip: previously checked and no artwork found on Steam/CheapShark
+    }
+
+    titlesToFetch.push(title);
   });
+
+  // Sort titles alphabetically (case-insensitive, natural alphanumeric order)
+  titlesToFetch.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base', numeric: true }));
 
   const progressContainer = document.getElementById("artwork-fetch-progress-container");
   const progressStatus = document.getElementById("artwork-fetch-progress-status");
@@ -11533,7 +11593,12 @@ window.triggerBatchFetchArtworks = async function() {
   const btnFetch = document.getElementById("btn-fetch-all-artworks");
 
   if (titlesToFetch.length === 0) {
-    showToast("No games found requiring artwork update.", "info");
+    const skippedCount = notFoundCache.size;
+    let msg = "No games found requiring artwork update.";
+    if (skippedCount > 0 && skipFailed && !overwrite) {
+      msg += ` (${skippedCount} previously unmatchable titles skipped; click 'Reset skipped' to re-check them).`;
+    }
+    showToast(msg, "info");
     return;
   }
 
@@ -11548,6 +11613,7 @@ window.triggerBatchFetchArtworks = async function() {
   let processedCount = 0;
   let successCount = 0;
   const total = batchTitles.length;
+  const batchRange = total > 1 ? `"${batchTitles[0]}" to "${batchTitles[total - 1]}"` : `"${batchTitles[0]}"`;
 
   const modifiedInventoryItems = [];
 
@@ -11572,7 +11638,7 @@ window.triggerBatchFetchArtworks = async function() {
 
   // Inform user about batch slicing
   if (isSliced && progressStatus) {
-    progressStatus.textContent = `Preparing first 100 of ${titlesToFetch.length} remaining games...`;
+    progressStatus.textContent = `A-Z Batch (1-100 of ${titlesToFetch.length} remaining): ${batchRange}...`;
   }
 
   for (let i = 0; i < total; i++) {
@@ -11584,7 +11650,7 @@ window.triggerBatchFetchArtworks = async function() {
 
     const title = batchTitles[i];
     const searchTerm = cleanTitle(title);
-    if (progressStatus) progressStatus.textContent = `Fetching: "${title}"...`;
+    if (progressStatus) progressStatus.textContent = `[${i + 1}/${total}] Fetching: "${title}"...`;
     
     // Update progress bar
     const pct = Math.round((processedCount / total) * 100);
@@ -11710,10 +11776,14 @@ window.triggerBatchFetchArtworks = async function() {
               }
             });
             successCount++;
+            notFoundCache.delete(title.toLowerCase());
+          } else {
+            notFoundCache.add(title.toLowerCase());
           }
           requestSuccess = true;
         } else {
           // No matches found on any source, don't keep retrying this title
+          notFoundCache.add(title.toLowerCase());
           requestSuccess = true;
         }
       } catch (err) {
@@ -11724,6 +11794,10 @@ window.triggerBatchFetchArtworks = async function() {
 
     processedCount++;
   }
+
+  // Persist skipped unmatchable titles cache to avoid re-querying on future runs
+  window.saveArtworkNotFoundCache(notFoundCache);
+  window.updateArtworkSkippedBadge();
 
   // Update progress bar to final status
   const finalPct = window.artworkFetchCancelled ? Math.round((processedCount / total) * 100) : 100;
@@ -11767,11 +11841,11 @@ window.triggerBatchFetchArtworks = async function() {
     updateUI();
     const finalMsg = window.artworkFetchCancelled 
       ? `Stopped. Successfully updated covers for ${successCount} games.`
-      : `Finished batch. Successfully updated covers for ${successCount} games.${isSliced ? ' Click again to process the next 100.' : ''}`;
+      : `Finished alphabetical batch. Updated covers for ${successCount} games.${isSliced ? ` (${titlesToFetch.length - limitCount} remaining in catalog - click again for next batch)` : ''}`;
     showToast(finalMsg, "success");
     logActionNotification(`Batch fetched cover artworks: ${successCount} games updated (crashed/stopped: ${window.artworkFetchCancelled ? 'Yes' : 'No'})`);
   } else {
-    showToast(window.artworkFetchCancelled ? "Stopped. No new covers were resolved." : `Completed batch. No new covers were resolved.${isSliced ? ' Click again to check the next 100.' : ''}`, "info");
+    showToast(window.artworkFetchCancelled ? "Stopped. No new covers were resolved." : `Completed batch. No new covers were resolved.${isSliced ? ` (${titlesToFetch.length - limitCount} remaining in catalog - click again for next batch)` : ''}`, "info");
   }
 
   // Hide progress bar container after 4 seconds

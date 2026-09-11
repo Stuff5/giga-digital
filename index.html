@@ -29,7 +29,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=13">
+  <link rel="stylesheet" href="styles.css?v=14">
   
   <!-- Early theme application to prevent FOUC / light theme flicker -->
   <script>
@@ -2930,7 +2930,7 @@
                             <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent-cyan);"></i> Catalog Artwork Utilities
                           </h4>
                           <p style="color: var(--text-secondary); font-size: 0.8rem; margin: 0 0 12px 0; line-height: 1.4;">
-                            Query Steam API dynamically to fetch covers in batches of 100 entries.
+                            Query Steam API dynamically in alphabetical order (A&ndash;Z) in batches of 100 entries.
                           </p>
 
                           <div style="display: flex; align-items: flex-start; gap: 8px; background: var(--bg-input); padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 12px;">
@@ -2939,6 +2939,19 @@
                               <label for="settings-artwork-overwrite" style="font-size: 0.78rem; font-weight: 600; color: var(--text-main); cursor: pointer; display: block;">Overwrite existing covers</label>
                               <span style="color: var(--text-muted); font-size: 0.68rem; line-height: 1.2; display: block; margin-top: 1px;">
                                 Replaces set covers. If unchecked, only updates games without an image.
+                              </span>
+                            </div>
+                          </div>
+
+                          <div style="display: flex; align-items: flex-start; gap: 8px; background: var(--bg-input); padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 12px;">
+                            <input type="checkbox" id="settings-artwork-skip-failed" checked style="width: 14px; height: 14px; margin-top: 2px; cursor: pointer;">
+                            <div style="flex: 1;">
+                              <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <label for="settings-artwork-skip-failed" style="font-size: 0.78rem; font-weight: 600; color: var(--text-main); cursor: pointer; display: block;">Skip unmatchable games</label>
+                                <button type="button" id="btn-clear-artwork-skipped" style="background: transparent; border: none; color: var(--accent-cyan); font-size: 0.68rem; cursor: pointer; text-decoration: underline; padding: 0;">Reset (<span id="artwork-skipped-count">0</span>)</button>
+                              </div>
+                              <span style="color: var(--text-muted); font-size: 0.68rem; line-height: 1.2; display: block; margin-top: 1px;">
+                                Skips titles previously checked that had no matches on Steam/CheapShark to save time.
                               </span>
                             </div>
                           </div>
@@ -3313,12 +3326,12 @@
   </div>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=13"></script>
-  <script src="src/state.js?v=13"></script>
-  <script src="src/api.js?v=13"></script>
-  <script src="src/charts.js?v=13"></script>
-  <script src="src/ui.js?v=13"></script>
-  <script src="src/importer.js?v=13"></script>
-  <script src="app.js?v=13"></script>
+  <script src="config.js?v=14"></script>
+  <script src="src/state.js?v=14"></script>
+  <script src="src/api.js?v=14"></script>
+  <script src="src/charts.js?v=14"></script>
+  <script src="src/ui.js?v=14"></script>
+  <script src="src/importer.js?v=14"></script>
+  <script src="app.js?v=14"></script>
 </body>
 </html>
