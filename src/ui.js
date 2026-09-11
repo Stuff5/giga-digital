@@ -2071,10 +2071,61 @@ function initEventHandlers() {
     const agingFilterEl = document.getElementById("inv-filter-aging");
     if (agingFilterEl) agingFilterEl.value = "all";
     document.getElementById("inv-search-input").value = "";
+    state.filterDuplicatesOnly = false;
+    if (typeof window.updateDuplicateFilterButtonState === "function") {
+      window.updateDuplicateFilterButtonState();
+    }
     state.inventoryCurrentPage = 1;
     updateUI();
     showToast("Inventory filters reset.", "info");
   });
+
+  const btnToggleDuplicates = document.getElementById("btn-toggle-duplicate-keys");
+  if (btnToggleDuplicates) {
+    btnToggleDuplicates.addEventListener("click", () => {
+      state.filterDuplicatesOnly = !state.filterDuplicatesOnly;
+      state.inventoryCurrentPage = 1;
+      if (typeof window.updateDuplicateFilterButtonState === "function") {
+        window.updateDuplicateFilterButtonState();
+      }
+      updateUI();
+      if (state.filterDuplicatesOnly) {
+        const dupMap = window.getDuplicateKeyMap();
+        let count = 0;
+        dupMap.forEach(items => { if (items.length > 1) count += items.length; });
+        if (count === 0) {
+          showToast("No duplicate keys found in inventory.", "info");
+        } else {
+          showToast(`Filtered to ${count} duplicate items.`, "warning");
+        }
+      } else {
+        showToast("Showing all inventory keys.", "info");
+      }
+    });
+  }
+
+  const btnOpenDuplicates = document.getElementById("btn-open-duplicates-inspector");
+  if (btnOpenDuplicates) {
+    btnOpenDuplicates.addEventListener("click", () => {
+      if (typeof window.openDuplicateKeysModal === "function") {
+        window.openDuplicateKeysModal();
+      }
+    });
+  }
+
+  const btnDupFilterTable = document.getElementById("btn-dup-filter-table");
+  if (btnDupFilterTable) {
+    btnDupFilterTable.addEventListener("click", () => {
+      if (typeof closeModal === "function") closeModal("duplicate-keys-modal");
+      state.filterDuplicatesOnly = true;
+      state.inventoryCurrentPage = 1;
+      if (typeof window.updateDuplicateFilterButtonState === "function") {
+        window.updateDuplicateFilterButtonState();
+      }
+      updateUI();
+      showToast("Filtered inventory table to duplicate keys.", "warning");
+    });
+  }
 
   // Filters Event Listeners for Sales
   document.getElementById("sales-filter-platform").addEventListener("change", () => {
@@ -4753,6 +4804,12 @@ function updateUI() {
   }
 
   applyRoleBasedAccessControls();
+  if (typeof window.updateDuplicateKeysBadge === "function") {
+    window.updateDuplicateKeysBadge();
+  }
+  if (typeof window.updateDuplicateFilterButtonState === "function") {
+    window.updateDuplicateFilterButtonState();
+  }
 
   // 1. Get filtered data
   const filteredSales = getFilteredSales();
@@ -6280,6 +6337,16 @@ function getFilteredInventory() {
     );
   }
 
+  // F. Duplicate Keys filter
+  if (state.filterDuplicatesOnly && typeof window.getDuplicateKeyMap === "function") {
+    const dupMap = window.getDuplicateKeyMap();
+    list = list.filter(item => {
+      if (!item.key) return false;
+      const k = item.key.trim().toLowerCase();
+      return dupMap.has(k) && dupMap.get(k).length > 1;
+    });
+  }
+
   // Optimize Sorting
   const sortBy = state.inventorySortBy || "date-desc";
   
@@ -6809,7 +6876,10 @@ function formatToDDMMYYYY(dateVal) {
 }
 
 // Render layout format A: List (Table)
-function buildInventoryRowHTML(item, salesMap) {
+function buildInventoryRowHTML(item, salesMap, dupMap) {
+  if (!dupMap && typeof window.getDuplicateKeyMap === "function") {
+    dupMap = window.getDuplicateKeyMap();
+  }
   // Mask key structure safely
   const keyStr = String(item.key || "");
   const maskedKey = keyStr.length >= 8 
@@ -6905,13 +6975,21 @@ function buildInventoryRowHTML(item, salesMap) {
 
   const isChecked = state.selectedInventoryIds && state.selectedInventoryIds.includes(item.id) ? "checked" : "";
 
+  const dupCount = (dupMap && item.key) ? (dupMap.get(item.key.trim().toLowerCase())?.length || 0) : 0;
+  const dupBadge = dupCount > 1 ? `
+    <div style="margin-top: 3px;">
+      <span class="badge badge-danger" style="font-size: 0.62rem; padding: 2px 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;" onclick="openDuplicateKeysModal('${escapeHTML(item.key)}')" title="Duplicate Key: appears ${dupCount} times. Click to inspect.">
+        <i class="fa-solid fa-clone"></i> Duplicate (${dupCount}x)
+      </span>
+    </div>` : "";
+
   return `
     <tr>
       <td style="text-align: center; vertical-align: middle;">
         <input type="checkbox" class="inv-row-select" data-id="${item.id}" ${isChecked} style="cursor: pointer;">
       </td>
       <td>${titleCell}</td>
-      <td><div class="secured-key"><code>${maskedKey}</code></div></td>
+      <td><div class="secured-key"><code>${maskedKey}</code></div>${dupBadge}</td>
       <td>${formatCurrency(item.cost)}</td>
       <td>${saleItem ? formatCurrency(saleItem.sellPrice) : `<span style="color: var(--text-muted); font-size: 0.8rem;">-</span>`}</td>
       <td>${profitCell}</td>
@@ -6945,6 +7023,8 @@ function renderInventoryListLayout(itemsList) {
         salesMap.set(sale.inventoryId, sale);
       }
     });
+
+    const dupMap = typeof window.getDuplicateKeyMap === "function" ? window.getDuplicateKeyMap() : new Map();
 
     if (tableContainer && tableContainer._scrollListener) {
       tableContainer.removeEventListener("scroll", tableContainer._scrollListener);
@@ -6980,7 +7060,7 @@ function renderInventoryListLayout(itemsList) {
         const slicedItems = itemsList.slice(startIndex, endIndex);
         slicedItems.forEach(item => {
           if (!item) return;
-          tbodyContent += buildInventoryRowHTML(item, salesMap);
+          tbodyContent += buildInventoryRowHTML(item, salesMap, dupMap);
         });
 
         if (bottomSpacerHeight > 0) {
@@ -7012,7 +7092,7 @@ function renderInventoryListLayout(itemsList) {
       let tbodyContent = "";
       itemsList.forEach(item => {
         if (!item) return;
-        tbodyContent += buildInventoryRowHTML(item, salesMap);
+        tbodyContent += buildInventoryRowHTML(item, salesMap, dupMap);
       });
       tbody.innerHTML = tbodyContent;
 
@@ -7044,6 +7124,8 @@ function renderInventoryGridLayout(itemsList) {
         salesMap.set(sale.inventoryId, sale);
       }
     });
+
+    const dupMap = typeof window.getDuplicateKeyMap === "function" ? window.getDuplicateKeyMap() : new Map();
 
     itemsList.forEach(item => {
       if (!item) return;
@@ -7172,6 +7254,14 @@ function renderInventoryGridLayout(itemsList) {
         `;
       }
 
+      const dupCount = (dupMap && item.key) ? (dupMap.get(item.key.trim().toLowerCase())?.length || 0) : 0;
+      const dupBadge = dupCount > 1 ? `
+        <div style="margin-top: 5px; text-align: center;">
+          <span class="badge badge-danger" style="font-size: 0.65rem; padding: 2px 7px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" onclick="openDuplicateKeysModal('${escapeHTML(item.key)}')" title="Duplicate Key: appears ${dupCount} times. Click to inspect.">
+            <i class="fa-solid fa-clone"></i> Duplicate (${dupCount}x)
+          </span>
+        </div>` : "";
+
       card.innerHTML = `
         <div class="${bannerClass}">
           ${bannerHtml}
@@ -7185,6 +7275,7 @@ function renderInventoryGridLayout(itemsList) {
             <div class="secured-key" style="justify-content: center; width: 100%;">
               <code>${maskedKey}</code>
             </div>
+            ${dupBadge}
           </div>
           <div class="grid-card-actions">
             <div class="grid-card-dates">
@@ -11499,7 +11590,176 @@ document.addEventListener("click", (e) => {
       menu.classList.remove("active");
     });
   }
-});
+// ==========================================================================
+// DUPLICATE KEYS FINDER & INSPECTOR
+// ==========================================================================
+window.getDuplicateKeyMap = function() {
+  const map = new Map();
+  if (!state.inventory || !Array.isArray(state.inventory)) return map;
+  state.inventory.forEach(item => {
+    if (item && item.key && item.key.trim() !== "") {
+      const k = item.key.trim().toLowerCase();
+      if (!map.has(k)) {
+        map.set(k, []);
+      }
+      map.get(k).push(item);
+    }
+  });
+  return map;
+};
+
+window.updateDuplicateKeysBadge = function() {
+  const badge = document.getElementById("badge-duplicates-count");
+  if (!badge) return;
+  const map = window.getDuplicateKeyMap();
+  let duplicateItemsCount = 0;
+  map.forEach(items => {
+    if (items.length > 1) {
+      duplicateItemsCount += items.length;
+    }
+  });
+  
+  if (duplicateItemsCount > 0) {
+    badge.textContent = duplicateItemsCount.toString();
+    badge.classList.remove("hidden");
+  } else {
+    badge.textContent = "0";
+    badge.classList.add("hidden");
+  }
+};
+
+window.updateDuplicateFilterButtonState = function() {
+  const btn = document.getElementById("btn-toggle-duplicate-keys");
+  if (!btn) return;
+  if (state.filterDuplicatesOnly) {
+    btn.classList.remove("btn-outline");
+    btn.classList.add("btn-danger");
+    btn.style.borderColor = "var(--accent-danger, #ef4444)";
+    btn.style.boxShadow = "0 0 10px rgba(239, 68, 68, 0.25)";
+  } else {
+    btn.classList.add("btn-outline");
+    btn.classList.remove("btn-danger");
+    btn.style.borderColor = "";
+    btn.style.boxShadow = "";
+  }
+};
+
+window.openDuplicateKeysModal = function(filterKey = null) {
+  const container = document.getElementById("duplicate-keys-container");
+  const keysCountEl = document.getElementById("dup-summary-keys-count");
+  const itemsCountEl = document.getElementById("dup-summary-items-count");
+  if (!container) return;
+
+  container.innerHTML = "";
+  const dupMap = window.getDuplicateKeyMap();
+  
+  // Filter only keys with > 1 occurrences
+  const duplicateEntries = [];
+  dupMap.forEach((items, keyLower) => {
+    if (items.length > 1) {
+      duplicateEntries.push({ key: items[0].key, keyLower, items });
+    }
+  });
+
+  // Sort by count descending, then key alphabetically
+  duplicateEntries.sort((a, b) => b.items.length - a.items.length || a.key.localeCompare(b.key));
+
+  let totalAffectedItems = 0;
+  duplicateEntries.forEach(e => totalAffectedItems += e.items.length);
+
+  if (keysCountEl) keysCountEl.textContent = duplicateEntries.length.toString();
+  if (itemsCountEl) itemsCountEl.textContent = totalAffectedItems.toString();
+
+  if (duplicateEntries.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+        <i class="fa-solid fa-circle-check" style="font-size: 2.5rem; color: var(--accent-success, #10b981); margin-bottom: 12px; display: block;"></i>
+        <h4 style="color: var(--text-main); margin-bottom: 6px;">No Duplicate Keys Found</h4>
+        <p style="font-size: 0.82rem; margin: 0;">Every digital key in your inventory catalog is unique.</p>
+      </div>
+    `;
+    openModal("duplicate-keys-modal");
+    return;
+  }
+
+  duplicateEntries.forEach(group => {
+    const isTarget = filterKey && group.key.trim().toLowerCase() === filterKey.trim().toLowerCase();
+    
+    const card = document.createElement("div");
+    card.className = "card";
+    card.style.border = isTarget ? "1px solid var(--accent-danger, #ef4444)" : "1px solid var(--border-color)";
+    card.style.borderRadius = "var(--radius-md)";
+    card.style.background = "var(--bg-card)";
+    card.style.overflow = "hidden";
+
+    const header = `
+      <div style="background: var(--bg-input); padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color);">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-family: monospace; font-size: 0.88rem; font-weight: 700; color: var(--text-main); letter-spacing: 0.05em;">
+            ${escapeHTML(group.key)}
+          </span>
+          <button type="button" class="btn btn-outline btn-sm btn-icon" onclick="copyToClipboard('${escapeHTML(group.key)}'); showToast('Key copied to clipboard', 'info');" title="Copy key to clipboard" style="width: 24px; height: 24px; font-size: 0.7rem; padding: 0;">
+            <i class="fa-solid fa-copy"></i>
+          </button>
+        </div>
+        <span class="badge badge-danger" style="font-size: 0.72rem; padding: 3px 8px; font-weight: 600;">
+          <i class="fa-solid fa-clone"></i> ${group.items.length} copies
+        </span>
+      </div>
+    `;
+
+    let itemsHtml = `<div style="display: flex; flex-direction: column;">`;
+    group.items.forEach((item, itemIdx) => {
+      const statusClass = item.status === "Available" ? "badge-available" : (item.status === "Sold" ? "badge-sold" : "badge-low-stock");
+      itemsHtml += `
+        <div style="padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: ${itemIdx < group.items.length - 1 ? '1px solid var(--border-color)' : 'none'};">
+          <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">
+            ${item.imageUrl ? `<img src="${escapeHTML(item.imageUrl)}" style="width: 38px; height: 38px; border-radius: 6px; object-fit: cover; flex-shrink: 0;" alt="Game Cover">` : `<div style="width: 38px; height: 38px; border-radius: 6px; background: var(--bg-input); display: flex; align-items: center; justify-content: center; color: var(--text-muted); flex-shrink: 0;"><i class="fa-solid fa-gamepad"></i></div>`}
+            <div style="min-width: 0; flex: 1;">
+              <div style="font-weight: 600; font-size: 0.88rem; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(item.title)}</div>
+              <div style="display: flex; gap: 8px; align-items: center; font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px;">
+                <span><i class="fa-solid fa-gamepad"></i> ${escapeHTML(item.platform || "PC")}</span>
+                <span>•</span>
+                <span><i class="fa-solid fa-truck"></i> ${escapeHTML(item.source || "Direct")}</span>
+                <span>•</span>
+                <span>Cost: ${formatCurrency(item.cost)}</span>
+                <span>•</span>
+                <span>Added: ${formatToDDMMYYYY(item.purchaseDate)}</span>
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+            <span class="badge ${statusClass}" style="font-size: 0.7rem;">${escapeHTML(item.status || "Available")}</span>
+            <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('duplicate-keys-modal'); triggerEditGame('${item.id}');" style="font-size: 0.72rem; padding: 4px 8px; display: inline-flex; align-items: center; gap: 4px;" title="Edit game or change key">
+              <i class="fa-solid fa-pen"></i> Edit
+            </button>
+            <button type="button" class="btn btn-danger btn-sm" onclick="deleteDuplicateGameItem('${item.id}', '${escapeHTML(group.key)}');" style="font-size: 0.72rem; padding: 4px 8px; display: inline-flex; align-items: center; gap: 4px;" title="Delete this duplicate copy">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      `;
+    });
+    itemsHtml += `</div>`;
+
+    card.innerHTML = header + itemsHtml;
+    container.appendChild(card);
+  });
+
+  openModal("duplicate-keys-modal");
+};
+
+window.deleteDuplicateGameItem = function(id, key) {
+  const item = state.inventory.find(i => i.id === id);
+  if (!item) return;
+  if (!confirm(`Are you sure you want to delete "${item.title}" with key "${key}"? It will be moved to the Recycle Bin.`)) return;
+
+  moveToRecycleBin([id]);
+  showToast(`Moved duplicate "${item.title}" to Recycle Bin.`, "success");
+  window.updateDuplicateKeysBadge();
+  window.openDuplicateKeysModal();
+  updateUI();
+};
 
 // ==========================================================================
 // CATALOG ARTWORK UTILITIES - CACHE & STATE HELPERS

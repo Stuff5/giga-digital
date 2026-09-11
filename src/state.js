@@ -588,6 +588,7 @@ let state = {
   supplierDisplayMode: "name", // "name", "logo"
   platformDisplayMode: "name", // "name", "logo"
   inventorySortBy: "date-desc", // "date-desc", "date-asc", "title-asc", "title-desc", "duration-desc", "duration-asc"
+  filterDuplicatesOnly: false,
   inventoryPageSize: 25,
   inventoryCurrentPage: 1,
   salesPageSize: 25,

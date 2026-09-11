@@ -1329,7 +1329,21 @@
               <input type="text" id="inv-search-input" class="form-control form-control-sm" placeholder="Type game title, key, or source..." autocomplete="off">
             </div>
 
+            <div class="filter-group">
+              <label>&nbsp;</label>
+              <div style="display: flex; gap: 6px;">
+                <button type="button" class="btn btn-outline btn-sm" id="btn-toggle-duplicate-keys" title="Filter to show only duplicate keys" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; font-weight: 500;">
+                  <i class="fa-solid fa-clone"></i> <span>Duplicates</span>
+                  <span class="badge badge-danger hidden" id="badge-duplicates-count" style="font-size: 0.65rem; padding: 2px 6px; border-radius: 10px;">0</span>
+                </button>
+                <button type="button" class="btn btn-outline btn-sm btn-icon" id="btn-open-duplicates-inspector" title="Inspect & resolve duplicate keys" style="height: 32px; width: 32px; display: inline-flex; align-items: center; justify-content: center;">
+                  <i class="fa-solid fa-list-check"></i>
+                </button>
+              </div>
+            </div>
+
             <div class="filter-group reset-group">
+              <label>&nbsp;</label>
               <button class="btn btn-outline btn-sm btn-icon" id="btn-reset-inventory-filters" title="Reset Filters">
                 <i class="fa-solid fa-arrow-rotate-left"></i>
               </button>
