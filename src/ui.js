@@ -9212,9 +9212,12 @@ function renderFinanceView() {
     } else {
       const tableResponsive = document.createElement("div");
       tableResponsive.className = "table-responsive";
+      tableResponsive.style.border = "1px solid var(--border-color)";
+      tableResponsive.style.borderRadius = "var(--radius-md)";
+      tableResponsive.style.overflowX = "auto";
       
       const table = document.createElement("table");
-      table.className = "table";
+      table.className = "table table-spreadsheet";
       table.style.width = "100%";
       
       const periodHeaders = sortedKeys.map(k => {
@@ -9224,46 +9227,46 @@ function renderFinanceView() {
       table.innerHTML = `
         <thead>
           <tr>
-            <th style="min-width: 160px; position: sticky; left: 0; background: var(--bg-input); z-index: 3; border-right: 1px solid var(--border-color);">Metric</th>
+            <th class="sticky-col" style="min-width: 170px;">Metric</th>
             ${periodHeaders}
           </tr>
         </thead>
         <tbody>
           <tr style="border-bottom: 1px solid var(--border-color);">
-            <td style="position: sticky; left: 0; background: var(--bg-input); z-index: 1; font-weight: 600; border-right: 1px solid var(--border-color); color: var(--accent-cyan);">Sold Items</td>
+            <td class="sticky-col" style="font-weight: 600; color: var(--accent-cyan);">Sold Items</td>
             ${sortedKeys.map(k => `<td style="text-align: right; color: var(--accent-cyan); font-weight: 500;">${groupedData[k].count} keys</td>`).join("")}
           </tr>
           <tr style="border-bottom: 1px solid var(--border-color);">
-            <td style="position: sticky; left: 0; background: var(--bg-input); z-index: 1; font-weight: 600; border-right: 1px solid var(--border-color); color: var(--accent-cyan);">Unsold Stock (Qty)</td>
+            <td class="sticky-col" style="font-weight: 600; color: var(--accent-cyan);">Unsold Stock (Qty)</td>
             ${sortedKeys.map(k => {
               const stock = getPeriodStockStatus(k, breakdownType);
               return `<td style="text-align: right; color: var(--accent-cyan); font-weight: 500;">${stock.count} keys</td>`;
             }).join("")}
           </tr>
           <tr style="border-bottom: 1px solid var(--border-color);">
-            <td style="position: sticky; left: 0; background: var(--bg-input); z-index: 1; font-weight: 600; border-right: 1px solid var(--border-color); color: var(--accent-emerald);">Revenue</td>
+            <td class="sticky-col" style="font-weight: 600; color: var(--accent-emerald);">Revenue</td>
             ${sortedKeys.map(k => `<td style="text-align: right; color: var(--accent-emerald); font-weight: 600;">${formatCurrency(groupedData[k].revenue)}</td>`).join("")}
           </tr>
           <tr style="border-bottom: 1px solid var(--border-color);">
-            <td style="position: sticky; left: 0; background: var(--bg-input); z-index: 1; font-weight: 600; border-right: 1px solid var(--border-color); color: var(--accent-amber);">Expenses (Cost)</td>
+            <td class="sticky-col" style="font-weight: 600; color: var(--accent-amber);">Expenses (Cost)</td>
             ${sortedKeys.map(k => `<td style="text-align: right; color: var(--accent-amber); font-weight: 500;">${formatCurrency(groupedData[k].cost)}</td>`).join("")}
           </tr>
           <tr style="border-bottom: 1px solid var(--border-color);">
-            <td style="position: sticky; left: 0; background: var(--bg-input); z-index: 1; font-weight: 600; border-right: 1px solid var(--border-color); color: var(--accent-amber);">Stock Valuation (Cost)</td>
+            <td class="sticky-col" style="font-weight: 600; color: var(--accent-amber);">Stock Valuation (Cost)</td>
             ${sortedKeys.map(k => {
               const stock = getPeriodStockStatus(k, breakdownType);
               return `<td style="text-align: right; color: var(--accent-amber); font-weight: 500;">${formatCurrency(stock.cost)}</td>`;
             }).join("")}
           </tr>
           <tr style="font-weight: 700; background: hsla(270, 85%, 60%, 0.05); border-top: 1.5px solid var(--border-color); border-bottom: 1.5px solid var(--border-color);">
-            <td style="position: sticky; left: 0; background: var(--bg-input); z-index: 1; font-weight: 700; color: var(--accent-purple); border-right: 1px solid var(--border-color);">Profit</td>
+            <td class="sticky-col" style="font-weight: 700; color: var(--accent-purple);">Profit</td>
             ${sortedKeys.map(k => {
               const stats = groupedData[k];
               return `<td class="${stats.profit >= 0 ? 'text-success-neon' : 'text-danger-soft'}" style="text-align: right; font-weight: 700;">${stats.profit >= 0 ? '+' : ''}${formatCurrency(stats.profit)}</td>`;
             }).join("")}
           </tr>
           <tr style="border-bottom: 1px solid var(--border-color);">
-            <td style="position: sticky; left: 0; background: var(--bg-input); z-index: 1; font-weight: 600; border-right: 1px solid var(--border-color); color: var(--text-primary);">~Sold Price</td>
+            <td class="sticky-col" style="font-weight: 600; color: var(--text-primary);">~Sold Price</td>
             ${sortedKeys.map(k => {
               const stats = groupedData[k];
               const avgPrice = stats.count > 0 ? stats.revenue / stats.count : 0;
@@ -9271,7 +9274,7 @@ function renderFinanceView() {
             }).join("")}
           </tr>
           <tr style="border-bottom: 1px solid var(--border-color);">
-            <td style="position: sticky; left: 0; background: var(--bg-input); z-index: 1; font-weight: 600; border-right: 1px solid var(--border-color); color: var(--text-success-neon);">~Profit</td>
+            <td class="sticky-col" style="font-weight: 600; color: var(--text-success-neon);">~Profit</td>
             ${sortedKeys.map(k => {
               const stats = groupedData[k];
               const avgProfit = stats.count > 0 ? stats.profit / stats.count : 0;
@@ -9279,7 +9282,7 @@ function renderFinanceView() {
             }).join("")}
           </tr>
           <tr style="border-bottom: 1px solid var(--border-color);">
-            <td style="position: sticky; left: 0; background: var(--bg-input); z-index: 1; font-weight: 600; border-right: 1px solid var(--border-color); color: var(--accent-pink);">~Margin %</td>
+            <td class="sticky-col" style="font-weight: 600; color: var(--accent-pink);">~Margin %</td>
             ${sortedKeys.map(k => {
               const stats = groupedData[k];
               const avgPrice = stats.count > 0 ? stats.revenue / stats.count : 0;
@@ -9289,7 +9292,7 @@ function renderFinanceView() {
             }).join("")}
           </tr>
           <tr style="border-bottom: 1px solid var(--border-color);">
-            <td style="position: sticky; left: 0; background: var(--bg-input); z-index: 1; font-weight: 600; border-right: 1px solid var(--border-color); color: var(--text-secondary);">~Duration</td>
+            <td class="sticky-col" style="font-weight: 600; color: var(--text-secondary);">~Duration</td>
             ${sortedKeys.map(k => {
               const stats = groupedData[k];
               const avgDuration = stats.durationCount > 0 ? stats.totalSellDays / stats.durationCount : 0;
@@ -9297,7 +9300,7 @@ function renderFinanceView() {
             }).join("")}
           </tr>
           <tr>
-            <td style="position: sticky; left: 0; background: var(--bg-input); z-index: 1; font-weight: 600; border-right: 1px solid var(--border-color); color: var(--accent-purple);">ROI</td>
+            <td class="sticky-col" style="font-weight: 600; color: var(--accent-purple);">ROI</td>
             ${sortedKeys.map(k => {
               const stats = groupedData[k];
               const roi = stats.cost > 0 ? (stats.profit / stats.cost) * 100 : 0;

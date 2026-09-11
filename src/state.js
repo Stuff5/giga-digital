@@ -1006,14 +1006,7 @@ function loadStateFromStorage() {
     state.dateFormat = localStorage.getItem("gv_date_format") || "YYYY-MM-DD";
     state.benchmarkMode = localStorage.getItem("gv_benchmark_mode") || "averages";
     
-    // Force-migrate any old "transposed" layout values in local storage to "full"
-    const storedLayoutStyle = localStorage.getItem("gv_finance_layout_style");
-    if (storedLayoutStyle === "transposed") {
-      localStorage.setItem("gv_finance_layout_style", "full");
-      state.financeLayoutStyle = "full";
-    } else {
-      state.financeLayoutStyle = storedLayoutStyle || "full";
-    }
+    state.financeLayoutStyle = localStorage.getItem("gv_finance_layout_style") || "full";
     
     state.financeSortOrder = localStorage.getItem("gv_finance_sort_order") || "desc";
     state.sidebarCollapsed = localStorage.getItem("gv_sidebar_collapsed") === "true";

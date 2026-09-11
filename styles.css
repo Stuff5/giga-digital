@@ -604,6 +604,7 @@ a {
 /* Main Content Layout */
 .main-content {
   flex: 1;
+  min-width: 0;
   margin-left: var(--sidebar-width);
   padding: var(--header-height) 32px 32px 32px;
   min-height: 100vh;
@@ -793,10 +794,14 @@ a {
    ========================================================================== */
 .view-container {
   padding-top: 24px;
+  min-width: 0;
+  max-width: 100%;
 }
 .content-view {
   display: none;
   animation: fadeIn 0.4s ease-out forwards;
+  min-width: 0;
+  max-width: 100%;
 }
 .content-view.active {
   display: block;
@@ -1257,6 +1262,8 @@ a {
   border-radius: var(--radius-lg);
   padding: 24px;
   box-shadow: var(--shadow-sm);
+  min-width: 0;
+  max-width: 100%;
 }
 .detail-card-header {
   display: flex;
@@ -1345,7 +1352,50 @@ a {
    ========================================================================== */
 .table-responsive {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Transposed Spreadsheet Table Styles */
+.table-spreadsheet {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  text-align: left;
+  font-size: 0.9rem;
+}
+.table-spreadsheet th,
+.table-spreadsheet td {
+  white-space: nowrap;
+  padding: 12px 16px;
+}
+.table-spreadsheet thead th {
+  border-bottom: 2px solid var(--border-color);
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background-color: var(--bg-card);
+}
+.table-spreadsheet th.sticky-col,
+.table-spreadsheet td.sticky-col {
+  position: sticky;
+  left: 0;
+  background-color: var(--bg-input) !important;
+  border-right: 2px solid var(--border-color);
+  box-shadow: 3px 0 8px -2px rgba(0, 0, 0, 0.4);
+}
+.table-spreadsheet th.sticky-col {
+  z-index: 4;
+}
+.table-spreadsheet td.sticky-col {
+  z-index: 2;
+}
+.table-spreadsheet tbody tr:hover td.sticky-col {
+  filter: brightness(1.08);
 }
 .table {
   width: 100%;
