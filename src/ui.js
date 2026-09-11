@@ -8787,7 +8787,7 @@ function applySupplierMetricOrder() {
 
 let dragSource = null;
 
-function getPeriodStockStatus(key, breakdownType) {
+function getPeriodStockStatus(key, breakdownType, precomputedSaleMap = null) {
   let endMs = Infinity;
   if (key !== "All Time") {
     if (breakdownType === "month") {
@@ -8802,13 +8802,16 @@ function getPeriodStockStatus(key, breakdownType) {
     }
   }
 
-  const saleMap = {};
-  if (state.sales && Array.isArray(state.sales)) {
-    state.sales.forEach(sale => {
-      if (sale.inventoryId) {
-        saleMap[sale.inventoryId] = sale;
-      }
-    });
+  let saleMap = precomputedSaleMap;
+  if (!saleMap) {
+    saleMap = {};
+    if (state.sales && Array.isArray(state.sales)) {
+      state.sales.forEach(sale => {
+        if (sale.inventoryId) {
+          saleMap[sale.inventoryId] = sale;
+        }
+      });
+    }
   }
 
   let openCount = 0;
@@ -9056,6 +9059,16 @@ function renderFinanceView() {
   metricsContainer.innerHTML = "";
   detailContent.innerHTML = "";
 
+  // Precompute inventoryId -> sale map once for high performance across all period lookups
+  const financeSaleMap = {};
+  if (state.sales && Array.isArray(state.sales)) {
+    state.sales.forEach(sale => {
+      if (sale.inventoryId) {
+        financeSaleMap[sale.inventoryId] = sale;
+      }
+    });
+  }
+
   // Group data based on selector: Month, Year, All-Time
   const groupedData = {};
   
@@ -9239,7 +9252,7 @@ function renderFinanceView() {
           <tr style="border-bottom: 1px solid var(--border-color);">
             <td class="sticky-col" style="font-weight: 600; color: var(--accent-cyan);">Unsold Stock (Qty)</td>
             ${sortedKeys.map(k => {
-              const stock = getPeriodStockStatus(k, breakdownType);
+              const stock = getPeriodStockStatus(k, breakdownType, financeSaleMap);
               return `<td style="text-align: right; color: var(--accent-cyan); font-weight: 500;">${stock.count} keys</td>`;
             }).join("")}
           </tr>
@@ -9254,7 +9267,7 @@ function renderFinanceView() {
           <tr style="border-bottom: 1px solid var(--border-color);">
             <td class="sticky-col" style="font-weight: 600; color: var(--accent-amber);">Stock Valuation (Cost)</td>
             ${sortedKeys.map(k => {
-              const stock = getPeriodStockStatus(k, breakdownType);
+              const stock = getPeriodStockStatus(k, breakdownType, financeSaleMap);
               return `<td style="text-align: right; color: var(--accent-amber); font-weight: 500;">${formatCurrency(stock.cost)}</td>`;
             }).join("")}
           </tr>
@@ -9325,7 +9338,7 @@ function renderFinanceView() {
       
       sortedKeys.forEach(k => {
         const stats = groupedData[k];
-        const stock = getPeriodStockStatus(k, breakdownType);
+        const stock = getPeriodStockStatus(k, breakdownType, financeSaleMap);
         const roi = stats.cost > 0 ? (stats.profit / stats.cost) * 100 : 0;
         const avgPrice = stats.count > 0 ? stats.revenue / stats.count : 0;
         const avgProfit = stats.count > 0 ? stats.profit / stats.count : 0;
@@ -9403,7 +9416,7 @@ function renderFinanceView() {
       const tbody = table.querySelector("tbody");
       sortedKeys.forEach(k => {
         const stats = groupedData[k];
-        const stock = getPeriodStockStatus(k, breakdownType);
+        const stock = getPeriodStockStatus(k, breakdownType, financeSaleMap);
         const roi = stats.cost > 0 ? (stats.profit / stats.cost) * 100 : 0;
         const avgPrice = stats.count > 0 ? stats.revenue / stats.count : 0;
         const avgProfit = stats.count > 0 ? stats.profit / stats.count : 0;
@@ -9518,7 +9531,7 @@ function renderFinanceView() {
           const tbody = table.querySelector("tbody");
           sortedKeys.forEach(k => {
             const stats = groupedData[k];
-            const stock = getPeriodStockStatus(k, breakdownType);
+            const stock = getPeriodStockStatus(k, breakdownType, financeSaleMap);
             const roi = stats.cost > 0 ? (stats.profit / stats.cost) * 100 : 0;
             const periodLabel = breakdownType === "month" ? formatMonthKey(k) : k;
             
@@ -9627,7 +9640,7 @@ function renderFinanceView() {
       const tbody = table.querySelector("tbody");
       sortedKeys.forEach(k => {
         const stats = groupedData[k];
-        const stock = getPeriodStockStatus(k, breakdownType);
+        const stock = getPeriodStockStatus(k, breakdownType, financeSaleMap);
         const roi = stats.cost > 0 ? (stats.profit / stats.cost) * 100 : 0;
         const avgPrice = stats.count > 0 ? stats.revenue / stats.count : 0;
         const avgProfit = stats.count > 0 ? stats.profit / stats.count : 0;

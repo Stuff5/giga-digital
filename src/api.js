@@ -852,46 +852,60 @@ async function syncFromGitHub(isBackground = false) {
   }
 }
 
+/**
+ * Paged fetching helper for Supabase to bypass PostgREST's default 1000-row limit.
+ * Fetches all records from a table in batches of pageSize using .range(from, to).
+ */
+async function supabaseFetchAll(tableName, selectColumns = '*') {
+  if (!window.supabaseClient) return [];
+  const pageSize = 1000;
+  let allData = [];
+  let from = 0;
+  
+  while (true) {
+    const to = from + pageSize - 1;
+    const { data, error } = await window.supabaseClient
+      .from(tableName)
+      .select(selectColumns)
+      .range(from, to);
+      
+    if (error) {
+      console.error(`Error in supabaseFetchAll for ${tableName} (range ${from}-${to}):`, error);
+      throw error;
+    }
+    
+    if (!data || data.length === 0) {
+      break;
+    }
+    
+    allData.push(...data);
+    from += pageSize;
+    
+    if (data.length < pageSize) {
+      break;
+    }
+  }
+  
+  return allData;
+}
+window.supabaseFetchAll = supabaseFetchAll;
+
 // Fetch all database state from Supabase
 async function dbLoadState() {
   if (!window.supabaseClient) return;
   
   try {
-    const { data: inventoryData, error: invError } = await window.supabaseClient
-      .from('inventory')
-      .select('*');
-    if (invError) throw invError;
-    
-    const { data: salesData, error: salesError } = await window.supabaseClient
-      .from('sales')
-      .select('*');
-    if (salesError) throw salesError;
-
-    const { data: suppliersData, error: suppliersError } = await window.supabaseClient
-      .from('suppliers')
-      .select('*');
-    if (suppliersError) throw suppliersError;
-
-    const { data: customData, error: customError } = await window.supabaseClient
-      .from('menu_customization')
-      .select('*');
-    if (customError) throw customError;
-
-    const { data: settingsData, error: settingsError } = await window.supabaseClient
-      .from('app_settings')
-      .select('*');
-    if (settingsError) throw settingsError;
+    const [inventoryData, salesData, suppliersData, customData, settingsData] = await Promise.all([
+      supabaseFetchAll('inventory'),
+      supabaseFetchAll('sales'),
+      supabaseFetchAll('suppliers'),
+      supabaseFetchAll('menu_customization'),
+      supabaseFetchAll('app_settings')
+    ]);
 
     let platformsData = null;
     try {
-      const { data, error } = await window.supabaseClient
-        .from('platforms')
-        .select('*');
-      if (error) {
-        console.warn("Supabase platforms table error (might not exist):", error);
-      } else {
-        platformsData = data;
-      }
+      platformsData = await supabaseFetchAll('platforms');
     } catch (e) {
       console.warn("Error querying platforms from Supabase:", e);
     }

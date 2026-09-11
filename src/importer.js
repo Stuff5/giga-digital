@@ -986,17 +986,15 @@ async function synchronizeCloudDatabase() {
 
     // 2. Fetch current cloud data for bidirectional merging
     showToast("Downloading latest cloud data...", "info");
-    const { data: cloudInventory, error: ciErr } = await window.supabaseClient.from('inventory').select('*');
-    if (ciErr) throw ciErr;
-    const { data: cloudSales, error: csErr } = await window.supabaseClient.from('sales').select('*');
-    if (csErr) throw csErr;
-    const { data: cloudSuppliers, error: csupErr } = await window.supabaseClient.from('suppliers').select('*');
-    if (csupErr) throw csupErr;
+    const [cloudInventory, cloudSales, cloudSuppliers] = await Promise.all([
+      window.supabaseFetchAll('inventory'),
+      window.supabaseFetchAll('sales'),
+      window.supabaseFetchAll('suppliers')
+    ]);
     
     let fetchedCloudPlatforms = [];
     try {
-      const { data, error } = await window.supabaseClient.from('platforms').select('*');
-      if (!error && data) fetchedCloudPlatforms = data;
+      fetchedCloudPlatforms = await window.supabaseFetchAll('platforms');
     } catch (e) {
       console.warn("Could not retrieve platforms table during sync:", e);
     }
