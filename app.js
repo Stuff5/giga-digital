@@ -4,7 +4,7 @@
  */
 
 document.addEventListener("DOMContentLoaded", async () => {
-  console.log("[GameVault] DOMContentLoaded - Booting v1.8.0...");
+  console.log("[GameVault] DOMContentLoaded - Booting v1.8.1...");
   console.log("[GameVault] Native gv_active_user:", window.localStorage.getItem("gv_active_user"));
   try {
     // Load HTML templates dynamically

@@ -101,9 +101,9 @@
                 <li><strong>Widget Gallery Drawer:</strong> Click **Remove Widget** in options to hide a card. Open the sidebar **+ Add Widget** gallery drawer to place inactive widgets back in real-time.</li>
               </ul>
               
-              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Finances View Grid Spanning</h5>
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Finances View Grid Spanning & Monthly Ledger</h5>
               <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 0;">
-                All accounting widgets (including Monthly Trend, Performance Averages, Outflow Allocation, Cost & Revenue, and Markup Analysis) are consolidated inside the **Finances** tab. Just like the dashboard, you can click the ellipsis menu <i class="fa-solid fa-ellipsis-vertical"></i> on any Finance card header to choose between 1, 2, or 3 columns to lay out your accounting view.
+                All accounting widgets (including Monthly Trend, Performance Averages, Outflow Allocation, Cost & Revenue, and Markup Analysis) are consolidated inside the **Finances** tab. Just like the dashboard, you can click the ellipsis menu <i class="fa-solid fa-ellipsis-vertical"></i> on any Finance card header to choose between 1, 2, or 3 columns to lay out your accounting view. The **Monthly Ledger Breakdown** also supports both standard cards and a transposed spreadsheet layout featuring contained horizontal scrolling and a frozen "Metric" column.
               </p>
             </div>
 
@@ -192,6 +192,8 @@
                 - <strong>Real-time mode:</strong> All edits (add, edit, sell, delete) instantly update your cloud tables.
                 <br>
                 - <strong>Manual mode:</strong> Edits are saved offline. An "Unsynced Changes" badge will display, allowing you to trigger a batch push via the **Synchronize Now** button.
+                <br>
+                - <strong>High-Volume Chunked Pagination:</strong> Automatically queries datasets beyond PostgREST's 1,000-row limit in concurrent ranges, verifying exact row counts against database headers so large catalogs (10,000+ sales and items) are synchronized completely.
               </p>
               
               <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">GitHub Repositories Sync</h5>
@@ -420,11 +422,25 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
-                <!-- v1.8.0 -->
+                <!-- v1.8.1 -->
                 <div style="border-left: 3px solid var(--accent-emerald); padding-left: 12px;">
                   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.8.0 — Bidirectional Database Sync & Session Persistence Upgrades</strong>
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.8.1 — Full-Dataset Cloud Pagination, Data Integrity & Spreadsheet Upgrades</strong>
                     <span style="font-size: 0.75rem; color: var(--accent-emerald); font-weight: bold;">Current Version</span>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
+                    <li><strong>Full-Scale Cloud Pagination:</strong> Implemented range-based chunked parallel querying in <code>supabaseFetchAll</code>, overcoming PostgREST's default 1,000-row limit to fetch complete sales and inventory datasets (restoring all 8,800+ transactions through 2026).</li>
+                    <li><strong>Database Row-Count Integrity Verification:</strong> Automatic verification comparing received records against exact database header counts, accompanied by a real-time navbar cloud sync badge showing verified sales totals.</li>
+                    <li><strong>Spreadsheet View Layout Containment:</strong> Fixed flexbox layout blowout in Finance &rarr; Monthly Ledger Breakdown spreadsheet mode, introducing contained horizontal scrolling and a frozen/sticky left "Metric" column.</li>
+                    <li><strong>Precomputed Stock Indexing:</strong> High-performance hash-indexed memoization for stock status lookups, ensuring instant rendering and smooth scrolling across 9,000+ catalog and sales entries.</li>
+                  </ul>
+                </div>
+
+                <!-- v1.8.0 -->
+                <div style="border-left: 3px solid var(--border-color); padding-left: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.8.0 — Bidirectional Database Sync & Session Persistence Upgrades</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Previous Version</span>
                   </div>
                   <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
                     <li><strong>Bidirectional Merge Cloud Sync:</strong> Compares local and cloud items by ID, performs a non-destructive merge, and syncs updates in batch sizes of 200 to prevent payload limitations.</li>
