@@ -4,8 +4,16 @@
  */
 
 document.addEventListener("DOMContentLoaded", async () => {
-  console.log("[GameVault] DOMContentLoaded - Booting v1.8.1...");
+  const currentVersion = window.APP_VERSION || "v1.8.1";
+  console.log(`[GameVault] DOMContentLoaded - Booting ${currentVersion}...`);
   console.log("[GameVault] Native gv_active_user:", window.localStorage.getItem("gv_active_user"));
+
+  // Ensure sidebar version link displays active version immediately even if cached HTML was loaded
+  const sidebarVersionLink = document.getElementById("link-show-changelog");
+  if (sidebarVersionLink) {
+    sidebarVersionLink.textContent = currentVersion;
+  }
+
   try {
     // Load HTML templates dynamically
     await loadHTMLTemplates();
