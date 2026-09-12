@@ -1380,11 +1380,45 @@ async function importStateFromSpreadsheet(file) {
 
           const currentSuppliers = new Set(state.suppliers.map(s => s.name.toLowerCase()));
           const currentPlatforms = new Set(state.platforms.map(p => p.name.toLowerCase()));
-          const existingKeys = new Set(state.inventory.map(item => item.key.trim().toLowerCase()).filter(k => k.length > 0));
-          let duplicateKeysCount = 0;
-          
-          const importedGames = [];
-          const importedSales = [];
+
+          // Fast lookup indices for existing inventory & sales to prevent duplicates
+          const inventoryByKey = new Map();
+          const inventoryByRowIndex = new Map();
+          const inventoryByComposite = new Map();
+
+          for (const item of state.inventory) {
+            const k = (item.key || "").trim().toLowerCase();
+            if (k && k !== "no-key" && k !== "no-key-provided" && !inventoryByKey.has(k)) {
+              inventoryByKey.set(k, item);
+            }
+            const match = String(item.id).match(/^game_imported_(\d+)_/);
+            if (match) {
+              const idx = parseInt(match[1], 10);
+              if (!inventoryByRowIndex.has(idx)) {
+                inventoryByRowIndex.set(idx, item);
+              }
+            }
+            const compKey = (item.title || "").trim().toLowerCase() + "|||" + (item.purchaseDate || "") + "|||" + Number(item.cost || 0).toFixed(2);
+            if (!inventoryByComposite.has(compKey)) {
+              inventoryByComposite.set(compKey, []);
+            }
+            inventoryByComposite.get(compKey).push(item);
+          }
+
+          const salesByInvId = new Map();
+          for (const s of state.sales) {
+            if (s.inventoryId) {
+              salesByInvId.set(s.inventoryId, s);
+            }
+          }
+
+          let updatedGamesCount = 0;
+          let newGamesCount = 0;
+          let updatedSalesCount = 0;
+          let newSalesCount = 0;
+
+          const gamesToUpsert = [];
+          const salesToUpsert = [];
           
           pushToUndoStack();
 
@@ -1401,14 +1435,6 @@ async function importStateFromSpreadsheet(file) {
               if (!title) continue;
               
               const key = (row["Key"] || "").toString().trim();
-              if (key) {
-                const keyLower = key.toLowerCase();
-                if (existingKeys.has(keyLower)) {
-                  duplicateKeysCount++;
-                } else {
-                  existingKeys.add(keyLower);
-                }
-              }
               const vendor = (row["Vendor"] || row["Source"] || row["Supplier"] || "Other").toString().trim();
               const platform = (row["Platform"] || "Other").toString().trim();
               const cost = parseFloat(row["Cost"] || row["Buy Price"] || 0) || 0;
@@ -1424,14 +1450,10 @@ async function importStateFromSpreadsheet(file) {
               }
               
               let saleDate = row["Closed Date"] || row["Sale Date"] || "";
-              const rawClosedDateVal = saleDate;
               if (saleDate instanceof Date) {
                 saleDate = formatLocalDateWithoutShifts(saleDate);
               } else if (saleDate) {
                 saleDate = parseExcelDate(saleDate.toString());
-              }
-              if (title.toLowerCase().includes("dead by daylight")) {
-                console.log(`[Diagnostic] Row ${i} Dead by Daylight: Closed Date raw =`, rawClosedDateVal, `type =`, (rawClosedDateVal instanceof Date ? 'Date' : typeof rawClosedDateVal), `parsed saleDate =`, saleDate);
               }
               
               let status = (row["Status"] || "").toString().trim();
@@ -1448,8 +1470,6 @@ async function importStateFromSpreadsheet(file) {
               const notes = (row["Notes"] || "").toString().trim();
               const imageUrl = (row["Img"] || row["ImageUrl"] || "").toString().trim();
               const publisher = (row["Publisher"] || "").toString().trim();
-              
-              const gameId = "game_imported_" + i + "_" + Math.random().toString(36).substr(2, 5);
               
               if (vendor && !currentSuppliers.has(vendor.toLowerCase())) {
                 state.suppliers.push({
@@ -1472,46 +1492,137 @@ async function importStateFromSpreadsheet(file) {
                 currentPlatforms.add(platform.toLowerCase());
               }
               
-              const gameItem = {
-                id: gameId,
-                title,
-                platform,
-                key: key || "NO-KEY-PROVIDED",
-                cost,
-                source: vendor,
-                purchaseDate,
-                status,
-                notes,
-                imageUrl,
-                publisher,
-                sellPrice: sellPrice || 0
-              };
-              
-              importedGames.push(gameItem);
-              
-              if (status === "Sold") {
-                const saleId = "sale_imported_" + i + "_" + Math.random().toString(36).substr(2, 5);
-                const profit = sellPrice - cost;
-                importedSales.push({
-                  id: saleId,
-                  inventoryId: gameId,
+              // Match against existing inventory
+              let existingItem = null;
+              const cleanKey = key.toLowerCase();
+              if (cleanKey && cleanKey !== "no-key" && cleanKey !== "no-key-provided") {
+                existingItem = inventoryByKey.get(cleanKey);
+              }
+
+              if (!existingItem && inventoryByRowIndex.has(i)) {
+                const candidate = inventoryByRowIndex.get(i);
+                if (candidate.title.toLowerCase() === title.toLowerCase() || Math.abs((candidate.cost || 0) - cost) < 0.02) {
+                  existingItem = candidate;
+                }
+              }
+
+              if (!existingItem) {
+                const compKey = title.toLowerCase() + "|||" + purchaseDate + "|||" + cost.toFixed(2);
+                const candidates = inventoryByComposite.get(compKey);
+                if (candidates && candidates.length > 0) {
+                  existingItem = candidates.shift();
+                }
+              }
+
+              if (existingItem) {
+                // Update existing item in place
+                existingItem.title = title;
+                existingItem.platform = platform;
+                existingItem.cost = cost;
+                existingItem.source = vendor;
+                existingItem.purchaseDate = purchaseDate;
+                existingItem.status = status;
+                if (notes) existingItem.notes = notes;
+                if (imageUrl) existingItem.imageUrl = imageUrl;
+                if (publisher) existingItem.publisher = publisher;
+                existingItem.sellPrice = sellPrice || existingItem.sellPrice || 0;
+                if (key && (!existingItem.key || existingItem.key === "NO-KEY" || existingItem.key === "NO-KEY-PROVIDED")) {
+                  existingItem.key = key;
+                }
+
+                gamesToUpsert.push(existingItem);
+                updatedGamesCount++;
+
+                if (status === "Sold") {
+                  const existingSale = salesByInvId.get(existingItem.id);
+                  if (existingSale) {
+                    existingSale.title = title;
+                    existingSale.platform = platform;
+                    existingSale.cost = cost;
+                    existingSale.sellPrice = sellPrice;
+                    const fees = existingSale.fees || 0;
+                    existingSale.fees = fees;
+                    existingSale.profit = sellPrice - cost - fees;
+                    if (saleDate) existingSale.saleDate = saleDate;
+                    if (notes && !existingSale.notes) existingSale.notes = notes;
+                    salesToUpsert.push(existingSale);
+                    updatedSalesCount++;
+                  } else {
+                    const saleId = "sale_imported_" + i + "_" + Math.random().toString(36).substr(2, 5);
+                    const profit = sellPrice - cost;
+                    const newSale = {
+                      id: saleId,
+                      inventoryId: existingItem.id,
+                      title,
+                      platform,
+                      cost,
+                      sellPrice,
+                      platformSold: "Other",
+                      fees: 0,
+                      profit,
+                      saleDate: saleDate || purchaseDate,
+                      notes: notes || "Imported from spreadsheet."
+                    };
+                    state.sales.push(newSale);
+                    salesByInvId.set(existingItem.id, newSale);
+                    salesToUpsert.push(newSale);
+                    newSalesCount++;
+                  }
+                }
+              } else {
+                // Genuinely new item
+                const gameId = "game_imported_" + i + "_" + Math.random().toString(36).substr(2, 5);
+                const gameItem = {
+                  id: gameId,
                   title,
                   platform,
+                  key: key || "NO-KEY-PROVIDED",
                   cost,
-                  sellPrice,
-                  platformSold: "Other",
-                  fees: 0,
-                  profit,
-                  saleDate: saleDate || purchaseDate,
-                  notes: "Imported from spreadsheet."
-                });
+                  source: vendor,
+                  purchaseDate,
+                  status,
+                  notes,
+                  imageUrl,
+                  publisher,
+                  sellPrice: sellPrice || 0
+                };
+                state.inventory.push(gameItem);
+                gamesToUpsert.push(gameItem);
+                newGamesCount++;
+
+                if (cleanKey && cleanKey !== "no-key" && cleanKey !== "no-key-provided") {
+                  inventoryByKey.set(cleanKey, gameItem);
+                }
+                inventoryByRowIndex.set(i, gameItem);
+
+                if (status === "Sold") {
+                  const saleId = "sale_imported_" + i + "_" + Math.random().toString(36).substr(2, 5);
+                  const profit = sellPrice - cost;
+                  const newSale = {
+                    id: saleId,
+                    inventoryId: gameId,
+                    title,
+                    platform,
+                    cost,
+                    sellPrice,
+                    platformSold: "Other",
+                    fees: 0,
+                    profit,
+                    saleDate: saleDate || purchaseDate,
+                    notes: notes || "Imported from spreadsheet."
+                  };
+                  state.sales.push(newSale);
+                  salesByInvId.set(gameId, newSale);
+                  salesToUpsert.push(newSale);
+                  newSalesCount++;
+                }
               }
             }
             
             rowIndex = end;
             
             const percent = Math.round(10 + (rowIndex / rows.length) * 80);
-            if (progressStatus) progressStatus.textContent = `Imported ${rowIndex} / ${rows.length} rows...`;
+            if (progressStatus) progressStatus.textContent = `Processed ${rowIndex} / ${rows.length} rows...`;
             if (progressPercent) progressPercent.textContent = `${percent}%`;
             if (progressBar) progressBar.style.width = `${percent}%`;
             
@@ -1525,17 +1636,16 @@ async function importStateFromSpreadsheet(file) {
           async function completeImport() {
             if (progressStatus) progressStatus.textContent = "Saving imported data locally...";
             
-            state.inventory.push(...importedGames);
-            state.sales.push(...importedSales);
-            
+            // Note: state.inventory and state.sales are already updated in place
+            // and new items/sales have been pushed directly. No blind push!
             saveStateToStorage();
             
             if (window.supabaseClient && state.syncMode !== "manual") {
-              if (progressStatus) progressStatus.textContent = "Syncing with cloud database (upserting batches)...";
+              if (progressStatus) progressStatus.textContent = "Syncing with cloud database...";
               try {
                 const syncBatchSize = 1000;
-                for (let j = 0; j < importedGames.length; j += syncBatchSize) {
-                  const batch = importedGames.slice(j, j + syncBatchSize).map(item => ({
+                for (let j = 0; j < gamesToUpsert.length; j += syncBatchSize) {
+                  const batch = gamesToUpsert.slice(j, j + syncBatchSize).map(item => ({
                     id: item.id,
                     title: item.title || "Untitled Game",
                     platform: item.platform || "PC",
@@ -1552,16 +1662,16 @@ async function importStateFromSpreadsheet(file) {
                   if (error) throw error;
                 }
                 
-                for (let j = 0; j < importedSales.length; j += syncBatchSize) {
-                  const batch = importedSales.slice(j, j + syncBatchSize).map(sale => ({
+                for (let j = 0; j < salesToUpsert.length; j += syncBatchSize) {
+                  const batch = salesToUpsert.slice(j, j + syncBatchSize).map(sale => ({
                     id: sale.id,
                     inventoryId: sale.inventoryId,
                     title: sale.title,
                     platform: sale.platform,
                     cost: sale.cost,
                     sellPrice: sale.sellPrice,
-                    platformSold: sale.platformSold,
-                    fees: sale.fees,
+                    platformSold: sale.platformSold || "Other",
+                    fees: sale.fees || 0,
                     profit: sale.profit,
                     saleDate: sale.saleDate,
                     notes: sale.notes || null
@@ -1571,7 +1681,7 @@ async function importStateFromSpreadsheet(file) {
                 }
               } catch (syncErr) {
                 console.error("Supabase bulk sync failed:", syncErr);
-                showToast("Imported successfully, but cloud database sync failed.", "warning");
+                showToast("Imported locally, but cloud database sync failed.", "warning");
               }
             } else if (state.syncMode === "manual" || window.supabaseClient) {
               setUnsyncedChanges(true);
@@ -1589,12 +1699,12 @@ async function importStateFromSpreadsheet(file) {
             }, 1500);
             
             updateUI();
-            if (duplicateKeysCount > 0) {
-              showToast(`Import complete! ${importedGames.length} items imported. Note: ${duplicateKeysCount} keys already existed in your inventory.`, "warning");
-              logActionNotification(`Imported ${importedGames.length} keys from sheet (with duplicates)`);
+            if (newGamesCount > 0 || newSalesCount > 0) {
+              showToast(`Import complete! ${newGamesCount} new item(s) added, ${updatedGamesCount} refreshed, and ${newSalesCount} new sale(s) recorded.`, "success");
+              logActionNotification(`Imported ${newGamesCount} new items, updated ${updatedGamesCount} from spreadsheet`);
             } else {
-              showToast(`Successfully imported ${importedGames.length} inventory keys from sheet!`, "success");
-              logActionNotification(`Imported ${importedGames.length} keys from sheet`);
+              showToast(`Spreadsheet synchronized! All ${updatedGamesCount} items are already up-to-date. Zero duplicates created.`, "success");
+              logActionNotification(`Synchronized ${updatedGamesCount} items from spreadsheet`);
             }
           }
           
