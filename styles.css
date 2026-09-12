@@ -1318,6 +1318,20 @@ a {
   background: rgba(0, 229, 255, 0.08) !important;
 }
 
+/* Record Expense Form in Finance Tab */
+#form-add-payout .form-group {
+  margin-bottom: 0;
+}
+#form-add-payout .form-control-sm {
+  height: 36px;
+  padding: 6px 12px;
+  font-size: 0.88rem;
+}
+#form-add-payout label {
+  margin-bottom: 4px;
+  font-size: 0.82rem;
+}
+
 /* Inventory Summary / Stock status styling */
 .inventory-summary-list {
   display: flex;

@@ -29,7 +29,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=22">
+  <link rel="stylesheet" href="styles.css?v=23">
   
   <!-- Early theme application to prevent FOUC / light theme flicker -->
   <script>
@@ -2279,52 +2279,52 @@
             </div>
 
             <!-- Payouts & Fees Section -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; align-items: stretch;">
               <!-- Log New Payout / Fee Form -->
-              <div class="detail-card" style="height: 420px;">
+              <div class="detail-card" style="display: flex; flex-direction: column; min-height: 440px; height: 100%;">
                 <div class="detail-card-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
                   <h4 style="margin: 0; display: flex; align-items: center; gap: 8px;">
                     <i class="fa-solid fa-file-invoice-dollar" style="color: var(--accent-purple);"></i> Record Expense
                   </h4>
                 </div>
-                <form id="form-add-payout" style="display: flex; flex-direction: column; gap: 12px;">
-                  <div class="form-group">
-                    <label for="payout-date">Date</label>
-                    <input type="date" id="payout-date" class="form-control" required style="width: 100%;">
+                <form id="form-add-payout" style="display: flex; flex-direction: column; gap: 10px; flex-grow: 1;">
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label for="payout-date" style="margin-bottom: 4px; font-size: 0.82rem;">Date</label>
+                    <input type="date" id="payout-date" class="form-control form-control-sm" required style="width: 100%; height: 36px;">
                   </div>
-                  <div class="form-group">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                      <label for="payout-category" style="margin: 0;">Expense Category</label>
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                      <label for="payout-category" style="margin: 0; font-size: 0.82rem;">Expense Category</label>
                       <button type="button" class="btn btn-outline btn-xs" id="btn-manage-categories" style="padding: 2px 6px; font-size: 0.72rem; display: flex; align-items: center; gap: 4px;">
                         <i class="fa-solid fa-gear"></i> Manage
                       </button>
                     </div>
-                    <select id="payout-category" class="form-control" required style="width: 100%;">
+                    <select id="payout-category" class="form-control form-control-sm" required style="width: 100%; height: 36px;">
                       <!-- Dynamically Populated -->
                     </select>
                   </div>
-                  <div class="form-group">
-                    <label for="payout-description">Description / Notes</label>
-                    <input type="text" id="payout-description" class="form-control" placeholder="e.g. PayPal Fee transaction, server host overhead" style="width: 100%;">
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label for="payout-description" style="margin-bottom: 4px; font-size: 0.82rem;">Description / Notes</label>
+                    <input type="text" id="payout-description" class="form-control form-control-sm" placeholder="e.g. PayPal Fee transaction, server host overhead" style="width: 100%; height: 36px;">
                   </div>
-                  <div class="form-group">
-                    <label for="payout-amount">Amount</label>
-                    <input type="number" id="payout-amount" class="form-control" placeholder="0.00" step="0.01" min="0" required style="width: 100%;">
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label for="payout-amount" style="margin-bottom: 4px; font-size: 0.82rem;">Amount</label>
+                    <input type="number" id="payout-amount" class="form-control form-control-sm" placeholder="0.00" step="0.01" min="0" required style="width: 100%; height: 36px;">
                   </div>
-                  <button type="submit" class="btn btn-primary btn-block" style="margin-top: 8px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px;">
+                  <button type="submit" class="btn btn-primary btn-block" style="margin-top: auto; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px; font-weight: 600; border-radius: var(--radius-md);">
                     <i class="fa-solid fa-plus"></i> Record Expense
                   </button>
                 </form>
               </div>
 
               <!-- Payouts & Fees Ledger Table -->
-              <div class="detail-card" style="display: flex; flex-direction: column; height: 420px;">
+              <div class="detail-card" style="display: flex; flex-direction: column; min-height: 440px; height: 100%;">
                 <div class="detail-card-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
                   <h4 style="margin: 0; display: flex; align-items: center; gap: 8px;">
                     <i class="fa-solid fa-list-check" style="color: var(--accent-cyan);"></i> Operational Expenses Ledger
                   </h4>
                 </div>
-                <div class="table-responsive" style="flex-grow: 1; overflow-y: auto;">
+                <div class="table-responsive" style="flex-grow: 1; overflow-y: auto; max-height: 360px;">
                   <table class="table" id="payouts-ledger-table">
                     <thead>
                       <tr>
@@ -3349,12 +3349,12 @@
   </div>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=22"></script>
-  <script src="src/state.js?v=22"></script>
-  <script src="src/api.js?v=22"></script>
-  <script src="src/charts.js?v=22"></script>
-  <script src="src/ui.js?v=22"></script>
-  <script src="src/importer.js?v=22"></script>
-  <script src="app.js?v=22"></script>
+  <script src="config.js?v=23"></script>
+  <script src="src/state.js?v=23"></script>
+  <script src="src/api.js?v=23"></script>
+  <script src="src/charts.js?v=23"></script>
+  <script src="src/ui.js?v=23"></script>
+  <script src="src/importer.js?v=23"></script>
+  <script src="app.js?v=23"></script>
 </body>
 </html>
