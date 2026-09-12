@@ -1071,7 +1071,7 @@ async function dbLoadState() {
           try {
             state.financeOrder = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
             const expectedFinKeys = [
-              "financeMonthly", "financeAverages", "financeOutflow", "costRevenue", "markupAnalysis", "financeBenchmark"
+              "financeMonthly", "financeAverages", "financeOutflow", "costRevenue", "markupAnalysis", "financeBenchmark", "financeTracker"
             ];
             state.financeOrder = state.financeOrder.filter(k => expectedFinKeys.includes(k));
             expectedFinKeys.forEach(k => {

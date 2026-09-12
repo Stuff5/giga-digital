@@ -686,7 +686,7 @@ let state = {
     "stockSpeed", "salesFeed", "stockTurnover", "stockAging"
   ],
   financeOrder: [
-    "financeMonthly", "financeAverages", "financeOutflow", "costRevenue", "markupAnalysis", "financeBenchmark"
+    "financeMonthly", "financeAverages", "financeOutflow", "costRevenue", "markupAnalysis", "financeBenchmark", "financeTracker"
   ],
   dashboardSpans: {
     salesProfit: 2,
@@ -727,7 +727,8 @@ let state = {
     financeOutflow: 1,
     costRevenue: 1,
     markupAnalysis: 1,
-    financeBenchmark: 2
+    financeBenchmark: 2,
+    financeTracker: 1
   }
 };
 
@@ -1276,7 +1277,7 @@ function loadStateFromStorage() {
       try {
         state.financeOrder = JSON.parse(storedFinanceOrder);
         const expectedFinKeys = [
-          "financeMonthly", "financeAverages", "financeOutflow", "costRevenue", "markupAnalysis", "financeBenchmark"
+          "financeMonthly", "financeAverages", "financeOutflow", "costRevenue", "markupAnalysis", "financeBenchmark", "financeTracker"
         ];
         state.financeOrder = state.financeOrder.filter(k => expectedFinKeys.includes(k));
         expectedFinKeys.forEach(k => {
