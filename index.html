@@ -29,7 +29,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=21">
+  <link rel="stylesheet" href="styles.css?v=22">
   
   <!-- Early theme application to prevent FOUC / light theme flicker -->
   <script>
@@ -2237,9 +2237,18 @@
             <!-- Detailed breakdown ledger/cards -->
             <div class="detail-card" id="finance-detail-card" style="margin-bottom: 32px;">
               <div class="detail-card-header flex-header" style="flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;">
-                <h4 id="finance-breakdown-title" style="margin: 0;">Monthly Ledger Breakdown</h4>
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                  <h4 id="finance-breakdown-title" style="margin: 0; cursor: pointer; user-select: none;" title="Click to Collapse/Expand">Monthly Ledger Breakdown</h4>
+                  <button type="button" id="btn-toggle-finance-breakdown" class="btn btn-xs btn-outline" style="padding: 3px 8px; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 5px; border-radius: 6px; cursor: pointer; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-secondary); transition: all 0.2s ease;" title="Collapse Monthly Ledger Breakdown">
+                    <i class="fa-solid fa-chevron-up" id="finance-breakdown-collapse-icon"></i>
+                    <span id="finance-breakdown-collapse-text">Collapse</span>
+                  </button>
+                  <span id="finance-breakdown-collapsed-hint" class="badge" style="display: none; font-size: 0.72rem; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-muted); padding: 2px 8px; border-radius: 4px; align-items: center; gap: 4px;">
+                    <i class="fa-solid fa-eye-slash" style="font-size: 0.68rem;"></i> Collapsed
+                  </span>
+                </div>
                 
-                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <div id="finance-breakdown-controls" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                     <div class="layout-toggle-buttons" id="finance-layout-toggles" style="display: flex; background: var(--bg-input); padding: 2px; border-radius: 6px; border: 1px solid var(--border-color);">
                       <button class="btn-toggle-layout" data-style="transposed" title="Spreadsheet View" style="background: none; border: none; padding: 4px 8px; border-radius: 4px; color: var(--text-secondary); cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 4px;"><i class="fa-solid fa-table"></i> <span class="layout-btn-text">Spreadsheet</span></button>
                       <button class="btn-toggle-layout" data-style="grid" title="Grid Cards View" style="background: none; border: none; padding: 4px 8px; border-radius: 4px; color: var(--text-secondary); cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 4px;"><i class="fa-solid fa-table-cells-large"></i> <span class="layout-btn-text">Grid</span></button>
@@ -3340,12 +3349,12 @@
   </div>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=21"></script>
-  <script src="src/state.js?v=21"></script>
-  <script src="src/api.js?v=21"></script>
-  <script src="src/charts.js?v=21"></script>
-  <script src="src/ui.js?v=21"></script>
-  <script src="src/importer.js?v=21"></script>
-  <script src="app.js?v=21"></script>
+  <script src="config.js?v=22"></script>
+  <script src="src/state.js?v=22"></script>
+  <script src="src/api.js?v=22"></script>
+  <script src="src/charts.js?v=22"></script>
+  <script src="src/ui.js?v=22"></script>
+  <script src="src/importer.js?v=22"></script>
+  <script src="app.js?v=22"></script>
 </body>
 </html>

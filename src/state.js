@@ -605,6 +605,7 @@ let state = {
   currency: "EUR",
   dateFormat: "YYYY-MM-DD",
   financeLayoutStyle: localStorage.getItem("gv_finance_layout_style") || "full",
+  financeBreakdownCollapsed: localStorage.getItem("gv_finance_breakdown_collapsed") === "true",
   financeSortOrder: localStorage.getItem("gv_finance_sort_order") || "desc",
   sidebarCollapsed: false,
   showSalesLedger: true,
@@ -1007,7 +1008,7 @@ function loadStateFromStorage() {
     state.benchmarkMode = localStorage.getItem("gv_benchmark_mode") || "averages";
     
     state.financeLayoutStyle = localStorage.getItem("gv_finance_layout_style") || "full";
-    
+    state.financeBreakdownCollapsed = localStorage.getItem("gv_finance_breakdown_collapsed") === "true";
     state.financeSortOrder = localStorage.getItem("gv_finance_sort_order") || "desc";
     state.sidebarCollapsed = localStorage.getItem("gv_sidebar_collapsed") === "true";
 

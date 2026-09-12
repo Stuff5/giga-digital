@@ -2733,6 +2733,23 @@ function initEventHandlers() {
     });
   }
 
+  // Monthly Ledger Breakdown Collapse / Expand toggle
+  const btnToggleBreakdown = document.getElementById("btn-toggle-finance-breakdown");
+  const titleBreakdown = document.getElementById("finance-breakdown-title");
+  const toggleBreakdownHandler = (e) => {
+    if (e) e.stopPropagation();
+    state.financeBreakdownCollapsed = !state.financeBreakdownCollapsed;
+    localStorage.setItem("gv_finance_breakdown_collapsed", state.financeBreakdownCollapsed ? "true" : "false");
+    updateFinanceBreakdownCollapseUI();
+  };
+
+  if (btnToggleBreakdown) {
+    btnToggleBreakdown.addEventListener("click", toggleBreakdownHandler);
+  }
+  if (titleBreakdown) {
+    titleBreakdown.addEventListener("click", toggleBreakdownHandler);
+  }
+
   // Finance Layout Toggles
   const layoutButtons = document.querySelectorAll(".btn-toggle-layout");
   layoutButtons.forEach(btn => {
@@ -8846,6 +8863,45 @@ function getPeriodStockStatus(key, breakdownType, precomputedSaleMap = null) {
   return { count: openCount, cost: openCost };
 }
 
+function updateFinanceBreakdownCollapseUI() {
+  const card = document.getElementById("finance-detail-card");
+  const icon = document.getElementById("finance-breakdown-collapse-icon");
+  const text = document.getElementById("finance-breakdown-collapse-text");
+  const btn = document.getElementById("btn-toggle-finance-breakdown");
+  const hint = document.getElementById("finance-breakdown-collapsed-hint");
+  const controls = document.getElementById("finance-breakdown-controls");
+  const content = document.getElementById("finance-detail-content");
+  const isCollapsed = !!state.financeBreakdownCollapsed;
+
+  if (card) {
+    card.classList.toggle("is-collapsed", isCollapsed);
+  }
+  if (icon) {
+    icon.className = isCollapsed ? "fa-solid fa-chevron-down" : "fa-solid fa-chevron-up";
+  }
+  if (text) {
+    text.textContent = isCollapsed ? "Expand" : "Collapse";
+  }
+  if (btn) {
+    btn.title = isCollapsed ? "Expand Monthly Ledger Breakdown" : "Collapse Monthly Ledger Breakdown";
+    if (isCollapsed) {
+      btn.classList.add("collapsed");
+    } else {
+      btn.classList.remove("collapsed");
+    }
+  }
+  if (hint) {
+    hint.style.display = isCollapsed ? "inline-flex" : "none";
+  }
+  if (controls) {
+    controls.style.display = isCollapsed ? "none" : "flex";
+  }
+  if (content) {
+    content.style.display = isCollapsed ? "none" : "block";
+  }
+}
+window.updateFinanceBreakdownCollapseUI = updateFinanceBreakdownCollapseUI;
+
 function renderFinanceView() {
   const metricsContainer = document.getElementById("finance-metrics-grid");
   const detailContent = document.getElementById("finance-detail-content");
@@ -8856,6 +8912,8 @@ function renderFinanceView() {
   const chartTitle = document.getElementById("finance-chart-title");
   
   if (!metricsContainer || !detailContent || !canvas) return;
+
+  updateFinanceBreakdownCollapseUI();
 
   const breakdownType = breakdownSelect ? breakdownSelect.value : "month";
   const chartBreakdownType = chartBreakdownSelect ? chartBreakdownSelect.value : "month";
@@ -9411,13 +9469,33 @@ function renderFinanceView() {
             <th>${breakdownType === "month" ? "Month" : (breakdownType === "year" ? "Year" : "Period")}</th>
             <th>Sold</th>
             <th>Net Profit</th>
-            <th style="width: 40px; text-align: center;"></th>
+            <th style="width: 80px; text-align: center;">
+              <button type="button" class="btn btn-xs btn-outline btn-toggle-all-expandable" style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; cursor: pointer; white-space: nowrap;" title="Expand or collapse all period details">Expand All</button>
+            </th>
           </tr>
         </thead>
         <tbody></tbody>
       `;
       
       const tbody = table.querySelector("tbody");
+      const btnToggleAll = table.querySelector(".btn-toggle-all-expandable");
+      let allExpanded = false;
+      if (btnToggleAll) {
+        btnToggleAll.addEventListener("click", (e) => {
+          e.stopPropagation();
+          allExpanded = !allExpanded;
+          btnToggleAll.textContent = allExpanded ? "Collapse All" : "Expand All";
+          const allDetails = tbody.querySelectorAll(".details-row");
+          const allIcons = tbody.querySelectorAll(".toggle-icon");
+          allDetails.forEach(row => {
+            row.classList.toggle("hidden", !allExpanded);
+          });
+          allIcons.forEach(icon => {
+            icon.style.transform = allExpanded ? "rotate(180deg)" : "rotate(0deg)";
+            icon.style.color = allExpanded ? "var(--text-primary)" : "var(--text-muted)";
+          });
+        });
+      }
       sortedKeys.forEach(k => {
         const stats = groupedData[k];
         const stock = getPeriodStockStatus(k, breakdownType, financeSaleMap);

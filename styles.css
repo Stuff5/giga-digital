@@ -1287,6 +1287,37 @@ a {
   filter: brightness(1.2);
 }
 
+/* Monthly Ledger Breakdown Collapsible Card */
+#finance-detail-card {
+  transition: padding 0.25s ease, margin 0.25s ease, box-shadow 0.25s ease;
+}
+#finance-detail-card.is-collapsed {
+  margin-bottom: 20px !important;
+  padding: 16px 24px !important;
+}
+#finance-detail-card.is-collapsed .detail-card-header {
+  margin-bottom: 0 !important;
+}
+#finance-breakdown-title {
+  transition: color var(--transition-smooth);
+}
+#finance-breakdown-title:hover {
+  color: var(--accent-cyan) !important;
+}
+#btn-toggle-finance-breakdown {
+  transition: var(--transition-smooth);
+}
+#btn-toggle-finance-breakdown:hover {
+  background: var(--bg-card-hover) !important;
+  color: var(--accent-cyan) !important;
+  border-color: var(--accent-cyan) !important;
+}
+#btn-toggle-finance-breakdown.collapsed {
+  border-color: var(--accent-cyan) !important;
+  color: var(--accent-cyan) !important;
+  background: rgba(0, 229, 255, 0.08) !important;
+}
+
 /* Inventory Summary / Stock status styling */
 .inventory-summary-list {
   display: flex;
