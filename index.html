@@ -2650,9 +2650,12 @@
                           Get free Gemini API key &nearr;
                         </a>
                       </div>
-                      <div class="input-with-icon">
+                      <div class="input-with-icon" style="position: relative;">
                         <i class="fa-solid fa-key"></i>
-                        <input type="password" id="settings-ai-apikey" class="form-control" placeholder="AIzaSy... or sk-..." style="background-color: var(--bg-input); padding-left: 32px; height: 38px;">
+                        <input type="password" id="settings-ai-apikey" class="form-control" placeholder="AIzaSy... or sk-..." style="background-color: var(--bg-input); padding-left: 32px; padding-right: 38px; height: 38px;">
+                        <button type="button" id="btn-toggle-ai-key-vis" title="Show / Hide API Key" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px;">
+                          <i class="fa-solid fa-eye" id="ai-key-eye-icon"></i>
+                        </button>
                       </div>
                     </div>
 
@@ -2677,6 +2680,8 @@
                         <i class="fa-solid fa-floppy-disk"></i> Save AI Settings
                       </button>
                     </div>
+
+                    <div id="ai-test-error-details" style="margin-top: 8px; font-size: 0.8rem; padding: 12px; border-radius: 6px; background: rgba(255, 77, 77, 0.1); border: 1px solid var(--accent-danger); color: var(--text-main); line-height: 1.5; display: none;"></div>
                   </div>
                 </div>
 
@@ -3520,13 +3525,13 @@
   </div>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=26"></script>
-  <script src="src/state.js?v=26"></script>
-  <script src="src/api.js?v=26"></script>
-  <script src="src/charts.js?v=26"></script>
-  <script src="src/ui.js?v=26"></script>
-  <script src="src/ai.js?v=26"></script>
-  <script src="src/importer.js?v=26"></script>
-  <script src="app.js?v=26"></script>
+  <script src="config.js?v=27"></script>
+  <script src="src/state.js?v=27"></script>
+  <script src="src/api.js?v=27"></script>
+  <script src="src/charts.js?v=27"></script>
+  <script src="src/ui.js?v=27"></script>
+  <script src="src/ai.js?v=27"></script>
+  <script src="src/importer.js?v=27"></script>
+  <script src="app.js?v=27"></script>
 </body>
 </html>
