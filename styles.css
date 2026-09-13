@@ -4858,24 +4858,6 @@ textarea.form-control {
   border-bottom: none;
 }
 
-/* Benchmark Progress Bar mid-point line and glows */
-.benchmark-progress-track {
-  position: relative;
-  display: flex;
-  height: 8px;
-  border-radius: 4px;
-  overflow: hidden;
-  background: var(--bg-input);
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.benchmark-progress-bar-a {
-  height: 100%;
-  background: linear-gradient(90deg, hsl(330, 95%, 65%), var(--accent-pink));
-  transition: width 0.3s ease;
-}
-
-.benchmark-progress-bar-b {
 .sales-feed-item:hover {
   border-color: var(--accent-purple);
   transform: translateY(-1px);
@@ -5216,7 +5198,7 @@ textarea.form-control {
 .ai-assistant-drawer {
   position: fixed;
   top: 0;
-  right: -480px;
+  right: 0;
   width: 480px;
   max-width: 100vw;
   height: 100vh;
@@ -5228,11 +5210,14 @@ textarea.form-control {
   flex-direction: column;
   backdrop-filter: blur(25px);
   -webkit-backdrop-filter: blur(25px);
-  transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateX(100%);
+  visibility: hidden;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.35s;
 }
 
 .ai-assistant-drawer.open {
-  right: 0;
+  transform: translateX(0) !important;
+  visibility: visible !important;
 }
 
 /* Drawer Header */
