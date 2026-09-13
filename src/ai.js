@@ -61,9 +61,12 @@ function updateAIProviderUI(provider, currentModel) {
 
   if (modelSelect) {
     const geminiOptions = `
-      <option value="gemini-1.5-flash">Gemini 1.5 Flash (Recommended - Fast & Free Tier)</option>
+      <option value="gemini-1.5-flash">Gemini 1.5 Flash (Production GA)</option>
+      <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash Latest</option>
       <option value="gemini-2.0-flash">Gemini 2.0 Flash (Next-Gen Fast)</option>
+      <option value="gemini-1.5-flash-8b">Gemini 1.5 Flash 8B (Lightweight)</option>
       <option value="gemini-1.5-pro">Gemini 1.5 Pro (Deep Reasoning)</option>
+      <option value="gemini-pro">Gemini 1.0 Pro</option>
     `;
     const openaiOptions = `
       <option value="gpt-4o-mini">GPT-4o Mini (Recommended)</option>
@@ -76,6 +79,137 @@ function updateAIProviderUI(provider, currentModel) {
     if (currentModel) {
       modelSelect.value = currentModel;
     }
+  }
+}
+
+// Fetch list of available models supported by a Google Gemini API key
+async function getGeminiAvailableModels(apiKey) {
+  const cleanKey = sanitizeApiKey(apiKey);
+  if (!cleanKey) return [];
+
+  const foundModels = [];
+  for (const apiVer of ["v1", "v1beta"]) {
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/${apiVer}/models?key=${encodeURIComponent(cleanKey)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.models && Array.isArray(data.models)) {
+          data.models.forEach(m => {
+            const supportsGenerate = m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent");
+            if (supportsGenerate) {
+              const cleanName = m.name.replace(/^models\//, "");
+              if (!foundModels.some(existing => existing.id === cleanName)) {
+                foundModels.push({
+                  id: cleanName,
+                  name: m.displayName || cleanName,
+                  version: apiVer
+                });
+              }
+            }
+          });
+        }
+      }
+    } catch (e) {
+      console.warn(`ListModels error on ${apiVer}:`, e);
+    }
+  }
+  return foundModels;
+}
+
+// Fetch list of available models supported by an OpenAI / compatible API key
+async function getOpenAIAvailableModels(apiKey, baseUrl) {
+  const cleanKey = sanitizeApiKey(apiKey);
+  const cleanUrl = (baseUrl || "https://api.openai.com/v1").replace(/\/+$/, "");
+  const res = await fetch(`${cleanUrl}/models`, {
+    headers: { "Authorization": `Bearer ${cleanKey}` }
+  });
+  if (!res.ok) {
+    let errData = {};
+    try { errData = await res.json(); } catch(e) {}
+    throw new Error((errData.error && errData.error.message) || `Failed to list models (HTTP ${res.status})`);
+  }
+  const data = await res.json();
+  const rawList = data.data || [];
+  const filtered = rawList.filter(m => m.id && (m.id.includes("gpt") || m.id.includes("chat") || m.id.includes("claude") || m.id.includes("deepseek") || m.id.includes("llama") || m.id.includes("mistral")));
+  const list = filtered.length > 0 ? filtered : rawList;
+  return list.map(m => ({ id: m.id, name: m.id, version: "v1" }));
+}
+
+// Populate model dropdown with list of models
+function populateModelDropdown(modelItems) {
+  const select = document.getElementById("settings-ai-model");
+  if (!select || !Array.isArray(modelItems) || modelItems.length === 0) return;
+  const currentVal = select.value;
+  select.innerHTML = modelItems.map(m => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.name ? `${m.name} (${m.id})` : m.id)}</option>`).join("");
+  if (modelItems.some(m => m.id === currentVal)) {
+    select.value = currentVal;
+  } else {
+    select.selectedIndex = 0;
+  }
+}
+
+// Interactively discover models and refresh dropdown
+async function discoverAndPopulateAIModels() {
+  const provider = document.getElementById("settings-ai-provider") ? document.getElementById("settings-ai-provider").value : "gemini";
+  const apiKey = sanitizeApiKey(document.getElementById("settings-ai-apikey") ? document.getElementById("settings-ai-apikey").value : "");
+  const baseUrl = (document.getElementById("settings-ai-baseurl") ? document.getElementById("settings-ai-baseurl").value : "https://api.openai.com/v1").trim();
+  const icon = document.getElementById("ai-models-refresh-icon");
+  const errDetails = document.getElementById("ai-test-error-details");
+
+  if (!apiKey) {
+    showToast("Please enter an API key first.", "warning");
+    return;
+  }
+
+  if (icon) icon.classList.add("fa-spin");
+
+  try {
+    let models = [];
+    if (provider === "gemini") {
+      models = await getGeminiAvailableModels(apiKey);
+    } else {
+      models = await getOpenAIAvailableModels(apiKey, baseUrl);
+    }
+
+    if (!models || models.length === 0) {
+      throw new Error(`No text generation models returned for this ${provider === 'gemini' ? 'Google' : 'OpenAI'} key. Check if the Generative API is enabled in your developer console.`);
+    }
+
+    populateModelDropdown(models.map(m => ({ id: m.id, name: m.name ? `${m.name}` : m.id })));
+    showToast(`Discovered ${models.length} available models!`, "success");
+
+    if (errDetails) {
+      errDetails.style.display = "block";
+      errDetails.style.background = "rgba(0, 204, 136, 0.1)";
+      errDetails.style.border = "1px solid var(--accent-teal)";
+      errDetails.innerHTML = `
+        <div style="color: var(--accent-teal); font-weight: 600; margin-bottom: 4px;">
+          <i class="fa-solid fa-circle-check"></i> Discovered ${models.length} Models Authorized for your Key
+        </div>
+        <div style="color: var(--text-muted); font-size: 0.78rem;">
+          The Model dropdown was updated with models confirmed for your account.<br>
+          <strong>Available:</strong> ${models.slice(0, 6).map(m => `<code>${escapeHtml(m.id)}</code>`).join(', ')}${models.length > 6 ? ` and ${models.length - 6} more...` : ''}
+        </div>
+      `;
+    }
+  } catch (err) {
+    console.error("Discover models failed:", err);
+    showToast(`Discover failed: ${err.message}`, "error");
+    if (errDetails) {
+      errDetails.style.display = "block";
+      errDetails.style.background = "rgba(255, 77, 77, 0.1)";
+      errDetails.style.border = "1px solid var(--accent-danger)";
+      errDetails.innerHTML = `
+        <div style="color: var(--accent-danger); font-weight: 600; margin-bottom: 4px;">
+          <i class="fa-solid fa-triangle-exclamation"></i> Model Discovery Failed
+        </div>
+        <div style="color: var(--text-main); font-size: 0.8rem;">
+          ${escapeHtml(err.message)}
+        </div>
+      `;
+    }
+  } finally {
+    if (icon) icon.classList.remove("fa-spin");
   }
 }
 
@@ -495,7 +629,7 @@ function generateLocalAIAnalysis(promptQuery) {
 
 // Call Google Gemini API
 async function callGeminiAPI(userQuery, appContext, cfg) {
-  const model = cfg.model || "gemini-1.5-flash";
+  let model = cfg.model || "gemini-1.5-flash";
   const apiKey = sanitizeApiKey(cfg.apiKey);
 
   if (!apiKey) {
@@ -506,8 +640,6 @@ async function callGeminiAPI(userQuery, appContext, cfg) {
   if (apiKey.startsWith("sk-")) {
     throw new Error("Invalid Gemini API Key: The key provided starts with 'sk-', which is an OpenAI key format. Please switch your Provider dropdown to 'OpenAI / Compatible'.");
   }
-
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
   const systemInstruction = `You are GameVault AI, an elite digital game keys eCommerce analytics assistant.
 Your job is to assist game key merchants with pricing, supplier sourcing, restock planning, profit margin audits, and market strategies.
@@ -523,32 +655,53 @@ Always ground your answers in these real figures when available.`;
     }
   ];
 
-  let res;
-  try {
-    res = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: contents,
-        generationConfig: {
-          temperature: cfg.temperature || 0.7,
-          maxOutputTokens: 2048
-        }
-      })
-    });
-  } catch (netErr) {
-    console.error("Gemini fetch network error:", netErr);
-    throw new Error(
-      "Network request to Google Gemini blocked or offline. If you are using Brave Shields, uBlock Origin, or an ad-blocker, please disable shields for this page or allow 'generativelanguage.googleapis.com'."
-    );
-  }
+  // Try API endpoints: v1 first (where gemini-1.5-flash is GA), then v1beta
+  const apiVersionsToTry = ["v1", "v1beta"];
+  let lastErrorMsg = "";
 
-  if (!res.ok) {
+  for (const apiVer of apiVersionsToTry) {
+    const endpoint = `https://generativelanguage.googleapis.com/${apiVer}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+
+    let res;
+    try {
+      res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: contents,
+          generationConfig: {
+            temperature: cfg.temperature || 0.7,
+            maxOutputTokens: 2048
+          }
+        })
+      });
+    } catch (netErr) {
+      console.error(`Gemini fetch network error on ${apiVer}:`, netErr);
+      throw new Error(
+        "Network request to Google Gemini blocked or offline. If you are using Brave Shields, uBlock Origin, or an ad-blocker, please disable shields for this page or allow 'generativelanguage.googleapis.com'."
+      );
+    }
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
+        return data.candidates[0].content.parts.map(p => p.text).join("");
+      }
+      throw new Error("No text response received from Gemini API.");
+    }
+
     let errData = {};
-    try { errData = await res.json(); } catch(e) {}
+    try { errData = await res.json(); } catch (e) {}
     const rawMsg = (errData.error && errData.error.message) || "";
     const status = res.status;
 
+    // If 404, try next API version (e.g. try v1 then v1beta)
+    if (status === 404) {
+      lastErrorMsg = rawMsg || `Model '${model}' not found on API version ${apiVer}`;
+      continue;
+    }
+
+    // For other error codes, throw immediately
     if (status === 400) {
       if (rawMsg.includes("API key not valid") || rawMsg.includes("API_KEY_INVALID")) {
         throw new Error(`Invalid API Key (HTTP 400): Google rejected this API key. Please ensure you copied the complete key from Google AI Studio (Gemini keys start with 'AIzaSy...'). Server: ${rawMsg}`);
@@ -559,19 +712,66 @@ Always ground your answers in these real figures when available.`;
       throw new Error(`Google API Bad Request (HTTP 400): ${rawMsg || "Please verify your model name and key."}`);
     } else if (status === 403) {
       throw new Error(`Permission Denied (HTTP 403): The API key lacks permissions or Gemini API is not enabled. Server: ${rawMsg}`);
-    } else if (status === 404) {
-      throw new Error(`Model Not Found (HTTP 404): The model '${model}' is invalid or not available. Try selecting 'gemini-1.5-flash'. Server: ${rawMsg}`);
     } else if (status === 429) {
       throw new Error(`Rate Limit Exceeded (HTTP 429): Google Gemini rate limit reached. Please wait a minute before sending another request. Server: ${rawMsg}`);
     }
     throw new Error(rawMsg || `Gemini API error (HTTP ${res.status})`);
   }
 
-  const data = await res.json();
-  if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
-    return data.candidates[0].content.parts.map(p => p.text).join("");
+  // Both v1 and v1beta failed with 404 for this specific model name.
+  // Query ListModels to find what models ARE authorized on this key!
+  console.warn(`Model '${model}' not found on v1 or v1beta. Querying ListModels for authorized models on this key...`);
+  try {
+    const discovered = await getGeminiAvailableModels(apiKey);
+    if (discovered && discovered.length > 0) {
+      // Refresh the model dropdown in the UI
+      populateModelDropdown(discovered.map(d => ({ id: d.id, name: `${d.name} (${d.id})` })));
+
+      // Try the best matching fallback model
+      const preferred = ["gemini-1.5-flash-latest", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-001", "gemini-1.5-flash-002", "gemini-1.5-pro", "gemini-pro"];
+      let fallback = discovered[0].id;
+      for (const pref of preferred) {
+        if (discovered.some(d => d.id === pref)) {
+          fallback = pref;
+          break;
+        }
+      }
+
+      console.log(`Auto-discovered models. Retrying with model: ${fallback}`);
+      for (const apiVer of ["v1", "v1beta"]) {
+        try {
+          const fbEndpoint = `https://generativelanguage.googleapis.com/${apiVer}/models/${encodeURIComponent(fallback)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+          const fbRes = await fetch(fbEndpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: contents,
+              generationConfig: { temperature: cfg.temperature || 0.7, maxOutputTokens: 2048 }
+            })
+          });
+          if (fbRes.ok) {
+            const data = await fbRes.json();
+            if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
+              if (state.aiSettings) state.aiSettings.model = fallback;
+              const modelSelect = document.getElementById("settings-ai-model");
+              if (modelSelect) modelSelect.value = fallback;
+              saveStateToStorage();
+              return data.candidates[0].content.parts.map(p => p.text).join("");
+            }
+          }
+        } catch (e) {}
+      }
+
+      const modelListStr = discovered.map(d => d.id).slice(0, 6).join(", ");
+      throw new Error(`The model '${model}' was not found, but we discovered these available models for your API key: [${modelListStr}]. Please select one of these models from the dropdown or click 'Discover models'.`);
+    }
+  } catch (discErr) {
+    if (discErr.message && discErr.message.includes("we discovered these available models")) {
+      throw discErr;
+    }
   }
-  throw new Error("No text response received from Gemini API.");
+
+  throw new Error(`Model Not Found (HTTP 404): '${model}' was not found on v1 or v1beta. Server: ${lastErrorMsg}. Try selecting 'gemini-1.5-flash-latest' or 'gemini-2.0-flash', or click 'Discover models'.`);
 }
 
 // Call OpenAI or Compatible API
@@ -811,6 +1011,8 @@ async function testAIConnection() {
     statusBadge.className = "badge badge-active";
     showToast("AI Assistant connected successfully!", "success");
 
+    const activeModel = (state.aiSettings && state.aiSettings.model) || model;
+
     if (errDetails) {
       errDetails.style.display = "block";
       errDetails.style.background = "rgba(0, 204, 136, 0.1)";
@@ -820,7 +1022,7 @@ async function testAIConnection() {
           <i class="fa-solid fa-circle-check"></i> Connection Successful!
         </div>
         <div style="color: var(--text-muted); font-size: 0.8rem;">
-          Successfully authenticated with <strong>${provider === 'gemini' ? 'Google Gemini' : 'OpenAI'}</strong> (Model: <code>${escapeHtml(model)}</code>).<br>
+          Successfully authenticated with <strong>${provider === 'gemini' ? 'Google Gemini' : 'OpenAI'}</strong> (Model: <code>${escapeHtml(activeModel)}</code>).<br>
           Verification response: <em>"${escapeHtml(reply.trim().slice(0, 100))}"</em>
         </div>
       `;
@@ -829,7 +1031,7 @@ async function testAIConnection() {
     state.aiSettings = {
       provider,
       apiKey,
-      model,
+      model: activeModel,
       customBaseUrl: baseUrl,
       includeContext: document.getElementById("settings-ai-include-context") ? document.getElementById("settings-ai-include-context").checked : true,
       temperature: 0.7
@@ -873,6 +1075,11 @@ async function testAIConnection() {
         tips = `
           <li><strong>OpenAI:</strong> Make sure your OpenAI account has paid credits / billing setup (<a href="https://platform.openai.com/account/billing" target="_blank" style="color: var(--accent-teal); text-decoration: underline;">billing settings</a>).</li>
           <li><strong>Gemini:</strong> The free tier has a limit of 15 requests/minute. Wait a few moments before trying again.</li>
+        `;
+      } else if (errMsg.includes("Model Not Found") || errMsg.includes("404") || errMsg.includes("not found for API version")) {
+        tips = `
+          <li>Click the <strong>'Discover models'</strong> button above the model selector to auto-load the exact models authorized for your key.</li>
+          <li>Alternatively, select <code>gemini-1.5-flash-latest</code> or <code>gemini-2.0-flash</code> from the dropdown.</li>
         `;
       } else if (errMsg.includes("Region Not Supported")) {
         tips = `
@@ -1038,6 +1245,12 @@ function bindAIEvents() {
     providerSelect.addEventListener("change", (e) => {
       updateAIProviderUI(e.target.value);
     });
+  }
+
+  // Discover and fetch authorized models from provider API
+  const btnFetchModels = document.getElementById("btn-fetch-ai-models");
+  if (btnFetchModels) {
+    btnFetchModels.addEventListener("click", discoverAndPopulateAIModels);
   }
 
   // Toggle API key visibility (show/hide password text)
