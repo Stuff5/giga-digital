@@ -29,7 +29,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=24">
+  <link rel="stylesheet" href="styles.css?v=25">
   
   <!-- Early theme application to prevent FOUC / light theme flicker -->
   <script>
@@ -189,6 +189,9 @@
             </button>
             <button class="btn btn-icon btn-outline" id="btn-open-help" title="Help & Documentation (F1)">
               <i class="fa-solid fa-circle-question"></i>
+            </button>
+            <button class="btn btn-icon btn-outline" id="btn-topbar-ai" title="GameVault AI Merchant Assistant (Ctrl+Space)" style="color: var(--accent-cyan);">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
             </button>
             <div style="position: relative;" id="notification-bell-container">
               <button class="btn btn-icon btn-outline" id="btn-notification-bell" title="Notification Center">
@@ -2607,6 +2610,76 @@
 
 
 
+                <!-- AI Assistant Configuration Card -->
+                <div class="calc-card" id="card-ai-settings" style="margin-bottom: 0; padding: 24px; border: 2px solid var(--accent-cyan); background: hsla(180, 85%, 50%, 0.02); display: flex; flex-direction: column; gap: 20px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color); padding-bottom: 12px;">
+                    <h3 style="margin: 0; font-size: 1.2rem; color: var(--text-main); font-weight: 700; display: flex; align-items: center; gap: 10px;">
+                      <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent-cyan);"></i> AI Merchant Assistant Setup
+                    </h3>
+                    <span id="ai-test-status-badge" class="badge badge-sold">Not Verified</span>
+                  </div>
+                  
+                  <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: -8px; margin-bottom: 0; line-height: 1.5;">
+                    Connect your AI model to enable intelligent, deep-reasoning co-pilot analysis of your game key sales, pricing strategies, and stock inventory.
+                  </p>
+
+                  <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+                    <div class="form-row-2">
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="settings-ai-provider" style="font-size: 0.85rem; font-weight: 600;">AI Provider</label>
+                        <select id="settings-ai-provider" class="form-control" style="background-color: var(--bg-input); height: 38px;">
+                          <option value="gemini">Google Gemini (Recommended - Free Tier Available)</option>
+                          <option value="openai">OpenAI / Compatible Endpoint (GPT-4o, DeepSeek, Ollama)</option>
+                        </select>
+                      </div>
+
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="settings-ai-model" style="font-size: 0.85rem; font-weight: 600;">Model</label>
+                        <select id="settings-ai-model" class="form-control" style="background-color: var(--bg-input); height: 38px;">
+                          <option value="gemini-1.5-flash">Gemini 1.5 Flash (Recommended - Fast & Free Tier)</option>
+                          <option value="gemini-2.0-flash">Gemini 2.0 Flash (Next-Gen Fast)</option>
+                          <option value="gemini-1.5-pro">Gemini 1.5 Pro (Deep Reasoning)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <label for="settings-ai-apikey" style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0;">API Key</label>
+                        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" style="font-size: 0.75rem; color: var(--accent-cyan); text-decoration: underline;" id="link-get-api-key">
+                          Get free Gemini API key &nearr;
+                        </a>
+                      </div>
+                      <div class="input-with-icon">
+                        <i class="fa-solid fa-key"></i>
+                        <input type="password" id="settings-ai-apikey" class="form-control" placeholder="AIzaSy... or sk-..." style="background-color: var(--bg-input); padding-left: 32px; height: 38px;">
+                      </div>
+                    </div>
+
+                    <div class="form-group" id="settings-ai-custom-url-group" style="margin-bottom: 0; display: none;">
+                      <label for="settings-ai-baseurl" style="font-size: 0.85rem; font-weight: 600;">API Base URL (OpenAI Compatible)</label>
+                      <input type="url" id="settings-ai-baseurl" class="form-control" placeholder="https://api.openai.com/v1" value="https://api.openai.com/v1" style="background-color: var(--bg-input); height: 38px;">
+                      <small class="form-help" style="margin-top: 4px; display: block; font-size: 0.75rem;">Works with OpenAI, DeepSeek, Groq, OpenRouter, or local Ollama (http://localhost:11434/v1).</small>
+                    </div>
+
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 4px;">
+                      <label class="checkbox-container" style="margin-bottom: 0;">
+                        <input type="checkbox" id="settings-ai-include-context" checked>
+                        <span class="checkbox-label" style="font-size: 0.85rem; font-weight: 500;">Inject live store context (Inventory counts, sales, margins) into AI queries</span>
+                      </label>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; margin-top: 8px; flex-wrap: wrap;">
+                      <button type="button" class="btn btn-outline btn-sm" id="btn-test-ai-connection" style="flex: 1; min-width: 140px; display: flex; align-items: center; justify-content: center; gap: 8px; height: 36px;">
+                        <i class="fa-solid fa-plug-circle-check"></i> Test Connection
+                      </button>
+                      <button type="button" class="btn btn-primary btn-sm" id="btn-save-ai-settings" style="flex: 1; min-width: 140px; display: flex; align-items: center; justify-content: center; gap: 8px; height: 36px;">
+                        <i class="fa-solid fa-floppy-disk"></i> Save AI Settings
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Database Configuration Card -->
                 <div class="calc-card" style="margin-bottom: 0; padding: 24px; border: 2px solid var(--accent-purple-glow); background: hsla(270, 85%, 60%, 0.01); display: flex; flex-direction: column; gap: 24px;">
                   <h3 style="margin-bottom: 0; padding-bottom: 12px; border-bottom: 2px solid var(--border-color); font-size: 1.2rem; color: var(--text-main); font-weight: 700; display: flex; align-items: center; gap: 10px; border-top: none;">
@@ -3369,13 +3442,91 @@
     <!-- Focussed widget is appended here dynamically -->
   </div>
 
+  <!-- FLOATING AI ASSISTANT TRIGGER BUTTON -->
+  <button type="button" class="btn-floating-ai" id="btn-floating-ai" title="Open AI Merchant Assistant (Ctrl+Space)">
+    <i class="fa-solid fa-wand-magic-sparkles"></i>
+    <span class="ai-fab-pulse"></span>
+  </button>
+
+  <!-- AI ASSISTANT OVERLAY BACKDROP -->
+  <div class="ai-assistant-overlay" id="ai-assistant-overlay"></div>
+
+  <!-- AI ASSISTANT SLIDE-OVER DRAWER -->
+  <div class="ai-assistant-drawer" id="ai-assistant-drawer">
+    <div class="ai-drawer-header">
+      <div class="ai-header-brand">
+        <div class="ai-header-icon">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+        </div>
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--text-main);">GameVault AI</h3>
+            <span id="ai-drawer-provider-badge" class="badge badge-active" style="font-size: 0.65rem;">Gemini Active</span>
+          </div>
+          <div id="ai-context-live-pill" class="ai-context-live-pill">
+            <i class="fa-solid fa-circle" style="color: var(--accent-teal); font-size: 0.55rem;"></i> Live Business Context
+          </div>
+        </div>
+      </div>
+      <div class="ai-header-actions">
+        <button type="button" class="btn btn-icon btn-outline btn-xs" id="btn-clear-ai-chat" title="Clear Conversation" style="width: 30px; height: 30px; font-size: 0.75rem;">
+          <i class="fa-solid fa-trash-can"></i>
+        </button>
+        <button type="button" class="btn btn-icon btn-outline btn-xs" id="btn-ai-drawer-settings" title="Configure AI Provider & Key" style="width: 30px; height: 30px; font-size: 0.75rem;">
+          <i class="fa-solid fa-gear"></i>
+        </button>
+        <button type="button" class="btn-close-drawer" id="btn-close-ai-drawer" style="width: 30px; height: 30px; font-size: 1.2rem;">&times;</button>
+      </div>
+    </div>
+
+    <!-- Quick Action Prompt Chips -->
+    <div class="ai-quick-chips-wrapper">
+      <div class="ai-quick-chips" id="ai-quick-chips">
+        <button type="button" class="ai-prompt-chip" data-prompt="Analyze my sales and profit margins for this month and give strategic advice.">
+          <i class="fa-solid fa-chart-line text-purple"></i> Sales & Profit Audit
+        </button>
+        <button type="button" class="ai-prompt-chip" data-prompt="What inventory keys are in low stock or need urgent restock?">
+          <i class="fa-solid fa-triangle-exclamation text-warning"></i> Restock Priorities
+        </button>
+        <button type="button" class="ai-prompt-chip" data-prompt="Audit my pricing, markups, and any transactions with low profit margins.">
+          <i class="fa-solid fa-tags text-teal"></i> Pricing & Margin Review
+        </button>
+        <button type="button" class="ai-prompt-chip" data-prompt="Which platforms and suppliers give me the highest return on investment?">
+          <i class="fa-solid fa-gamepad text-pink"></i> Top Platforms & ROI
+        </button>
+      </div>
+    </div>
+
+    <!-- Chat Message History -->
+    <div class="ai-chat-messages" id="ai-chat-messages">
+      <!-- Messages injected dynamically -->
+    </div>
+
+    <!-- Input Form -->
+    <div class="ai-chat-footer">
+      <form id="ai-chat-form" class="ai-chat-form">
+        <div class="ai-input-container">
+          <textarea id="ai-prompt-input" class="ai-prompt-input" rows="1" placeholder="Ask anything about inventory, sales, pricing... (Enter to send)"></textarea>
+          <button type="submit" id="btn-send-ai-message" class="btn-send-ai" title="Send message">
+            <i class="fa-solid fa-paper-plane"></i>
+          </button>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; font-size: 0.7rem; color: var(--text-muted); padding: 0 4px;">
+          <span>Tip: Press <kbd style="background: var(--bg-input); padding: 1px 4px; border-radius: 3px; border: 1px solid var(--border-color);">Ctrl</kbd> + <kbd style="background: var(--bg-input); padding: 1px 4px; border-radius: 3px; border: 1px solid var(--border-color);">Space</kbd> to toggle</span>
+          <span>Google Gemini & OpenAI</span>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=24"></script>
-  <script src="src/state.js?v=24"></script>
-  <script src="src/api.js?v=24"></script>
-  <script src="src/charts.js?v=24"></script>
-  <script src="src/ui.js?v=24"></script>
-  <script src="src/importer.js?v=24"></script>
-  <script src="app.js?v=24"></script>
+  <script src="config.js?v=25"></script>
+  <script src="src/state.js?v=25"></script>
+  <script src="src/api.js?v=25"></script>
+  <script src="src/charts.js?v=25"></script>
+  <script src="src/ui.js?v=25"></script>
+  <script src="src/ai.js?v=25"></script>
+  <script src="src/importer.js?v=25"></script>
+  <script src="app.js?v=25"></script>
 </body>
 </html>

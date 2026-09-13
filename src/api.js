@@ -1105,6 +1105,13 @@ async function dbLoadState() {
           } catch(e) {
             console.error("Error parsing widgetSettings from database sync:", e);
           }
+        } else if (s.key === "aiSettings") {
+          try {
+            state.aiSettings = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+            if (typeof syncAISettingsUI === "function") syncAISettingsUI();
+          } catch(e) {
+            console.error("Error parsing aiSettings from database sync:", e);
+          }
         } else if (s.key === "favoriteGames") {
           try {
             state.favoriteGames = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
@@ -1266,7 +1273,8 @@ async function dbSeedDatabase() {
       { key: "financeOrder", value: state.financeOrder },
       { key: "dashboardSpans", value: state.dashboardSpans },
       { key: "financeSpans", value: state.financeSpans },
-      { key: "widgetSettings", value: state.widgetSettings }
+      { key: "widgetSettings", value: state.widgetSettings },
+      { key: "aiSettings", value: state.aiSettings }
     ];
     
     for (const s of settings) {

@@ -54,6 +54,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Initialize notification center
     initNotificationCenter();
 
+    // Initialize AI Assistant
+    if (typeof initAIAssistant === "function") {
+      initAIAssistant();
+    }
+
     // Set up auth forms event listeners
     const loginForm = document.getElementById("login-form");
     if (loginForm) {

@@ -729,6 +729,14 @@ let state = {
     markupAnalysis: 1,
     financeBenchmark: 2,
     financeTracker: 1
+  },
+  aiSettings: {
+    provider: "gemini",
+    apiKey: "",
+    model: "gemini-1.5-flash",
+    customBaseUrl: "https://api.openai.com/v1",
+    includeContext: true,
+    temperature: 0.7
   }
 };
 
@@ -1317,6 +1325,15 @@ function loadStateFromStorage() {
       }
     }
 
+    const storedAiSettings = localStorage.getItem("gv_ai_settings");
+    if (storedAiSettings) {
+      try {
+        state.aiSettings = { ...state.aiSettings, ...JSON.parse(storedAiSettings) };
+      } catch (e) {
+        console.error("Error parsing AI settings, using defaults:", e);
+      }
+    }
+
     try {
       const storedRecycle = localStorage.getItem("gv_recycle_bin" + userSuffix);
       state.recycleBin = storedRecycle ? JSON.parse(storedRecycle) : { inventory: [], sales: [] };
@@ -1470,6 +1487,7 @@ function saveStateToStorage() {
   localStorage.setItem("gv_dashboard_spans", JSON.stringify(state.dashboardSpans));
   localStorage.setItem("gv_finance_spans", JSON.stringify(state.financeSpans));
   localStorage.setItem("gv_widget_settings", JSON.stringify(state.widgetSettings));
+  localStorage.setItem("gv_ai_settings", JSON.stringify(state.aiSettings));
   if (state.customLogo) {
     localStorage.setItem("gv_custom_logo", state.customLogo);
   } else {

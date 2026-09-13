@@ -4970,6 +4970,10 @@ function updateUI() {
   
   const recycleBulkBar = document.getElementById("recycle-bulk-actions");
   if (recycleBulkBar) recycleBulkBar.classList.add("hidden");
+
+  if (typeof updateAIContextBadge === "function") {
+    updateAIContextBadge();
+  }
 }
 
 function renderSuppliers() {
