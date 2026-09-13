@@ -88,7 +88,9 @@ async function getGeminiAvailableModels(apiKey) {
   if (!cleanKey) return [];
 
   const foundModels = [];
-  for (const apiVer of ["v1", "v1beta"]) {
+  let lastServerErr = "";
+
+  for (const apiVer of ["v1beta", "v1"]) {
     try {
       const res = await fetch(`https://generativelanguage.googleapis.com/${apiVer}/models?key=${encodeURIComponent(cleanKey)}`);
       if (res.ok) {
@@ -108,11 +110,23 @@ async function getGeminiAvailableModels(apiKey) {
             }
           });
         }
+      } else {
+        let errData = {};
+        try { errData = await res.json(); } catch (e) {}
+        const msg = (errData.error && errData.error.message) || `HTTP ${res.status}`;
+        lastServerErr = msg;
+        console.warn(`ListModels error on ${apiVer}:`, msg);
       }
     } catch (e) {
       console.warn(`ListModels error on ${apiVer}:`, e);
+      lastServerErr = e.message || "Network request failed";
     }
   }
+
+  if (foundModels.length === 0 && lastServerErr) {
+    throw new Error(lastServerErr);
+  }
+
   return foundModels;
 }
 
@@ -262,14 +276,34 @@ function syncAISettingsUI() {
   const cfg = state.aiSettings || {
     provider: "gemini",
     apiKey: "",
+    geminiApiKey: "",
+    openaiApiKey: "",
     model: "gemini-1.5-flash",
     customBaseUrl: "https://api.openai.com/v1",
     includeContext: true
   };
 
+  // Auto-migrate legacy single apiKey if specific slots are empty
+  if (cfg.apiKey) {
+    if (cfg.apiKey.startsWith("sk-") && !cfg.openaiApiKey) {
+      cfg.openaiApiKey = cfg.apiKey;
+    } else if (cfg.apiKey.startsWith("AIzaSy") && !cfg.geminiApiKey) {
+      cfg.geminiApiKey = cfg.apiKey;
+    }
+  }
+
   const provider = cfg.provider || "gemini";
   if (providerSelect) providerSelect.value = provider;
-  if (apiKeyInput) apiKeyInput.value = cfg.apiKey || "";
+
+  const currentKey = provider === "gemini"
+    ? (cfg.geminiApiKey || (cfg.provider === "gemini" ? cfg.apiKey : ""))
+    : (cfg.openaiApiKey || (cfg.provider === "openai" ? cfg.apiKey : ""));
+
+  if (apiKeyInput) {
+    apiKeyInput.value = currentKey || "";
+    apiKeyInput.placeholder = provider === "gemini" ? "AIzaSy... (Free key from Google AI Studio)" : "sk-... (OpenAI API key)";
+  }
+
   if (baseUrlInput) baseUrlInput.value = cfg.customBaseUrl || "https://api.openai.com/v1";
   if (includeContextCheck) includeContextCheck.checked = cfg.includeContext !== false;
 
@@ -279,9 +313,9 @@ function syncAISettingsUI() {
   // Update AI status label in drawer
   const statusLabel = document.getElementById("ai-drawer-provider-badge");
   if (statusLabel) {
-    const cleanKey = sanitizeApiKey(cfg.apiKey);
+    const cleanKey = sanitizeApiKey(currentKey);
     if (cleanKey) {
-      statusLabel.textContent = cfg.provider === "gemini" ? "Gemini Active" : "OpenAI Active";
+      statusLabel.textContent = provider === "gemini" ? "Gemini Active" : "OpenAI Active";
       statusLabel.className = "badge badge-active";
     } else {
       statusLabel.textContent = "Demo / Offline Mode";
@@ -771,6 +805,32 @@ Always ground your answers in these real figures when available.`;
     }
   }
 
+  // Also attempt Google's OpenAI-compatible endpoint as transparent fallback
+  try {
+    const oaiRes = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: model || "gemini-1.5-flash",
+        messages: [
+          { role: "system", content: systemInstruction },
+          { role: "user", content: userQuery }
+        ],
+        temperature: cfg.temperature || 0.7,
+        max_tokens: 2048
+      })
+    });
+    if (oaiRes.ok) {
+      const oaiData = await oaiRes.json();
+      if (oaiData.choices && oaiData.choices[0] && oaiData.choices[0].message) {
+        return oaiData.choices[0].message.content;
+      }
+    }
+  } catch (oaiE) {}
+
   throw new Error(`Model Not Found (HTTP 404): '${model}' was not found on v1 or v1beta. Server: ${lastErrorMsg}. Try selecting 'gemini-1.5-flash-latest' or 'gemini-2.0-flash', or click 'Discover models'.`);
 }
 
@@ -888,12 +948,22 @@ async function sendAIMessage(queryText) {
 
   try {
     const appContext = getAIAppContext();
+    const provider = cfg.provider || "gemini";
+    const apiKey = provider === "gemini"
+      ? (cfg.geminiApiKey || (cfg.provider === "gemini" ? cfg.apiKey : ""))
+      : (cfg.openaiApiKey || (cfg.provider === "openai" ? cfg.apiKey : ""));
 
-    if (cfg.apiKey && cfg.apiKey.trim()) {
-      if (cfg.provider === "gemini") {
-        assistantReply = await callGeminiAPI(text, appContext, cfg);
+    const activeCfg = {
+      ...cfg,
+      provider,
+      apiKey
+    };
+
+    if (apiKey && apiKey.trim()) {
+      if (provider === "gemini") {
+        assistantReply = await callGeminiAPI(text, appContext, activeCfg);
       } else {
-        assistantReply = await callOpenAIAPI(text, appContext, cfg);
+        assistantReply = await callOpenAIAPI(text, appContext, activeCfg);
       }
     } else {
       await new Promise(r => setTimeout(r, 600));
@@ -931,7 +1001,7 @@ async function testAIConnection() {
 
   let provider = providerSelect ? providerSelect.value : "gemini";
   let apiKey = apiKeyInput ? sanitizeApiKey(apiKeyInput.value) : "";
-  let model = modelSelect ? modelSelect.value : "gemini-1.5-flash";
+  let model = modelSelect ? modelSelect.value : (provider === "gemini" ? "gemini-1.5-flash" : "gpt-4o-mini");
   const baseUrl = baseUrlInput ? baseUrlInput.value.trim() : "https://api.openai.com/v1";
 
   // If sanitized key differs from input (e.g. had surrounding quotes or spaces), update input
@@ -957,7 +1027,9 @@ async function testAIConnection() {
         </div>
         <div style="color: var(--text-muted); font-size: 0.8rem;">
           Please enter an API key to test connection.<br>
-          <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: var(--accent-teal); text-decoration: underline;">Get free Google Gemini API Key &nearr;</a>
+          <a href="${provider === 'gemini' ? 'https://aistudio.google.com/app/apikey' : 'https://platform.openai.com/api-keys'}" target="_blank" style="color: var(--accent-teal); text-decoration: underline;">
+            ${provider === 'gemini' ? 'Get free Google Gemini API Key &nearr;' : 'Get OpenAI API Key &nearr;'}
+          </a>
         </div>
       `;
     }
@@ -965,26 +1037,78 @@ async function testAIConnection() {
     return;
   }
 
-  // Automatic provider mismatch correction
+  // Provider mismatch validation: explain clearly with action buttons instead of silent hijacking
   const detected = detectProviderFromKey(apiKey);
   if (detected && detected !== provider) {
-    if (detected === "openai" && provider === "gemini") {
-      showToast("Detected OpenAI key (sk-...). Switching provider to OpenAI.", "info");
-      provider = "openai";
-      if (providerSelect) {
-        providerSelect.value = "openai";
+    statusBadge.textContent = "Key Mismatch";
+    statusBadge.className = "badge badge-disputed";
+    if (errDetails) {
+      errDetails.style.display = "block";
+      errDetails.style.background = "rgba(255, 170, 0, 0.1)";
+      errDetails.style.border = "1px solid var(--accent-gold)";
+
+      if (detected === "openai" && provider === "gemini") {
+        errDetails.innerHTML = `
+          <div style="color: var(--accent-gold); font-weight: 600; margin-bottom: 6px;">
+            <i class="fa-solid fa-triangle-exclamation"></i> OpenAI API Key entered for Google Gemini
+          </div>
+          <div style="color: var(--text-main); font-size: 0.82rem; line-height: 1.5; margin-bottom: 8px;">
+            The key you entered starts with <code>sk-...</code>, which is an <strong>OpenAI</strong> API key format.<br>
+            Google Gemini keys start with <code>AIzaSy...</code> and are <strong>100% free</strong> with no credit card required at Google AI Studio.
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <a href="https://aistudio.google.com/app/apikey" target="_blank" class="btn btn-primary btn-sm" style="text-decoration: none;">
+              <i class="fa-solid fa-key"></i> Get Free Google Gemini Key &nearr;
+            </a>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-fix-switch-openai">
+              <i class="fa-solid fa-arrow-right-arrow-left"></i> Switch Provider to OpenAI
+            </button>
+          </div>
+        `;
+        const btnFix = document.getElementById("btn-fix-switch-openai");
+        if (btnFix) {
+          btnFix.addEventListener("click", () => {
+            if (providerSelect) {
+              providerSelect.value = "openai";
+              updateAIProviderUI("openai", "gpt-4o-mini");
+            }
+            if (!state.aiSettings) state.aiSettings = {};
+            state.aiSettings.openaiApiKey = apiKey;
+            state.aiSettings.provider = "openai";
+            testAIConnection();
+          });
+        }
+      } else if (detected === "gemini" && provider === "openai") {
+        errDetails.innerHTML = `
+          <div style="color: var(--accent-gold); font-weight: 600; margin-bottom: 6px;">
+            <i class="fa-solid fa-triangle-exclamation"></i> Google Gemini Key entered for OpenAI
+          </div>
+          <div style="color: var(--text-main); font-size: 0.82rem; line-height: 1.5; margin-bottom: 8px;">
+            The key you entered starts with <code>AIzaSy...</code>, which is a <strong>Google Gemini</strong> API key format.
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button type="button" class="btn btn-primary btn-sm" id="btn-fix-switch-gemini">
+              <i class="fa-solid fa-arrow-right-arrow-left"></i> Switch Provider to Google Gemini
+            </button>
+          </div>
+        `;
+        const btnFix = document.getElementById("btn-fix-switch-gemini");
+        if (btnFix) {
+          btnFix.addEventListener("click", () => {
+            if (providerSelect) {
+              providerSelect.value = "gemini";
+              updateAIProviderUI("gemini", "gemini-1.5-flash");
+            }
+            if (!state.aiSettings) state.aiSettings = {};
+            state.aiSettings.geminiApiKey = apiKey;
+            state.aiSettings.provider = "gemini";
+            testAIConnection();
+          });
+        }
       }
-      updateAIProviderUI("openai", "gpt-4o-mini");
-      model = "gpt-4o-mini";
-    } else if (detected === "gemini" && provider === "openai") {
-      showToast("Detected Google Gemini key (AIzaSy...). Switching provider to Google Gemini.", "info");
-      provider = "gemini";
-      if (providerSelect) {
-        providerSelect.value = "gemini";
-      }
-      updateAIProviderUI("gemini", "gemini-1.5-flash");
-      model = "gemini-1.5-flash";
     }
+    showToast("API key format does not match selected provider.", "warning");
+    return;
   }
 
   btn.disabled = true;
@@ -1028,14 +1152,19 @@ async function testAIConnection() {
       `;
     }
 
-    state.aiSettings = {
-      provider,
-      apiKey,
-      model: activeModel,
-      customBaseUrl: baseUrl,
-      includeContext: document.getElementById("settings-ai-include-context") ? document.getElementById("settings-ai-include-context").checked : true,
-      temperature: 0.7
-    };
+    if (!state.aiSettings) state.aiSettings = {};
+    if (provider === "gemini") {
+      state.aiSettings.geminiApiKey = apiKey;
+    } else {
+      state.aiSettings.openaiApiKey = apiKey;
+    }
+    state.aiSettings.provider = provider;
+    state.aiSettings.apiKey = apiKey;
+    state.aiSettings.model = activeModel;
+    state.aiSettings.customBaseUrl = baseUrl;
+    state.aiSettings.includeContext = document.getElementById("settings-ai-include-context") ? document.getElementById("settings-ai-include-context").checked : true;
+    state.aiSettings.temperature = 0.7;
+
     saveStateToStorage();
     if (window.supabaseClient) {
       dbSaveSettings("aiSettings", state.aiSettings);
@@ -1073,8 +1202,8 @@ async function testAIConnection() {
         `;
       } else if (errMsg.includes("Quota") || errMsg.includes("Rate Limit") || errMsg.includes("429")) {
         tips = `
-          <li><strong>OpenAI:</strong> Make sure your OpenAI account has paid credits / billing setup (<a href="https://platform.openai.com/account/billing" target="_blank" style="color: var(--accent-teal); text-decoration: underline;">billing settings</a>).</li>
-          <li><strong>Gemini:</strong> The free tier has a limit of 15 requests/minute. Wait a few moments before trying again.</li>
+          <li><strong>OpenAI:</strong> OpenAI accounts do not include free API usage ($0 default balance). Add prepaid credits at <a href="https://platform.openai.com/settings/organization/billing" target="_blank" style="color: var(--accent-teal); text-decoration: underline;">OpenAI Billing Settings &nearr;</a>.</li>
+          <li><strong>Free Alternative:</strong> Google Gemini offers a 100% free tier (15 requests/min, no credit card required). Switch Provider to <strong>Google Gemini</strong> and get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: var(--accent-teal); text-decoration: underline;">Google AI Studio &nearr;</a>.</li>
         `;
       } else if (errMsg.includes("Model Not Found") || errMsg.includes("404") || errMsg.includes("not found for API version")) {
         tips = `
@@ -1210,7 +1339,7 @@ function bindAIEvents() {
       const provider = document.getElementById("settings-ai-provider") ? document.getElementById("settings-ai-provider").value : "gemini";
       const rawKey = document.getElementById("settings-ai-apikey") ? document.getElementById("settings-ai-apikey").value : "";
       const apiKey = sanitizeApiKey(rawKey);
-      const model = document.getElementById("settings-ai-model") ? document.getElementById("settings-ai-model").value : "gemini-1.5-flash";
+      const model = document.getElementById("settings-ai-model") ? document.getElementById("settings-ai-model").value : (provider === "gemini" ? "gemini-1.5-flash" : "gpt-4o-mini");
       const baseUrl = document.getElementById("settings-ai-baseurl") ? document.getElementById("settings-ai-baseurl").value.trim() : "https://api.openai.com/v1";
       const includeContext = document.getElementById("settings-ai-include-context") ? document.getElementById("settings-ai-include-context").checked : true;
 
@@ -1218,14 +1347,19 @@ function bindAIEvents() {
       const keyInput = document.getElementById("settings-ai-apikey");
       if (keyInput) keyInput.value = apiKey;
 
-      state.aiSettings = {
-        provider,
-        apiKey,
-        model,
-        customBaseUrl: baseUrl,
-        includeContext,
-        temperature: 0.7
-      };
+      if (!state.aiSettings) state.aiSettings = {};
+      if (provider === "gemini") {
+        state.aiSettings.geminiApiKey = apiKey;
+      } else {
+        state.aiSettings.openaiApiKey = apiKey;
+      }
+      state.aiSettings.provider = provider;
+      state.aiSettings.apiKey = apiKey;
+      state.aiSettings.model = model;
+      state.aiSettings.customBaseUrl = baseUrl;
+      state.aiSettings.includeContext = includeContext;
+      state.aiSettings.temperature = 0.7;
+
       saveStateToStorage();
       if (window.supabaseClient) {
         dbSaveSettings("aiSettings", state.aiSettings);
@@ -1242,8 +1376,52 @@ function bindAIEvents() {
 
   const providerSelect = document.getElementById("settings-ai-provider");
   if (providerSelect) {
+    let prevProvider = providerSelect.value;
+    providerSelect.addEventListener("focus", () => {
+      prevProvider = providerSelect.value;
+    });
     providerSelect.addEventListener("change", (e) => {
-      updateAIProviderUI(e.target.value);
+      const newProvider = e.target.value;
+      const keyInput = document.getElementById("settings-ai-apikey");
+      const currentRawKey = keyInput ? sanitizeApiKey(keyInput.value) : "";
+
+      if (!state.aiSettings) state.aiSettings = {};
+
+      // Save key for the previous provider
+      if (prevProvider === "gemini") {
+        state.aiSettings.geminiApiKey = currentRawKey;
+      } else if (prevProvider === "openai") {
+        state.aiSettings.openaiApiKey = currentRawKey;
+      }
+
+      state.aiSettings.provider = newProvider;
+
+      // Restore key for the newly selected provider
+      const nextKey = newProvider === "gemini"
+        ? (state.aiSettings.geminiApiKey || "")
+        : (state.aiSettings.openaiApiKey || "");
+
+      if (keyInput) {
+        keyInput.value = nextKey;
+      }
+
+      const defaultModel = newProvider === "gemini" ? "gemini-1.5-flash" : "gpt-4o-mini";
+      updateAIProviderUI(newProvider, defaultModel);
+      state.aiSettings.model = defaultModel;
+
+      const errDetails = document.getElementById("ai-test-error-details");
+      if (errDetails) {
+        errDetails.style.display = "none";
+        errDetails.innerHTML = "";
+      }
+
+      const statusBadge = document.getElementById("ai-test-status-badge");
+      if (statusBadge) {
+        statusBadge.textContent = nextKey ? "Ready to Test" : "API Key Required";
+        statusBadge.className = nextKey ? "badge badge-active" : "badge badge-disputed";
+      }
+
+      prevProvider = newProvider;
     });
   }
 
@@ -1267,22 +1445,16 @@ function bindAIEvents() {
     });
   }
 
-  // Auto-detect provider when typing or pasting API key
+  // Synchronize active provider key when typing or pasting without aggressive hijacking
   if (keyInput) {
     keyInput.addEventListener("input", (e) => {
       const raw = e.target.value;
-      const detected = detectProviderFromKey(raw);
-      const sel = document.getElementById("settings-ai-provider");
-      if (detected && sel && detected !== sel.value) {
-        if (detected === "openai" && sel.value === "gemini") {
-          sel.value = "openai";
-          updateAIProviderUI("openai", "gpt-4o-mini");
-          showToast("Detected OpenAI key format (sk-...). Switched provider to OpenAI.", "info");
-        } else if (detected === "gemini" && sel.value === "openai") {
-          sel.value = "gemini";
-          updateAIProviderUI("gemini", "gemini-1.5-flash");
-          showToast("Detected Google Gemini key format (AIzaSy...). Switched provider to Gemini.", "info");
-        }
+      const curProvider = document.getElementById("settings-ai-provider") ? document.getElementById("settings-ai-provider").value : "gemini";
+      if (!state.aiSettings) state.aiSettings = {};
+      if (curProvider === "gemini") {
+        state.aiSettings.geminiApiKey = sanitizeApiKey(raw);
+      } else {
+        state.aiSettings.openaiApiKey = sanitizeApiKey(raw);
       }
     });
   }

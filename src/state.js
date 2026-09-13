@@ -733,6 +733,8 @@ let state = {
   aiSettings: {
     provider: "gemini",
     apiKey: "",
+    geminiApiKey: "",
+    openaiApiKey: "",
     model: "gemini-1.5-flash",
     customBaseUrl: "https://api.openai.com/v1",
     includeContext: true,
