@@ -38,6 +38,105 @@ function detectProviderFromKey(key) {
   return null;
 }
 
+// Normalize Gemini model names (auto-migrating legacy or invalid variants like gemini-2.5-flash-lite / gemini-1.5-flash)
+function normalizeGeminiModel(model) {
+  if (!model || typeof model !== "string") return "gemini-2.5-flash";
+  const m = model.trim();
+  if (
+    m === "gemini-1.5-flash" ||
+    m === "gemini-1.5-pro" ||
+    m === "gemini-2.5-flash-lite" ||
+    m.includes("flash-lite") ||
+    m === "gemini-1.5-flash-latest"
+  ) {
+    return "gemini-2.5-flash";
+  }
+  return m;
+}
+
+// Extract answer text from Gemini generateContent response, safely filtering out reasoning/thinking tokens
+function extractGeminiCandidateText(data) {
+  if (!data || !data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts) {
+    return "";
+  }
+  const parts = data.candidates[0].content.parts;
+  // Gemini 2.5 thinking models output thought parts: { text: "...", thought: true }
+  const answerParts = parts.filter(p => !p.thought && typeof p.text === "string");
+  if (answerParts.length > 0) {
+    return answerParts.map(p => p.text).join("");
+  }
+  return parts.map(p => p.text || "").join("");
+}
+
+// Resilient Gemini generateContent caller that handles parameter sensitivity (e.g. 400 on temperature for thinking models)
+async function sendGeminiGenerateContent(endpoint, contents, cfg) {
+  const payloads = [
+    // 1. GenerationConfig with maxOutputTokens (cleanest for Gemini 2.5 thinking models)
+    {
+      contents: contents,
+      generationConfig: {
+        maxOutputTokens: 8192
+      }
+    },
+    // 2. GenerationConfig with temperature (standard config)
+    {
+      contents: contents,
+      generationConfig: {
+        temperature: cfg && cfg.temperature ? cfg.temperature : 0.7,
+        maxOutputTokens: 8192
+      }
+    },
+    // 3. Minimal payload without generationConfig (failsafe fallback)
+    {
+      contents: contents
+    }
+  ];
+
+  let lastErr = null;
+  let lastStatus = 0;
+
+  for (let i = 0; i < payloads.length; i++) {
+    const payload = payloads[i];
+    let res;
+    try {
+      res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+    } catch (netErr) {
+      throw netErr;
+    }
+
+    if (res.ok) {
+      const data = await res.json();
+      const text = extractGeminiCandidateText(data);
+      return { ok: true, text: text || "OK", data };
+    }
+
+    lastStatus = res.status;
+    let errData = {};
+    try { errData = await res.json(); } catch(e) {}
+    lastErr = errData;
+
+    // If 404, model name is not on this endpoint version; payload variant won't help
+    if (res.status === 404) {
+      break;
+    }
+
+    // If 400 (INVALID_ARGUMENT), payload might have incompatible parameter; retry with minimal payload
+    if (res.status === 400 && i < payloads.length - 1) {
+      console.warn(`Gemini generateContent returned 400 with payload attempt ${i+1}, retrying simplified payload...`, errData);
+      continue;
+    }
+
+    // Other statuses (403, 429) won't change with payload variation
+    break;
+  }
+
+  return { ok: false, status: lastStatus, errData: lastErr };
+}
+
 // Update model dropdown and UI elements based on provider
 function updateAIProviderUI(provider, currentModel) {
   const customBaseUrlGroup = document.getElementById("settings-ai-custom-url-group");
@@ -64,8 +163,6 @@ function updateAIProviderUI(provider, currentModel) {
       <option value="gemini-2.5-flash">Gemini 2.5 Flash (Recommended - Fast & Intelligent)</option>
       <option value="gemini-2.5-pro">Gemini 2.5 Pro (Deep Reasoning)</option>
       <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
-      <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
-      <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
     `;
     const openaiOptions = `
       <option value="gpt-4o-mini">GPT-4o Mini (Recommended)</option>
@@ -75,14 +172,18 @@ function updateAIProviderUI(provider, currentModel) {
     `;
 
     modelSelect.innerHTML = isGemini ? geminiOptions : openaiOptions;
-    if (currentModel) {
-      if (!Array.from(modelSelect.options).some(o => o.value === currentModel)) {
+    let effModel = currentModel;
+    if (isGemini) {
+      effModel = normalizeGeminiModel(currentModel);
+    }
+    if (effModel) {
+      if (!Array.from(modelSelect.options).some(o => o.value === effModel)) {
         const customOpt = document.createElement("option");
-        customOpt.value = currentModel;
-        customOpt.textContent = `${currentModel} (Active)`;
+        customOpt.value = effModel;
+        customOpt.textContent = `${effModel} (Active)`;
         modelSelect.insertBefore(customOpt, modelSelect.firstChild);
       }
-      modelSelect.value = currentModel;
+      modelSelect.value = effModel;
     }
   }
 }
@@ -158,9 +259,9 @@ async function getOpenAIAvailableModels(apiKey, baseUrl) {
 function populateModelDropdown(modelItems) {
   const select = document.getElementById("settings-ai-model");
   if (!select || !Array.isArray(modelItems) || modelItems.length === 0) return;
-  const currentVal = select.value;
+  const currentVal = normalizeGeminiModel(select.value);
   select.innerHTML = modelItems.map(m => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.name ? `${m.name} (${m.id})` : m.id)}</option>`).join("");
-  if (modelItems.some(m => m.id === currentVal && m.id !== "gemini-1.5-flash")) {
+  if (modelItems.some(m => m.id === currentVal)) {
     select.value = currentVal;
   } else {
     const best = modelItems.find(m => m.id === "gemini-2.5-flash") ||
@@ -308,10 +409,12 @@ function syncAISettingsUI() {
     }
   }
 
-  // Auto-migrate deprecated gemini-1.5-flash to modern gemini-2.5-flash
-  if (cfg.model === "gemini-1.5-flash") {
-    cfg.model = "gemini-2.5-flash";
-    if (state.aiSettings) state.aiSettings.model = "gemini-2.5-flash";
+  // Auto-migrate deprecated or invalid models to modern gemini-2.5-flash
+  const normalizedModel = normalizeGeminiModel(cfg.model);
+  if (cfg.model !== normalizedModel) {
+    cfg.model = normalizedModel;
+    if (state.aiSettings) state.aiSettings.model = normalizedModel;
+    saveStateToStorage();
   }
 
   const provider = cfg.provider || "gemini";
@@ -685,9 +788,10 @@ function generateLocalAIAnalysis(promptQuery) {
 
 // Call Google Gemini API
 async function callGeminiAPI(userQuery, appContext, cfg) {
-  let model = cfg.model || "gemini-2.5-flash";
-  if (model === "gemini-1.5-flash") {
-    model = "gemini-2.5-flash";
+  let model = normalizeGeminiModel(cfg.model);
+  if (state.aiSettings && state.aiSettings.model !== model) {
+    state.aiSettings.model = model;
+    saveStateToStorage();
   }
   const apiKey = sanitizeApiKey(cfg.apiKey);
 
@@ -721,19 +825,9 @@ Always ground your answers in these real figures when available.`;
   for (const apiVer of apiVersionsToTry) {
     const endpoint = `https://generativelanguage.googleapis.com/${apiVer}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
-    let res;
+    let result;
     try {
-      res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: contents,
-          generationConfig: {
-            temperature: cfg.temperature || 0.7,
-            maxOutputTokens: 8192
-          }
-        })
-      });
+      result = await sendGeminiGenerateContent(endpoint, contents, cfg);
     } catch (netErr) {
       console.error(`Gemini fetch network error on ${apiVer}:`, netErr);
       throw new Error(
@@ -741,20 +835,13 @@ Always ground your answers in these real figures when available.`;
       );
     }
 
-    if (res.ok) {
-      const data = await res.json();
-      if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
-        const parts = data.candidates[0].content.parts;
-        const answerParts = parts.filter(p => !p.thought && typeof p.text === "string");
-        return answerParts.length > 0 ? answerParts.map(p => p.text).join("") : parts.map(p => p.text || "").join("");
-      }
-      throw new Error("No text response received from Gemini API.");
+    if (result.ok) {
+      return result.text;
     }
 
-    let errData = {};
-    try { errData = await res.json(); } catch (e) {}
+    const errData = result.errData || {};
     const rawMsg = (errData.error && errData.error.message) || "";
-    const status = res.status;
+    const status = result.status;
 
     // If 404, try next API version (e.g. try v1beta then v1)
     if (status === 404) {
@@ -810,36 +897,19 @@ Always ground your answers in these real figures when available.`;
       for (const apiVer of ["v1beta", "v1"]) {
         try {
           const fbEndpoint = `https://generativelanguage.googleapis.com/${apiVer}/models/${encodeURIComponent(fallback)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-          const fbRes = await fetch(fbEndpoint, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: contents,
-              generationConfig: {
-                temperature: cfg.temperature || 0.7,
-                maxOutputTokens: 8192
-              }
-            })
-          });
-          if (fbRes.ok) {
-            const data = await fbRes.json();
-            if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
-              if (!state.aiSettings) state.aiSettings = {};
-              state.aiSettings.model = fallback;
-              const modelSelect = document.getElementById("settings-ai-model");
-              if (modelSelect) modelSelect.value = fallback;
-              saveStateToStorage();
-              if (window.supabaseClient) {
-                dbSaveSettings("aiSettings", state.aiSettings);
-              }
-              const parts = data.candidates[0].content.parts;
-              const answerParts = parts.filter(p => !p.thought && typeof p.text === "string");
-              return answerParts.length > 0 ? answerParts.map(p => p.text).join("") : parts.map(p => p.text || "").join("");
+          const fbResult = await sendGeminiGenerateContent(fbEndpoint, contents, cfg);
+          if (fbResult.ok) {
+            if (!state.aiSettings) state.aiSettings = {};
+            state.aiSettings.model = fallback;
+            const modelSelect = document.getElementById("settings-ai-model");
+            if (modelSelect) modelSelect.value = fallback;
+            saveStateToStorage();
+            if (window.supabaseClient) {
+              dbSaveSettings("aiSettings", state.aiSettings);
             }
+            return fbResult.text;
           } else {
-            let fbErr = {};
-            try { fbErr = await fbRes.json(); } catch(e) {}
-            console.warn(`Fallback retry failed on ${apiVer} with ${fallback}:`, fbErr);
+            console.warn(`Fallback retry failed on ${apiVer} with ${fallback}:`, fbResult.errData);
           }
         } catch (e) {
           console.warn(`Fallback retry network error on ${apiVer}:`, e);
@@ -860,7 +930,6 @@ Always ground your answers in these real figures when available.`;
               { role: "system", content: systemInstruction },
               { role: "user", content: userQuery }
             ],
-            temperature: cfg.temperature || 0.7,
             max_tokens: 8192
           })
         });
@@ -1081,7 +1150,9 @@ async function testAIConnection() {
   let provider = providerSelect ? providerSelect.value : "gemini";
   let apiKey = apiKeyInput ? sanitizeApiKey(apiKeyInput.value) : "";
   let model = modelSelect ? modelSelect.value : (provider === "gemini" ? "gemini-2.5-flash" : "gpt-4o-mini");
-  if (model === "gemini-1.5-flash") model = "gemini-2.5-flash";
+  if (provider === "gemini") {
+    model = normalizeGeminiModel(model);
+  }
   const baseUrl = baseUrlInput ? baseUrlInput.value.trim() : "https://api.openai.com/v1";
 
   // If sanitized key differs from input (e.g. had surrounding quotes or spaces), update input
@@ -1215,9 +1286,9 @@ async function testAIConnection() {
     statusBadge.className = "badge badge-active";
     showToast("AI Assistant connected successfully!", "success");
 
-    const activeModel = (state.aiSettings && state.aiSettings.model && state.aiSettings.model !== "gemini-1.5-flash")
-      ? state.aiSettings.model
-      : (model !== "gemini-1.5-flash" ? model : "gemini-2.5-flash");
+    const activeModel = (provider === "gemini")
+      ? normalizeGeminiModel(state.aiSettings && state.aiSettings.model ? state.aiSettings.model : model)
+      : ((state.aiSettings && state.aiSettings.model) || model);
 
     if (errDetails) {
       errDetails.style.display = "block";
@@ -1421,7 +1492,8 @@ function bindAIEvents() {
       const provider = document.getElementById("settings-ai-provider") ? document.getElementById("settings-ai-provider").value : "gemini";
       const rawKey = document.getElementById("settings-ai-apikey") ? document.getElementById("settings-ai-apikey").value : "";
       const apiKey = sanitizeApiKey(rawKey);
-      const model = document.getElementById("settings-ai-model") ? document.getElementById("settings-ai-model").value : (provider === "gemini" ? "gemini-2.5-flash" : "gpt-4o-mini");
+      const rawModel = document.getElementById("settings-ai-model") ? document.getElementById("settings-ai-model").value : (provider === "gemini" ? "gemini-2.5-flash" : "gpt-4o-mini");
+      const model = provider === "gemini" ? normalizeGeminiModel(rawModel) : rawModel;
       const baseUrl = document.getElementById("settings-ai-baseurl") ? document.getElementById("settings-ai-baseurl").value.trim() : "https://api.openai.com/v1";
       const includeContext = document.getElementById("settings-ai-include-context") ? document.getElementById("settings-ai-include-context").checked : true;
 

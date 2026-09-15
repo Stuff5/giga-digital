@@ -1331,7 +1331,13 @@ function loadStateFromStorage() {
     if (storedAiSettings) {
       try {
         state.aiSettings = { ...state.aiSettings, ...JSON.parse(storedAiSettings) };
-        if (state.aiSettings.model === "gemini-1.5-flash") {
+        if (
+          !state.aiSettings.model ||
+          state.aiSettings.model === "gemini-1.5-flash" ||
+          state.aiSettings.model === "gemini-1.5-pro" ||
+          state.aiSettings.model === "gemini-2.5-flash-lite" ||
+          (typeof state.aiSettings.model === "string" && state.aiSettings.model.includes("flash-lite"))
+        ) {
           state.aiSettings.model = "gemini-2.5-flash";
         }
       } catch (e) {
