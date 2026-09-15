@@ -1143,8 +1143,21 @@ async function synchronizeCloudDatabase() {
       }));
       for (let i = 0; i < mappedPushSales.length; i += upsertBatchSize) {
         const batch = mappedPushSales.slice(i, i + upsertBatchSize);
-        const { error } = await window.supabaseClient.from('sales').upsert(batch);
-        if (error) throw error;
+        let { error } = await window.supabaseClient.from('sales').upsert(batch);
+        if (error) {
+          const checkCol = typeof window.isMissingColumnError === "function" ? window.isMissingColumnError : isMissingColumnError;
+          if (checkCol(error, 'supplierRefunded')) {
+            batch.forEach(b => delete b.supplierRefunded);
+            const res = await window.supabaseClient.from('sales').upsert(batch);
+            error = res.error;
+          }
+          if (error && checkCol(error, 'disputed')) {
+            batch.forEach(b => delete b.disputed);
+            const res = await window.supabaseClient.from('sales').upsert(batch);
+            error = res.error;
+          }
+          if (error) throw error;
+        }
       }
     }
 

@@ -1292,6 +1292,32 @@ async function dbSeedDatabase() {
 }
 
 // Database Mutators
+// Helper to detect if a Supabase error is caused by a missing table column
+// Handles both PostgREST schema cache errors and raw PostgreSQL errors
+function isMissingColumnError(error, columnName) {
+  if (!error || !error.message) return false;
+  const msg = error.message.toLowerCase();
+  const col = String(columnName).toLowerCase();
+  
+  // PostgREST: "Could not find the 'supplierRefunded' column of 'sales' in the schema cache"
+  if (msg.includes(`'${col}' column`) || msg.includes(`"${col}" column`) || msg.includes(`column '${col}'`) || msg.includes(`column "${col}"`)) {
+    return true;
+  }
+  // PostgreSQL: 'column "supplierRefunded" of relation "sales" does not exist'
+  if (msg.includes(`"${col}"`) && msg.includes("does not exist")) {
+    return true;
+  }
+  if (msg.includes(`'${col}'`) && msg.includes("does not exist")) {
+    return true;
+  }
+  // Generic PGRST204 or 42703 check containing the column name
+  if (msg.includes(col) && (msg.includes("schema cache") || msg.includes("does not exist") || error.code === "PGRST204" || error.code === "42703")) {
+    return true;
+  }
+  return false;
+}
+window.isMissingColumnError = isMissingColumnError;
+
 async function dbSaveInventory(item) {
   if (!window.supabaseClient) return false;
   if (state.syncMode === "manual") {
@@ -1299,22 +1325,48 @@ async function dbSaveInventory(item) {
     return true;
   }
   try {
-    const { error } = await window.supabaseClient
+    if (!state.dbMissingColumns) state.dbMissingColumns = {};
+
+    const payload = {
+      id: item.id,
+      title: item.title || "Untitled Game",
+      platform: item.platform || "PC",
+      key: (item.key && String(item.key).trim()) ? String(item.key).trim() : "NO-KEY",
+      cost: item.cost !== undefined ? item.cost : 0,
+      source: item.source || "Direct",
+      purchaseDate: item.purchaseDate || new Date().toISOString().split("T")[0],
+      status: item.status || "Available",
+      notes: item.notes || null
+    };
+
+    if (!state.dbMissingColumns["inventory.imageUrl"]) {
+      payload.imageUrl = item.imageUrl || null;
+    }
+    if (!state.dbMissingColumns["inventory.publisher"]) {
+      payload.publisher = item.publisher || null;
+    }
+
+    let { error } = await window.supabaseClient
       .from('inventory')
-      .upsert({
-        id: item.id,
-        title: item.title || "Untitled Game",
-        platform: item.platform || "PC",
-        key: (item.key && String(item.key).trim()) ? String(item.key).trim() : "NO-KEY",
-        cost: item.cost !== undefined ? item.cost : 0,
-        source: item.source || "Direct",
-        purchaseDate: item.purchaseDate || new Date().toISOString().split("T")[0],
-        imageUrl: item.imageUrl || null,
-        status: item.status || "Available",
-        notes: item.notes || null,
-        publisher: item.publisher || null
-      });
-    if (error) throw error;
+      .upsert(payload);
+
+    if (error) {
+      if (isMissingColumnError(error, 'imageUrl')) {
+        console.warn("Supabase relation 'inventory' is missing the 'imageUrl' column. Caching and retrying without it.");
+        state.dbMissingColumns["inventory.imageUrl"] = true;
+        delete payload.imageUrl;
+        const res = await window.supabaseClient.from('inventory').upsert(payload);
+        error = res.error;
+      }
+      if (error && isMissingColumnError(error, 'publisher')) {
+        console.warn("Supabase relation 'inventory' is missing the 'publisher' column. Caching and retrying without it.");
+        state.dbMissingColumns["inventory.publisher"] = true;
+        delete payload.publisher;
+        const res = await window.supabaseClient.from('inventory').upsert(payload);
+        error = res.error;
+      }
+      if (error) throw error;
+    }
     return true;
   } catch (err) {
     console.error("Error saving inventory item to Supabase:", err);
@@ -1357,6 +1409,8 @@ async function dbSaveSale(sale) {
     return true;
   }
   try {
+    if (!state.dbMissingColumns) state.dbMissingColumns = {};
+
     const payload = {
       id: sale.id,
       inventoryId: sale.inventoryId,
@@ -1368,24 +1422,31 @@ async function dbSaveSale(sale) {
       fees: sale.fees,
       profit: sale.profit,
       saleDate: sale.saleDate,
-      notes: sale.notes || null,
-      disputed: sale.disputed === true,
-      supplierRefunded: sale.supplierRefunded === true
+      notes: sale.notes || null
     };
+
+    if (!state.dbMissingColumns["sales.disputed"]) {
+      payload.disputed = sale.disputed === true;
+    }
+    if (!state.dbMissingColumns["sales.supplierRefunded"]) {
+      payload.supplierRefunded = sale.supplierRefunded === true;
+    }
     
     let { error } = await window.supabaseClient
       .from('sales')
       .upsert(payload);
       
     if (error) {
-      if (error.message && error.message.includes('column "supplierRefunded" of relation "sales" does not exist')) {
-        console.warn("Supabase relation 'sales' is missing the 'supplierRefunded' column. Retrying without it.");
+      if (isMissingColumnError(error, 'supplierRefunded')) {
+        console.warn("Supabase relation 'sales' is missing the 'supplierRefunded' column. Caching and retrying without it.");
+        state.dbMissingColumns["sales.supplierRefunded"] = true;
         delete payload.supplierRefunded;
         const res = await window.supabaseClient.from('sales').upsert(payload);
         error = res.error;
       }
-      if (error && error.message && error.message.includes('column "disputed" of relation "sales" does not exist')) {
-        console.warn("Supabase relation 'sales' is missing the 'disputed' column. Retrying without it. Please update database schema using settings setup wizard.");
+      if (error && isMissingColumnError(error, 'disputed')) {
+        console.warn("Supabase relation 'sales' is missing the 'disputed' column. Caching and retrying without it.");
+        state.dbMissingColumns["sales.disputed"] = true;
         delete payload.disputed;
         const res = await window.supabaseClient.from('sales').upsert(payload);
         error = res.error;
@@ -1434,26 +1495,31 @@ async function dbSaveSupplier(supplier) {
     return;
   }
   try {
-    const { error } = await window.supabaseClient
+    if (!state.dbMissingColumns) state.dbMissingColumns = {};
+
+    const payload = {
+      name: supplier.name,
+      dateAdded: supplier.dateAdded,
+      color: supplier.color,
+      enabled: supplier.enabled !== false
+    };
+
+    if (!state.dbMissingColumns["suppliers.logo"]) {
+      payload.logo = supplier.logo || null;
+    }
+
+    let { error } = await window.supabaseClient
       .from('suppliers')
-      .upsert({
-        name: supplier.name,
-        dateAdded: supplier.dateAdded,
-        color: supplier.color,
-        enabled: supplier.enabled !== false,
-        logo: supplier.logo || null
-      });
+      .upsert(payload);
+
     if (error) {
-      if (error.message && error.message.includes('column "logo" of relation "suppliers" does not exist')) {
+      if (isMissingColumnError(error, 'logo')) {
         console.warn("Supabase relation 'suppliers' is missing the 'logo' column. Falling back to upsert without logo.");
+        state.dbMissingColumns["suppliers.logo"] = true;
+        delete payload.logo;
         const { error: fallbackErr } = await window.supabaseClient
           .from('suppliers')
-          .upsert({
-            name: supplier.name,
-            dateAdded: supplier.dateAdded,
-            color: supplier.color,
-            enabled: supplier.enabled !== false
-          });
+          .upsert(payload);
         if (fallbackErr) throw fallbackErr;
       } else {
         throw error;
@@ -1526,24 +1592,30 @@ async function dbSavePlatform(platform) {
     return;
   }
   try {
-    const { error } = await window.supabaseClient
+    if (!state.dbMissingColumns) state.dbMissingColumns = {};
+
+    const payload = {
+      name: platform.name,
+      dateAdded: platform.dateAdded,
+      enabled: platform.enabled !== false
+    };
+
+    if (!state.dbMissingColumns["platforms.logo"]) {
+      payload.logo = platform.logo || null;
+    }
+
+    let { error } = await window.supabaseClient
       .from('platforms')
-      .upsert({
-        name: platform.name,
-        dateAdded: platform.dateAdded,
-        enabled: platform.enabled !== false,
-        logo: platform.logo || null
-      });
+      .upsert(payload);
+
     if (error) {
-      if (error.message && error.message.includes('column "logo" of relation "platforms" does not exist')) {
+      if (isMissingColumnError(error, 'logo')) {
         console.warn("Supabase relation 'platforms' is missing the 'logo' column. Falling back to upsert without logo.");
+        state.dbMissingColumns["platforms.logo"] = true;
+        delete payload.logo;
         const { error: fallbackErr } = await window.supabaseClient
           .from('platforms')
-          .upsert({
-            name: platform.name,
-            dateAdded: platform.dateAdded,
-            enabled: platform.enabled !== false
-          });
+          .upsert(payload);
         if (fallbackErr) throw fallbackErr;
       } else {
         throw error;

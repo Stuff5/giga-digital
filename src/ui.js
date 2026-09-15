@@ -4799,9 +4799,11 @@ async function handleEditCatalogEntrySubmit(e) {
     for (const item of updatedInventory) {
       await dbSaveInventory(item);
     }
-    const updatedSales = state.sales.filter(sale => sale.title === newTitle);
-    for (const sale of updatedSales) {
-      await dbSaveSale(sale);
+    if (oldTitle.toLowerCase() !== newTitle.toLowerCase()) {
+      const updatedSales = state.sales.filter(sale => sale.title === newTitle);
+      for (const sale of updatedSales) {
+        await dbSaveSale(sale);
+      }
     }
   }
   updateUI();
@@ -11277,6 +11279,14 @@ CREATE TABLE IF NOT EXISTS app_settings (
   key TEXT PRIMARY KEY,
   value JSONB NOT NULL
 );
+
+-- 7. Ensure modern columns exist on existing tables
+ALTER TABLE sales ADD COLUMN IF NOT EXISTS "supplierRefunded" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE sales ADD COLUMN IF NOT EXISTS disputed BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE inventory ADD COLUMN IF NOT EXISTS "imageUrl" TEXT;
+ALTER TABLE inventory ADD COLUMN IF NOT EXISTS publisher TEXT;
+ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS logo TEXT;
+ALTER TABLE platforms ADD COLUMN IF NOT EXISTS logo TEXT;
 
 -- ==========================================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
