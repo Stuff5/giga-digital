@@ -735,7 +735,7 @@ let state = {
     apiKey: "",
     geminiApiKey: "",
     openaiApiKey: "",
-    model: "gemini-1.5-flash",
+    model: "gemini-2.5-flash",
     customBaseUrl: "https://api.openai.com/v1",
     includeContext: true,
     temperature: 0.7
@@ -1331,6 +1331,9 @@ function loadStateFromStorage() {
     if (storedAiSettings) {
       try {
         state.aiSettings = { ...state.aiSettings, ...JSON.parse(storedAiSettings) };
+        if (state.aiSettings.model === "gemini-1.5-flash") {
+          state.aiSettings.model = "gemini-2.5-flash";
+        }
       } catch (e) {
         console.error("Error parsing AI settings, using defaults:", e);
       }

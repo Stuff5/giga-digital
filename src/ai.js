@@ -61,12 +61,11 @@ function updateAIProviderUI(provider, currentModel) {
 
   if (modelSelect) {
     const geminiOptions = `
-      <option value="gemini-1.5-flash">Gemini 1.5 Flash (Production GA)</option>
-      <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash Latest</option>
-      <option value="gemini-2.0-flash">Gemini 2.0 Flash (Next-Gen Fast)</option>
-      <option value="gemini-1.5-flash-8b">Gemini 1.5 Flash 8B (Lightweight)</option>
-      <option value="gemini-1.5-pro">Gemini 1.5 Pro (Deep Reasoning)</option>
-      <option value="gemini-pro">Gemini 1.0 Pro</option>
+      <option value="gemini-2.5-flash">Gemini 2.5 Flash (Recommended - Fast & Intelligent)</option>
+      <option value="gemini-2.5-pro">Gemini 2.5 Pro (Deep Reasoning)</option>
+      <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+      <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+      <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
     `;
     const openaiOptions = `
       <option value="gpt-4o-mini">GPT-4o Mini (Recommended)</option>
@@ -77,6 +76,12 @@ function updateAIProviderUI(provider, currentModel) {
 
     modelSelect.innerHTML = isGemini ? geminiOptions : openaiOptions;
     if (currentModel) {
+      if (!Array.from(modelSelect.options).some(o => o.value === currentModel)) {
+        const customOpt = document.createElement("option");
+        customOpt.value = currentModel;
+        customOpt.textContent = `${currentModel} (Active)`;
+        modelSelect.insertBefore(customOpt, modelSelect.firstChild);
+      }
       modelSelect.value = currentModel;
     }
   }
@@ -155,10 +160,21 @@ function populateModelDropdown(modelItems) {
   if (!select || !Array.isArray(modelItems) || modelItems.length === 0) return;
   const currentVal = select.value;
   select.innerHTML = modelItems.map(m => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.name ? `${m.name} (${m.id})` : m.id)}</option>`).join("");
-  if (modelItems.some(m => m.id === currentVal)) {
+  if (modelItems.some(m => m.id === currentVal && m.id !== "gemini-1.5-flash")) {
     select.value = currentVal;
   } else {
-    select.selectedIndex = 0;
+    const best = modelItems.find(m => m.id === "gemini-2.5-flash") ||
+                 modelItems.find(m => m.id === "gemini-2.5-pro") ||
+                 modelItems.find(m => m.id === "gemini-2.0-flash") ||
+                 modelItems.find(m => m.id === "gpt-4o-mini") ||
+                 modelItems[0];
+    select.value = best ? best.id : modelItems[0].id;
+  }
+  if (!state.aiSettings) state.aiSettings = {};
+  state.aiSettings.model = select.value;
+  saveStateToStorage();
+  if (window.supabaseClient) {
+    dbSaveSettings("aiSettings", state.aiSettings);
   }
 }
 
@@ -278,7 +294,7 @@ function syncAISettingsUI() {
     apiKey: "",
     geminiApiKey: "",
     openaiApiKey: "",
-    model: "gemini-1.5-flash",
+    model: "gemini-2.5-flash",
     customBaseUrl: "https://api.openai.com/v1",
     includeContext: true
   };
@@ -290,6 +306,12 @@ function syncAISettingsUI() {
     } else if (cfg.apiKey.startsWith("AIzaSy") && !cfg.geminiApiKey) {
       cfg.geminiApiKey = cfg.apiKey;
     }
+  }
+
+  // Auto-migrate deprecated gemini-1.5-flash to modern gemini-2.5-flash
+  if (cfg.model === "gemini-1.5-flash") {
+    cfg.model = "gemini-2.5-flash";
+    if (state.aiSettings) state.aiSettings.model = "gemini-2.5-flash";
   }
 
   const provider = cfg.provider || "gemini";
@@ -308,7 +330,7 @@ function syncAISettingsUI() {
   if (includeContextCheck) includeContextCheck.checked = cfg.includeContext !== false;
 
   // Update dynamic options and sub-panels
-  updateAIProviderUI(provider, cfg.model || (provider === "gemini" ? "gemini-1.5-flash" : "gpt-4o-mini"));
+  updateAIProviderUI(provider, cfg.model || (provider === "gemini" ? "gemini-2.5-flash" : "gpt-4o-mini"));
 
   // Update AI status label in drawer
   const statusLabel = document.getElementById("ai-drawer-provider-badge");
@@ -663,7 +685,10 @@ function generateLocalAIAnalysis(promptQuery) {
 
 // Call Google Gemini API
 async function callGeminiAPI(userQuery, appContext, cfg) {
-  let model = cfg.model || "gemini-1.5-flash";
+  let model = cfg.model || "gemini-2.5-flash";
+  if (model === "gemini-1.5-flash") {
+    model = "gemini-2.5-flash";
+  }
   const apiKey = sanitizeApiKey(cfg.apiKey);
 
   if (!apiKey) {
@@ -689,8 +714,8 @@ Always ground your answers in these real figures when available.`;
     }
   ];
 
-  // Try API endpoints: v1 first (where gemini-1.5-flash is GA), then v1beta
-  const apiVersionsToTry = ["v1", "v1beta"];
+  // Try API endpoints: v1beta first (where 2.5 and preview models live), then v1
+  const apiVersionsToTry = ["v1beta", "v1"];
   let lastErrorMsg = "";
 
   for (const apiVer of apiVersionsToTry) {
@@ -705,7 +730,7 @@ Always ground your answers in these real figures when available.`;
           contents: contents,
           generationConfig: {
             temperature: cfg.temperature || 0.7,
-            maxOutputTokens: 2048
+            maxOutputTokens: 8192
           }
         })
       });
@@ -719,7 +744,9 @@ Always ground your answers in these real figures when available.`;
     if (res.ok) {
       const data = await res.json();
       if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
-        return data.candidates[0].content.parts.map(p => p.text).join("");
+        const parts = data.candidates[0].content.parts;
+        const answerParts = parts.filter(p => !p.thought && typeof p.text === "string");
+        return answerParts.length > 0 ? answerParts.map(p => p.text).join("") : parts.map(p => p.text || "").join("");
       }
       throw new Error("No text response received from Gemini API.");
     }
@@ -729,7 +756,7 @@ Always ground your answers in these real figures when available.`;
     const rawMsg = (errData.error && errData.error.message) || "";
     const status = res.status;
 
-    // If 404, try next API version (e.g. try v1 then v1beta)
+    // If 404, try next API version (e.g. try v1beta then v1)
     if (status === 404) {
       lastErrorMsg = rawMsg || `Model '${model}' not found on API version ${apiVer}`;
       continue;
@@ -752,9 +779,9 @@ Always ground your answers in these real figures when available.`;
     throw new Error(rawMsg || `Gemini API error (HTTP ${res.status})`);
   }
 
-  // Both v1 and v1beta failed with 404 for this specific model name.
+  // Both v1beta and v1 failed with 404 for this specific model name.
   // Query ListModels to find what models ARE authorized on this key!
-  console.warn(`Model '${model}' not found on v1 or v1beta. Querying ListModels for authorized models on this key...`);
+  console.warn(`Model '${model}' not found on v1beta or v1. Querying ListModels for authorized models on this key...`);
   try {
     const discovered = await getGeminiAvailableModels(apiKey);
     if (discovered && discovered.length > 0) {
@@ -762,7 +789,15 @@ Always ground your answers in these real figures when available.`;
       populateModelDropdown(discovered.map(d => ({ id: d.id, name: `${d.name} (${d.id})` })));
 
       // Try the best matching fallback model
-      const preferred = ["gemini-1.5-flash-latest", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-001", "gemini-1.5-flash-002", "gemini-1.5-pro", "gemini-pro"];
+      const preferred = [
+        "gemini-2.5-flash",
+        "gemini-2.5-pro",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash-latest",
+        "gemini-1.5-flash",
+        "gemini-1.5-pro",
+        "gemini-pro"
+      ];
       let fallback = discovered[0].id;
       for (const pref of preferred) {
         if (discovered.some(d => d.id === pref)) {
@@ -772,7 +807,7 @@ Always ground your answers in these real figures when available.`;
       }
 
       console.log(`Auto-discovered models. Retrying with model: ${fallback}`);
-      for (const apiVer of ["v1", "v1beta"]) {
+      for (const apiVer of ["v1beta", "v1"]) {
         try {
           const fbEndpoint = `https://generativelanguage.googleapis.com/${apiVer}/models/${encodeURIComponent(fallback)}:generateContent?key=${encodeURIComponent(apiKey)}`;
           const fbRes = await fetch(fbEndpoint, {
@@ -780,24 +815,68 @@ Always ground your answers in these real figures when available.`;
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               contents: contents,
-              generationConfig: { temperature: cfg.temperature || 0.7, maxOutputTokens: 2048 }
+              generationConfig: {
+                temperature: cfg.temperature || 0.7,
+                maxOutputTokens: 8192
+              }
             })
           });
           if (fbRes.ok) {
             const data = await fbRes.json();
             if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
-              if (state.aiSettings) state.aiSettings.model = fallback;
+              if (!state.aiSettings) state.aiSettings = {};
+              state.aiSettings.model = fallback;
               const modelSelect = document.getElementById("settings-ai-model");
               if (modelSelect) modelSelect.value = fallback;
               saveStateToStorage();
-              return data.candidates[0].content.parts.map(p => p.text).join("");
+              if (window.supabaseClient) {
+                dbSaveSettings("aiSettings", state.aiSettings);
+              }
+              const parts = data.candidates[0].content.parts;
+              const answerParts = parts.filter(p => !p.thought && typeof p.text === "string");
+              return answerParts.length > 0 ? answerParts.map(p => p.text).join("") : parts.map(p => p.text || "").join("");
             }
+          } else {
+            let fbErr = {};
+            try { fbErr = await fbRes.json(); } catch(e) {}
+            console.warn(`Fallback retry failed on ${apiVer} with ${fallback}:`, fbErr);
           }
-        } catch (e) {}
+        } catch (e) {
+          console.warn(`Fallback retry network error on ${apiVer}:`, e);
+        }
       }
 
+      // Also attempt Google's OpenAI-compatible endpoint as transparent fallback with fallback model
+      try {
+        const oaiRes = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: fallback,
+            messages: [
+              { role: "system", content: systemInstruction },
+              { role: "user", content: userQuery }
+            ],
+            temperature: cfg.temperature || 0.7,
+            max_tokens: 8192
+          })
+        });
+        if (oaiRes.ok) {
+          const oaiData = await oaiRes.json();
+          if (oaiData.choices && oaiData.choices[0] && oaiData.choices[0].message) {
+            if (!state.aiSettings) state.aiSettings = {};
+            state.aiSettings.model = fallback;
+            saveStateToStorage();
+            return oaiData.choices[0].message.content;
+          }
+        }
+      } catch (oaiE) {}
+
       const modelListStr = discovered.map(d => d.id).slice(0, 6).join(", ");
-      throw new Error(`The model '${model}' was not found, but we discovered these available models for your API key: [${modelListStr}]. Please select one of these models from the dropdown or click 'Discover models'.`);
+      throw new Error(`The model '${model}' was not found, but we discovered these available models for your API key: [${modelListStr}]. Please select '${fallback}' from the model dropdown in Settings.`);
     }
   } catch (discErr) {
     if (discErr.message && discErr.message.includes("we discovered these available models")) {
@@ -814,13 +893,13 @@ Always ground your answers in these real figures when available.`;
         "Authorization": `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: model || "gemini-1.5-flash",
+        model: model || "gemini-2.5-flash",
         messages: [
           { role: "system", content: systemInstruction },
           { role: "user", content: userQuery }
         ],
         temperature: cfg.temperature || 0.7,
-        max_tokens: 2048
+        max_tokens: 8192
       })
     });
     if (oaiRes.ok) {
@@ -831,7 +910,7 @@ Always ground your answers in these real figures when available.`;
     }
   } catch (oaiE) {}
 
-  throw new Error(`Model Not Found (HTTP 404): '${model}' was not found on v1 or v1beta. Server: ${lastErrorMsg}. Try selecting 'gemini-1.5-flash-latest' or 'gemini-2.0-flash', or click 'Discover models'.`);
+  throw new Error(`Model Not Found (HTTP 404): '${model}' was not found on v1beta or v1. Server: ${lastErrorMsg}. Try selecting 'gemini-2.5-flash' or click 'Discover models'.`);
 }
 
 // Call OpenAI or Compatible API
@@ -1001,7 +1080,8 @@ async function testAIConnection() {
 
   let provider = providerSelect ? providerSelect.value : "gemini";
   let apiKey = apiKeyInput ? sanitizeApiKey(apiKeyInput.value) : "";
-  let model = modelSelect ? modelSelect.value : (provider === "gemini" ? "gemini-1.5-flash" : "gpt-4o-mini");
+  let model = modelSelect ? modelSelect.value : (provider === "gemini" ? "gemini-2.5-flash" : "gpt-4o-mini");
+  if (model === "gemini-1.5-flash") model = "gemini-2.5-flash";
   const baseUrl = baseUrlInput ? baseUrlInput.value.trim() : "https://api.openai.com/v1";
 
   // If sanitized key differs from input (e.g. had surrounding quotes or spaces), update input
@@ -1097,7 +1177,7 @@ async function testAIConnection() {
           btnFix.addEventListener("click", () => {
             if (providerSelect) {
               providerSelect.value = "gemini";
-              updateAIProviderUI("gemini", "gemini-1.5-flash");
+              updateAIProviderUI("gemini", "gemini-2.5-flash");
             }
             if (!state.aiSettings) state.aiSettings = {};
             state.aiSettings.geminiApiKey = apiKey;
@@ -1135,7 +1215,9 @@ async function testAIConnection() {
     statusBadge.className = "badge badge-active";
     showToast("AI Assistant connected successfully!", "success");
 
-    const activeModel = (state.aiSettings && state.aiSettings.model) || model;
+    const activeModel = (state.aiSettings && state.aiSettings.model && state.aiSettings.model !== "gemini-1.5-flash")
+      ? state.aiSettings.model
+      : (model !== "gemini-1.5-flash" ? model : "gemini-2.5-flash");
 
     if (errDetails) {
       errDetails.style.display = "block";
@@ -1208,7 +1290,7 @@ async function testAIConnection() {
       } else if (errMsg.includes("Model Not Found") || errMsg.includes("404") || errMsg.includes("not found for API version")) {
         tips = `
           <li>Click the <strong>'Discover models'</strong> button above the model selector to auto-load the exact models authorized for your key.</li>
-          <li>Alternatively, select <code>gemini-1.5-flash-latest</code> or <code>gemini-2.0-flash</code> from the dropdown.</li>
+          <li>Alternatively, select <code>gemini-2.5-flash</code> or <code>gemini-2.5-pro</code> from the dropdown.</li>
         `;
       } else if (errMsg.includes("Region Not Supported")) {
         tips = `
@@ -1339,7 +1421,7 @@ function bindAIEvents() {
       const provider = document.getElementById("settings-ai-provider") ? document.getElementById("settings-ai-provider").value : "gemini";
       const rawKey = document.getElementById("settings-ai-apikey") ? document.getElementById("settings-ai-apikey").value : "";
       const apiKey = sanitizeApiKey(rawKey);
-      const model = document.getElementById("settings-ai-model") ? document.getElementById("settings-ai-model").value : (provider === "gemini" ? "gemini-1.5-flash" : "gpt-4o-mini");
+      const model = document.getElementById("settings-ai-model") ? document.getElementById("settings-ai-model").value : (provider === "gemini" ? "gemini-2.5-flash" : "gpt-4o-mini");
       const baseUrl = document.getElementById("settings-ai-baseurl") ? document.getElementById("settings-ai-baseurl").value.trim() : "https://api.openai.com/v1";
       const includeContext = document.getElementById("settings-ai-include-context") ? document.getElementById("settings-ai-include-context").checked : true;
 
@@ -1405,7 +1487,7 @@ function bindAIEvents() {
         keyInput.value = nextKey;
       }
 
-      const defaultModel = newProvider === "gemini" ? "gemini-1.5-flash" : "gpt-4o-mini";
+      const defaultModel = newProvider === "gemini" ? "gemini-2.5-flash" : "gpt-4o-mini";
       updateAIProviderUI(newProvider, defaultModel);
       state.aiSettings.model = defaultModel;
 
