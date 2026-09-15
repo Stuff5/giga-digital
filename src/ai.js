@@ -69,7 +69,7 @@ function extractGeminiCandidateText(data) {
 }
 
 // Resilient Gemini generateContent caller that handles parameter sensitivity (e.g. 400 on temperature for thinking models)
-async function sendGeminiGenerateContent(endpoint, contents, cfg) {
+async function sendGeminiGenerateContent(endpoint, contents, cfg, apiKey) {
   const payloads = [
     // 1. GenerationConfig with maxOutputTokens (cleanest for Gemini 2.5 thinking models)
     {
@@ -94,14 +94,19 @@ async function sendGeminiGenerateContent(endpoint, contents, cfg) {
 
   let lastErr = null;
   let lastStatus = 0;
+  const authKey = apiKey || (cfg && cfg.apiKey) || "";
 
   for (let i = 0; i < payloads.length; i++) {
     const payload = payloads[i];
     let res;
     try {
+      const headers = { "Content-Type": "application/json" };
+      if (authKey) {
+        headers["x-goog-api-key"] = authKey;
+      }
       res = await fetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: headers,
         body: JSON.stringify(payload)
       });
     } catch (netErr) {
@@ -160,8 +165,10 @@ function updateAIProviderUI(provider, currentModel) {
 
   if (modelSelect) {
     const geminiOptions = `
-      <option value="gemini-2.5-flash">Gemini 2.5 Flash (Recommended - Fast & Intelligent)</option>
-      <option value="gemini-2.5-pro">Gemini 2.5 Pro (Deep Reasoning)</option>
+      <option value="gemini-2.5-pro">Gemini 2.5 Pro (Recommended - Deep Reasoning)</option>
+      <option value="gemini-2.5-flash">Gemini 2.5 Flash (Fast & Intelligent)</option>
+      <option value="gemma-4-26b-a4b-it">Gemma 4 26B (High Speed MoE)</option>
+      <option value="gemma-4-31b-it">Gemma 4 31B (Flagship Open Weights)</option>
       <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
     `;
     const openaiOptions = `
@@ -196,9 +203,11 @@ async function getGeminiAvailableModels(apiKey) {
   const foundModels = [];
   let lastServerErr = "";
 
-  for (const apiVer of ["v1beta", "v1"]) {
+  for (const apiVer of ["v1beta", "v1", "v1alpha"]) {
     try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/${apiVer}/models?key=${encodeURIComponent(cleanKey)}`);
+      const res = await fetch(`https://generativelanguage.googleapis.com/${apiVer}/models?key=${encodeURIComponent(cleanKey)}`, {
+        headers: { "x-goog-api-key": cleanKey }
+      });
       if (res.ok) {
         const data = await res.json();
         if (data.models && Array.isArray(data.models)) {
@@ -818,16 +827,17 @@ Always ground your answers in these real figures when available.`;
     }
   ];
 
-  // Try API endpoints: v1beta first (where 2.5 and preview models live), then v1
-  const apiVersionsToTry = ["v1beta", "v1"];
+  // Try API endpoints: v1beta first (where modern models live), then v1, then v1alpha
+  const apiVersionsToTry = ["v1beta", "v1", "v1alpha"];
   let lastErrorMsg = "";
+  const cleanReqModel = (model || "").replace(/^models\//, "");
 
   for (const apiVer of apiVersionsToTry) {
-    const endpoint = `https://generativelanguage.googleapis.com/${apiVer}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+    const endpoint = `https://generativelanguage.googleapis.com/${apiVer}/models/${encodeURIComponent(cleanReqModel)}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
     let result;
     try {
-      result = await sendGeminiGenerateContent(endpoint, contents, cfg);
+      result = await sendGeminiGenerateContent(endpoint, contents, cfg, apiKey);
     } catch (netErr) {
       console.error(`Gemini fetch network error on ${apiVer}:`, netErr);
       throw new Error(
@@ -843,9 +853,9 @@ Always ground your answers in these real figures when available.`;
     const rawMsg = (errData.error && errData.error.message) || "";
     const status = result.status;
 
-    // If 404, try next API version (e.g. try v1beta then v1)
+    // If 404, try next API version (e.g. try v1beta then v1 then v1alpha)
     if (status === 404) {
-      lastErrorMsg = rawMsg || `Model '${model}' not found on API version ${apiVer}`;
+      lastErrorMsg = rawMsg || `Model '${cleanReqModel}' not found on API version ${apiVer}`;
       continue;
     }
 
@@ -863,92 +873,108 @@ Always ground your answers in these real figures when available.`;
     } else if (status === 429) {
       throw new Error(`Rate Limit Exceeded (HTTP 429): Google Gemini rate limit reached. Please wait a minute before sending another request. Server: ${rawMsg}`);
     }
-    throw new Error(rawMsg || `Gemini API error (HTTP ${res.status})`);
+    throw new Error(rawMsg || `Gemini API error (HTTP ${status})`);
   }
 
-  // Both v1beta and v1 failed with 404 for this specific model name.
-  // Query ListModels to find what models ARE authorized on this key!
-  console.warn(`Model '${model}' not found on v1beta or v1. Querying ListModels for authorized models on this key...`);
+  // All API versions returned 404 for this specific model name.
+  // Query ListModels to find what models ARE authorized on this key and auto-heal!
+  console.warn(`Model '${cleanReqModel}' not found on v1beta, v1, or v1alpha. Querying ListModels for authorized models on this key...`);
   try {
     const discovered = await getGeminiAvailableModels(apiKey);
     if (discovered && discovered.length > 0) {
       // Refresh the model dropdown in the UI
       populateModelDropdown(discovered.map(d => ({ id: d.id, name: `${d.name} (${d.id})` })));
 
-      // Try the best matching fallback model
-      const preferred = [
-        "gemini-2.5-flash",
+      const priorityOrder = [
         "gemini-2.5-pro",
+        "gemma-4-26b-a4b-it",
+        "gemma-4-31b-it",
+        "gemini-2.5-flash",
         "gemini-2.0-flash",
-        "gemini-1.5-flash-latest",
-        "gemini-1.5-flash",
-        "gemini-1.5-pro",
-        "gemini-pro"
+        "gemini-2.5-flash-preview-tts",
+        "gemini-2.5-pro-preview-tts"
       ];
-      let fallback = discovered[0].id;
-      for (const pref of preferred) {
-        if (discovered.some(d => d.id === pref)) {
-          fallback = pref;
-          break;
-        }
-      }
 
-      console.log(`Auto-discovered models. Retrying with model: ${fallback}`);
-      for (const apiVer of ["v1beta", "v1"]) {
-        try {
-          const fbEndpoint = `https://generativelanguage.googleapis.com/${apiVer}/models/${encodeURIComponent(fallback)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-          const fbResult = await sendGeminiGenerateContent(fbEndpoint, contents, cfg);
-          if (fbResult.ok) {
-            if (!state.aiSettings) state.aiSettings = {};
-            state.aiSettings.model = fallback;
-            const modelSelect = document.getElementById("settings-ai-model");
-            if (modelSelect) modelSelect.value = fallback;
-            saveStateToStorage();
-            if (window.supabaseClient) {
-              dbSaveSettings("aiSettings", state.aiSettings);
+      // Sort candidate models, putting the one that failed at the very back
+      const candidates = [...discovered].sort((a, b) => {
+        if (a.id === cleanReqModel) return 1;
+        if (b.id === cleanReqModel) return -1;
+        const idxA = priorityOrder.indexOf(a.id);
+        const idxB = priorityOrder.indexOf(b.id);
+        return (idxA === -1 ? 999 : idxA) - (idxB === -1 ? 999 : idxB);
+      });
+
+      console.log(`Auto-discovered ${discovered.length} models. Retrying candidates in order:`, candidates.map(c => c.id));
+
+      for (const cand of candidates) {
+        if (cand.id === cleanReqModel) continue; // Don't retry the model that just failed
+
+        const versToTry = cand.version ? [cand.version, "v1beta", "v1", "v1alpha"] : ["v1beta", "v1", "v1alpha"];
+        const uniqueVers = [...new Set(versToTry)];
+
+        for (const apiVer of uniqueVers) {
+          try {
+            const fbEndpoint = `https://generativelanguage.googleapis.com/${apiVer}/models/${encodeURIComponent(cand.id)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+            const fbResult = await sendGeminiGenerateContent(fbEndpoint, contents, cfg, apiKey);
+            if (fbResult.ok) {
+              if (!state.aiSettings) state.aiSettings = {};
+              state.aiSettings.model = cand.id;
+              const modelSelect = document.getElementById("settings-ai-model");
+              if (modelSelect) modelSelect.value = cand.id;
+              saveStateToStorage();
+              if (window.supabaseClient) {
+                dbSaveSettings("aiSettings", state.aiSettings);
+              }
+              console.log(`Auto-healed connection using working model: ${cand.id} on ${apiVer}`);
+              return fbResult.text;
+            } else {
+              console.warn(`Fallback retry failed on ${apiVer} with ${cand.id}:`, fbResult.errData);
             }
-            return fbResult.text;
-          } else {
-            console.warn(`Fallback retry failed on ${apiVer} with ${fallback}:`, fbResult.errData);
+          } catch (e) {
+            console.warn(`Fallback retry network error on ${apiVer} with ${cand.id}:`, e);
           }
-        } catch (e) {
-          console.warn(`Fallback retry network error on ${apiVer}:`, e);
         }
       }
 
-      // Also attempt Google's OpenAI-compatible endpoint as transparent fallback with fallback model
-      try {
-        const oaiRes = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${apiKey}`
-          },
-          body: JSON.stringify({
-            model: fallback,
-            messages: [
-              { role: "system", content: systemInstruction },
-              { role: "user", content: userQuery }
-            ],
-            max_tokens: 8192
-          })
-        });
-        if (oaiRes.ok) {
-          const oaiData = await oaiRes.json();
-          if (oaiData.choices && oaiData.choices[0] && oaiData.choices[0].message) {
-            if (!state.aiSettings) state.aiSettings = {};
-            state.aiSettings.model = fallback;
-            saveStateToStorage();
-            return oaiData.choices[0].message.content;
+      // Also attempt Google's OpenAI-compatible endpoint as transparent fallback across candidates
+      for (const cand of candidates) {
+        if (cand.id === cleanReqModel) continue;
+        try {
+          const oaiRes = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+              model: cand.id,
+              messages: [
+                { role: "system", content: systemInstruction },
+                { role: "user", content: userQuery }
+              ],
+              max_tokens: 8192
+            })
+          });
+          if (oaiRes.ok) {
+            const oaiData = await oaiRes.json();
+            if (oaiData.choices && oaiData.choices[0] && oaiData.choices[0].message) {
+              if (!state.aiSettings) state.aiSettings = {};
+              state.aiSettings.model = cand.id;
+              const modelSelect = document.getElementById("settings-ai-model");
+              if (modelSelect) modelSelect.value = cand.id;
+              saveStateToStorage();
+              return oaiData.choices[0].message.content;
+            }
           }
-        }
-      } catch (oaiE) {}
+        } catch (oaiE) {}
+      }
 
-      const modelListStr = discovered.map(d => d.id).slice(0, 6).join(", ");
-      throw new Error(`The model '${model}' was not found, but we discovered these available models for your API key: [${modelListStr}]. Please select '${fallback}' from the model dropdown in Settings.`);
+      const modelListStr = discovered.map(d => d.id).slice(0, 8).join(", ");
+      const bestFallback = candidates.find(c => c.id !== cleanReqModel) || discovered[0];
+      throw new Error(`The model '${model}' was not found for generateContent (${lastErrorMsg || 'HTTP 404'}). Discovered models for your API key: [${modelListStr}]. Recommended: '${bestFallback.id}'.`);
     }
   } catch (discErr) {
-    if (discErr.message && discErr.message.includes("we discovered these available models")) {
+    if (discErr.message && discErr.message.includes("Discovered models for your API key")) {
       throw discErr;
     }
   }
