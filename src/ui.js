@@ -5110,6 +5110,9 @@ function renderSuppliers() {
           ${statusBtn}
         </td>
         <td style="text-align: right;">
+          <button class="btn-action btn-action-logo" onclick="triggerRetrieveSupplierLogo('${escapeHTML(escapedNameForJS)}')" title="Retrieve Supplier Logo">
+            <i class="fa-solid fa-cloud-arrow-down"></i>
+          </button>
           <button class="btn-action btn-action-edit" onclick="triggerEditSupplier('${escapeHTML(escapedNameForJS)}')" title="Edit Supplier">
             <i class="fa-solid fa-pen"></i>
           </button>
@@ -5659,6 +5662,367 @@ window.triggerToggleSupplier = async function(name) {
   const statusStr = supplierObj.enabled !== false ? "Enabled" : "Disabled";
   showToast(`Supplier "${name}" is now ${statusStr}.`, "success");
 };
+
+// ==========================================================================
+// SUPPLIER LOGO RETRIEVAL & LOOKUP ENGINE
+// ==========================================================================
+
+const SUPPLIER_KNOWN_DOMAINS = {
+  "humble bundle": "humblebundle.com",
+  "humble": "humblebundle.com",
+  "humblebundle": "humblebundle.com",
+  "fanatical": "fanatical.com",
+  "bundle stars": "fanatical.com",
+  "cdkeys": "cdkeys.com",
+  "cdkeys.com": "cdkeys.com",
+  "kinguin": "kinguin.net",
+  "eneba": "eneba.com",
+  "gamivo": "gamivo.com",
+  "g2a": "g2a.com",
+  "gamestop": "gamestop.com",
+  "green man gaming": "greenmangaming.com",
+  "gmg": "greenmangaming.com",
+  "instant gaming": "instant-gaming.com",
+  "steam": "store.steampowered.com",
+  "valve": "valvesoftware.com",
+  "gog": "gog.com",
+  "gog.com": "gog.com",
+  "good old games": "gog.com",
+  "epic games": "epicgames.com",
+  "epic": "epicgames.com",
+  "indiegala": "indiegala.com",
+  "voidu": "voidu.com",
+  "2game": "2game.com",
+  "loaded": "loaded.com",
+  "hrk": "hrkgame.com",
+  "hrk game": "hrkgame.com",
+  "yuplay": "yuplay.com",
+  "gamesplanet": "gamesplanet.com",
+  "allyouplay": "allyouplay.com",
+  "wingamestore": "wingamestore.com",
+  "macgamestore": "macgamestore.com",
+  "dlgamer": "dlgamer.com",
+  "gamersgate": "gamersgate.com",
+  "playstation": "playstation.com",
+  "psn": "playstation.com",
+  "sony": "playstation.com",
+  "xbox": "xbox.com",
+  "microsoft": "microsoft.com",
+  "nintendo": "nintendo.com",
+  "ubisoft": "ubisoft.com",
+  "ea": "ea.com",
+  "origin": "ea.com",
+  "electronic arts": "ea.com",
+  "battle.net": "battle.net",
+  "battlenet": "battle.net",
+  "blizzard": "blizzard.com",
+  "amazon": "amazon.com",
+  "best buy": "bestbuy.com",
+  "target": "target.com",
+  "walmart": "walmart.com",
+  "ebay": "ebay.com",
+  "playerauctions": "playerauctions.com"
+};
+
+function resolveSupplierDomain(supplierName) {
+  if (!supplierName) return "";
+  const clean = supplierName.toLowerCase().trim();
+  if (SUPPLIER_KNOWN_DOMAINS[clean]) return SUPPLIER_KNOWN_DOMAINS[clean];
+  
+  for (const [key, domain] of Object.entries(SUPPLIER_KNOWN_DOMAINS)) {
+    if (clean.includes(key)) return domain;
+  }
+  
+  const domainMatch = clean.match(/(?:https?:\/\/)?(?:www\.)?([a-z0-9-]+(?:\.[a-z0-9-]+)+)/i);
+  if (domainMatch && domainMatch[1]) {
+    return domainMatch[1];
+  }
+  
+  const stripped = clean.replace(/[^a-z0-9]/g, "");
+  return stripped ? `${stripped}.com` : "";
+}
+
+function getSupplierLogoCandidates(domain) {
+  if (!domain) return [];
+  const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
+  if (!cleanDomain) return [];
+
+  return [
+    {
+      label: "Google Icon HD",
+      sublabel: "128px Clean Icon",
+      url: `https://www.google.com/s2/favicons?domain=${encodeURIComponent(cleanDomain)}&sz=128`
+    },
+    {
+      label: "Clearbit Logo",
+      sublabel: "Brand Vector/PNG",
+      url: `https://logo.clearbit.com/${encodeURIComponent(cleanDomain)}`
+    },
+    {
+      label: "DuckDuckGo",
+      sublabel: "Official Favicon",
+      url: `https://icons.duckduckgo.com/ip3/${encodeURIComponent(cleanDomain)}.ico`
+    },
+    {
+      label: "Unavatar",
+      sublabel: "Multi-Source Icon",
+      url: `https://unavatar.io/${encodeURIComponent(cleanDomain)}`
+    }
+  ];
+}
+
+function selectCandidateCard(card, url) {
+  const grid = document.getElementById("retrieve-supplier-candidates-grid");
+  const selectedUrlHidden = document.getElementById("retrieve-supplier-selected-url");
+  const customUrlInput = document.getElementById("retrieve-supplier-custom-url");
+
+  if (grid) {
+    grid.querySelectorAll(".logo-candidate-card").forEach(c => c.classList.remove("selected"));
+  }
+  if (card) {
+    card.classList.add("selected");
+  }
+  if (selectedUrlHidden) selectedUrlHidden.value = url;
+  if (customUrlInput) customUrlInput.value = url;
+}
+
+function renderSupplierLogoCandidates(domain, preselectedUrl = "") {
+  const grid = document.getElementById("retrieve-supplier-candidates-grid");
+  const noCandidatesMsg = document.getElementById("retrieve-supplier-no-candidates");
+  const selectedUrlHidden = document.getElementById("retrieve-supplier-selected-url");
+  if (!grid) return;
+
+  grid.innerHTML = "";
+  const candidates = getSupplierLogoCandidates(domain);
+
+  if (candidates.length === 0) {
+    if (noCandidatesMsg) noCandidatesMsg.style.display = "block";
+    return;
+  }
+  if (noCandidatesMsg) noCandidatesMsg.style.display = "none";
+
+  let hasSelected = false;
+
+  candidates.forEach(cand => {
+    const card = document.createElement("div");
+    card.className = "logo-candidate-card";
+    card.setAttribute("data-url", cand.url);
+
+    card.innerHTML = `
+      <div class="logo-candidate-check"><i class="fa-solid fa-check"></i></div>
+      <div class="logo-candidate-img-box">
+        <img src="${escapeHTML(cand.url)}" alt="${escapeHTML(cand.label)}" loading="lazy">
+      </div>
+      <div class="logo-candidate-label">${escapeHTML(cand.label)}</div>
+      <div style="font-size: 0.65rem; color: var(--text-muted);">${escapeHTML(cand.sublabel)}</div>
+    `;
+
+    const img = card.querySelector("img");
+    img.onerror = () => {
+      card.style.display = "none";
+      const visibleCards = grid.querySelectorAll('.logo-candidate-card:not([style*="display: none"])');
+      if (visibleCards.length === 0 && noCandidatesMsg) {
+        noCandidatesMsg.style.display = "block";
+      }
+    };
+
+    img.onload = () => {
+      if (!hasSelected) {
+        if (!selectedUrlHidden.value || preselectedUrl === cand.url || !preselectedUrl) {
+          hasSelected = true;
+          selectCandidateCard(card, cand.url);
+        }
+      }
+    };
+
+    card.addEventListener("click", () => {
+      selectCandidateCard(card, cand.url);
+    });
+
+    grid.appendChild(card);
+  });
+}
+
+window.triggerRetrieveSupplierLogo = function(supplierName) {
+  initRetrieveSupplierLogoHandlers();
+
+  const supplierObj = state.suppliers.find(s => s.name === supplierName);
+  if (!supplierObj) {
+    showToast(`Supplier "${supplierName}" not found.`, "error");
+    return;
+  }
+
+  const nameHidden = document.getElementById("retrieve-supplier-name-hidden");
+  const nameDisplay = document.getElementById("retrieve-supplier-name-display");
+  const statusBadge = document.getElementById("retrieve-supplier-status-badge");
+  const previewBox = document.getElementById("retrieve-supplier-current-preview");
+  const domainInput = document.getElementById("retrieve-supplier-domain-input");
+  const customUrlInput = document.getElementById("retrieve-supplier-custom-url");
+  const selectedUrlHidden = document.getElementById("retrieve-supplier-selected-url");
+  const btnRemove = document.getElementById("btn-remove-supplier-logo");
+
+  if (nameHidden) nameHidden.value = supplierName;
+  if (nameDisplay) nameDisplay.textContent = supplierName;
+
+  const colorName = supplierObj.color || getSupplierColorName(supplierName);
+  const colorPreset = SUPPLIER_COLORS.find(c => c.name === colorName) || SUPPLIER_COLORS[0];
+
+  if (supplierObj.logo) {
+    if (previewBox) {
+      previewBox.innerHTML = `<img src="${escapeHTML(supplierObj.logo)}" class="supplier-logo-thumbnail" style="width: 40px; height: 40px;" alt="${escapeHTML(supplierName)}">`;
+    }
+    if (statusBadge) statusBadge.innerHTML = `<span style="color: var(--accent-teal);"><i class="fa-solid fa-check"></i> Custom Logo Active</span>`;
+    if (btnRemove) btnRemove.style.display = "inline-flex";
+  } else {
+    if (previewBox) {
+      previewBox.innerHTML = `<div class="supplier-logo-placeholder" style="width: 40px; height: 40px; background-color: ${colorPreset.value}20; color: ${colorPreset.value}; border: 1px solid ${colorPreset.value}40;"><i class="fa-solid fa-truck-ramp-box"></i></div>`;
+    }
+    if (statusBadge) statusBadge.innerHTML = `<span style="color: var(--text-muted);">No custom logo set (using tag badge)</span>`;
+    if (btnRemove) btnRemove.style.display = "none";
+  }
+
+  const detectedDomain = resolveSupplierDomain(supplierName);
+  if (domainInput) domainInput.value = detectedDomain;
+  if (customUrlInput) customUrlInput.value = supplierObj.logo || "";
+  if (selectedUrlHidden) selectedUrlHidden.value = supplierObj.logo || "";
+
+  renderSupplierLogoCandidates(detectedDomain, supplierObj.logo || "");
+  openModal("retrieve-supplier-logo-modal");
+};
+
+let retrieveSupplierLogoInitialized = false;
+function initRetrieveSupplierLogoHandlers() {
+  if (retrieveSupplierLogoInitialized) return;
+  
+  const form = document.getElementById("retrieve-supplier-logo-form");
+  if (!form) return; // Template not yet loaded into DOM
+  retrieveSupplierLogoInitialized = true;
+
+  const btnSearch = document.getElementById("btn-fetch-supplier-logo-candidates");
+  const domainInput = document.getElementById("retrieve-supplier-domain-input");
+  const customUrlInput = document.getElementById("retrieve-supplier-custom-url");
+  const selectedUrlHidden = document.getElementById("retrieve-supplier-selected-url");
+  const btnRemove = document.getElementById("btn-remove-supplier-logo");
+
+  if (btnSearch && domainInput) {
+    const doSearch = () => {
+      const d = domainInput.value.trim();
+      if (!d) {
+        showToast("Please enter a website or domain to search.", "warning");
+        return;
+      }
+      renderSupplierLogoCandidates(d);
+    };
+
+    btnSearch.addEventListener("click", doSearch);
+    domainInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        doSearch();
+      }
+    });
+  }
+
+  if (customUrlInput) {
+    customUrlInput.addEventListener("input", (e) => {
+      const val = e.target.value.trim();
+      if (selectedUrlHidden) selectedUrlHidden.value = val;
+      const grid = document.getElementById("retrieve-supplier-candidates-grid");
+      if (grid) {
+        grid.querySelectorAll(".logo-candidate-card").forEach(c => c.classList.remove("selected"));
+      }
+    });
+  }
+
+  if (btnRemove) {
+    btnRemove.addEventListener("click", async () => {
+      const supName = document.getElementById("retrieve-supplier-name-hidden")?.value;
+      if (!supName) return;
+      const supplierObj = state.suppliers.find(s => s.name === supName);
+      if (supplierObj) {
+        supplierObj.logo = null;
+        saveStateToStorage();
+        if (window.supabaseClient) {
+          await dbSaveSupplier(supplierObj);
+        }
+        updateUI();
+        closeModal("retrieve-supplier-logo-modal");
+        showToast(`Removed custom logo for "${supName}".`, "info");
+      }
+    });
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const supName = document.getElementById("retrieve-supplier-name-hidden")?.value;
+    if (!supName) return;
+
+    const supplierObj = state.suppliers.find(s => s.name === supName);
+    if (!supplierObj) return;
+
+    const chosenUrl = (selectedUrlHidden?.value || customUrlInput?.value || "").trim();
+    supplierObj.logo = chosenUrl || null;
+
+    saveStateToStorage();
+    if (window.supabaseClient) {
+      await dbSaveSupplier(supplierObj);
+    }
+
+    updateUI();
+    closeModal("retrieve-supplier-logo-modal");
+
+    if (chosenUrl) {
+      showToast(`Updated logo for "${supName}"!`, "success");
+    } else {
+      showToast(`No logo applied for "${supName}".`, "info");
+    }
+  });
+
+  // Quick auto-retrieve in Edit Supplier Modal
+  const btnEditAutofetch = document.getElementById("btn-edit-supplier-autofetch-logo");
+  if (btnEditAutofetch) {
+    btnEditAutofetch.addEventListener("click", () => {
+      const nameInput = document.getElementById("edit-supplier-name");
+      const urlInput = document.getElementById("edit-supplier-logo-url");
+      const name = nameInput ? nameInput.value.trim() : "";
+      if (!name) {
+        showToast("Please enter a supplier name first.", "warning");
+        return;
+      }
+      const domain = resolveSupplierDomain(name);
+      if (domain) {
+        const logoUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+        if (urlInput) urlInput.value = logoUrl;
+        showToast(`Auto-retrieved logo for "${name}"!`, "success");
+      } else {
+        showToast(`Could not determine website for "${name}".`, "warning");
+      }
+    });
+  }
+
+  // Quick auto-retrieve in Add Supplier Modal
+  const btnAddAutofetch = document.getElementById("btn-add-supplier-autofetch-logo");
+  if (btnAddAutofetch) {
+    btnAddAutofetch.addEventListener("click", () => {
+      const nameInput = document.getElementById("supplier-name-input");
+      const urlInput = document.getElementById("supplier-logo-url-input");
+      const name = nameInput ? nameInput.value.trim() : "";
+      if (!name) {
+        showToast("Please enter a supplier name first.", "warning");
+        return;
+      }
+      const domain = resolveSupplierDomain(name);
+      if (domain) {
+        const logoUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+        if (urlInput) urlInput.value = logoUrl;
+        showToast(`Auto-retrieved logo for "${name}"!`, "success");
+      } else {
+        showToast(`Could not determine website for "${name}".`, "warning");
+      }
+    });
+  }
+}
+window.initRetrieveSupplierLogoHandlers = initRetrieveSupplierLogoHandlers;
 
 window.triggerEditPublisher = function(name) {
   const modal = document.getElementById("edit-publisher-modal");

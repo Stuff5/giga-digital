@@ -148,6 +148,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       editSupplierForm.addEventListener("submit", handleEditSupplierSubmit);
     }
 
+    // Register Retrieve Supplier Logo form and auto-retrieve handlers
+    if (typeof initRetrieveSupplierLogoHandlers === "function") {
+      initRetrieveSupplierLogoHandlers();
+    }
+
     // Register Dispute Sale submit handler
     const disputeSaleForm = document.getElementById("dispute-sale-form");
     if (disputeSaleForm) {

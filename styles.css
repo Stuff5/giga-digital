@@ -1552,6 +1552,78 @@ a {
   border-color: var(--accent-cyan);
   background-color: hsla(195, 90%, 50%, 0.1);
 }
+.btn-action.btn-action-logo:hover {
+  color: var(--accent-teal);
+  border-color: var(--accent-teal);
+  background-color: hsla(175, 90%, 48%, 0.12);
+}
+
+/* Logo retrieval modal candidate cards */
+.logo-candidate-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 8px;
+  background: var(--bg-card);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  text-align: center;
+  user-select: none;
+}
+.logo-candidate-card:hover {
+  border-color: var(--accent-teal);
+  background: var(--bg-card-hover);
+  transform: translateY(-2px);
+}
+.logo-candidate-card.selected {
+  border-color: var(--accent-teal);
+  background: hsla(175, 90%, 48%, 0.08);
+  box-shadow: 0 0 12px hsla(175, 90%, 48%, 0.25);
+}
+.logo-candidate-card .logo-candidate-check {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent-teal);
+  color: #000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: bold;
+}
+.logo-candidate-card.selected .logo-candidate-check {
+  display: flex;
+}
+.logo-candidate-img-box {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-body);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+}
+.logo-candidate-img-box img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.logo-candidate-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-main);
+  line-height: 1.2;
+}
 
 /* Key security styling */
 .secured-key {
