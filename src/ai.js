@@ -473,11 +473,11 @@ function getAIAppContext() {
 
   availableKeys.forEach(item => {
     totalStockVal += (parseFloat(item.cost) || 0);
-    const title = item.gameTitle || "Unknown Title";
+    const title = (item.title || item.gameTitle || "Unknown Title").trim();
     stockByGame[title] = (stockByGame[title] || 0) + 1;
     const plat = item.platform || "Other";
     stockByPlatform[plat] = (stockByPlatform[plat] || 0) + 1;
-    const sup = item.source || "Direct/Unknown";
+    const sup = item.source || item.supplier || "Direct/Unknown";
     stockBySupplier[sup] = (stockBySupplier[sup] || 0) + 1;
   });
 
@@ -507,7 +507,7 @@ function getAIAppContext() {
     const rev = parseFloat(s.sellPrice) || 0;
     const cost = parseFloat(s.cost) || 0;
     const profit = parseFloat(s.profit) || (rev - cost);
-    const title = s.gameTitle || "Unknown";
+    const title = (s.title || s.gameTitle || "Unknown Game").trim();
     const plat = s.platform || "Other";
 
     totalRevenue += rev;
@@ -708,7 +708,7 @@ function generateLocalAIAnalysis(promptQuery) {
   if (lower.includes("restock") || lower.includes("low stock") || lower.includes("inventory")) {
     const stockMap = {};
     availKeys.forEach(k => {
-      const t = k.gameTitle || "Unknown";
+      const t = (k.title || k.gameTitle || "Unknown Game").trim();
       stockMap[t] = (stockMap[t] || 0) + 1;
     });
 
@@ -741,7 +741,7 @@ function generateLocalAIAnalysis(promptQuery) {
       rev += r;
       cost += c;
       profit += p;
-      const t = s.gameTitle || "Unknown";
+      const t = (s.title || s.gameTitle || "Unknown Game").trim();
       profitByTitle[t] = (profitByTitle[t] || 0) + p;
     });
 
