@@ -575,6 +575,7 @@ let state = {
   sales: [],
   suppliers: [],
   catalogArtwork: {},
+  catalogReviews: {},
   recycleBin: {
     inventory: [],
     sales: []
@@ -1427,6 +1428,13 @@ function loadStateFromStorage() {
       state.catalogArtwork = {};
     }
 
+    try {
+      const storedCatalogReviews = localStorage.getItem("gv_catalog_reviews");
+      state.catalogReviews = storedCatalogReviews ? JSON.parse(storedCatalogReviews) : {};
+    } catch (e) {
+      state.catalogReviews = {};
+    }
+
     // Purge empty/invalid rows from the database state automatically
     cleanupEmptyDatabaseRows();
 
@@ -1448,6 +1456,7 @@ function saveStateToStorage() {
   const userSuffix = (state.currentUser && state.currentUser !== "guest") ? `_${state.currentUser}` : "";
   localStorage.setItem("gv_inventory" + userSuffix, JSON.stringify(state.inventory));
   localStorage.setItem("gv_catalog_artwork", JSON.stringify(state.catalogArtwork || {}));
+  localStorage.setItem("gv_catalog_reviews", JSON.stringify(state.catalogReviews || {}));
   localStorage.setItem("gv_favorite_games" + userSuffix, JSON.stringify(state.favoriteGames || []));
   localStorage.setItem("gv_sales" + userSuffix, JSON.stringify(state.sales));
   localStorage.setItem("gv_suppliers" + userSuffix, JSON.stringify(state.suppliers));

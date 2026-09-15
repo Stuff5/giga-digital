@@ -1151,6 +1151,13 @@ async function dbLoadState() {
           } catch(e) {
             console.error("Error parsing catalogArtwork from database sync:", e);
           }
+        } else if (s.key === "catalogReviews") {
+          try {
+            state.catalogReviews = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+            localStorage.setItem("gv_catalog_reviews", JSON.stringify(state.catalogReviews || {}));
+          } catch(e) {
+            console.error("Error parsing catalogReviews from database sync:", e);
+          }
         }
       });
     }
@@ -1274,7 +1281,8 @@ async function dbSeedDatabase() {
       { key: "dashboardSpans", value: state.dashboardSpans },
       { key: "financeSpans", value: state.financeSpans },
       { key: "widgetSettings", value: state.widgetSettings },
-      { key: "aiSettings", value: state.aiSettings }
+      { key: "aiSettings", value: state.aiSettings },
+      { key: "catalogReviews", value: state.catalogReviews }
     ];
     
     for (const s of settings) {
@@ -1742,6 +1750,9 @@ window.triggerAutoFetchSteamCover = async function(titleInputId, targetInputId, 
       if (imageUrl) {
         targetInput.value = imageUrl;
         targetInput.dispatchEvent(new Event("input", { bubbles: true }));
+        if (typeof window.scheduleSteamReviewFetch === "function") {
+          window.scheduleSteamReviewFetch(title, match.steamAppID || imageUrl);
+        }
         showToast(`Successfully fetched artwork for: "${match.external}"`, "success");
       } else {
         showToast(`No artwork found for "${title}".`, "warning");

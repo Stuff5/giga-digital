@@ -7779,13 +7779,20 @@ function renderEntriesGalleryLayout(entriesList) {
         ? `<span style="font-size: 0.8rem; color: var(--text-muted);"><i class="fa-solid fa-building" style="margin-right: 4px; font-size: 0.75rem; opacity: 0.8;"></i>${escapeHTML(entry.publisher)}</span>`
         : `<span style="font-style: italic; font-size: 0.8rem; color: var(--text-muted);"><i class="fa-solid fa-building" style="margin-right: 4px; font-size: 0.75rem; opacity: 0.5;"></i>No Publisher</span>`;
 
+      const titleLower = entry.title.trim().toLowerCase();
+      const ratingPill = typeof window.renderSteamRatingPill === "function" 
+        ? window.renderSteamRatingPill(entry.title, { imageUrl: entry.imageUrl, steamAppID: window.extractSteamAppId?.(entry.imageUrl) })
+        : "";
+      const pillSlot = ratingPill || `<span class="steam-pill-slot" data-title="${escapeHTML(titleLower)}"></span>`;
+
       // Front card overlay
       const frontOverlay = `
         <div class="gallery-card-overlay">
           <h4 class="gallery-card-title" title="${escapeHTML(titleStr)}">${escapeHTML(titleStr)}</h4>
-          <div class="gallery-card-subtitle">
+          <div class="gallery-card-subtitle" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
             ${publisherStr}
-            <span class="badge ${badgeClass}" style="margin-left: 8px;">${badgeText}</span>
+            <span class="badge ${badgeClass}">${badgeText}</span>
+            ${pillSlot}
           </div>
         </div>
       `;
@@ -7795,9 +7802,16 @@ function renderEntriesGalleryLayout(entriesList) {
         <div class="gallery-card-hover-details">
           <div class="gallery-card-hover-header">
             <h4 title="${escapeHTML(titleStr)}" style="margin: 0; font-size: 0.95rem; font-weight: 700; color: var(--text-main); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3;">${escapeHTML(titleStr)}</h4>
-            <span class="badge ${badgeClass}" style="align-self: flex-start; margin-top: 4px;">${badgeText}</span>
+            <div style="display: flex; align-items: center; gap: 6px; margin-top: 4px; flex-wrap: wrap;">
+              <span class="badge ${badgeClass}">${badgeText}</span>
+              ${pillSlot}
+            </div>
           </div>
           <div class="gallery-card-hover-meta" style="flex: 1; display: flex; flex-direction: column; gap: 8px; margin-top: 12px; font-size: 0.8rem;">
+            <div class="gallery-card-hover-meta-item">
+              <span>Steam Rating:</span>
+              <div style="display: flex; align-items: center; justify-content: flex-end;">${pillSlot || '<span style="color: var(--text-muted); font-size: 0.8rem;">—</span>'}</div>
+            </div>
             <div class="gallery-card-hover-meta-item">
               <span>Added Keys:</span>
               <strong>${entry.totalAdded} keys</strong>
@@ -8579,9 +8593,15 @@ function renderEntries() {
         </button>
       `;
 
+      const titleLower = entry.title.trim().toLowerCase();
+      const ratingPill = typeof window.renderSteamRatingPill === "function" 
+        ? window.renderSteamRatingPill(entry.title, { imageUrl: entry.imageUrl, steamAppID: window.extractSteamAppId?.(entry.imageUrl) })
+        : "";
+      const pillSlot = ratingPill || `<span class="steam-pill-slot" data-title="${escapeHTML(titleLower)}"></span>`;
+
       const titleCell = entry.imageUrl
-        ? `<div class="game-title-cell"><img src="${escapeHTML(entry.imageUrl)}" class="game-thumbnail" alt="${escapeHTML(entry.title)}"><div><div style="display: flex; align-items: center; gap: 4px;"><strong>${escapeHTML(entry.title)}</strong>${starBtn}</div>${publisherSubtitle}</div></div>`
-        : `<div class="game-title-cell"><div class="game-thumbnail-placeholder" style="background: ${getHashGradient(entry.title)};">${escapeHTML(initials)}</div><div><div style="display: flex; align-items: center; gap: 4px;"><strong>${escapeHTML(entry.title)}</strong>${starBtn}</div>${publisherSubtitle}</div></div>`;
+        ? `<div class="game-title-cell"><img src="${escapeHTML(entry.imageUrl)}" class="game-thumbnail" alt="${escapeHTML(entry.title)}"><div><div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;"><strong>${escapeHTML(entry.title)}</strong>${starBtn}${pillSlot}</div>${publisherSubtitle}</div></div>`
+        : `<div class="game-title-cell"><div class="game-thumbnail-placeholder" style="background: ${getHashGradient(entry.title)};">${escapeHTML(initials)}</div><div><div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;"><strong>${escapeHTML(entry.title)}</strong>${starBtn}${pillSlot}</div>${publisherSubtitle}</div></div>`;
 
       // Calculate Average Days to Sell
       const durations = entry.sellDurations || [];
@@ -12339,6 +12359,275 @@ window.clearArtworkNotFoundCache = function() {
   }
 };
 
+// ==========================================================================
+// CATALOG STEAM REVIEWS & RATINGS UTILITIES
+// ==========================================================================
+window.getCatalogReviewsMap = function() {
+  try {
+    const raw = localStorage.getItem("gv_catalog_reviews");
+    return raw ? JSON.parse(raw) : (state.catalogReviews || {});
+  } catch (e) {
+    return state.catalogReviews || {};
+  }
+};
+
+window.setCatalogReview = function(title, reviewData) {
+  if (!title) return;
+  if (!state.catalogReviews) state.catalogReviews = {};
+  const t = title.trim().toLowerCase();
+  if (reviewData) {
+    state.catalogReviews[t] = {
+      ...reviewData,
+      updatedAt: Date.now()
+    };
+  } else {
+    delete state.catalogReviews[t];
+  }
+  try {
+    localStorage.setItem("gv_catalog_reviews", JSON.stringify(state.catalogReviews));
+  } catch (e) {
+    console.warn("Could not save catalog reviews to localStorage:", e);
+  }
+  if (window.supabaseClient && typeof dbSaveSettings === "function") {
+    dbSaveSettings("catalogReviews", state.catalogReviews).catch(() => {});
+  }
+
+  // Live update matching pill slots in DOM
+  window.updateSteamPillSlots(title);
+};
+
+window.formatReviewCount = function(count) {
+  const num = parseInt(count) || 0;
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
+  }
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1).replace(/\.0$/, "") + "k";
+  }
+  return num.toString();
+};
+
+window.getSteamSentimentClass = function(percent) {
+  const pct = parseInt(percent) || 0;
+  if (pct >= 80) return "rating-positive";
+  if (pct >= 70) return "rating-mostly-positive";
+  if (pct >= 40) return "rating-mixed";
+  return "rating-negative";
+};
+
+window.extractSteamAppId = function(url) {
+  if (!url || typeof url !== "string") return null;
+  const match = url.match(/\/apps\/(\d+)/);
+  return match ? match[1] : null;
+};
+
+window.updateSteamPillSlots = function(title) {
+  if (!title) return;
+  const safeKey = title.trim().toLowerCase();
+  const safeSelector = (window.CSS && CSS.escape) ? CSS.escape(safeKey) : safeKey.replace(/(["\\])/g, '\\$1');
+  const slots = document.querySelectorAll(`.steam-pill-slot[data-title="${safeSelector}"]`);
+  if (slots.length > 0) {
+    const pillHtml = window.renderSteamRatingPill(title, { autoFetch: false });
+    if (pillHtml) {
+      slots.forEach(slot => {
+        const temp = document.createElement("span");
+        temp.innerHTML = pillHtml;
+        const newEl = temp.firstElementChild;
+        if (newEl && slot.parentNode) {
+          slot.parentNode.replaceChild(newEl, slot);
+        }
+      });
+    }
+  }
+};
+
+window.renderSteamRatingPill = function(title, options = {}) {
+  if (!title) return "";
+  const t = title.trim().toLowerCase();
+  const reviewsMap = typeof window.getCatalogReviewsMap === "function" ? window.getCatalogReviewsMap() : (state.catalogReviews || {});
+  let data = reviewsMap[t];
+
+  // If review data exists in cache and has valid percent
+  if (data && data.percent !== undefined && data.percent !== null && Number(data.percent) > 0) {
+    const pct = parseInt(data.percent) || 0;
+    const count = parseInt(data.count) || 0;
+    const shortCount = window.formatReviewCount(count);
+    const fullCount = count.toLocaleString();
+    const sentimentClass = window.getSteamSentimentClass(pct);
+    const desc = data.text || (pct >= 80 ? "Very Positive" : pct >= 70 ? "Mostly Positive" : pct >= 40 ? "Mixed" : "Negative");
+    const appId = data.steamAppID || options.steamAppID || null;
+    
+    const steamUrl = appId 
+      ? `https://store.steampowered.com/app/${appId}/`
+      : `https://store.steampowered.com/search/?term=${encodeURIComponent(title)}`;
+
+    const tooltip = `${desc} • ${pct}% positive from ${fullCount} reviews on Steam (Click to open Steam Store)`;
+
+    return `
+      <a href="${steamUrl}" target="_blank" rel="noopener noreferrer" class="steam-rating-pill ${sentimentClass}" title="${escapeHTML(tooltip)}" onclick="event.stopPropagation();">
+        <i class="fa-brands fa-steam"></i>
+        <span class="rating-pct">${pct}%</span>
+        <span class="review-qty">(${shortCount})</span>
+      </a>
+    `.trim();
+  }
+
+  // If not yet fetched, schedule background lookup if autoFetch is allowed
+  if (options.autoFetch !== false) {
+    window.scheduleSteamReviewFetch(title, options.steamAppID || options.imageUrl);
+  }
+
+  return "";
+};
+
+window.pendingReviewFetches = window.pendingReviewFetches || new Set();
+window.reviewFetchQueue = window.reviewFetchQueue || [];
+let isProcessingReviewQueue = false;
+
+window.scheduleSteamReviewFetch = function(title, hintAppIdOrUrl) {
+  if (!title) return;
+  const t = title.trim().toLowerCase();
+  if (window.pendingReviewFetches.has(t)) return;
+  window.pendingReviewFetches.add(t);
+  
+  let steamAppID = null;
+  if (hintAppIdOrUrl) {
+    if (/^\d+$/.test(String(hintAppIdOrUrl).trim())) {
+      steamAppID = String(hintAppIdOrUrl).trim();
+    } else {
+      steamAppID = window.extractSteamAppId(hintAppIdOrUrl);
+    }
+  }
+
+  window.reviewFetchQueue.push({ title, steamAppID });
+  processReviewFetchQueue();
+};
+
+async function processReviewFetchQueue() {
+  if (isProcessingReviewQueue) return;
+  isProcessingReviewQueue = true;
+
+  while (window.reviewFetchQueue.length > 0) {
+    const item = window.reviewFetchQueue.shift();
+    try {
+      await window.fetchSteamReviewData(item.title, item.steamAppID);
+    } catch (e) {
+      console.warn("Background review fetch error for:", item.title, e);
+    }
+    // Respect rate limits with 400ms delay between calls
+    await new Promise(r => setTimeout(r, 400));
+  }
+
+  isProcessingReviewQueue = false;
+}
+
+window.fetchSteamReviewData = async function(title, steamAppID) {
+  if (!title) return null;
+  const t = title.trim().toLowerCase();
+
+  const cleanTitle = (str) => {
+    if (!str) return "";
+    let clean = str.replace(/\([^)]*\)/g, " ").replace(/\[[^\]]*\]/g, " ");
+    const terms = [
+      /\bpc\b/i, /\bsteam\b/i, /\bkey\b/i, /\bglobal\b/i, /\bcd-key\b/i, /\bcdkey\b/i, 
+      /\bgog\b/i, /\borigin\b/i, /\buplay\b/i, /\bepic\b/i, /\bconnect\b/i, /\bedition\b/i,
+      /\bstandard\b/i, /\bdeluxe\b/i, /\bultimate\b/i, /\bpremium\b/i, /\brow\b/i, /\bfree\b/i,
+      /\bregion\b/i, /\bdownload\b/i, /\bcode\b/i, /\bactivation\b/i, /\bdigital\b/i
+    ];
+    terms.forEach(regex => { clean = clean.replace(regex, " "); });
+    clean = clean.replace(/[\u2122\u00ae\u00a9]/g, "").replace(/\s+/g, " ").trim();
+    return clean || str;
+  };
+
+  try {
+    // 1. If steamAppID is provided, query CheapShark deals by steamAppID directly
+    if (steamAppID && steamAppID !== "0") {
+      try {
+        const res = await fetch(`https://www.cheapshark.com/api/1.0/deals?steamAppID=${encodeURIComponent(steamAppID)}`);
+        if (res.ok) {
+          const deals = await res.json();
+          if (Array.isArray(deals) && deals.length > 0) {
+            const deal = deals[0];
+            if (deal.steamRatingPercent && parseInt(deal.steamRatingPercent) > 0) {
+              const reviewData = {
+                percent: parseInt(deal.steamRatingPercent),
+                count: parseInt(deal.steamRatingCount) || 0,
+                text: deal.steamRatingText || "Positive",
+                steamAppID: deal.steamAppID || steamAppID
+              };
+              window.setCatalogReview(title, reviewData);
+              return reviewData;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn(`CheapShark steamAppID lookup failed for ${title}:`, e);
+      }
+    }
+
+    // 2. Query CheapShark deals by title
+    const cleaned = cleanTitle(title);
+    try {
+      const res = await fetch(`https://www.cheapshark.com/api/1.0/deals?title=${encodeURIComponent(cleaned)}&exact=0&pageSize=3`);
+      if (res.ok) {
+        const deals = await res.json();
+        if (Array.isArray(deals) && deals.length > 0) {
+          const matchingDeal = deals.find(d => d.steamRatingPercent && parseInt(d.steamRatingPercent) > 0);
+          if (matchingDeal) {
+            const reviewData = {
+              percent: parseInt(matchingDeal.steamRatingPercent),
+              count: parseInt(matchingDeal.steamRatingCount) || 0,
+              text: matchingDeal.steamRatingText || "Positive",
+              steamAppID: matchingDeal.steamAppID || steamAppID || null
+            };
+            window.setCatalogReview(title, reviewData);
+            return reviewData;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn(`CheapShark deals by title failed for ${title}:`, e);
+    }
+
+    // 3. Fallback: Query CheapShark games endpoint
+    try {
+      const gRes = await fetch(`https://www.cheapshark.com/api/1.0/games?title=${encodeURIComponent(cleaned)}`);
+      if (gRes.ok) {
+        const games = await gRes.json();
+        if (Array.isArray(games) && games.length > 0) {
+          const game = games[0];
+          if (game.cheapestDealID) {
+            const dRes = await fetch(`https://www.cheapshark.com/api/1.0/deals?id=${game.cheapestDealID}`);
+            if (dRes.ok) {
+              const deal = await dRes.json();
+              const info = deal.gameInfo;
+              if (info && info.steamRatingPercent && parseInt(info.steamRatingPercent) > 0) {
+                const reviewData = {
+                  percent: parseInt(info.steamRatingPercent),
+                  count: parseInt(info.steamRatingCount) || 0,
+                  text: info.steamRatingText || "Positive",
+                  steamAppID: info.steamAppID || game.steamAppID || steamAppID || null
+                };
+                window.setCatalogReview(title, reviewData);
+                return reviewData;
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn(`CheapShark games fallback failed for ${title}:`, e);
+    }
+
+    // Record empty record to avoid infinite loop
+    window.setCatalogReview(title, { percent: null, count: 0, text: "No Reviews", steamAppID: steamAppID || null });
+    return null;
+  } catch (err) {
+    console.error(`Error fetching Steam review data for "${title}":`, err);
+    return null;
+  }
+};
+
 // Auto fetch game cover image from Steam Web Store API via CheapShark or Steam Search fallback
 window.triggerBatchFetchArtworks = async function() {
   window.artworkFetchCancelled = false;
@@ -12600,6 +12889,9 @@ window.triggerBatchFetchArtworks = async function() {
             });
             // Update persistent catalog artwork map
             window.setCatalogArtwork(title, imageUrl);
+            if (typeof window.scheduleSteamReviewFetch === "function") {
+              window.scheduleSteamReviewFetch(title, match.steamAppID || imageUrl);
+            }
             successCount++;
             notFoundCache.delete(title.toLowerCase());
           } else {
