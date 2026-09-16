@@ -2238,6 +2238,30 @@ function initEventHandlers() {
     });
   }
 
+  // Entries Sort Listener
+  const entriesSort = document.getElementById("entries-sort-by");
+  if (entriesSort) {
+    entriesSort.value = state.entriesSortBy || "rating-desc";
+    entriesSort.addEventListener("change", (e) => {
+      state.entriesSortBy = e.target.value;
+      localStorage.setItem("gv_entries_sort_by", state.entriesSortBy);
+      state.entriesCurrentPage = 1;
+      renderEntries();
+    });
+  }
+
+  // Entries Rating / Percentage Filter Listener
+  const entriesRatingFilter = document.getElementById("entries-rating-filter");
+  if (entriesRatingFilter) {
+    entriesRatingFilter.value = state.entriesRatingFilter || "all";
+    entriesRatingFilter.addEventListener("change", (e) => {
+      state.entriesRatingFilter = e.target.value;
+      localStorage.setItem("gv_entries_rating_filter", state.entriesRatingFilter);
+      state.entriesCurrentPage = 1;
+      renderEntries();
+    });
+  }
+
   // Suppliers Sort Listener
   const suppliersSort = document.getElementById("suppliers-sort");
   if (suppliersSort) {
@@ -8384,6 +8408,68 @@ function updateCurrencySelectionCards(curr) {
   }
 }
 
+window.updateEntriesHeaderIcons = function(sortBy) {
+  const iconMap = {
+    "title": "entries-th-title-icon",
+    "stock": "entries-th-stock-icon",
+    "sold": "entries-th-sold-icon",
+    "profit": "entries-th-profit-icon",
+    "roi": "entries-th-roi-icon",
+    "margin": "entries-th-margin-icon"
+  };
+
+  Object.values(iconMap).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.className = "fa-solid fa-sort";
+      el.style.color = "";
+      el.style.opacity = "0.6";
+    }
+  });
+
+  const parts = (sortBy || "").split("-");
+  const field = parts[0];
+  const dir = parts[1];
+  const targetId = iconMap[field];
+  if (targetId) {
+    const targetEl = document.getElementById(targetId);
+    if (targetEl) {
+      targetEl.className = dir === "asc" ? "fa-solid fa-sort-up" : "fa-solid fa-sort-down";
+      targetEl.style.color = "var(--accent-cyan)";
+      targetEl.style.opacity = "1";
+    }
+  }
+};
+
+window.toggleEntriesSort = function(col) {
+  const current = state.entriesSortBy || "rating-desc";
+  let next = "";
+  if (col === "title") {
+    next = current === "title-asc" ? "title-desc" : "title-asc";
+  } else if (col === "stock") {
+    next = current === "stock-asc" ? "stock-desc" : "stock-asc";
+  } else if (col === "sold") {
+    next = current === "sold-desc" ? "sold-asc" : "sold-desc";
+  } else if (col === "profit") {
+    next = current === "profit-desc" ? "profit-asc" : "profit-desc";
+  } else if (col === "roi") {
+    next = current === "roi-desc" ? "roi-asc" : "roi-desc";
+  } else if (col === "margin") {
+    next = current === "margin-desc" ? "margin-asc" : "margin-desc";
+  } else if (col === "rating") {
+    next = current === "rating-desc" ? "rating-asc" : "rating-desc";
+  } else {
+    next = "rating-desc";
+  }
+
+  state.entriesSortBy = next;
+  localStorage.setItem("gv_entries_sort_by", next);
+  const sortSelect = document.getElementById("entries-sort-by");
+  if (sortSelect) sortSelect.value = next;
+  state.entriesCurrentPage = 1;
+  renderEntries();
+};
+
 // Render dynamic Game Catalog Entries View
 function renderEntries() {
   const tbody = DOM["entries-table-body"] || document.getElementById("entries-table-body");
@@ -8417,6 +8503,19 @@ function renderEntries() {
       btnFavFilter.classList.remove("btn-fav-active");
       if (favIcon) favIcon.className = "fa-regular fa-star";
     }
+  }
+
+  // Sync Sort and Rating filter select states
+  const sortSelect = document.getElementById("entries-sort-by");
+  if (sortSelect && sortSelect.value !== (state.entriesSortBy || "rating-desc")) {
+    sortSelect.value = state.entriesSortBy || "rating-desc";
+  }
+  const ratingSelect = document.getElementById("entries-rating-filter");
+  if (ratingSelect && ratingSelect.value !== (state.entriesRatingFilter || "all")) {
+    ratingSelect.value = state.entriesRatingFilter || "all";
+  }
+  if (typeof window.updateEntriesHeaderIcons === "function") {
+    window.updateEntriesHeaderIcons(state.entriesSortBy || "rating-desc");
   }
 
   // Get search filter value
@@ -8514,12 +8613,19 @@ function renderEntries() {
     }
   });
 
-  // Check catalog artwork cache fallback
+  // Check catalog artwork cache fallback & enrich review data
   const catalogArtMap = typeof window.getCatalogArtworkMap === "function" ? window.getCatalogArtworkMap() : (state.catalogArtwork || {});
+  const reviewsMap = typeof window.getCatalogReviewsMap === "function" ? window.getCatalogReviewsMap() : (state.catalogReviews || {});
+
   Object.keys(titleGroups).forEach(tk => {
     if (!titleGroups[tk].imageUrl && catalogArtMap[tk]) {
       titleGroups[tk].imageUrl = catalogArtMap[tk];
     }
+    const rev = reviewsMap[tk];
+    titleGroups[tk].steamRatingPercent = (rev && rev.percent !== undefined && rev.percent !== null && Number(rev.percent) > 0) ? Number(rev.percent) : null;
+    titleGroups[tk].steamReviewCount = (rev && rev.count !== undefined && rev.count !== null) ? Number(rev.count) : 0;
+    titleGroups[tk].roiPercentage = titleGroups[tk].totalCostOfSold > 0 ? (titleGroups[tk].profit / titleGroups[tk].totalCostOfSold) * 100 : 0;
+    titleGroups[tk].marginPercentage = titleGroups[tk].totalRevenue > 0 ? (titleGroups[tk].profit / titleGroups[tk].totalRevenue) * 100 : 0;
   });
 
   // Convert map to filterable array list
@@ -8540,13 +8646,66 @@ function renderEntries() {
     );
   }
 
-  // Sort alphabetically (prioritize favorites to the top)
+  // Percentage / Rating Filter
+  const ratingFilter = state.entriesRatingFilter || "all";
+  if (ratingFilter !== "all") {
+    if (ratingFilter === "80plus") {
+      entriesList = entriesList.filter(entry => entry.steamRatingPercent !== null && entry.steamRatingPercent >= 80);
+    } else if (ratingFilter === "70plus") {
+      entriesList = entriesList.filter(entry => entry.steamRatingPercent !== null && entry.steamRatingPercent >= 70);
+    } else if (ratingFilter === "40to69") {
+      entriesList = entriesList.filter(entry => entry.steamRatingPercent !== null && entry.steamRatingPercent >= 40 && entry.steamRatingPercent < 70);
+    } else if (ratingFilter === "under40") {
+      entriesList = entriesList.filter(entry => entry.steamRatingPercent !== null && entry.steamRatingPercent < 40);
+    } else if (ratingFilter === "unrated") {
+      entriesList = entriesList.filter(entry => entry.steamRatingPercent === null || entry.steamRatingPercent === undefined);
+    }
+  }
+
+  // Sorting (Percentage & Performance metrics)
+  const sortBy = state.entriesSortBy || "rating-desc";
   entriesList.sort((a, b) => {
+    // Keep favorites pinned to top
     const aFav = state.favoriteGames && state.favoriteGames.includes(a.title);
     const bFav = state.favoriteGames && state.favoriteGames.includes(b.title);
     if (aFav && !bFav) return -1;
     if (!aFav && bFav) return 1;
-    return a.title.localeCompare(b.title);
+
+    switch (sortBy) {
+      case "rating-desc": {
+        const aR = a.steamRatingPercent !== null ? a.steamRatingPercent : -1;
+        const bR = b.steamRatingPercent !== null ? b.steamRatingPercent : -1;
+        if (bR !== aR) return bR - aR;
+        return (b.steamReviewCount || 0) - (a.steamReviewCount || 0);
+      }
+      case "rating-asc": {
+        const aR = a.steamRatingPercent !== null ? a.steamRatingPercent : 999;
+        const bR = b.steamRatingPercent !== null ? b.steamRatingPercent : 999;
+        if (aR !== bR) return aR - bR;
+        return (a.steamReviewCount || 0) - (b.steamReviewCount || 0);
+      }
+      case "margin-desc":
+        return (b.marginPercentage || 0) - (a.marginPercentage || 0);
+      case "margin-asc":
+        return (a.marginPercentage || 0) - (b.marginPercentage || 0);
+      case "roi-desc":
+        return (b.roiPercentage || 0) - (a.roiPercentage || 0);
+      case "roi-asc":
+        return (a.roiPercentage || 0) - (b.roiPercentage || 0);
+      case "stock-asc":
+        return (a.availableStock || 0) - (b.availableStock || 0);
+      case "stock-desc":
+        return (b.availableStock || 0) - (a.availableStock || 0);
+      case "sold-desc":
+        return (b.totalSold || 0) - (a.totalSold || 0);
+      case "profit-desc":
+        return (b.profit || 0) - (a.profit || 0);
+      case "title-desc":
+        return b.title.localeCompare(a.title);
+      case "title-asc":
+      default:
+        return a.title.localeCompare(b.title);
+    }
   });
 
   // Pagination Logic for Entries

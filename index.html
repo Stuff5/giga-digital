@@ -1862,7 +1862,7 @@
                 <h2 class="view-title">Game Catalog Entries</h2>
                 <p class="view-subtitle">Track sales performance, purchase counts, and available stock per unique game title.</p>
               </div>
-              <div class="action-buttons">
+              <div class="action-buttons" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                 <!-- Catalog View Toggles -->
                 <div class="layout-toggle-group">
                   <button class="btn btn-outline btn-sm active" id="btn-entries-layout-table" title="Table View" onclick="setEntriesLayout('table')">
@@ -1872,6 +1872,43 @@
                     <i class="fa-solid fa-image"></i>
                   </button>
                 </div>
+
+                <!-- Rating / Percentage Filter Dropdown -->
+                <div style="display: flex; align-items: center; gap: 6px; background: var(--bg-input); padding: 2px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); height: 36px;">
+                  <label for="entries-rating-filter" style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); margin: 0; white-space: nowrap; display: flex; align-items: center; gap: 4px;">
+                    <i class="fa-solid fa-filter text-cyan" style="font-size: 0.72rem;"></i> Rating %:
+                  </label>
+                  <select id="entries-rating-filter" class="form-control form-control-sm" style="border: none; background: transparent; padding: 2px 6px; font-size: 0.78rem; font-weight: 500; color: var(--text-main); height: 30px; cursor: pointer;">
+                    <option value="all" selected>All Ratings</option>
+                    <option value="80plus">&ge; 80% (Positive)</option>
+                    <option value="70plus">&ge; 70% (Mostly Positive)</option>
+                    <option value="40to69">40% &ndash; 69% (Mixed)</option>
+                    <option value="under40">&lt; 40% (Negative)</option>
+                    <option value="unrated">Unrated / Pending</option>
+                  </select>
+                </div>
+
+                <!-- Sort By Dropdown (Percentage & Performance) -->
+                <div style="display: flex; align-items: center; gap: 6px; background: var(--bg-input); padding: 2px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); height: 36px;">
+                  <label for="entries-sort-by" style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); margin: 0; white-space: nowrap; display: flex; align-items: center; gap: 4px;">
+                    <i class="fa-solid fa-arrow-down-wide-short text-cyan" style="font-size: 0.72rem;"></i> Sort:
+                  </label>
+                  <select id="entries-sort-by" class="form-control form-control-sm" style="border: none; background: transparent; padding: 2px 6px; font-size: 0.78rem; font-weight: 500; color: var(--text-main); height: 30px; cursor: pointer;">
+                    <option value="rating-desc" selected>Steam Rating % (High &rarr; Low)</option>
+                    <option value="rating-asc">Steam Rating % (Low &rarr; High)</option>
+                    <option value="margin-desc">Margin % (High &rarr; Low)</option>
+                    <option value="margin-asc">Margin % (Low &rarr; High)</option>
+                    <option value="roi-desc">ROI % (High &rarr; Low)</option>
+                    <option value="roi-asc">ROI % (Low &rarr; High)</option>
+                    <option value="title-asc">Game Title (A &ndash; Z)</option>
+                    <option value="title-desc">Game Title (Z &ndash; A)</option>
+                    <option value="stock-asc">Available Stock (Low &ndash; Restock)</option>
+                    <option value="stock-desc">Available Stock (Highest)</option>
+                    <option value="sold-desc">Total Sold (Highest)</option>
+                    <option value="profit-desc">Net Profit (Highest)</option>
+                  </select>
+                </div>
+
                 <button type="button" class="btn btn-outline btn-sm" id="btn-entries-fav-filter" style="height: 36px; padding: 0 12px; display: flex; align-items: center; gap: 6px; font-weight: 600;" title="Filter by Favorites">
                   <i class="fa-regular fa-star" id="entries-fav-filter-icon" style="color: var(--accent-warning);"></i> <span id="entries-fav-filter-text">Favorites</span>
                 </button>
@@ -1887,16 +1924,16 @@
                 <table class="table" id="entries-table">
                   <thead>
                     <tr>
-                      <th>Game Title</th>
+                      <th onclick="toggleEntriesSort('title')" style="cursor: pointer; user-select: none;" title="Sort by Title">Game Title <i id="entries-th-title-icon" class="fa-solid fa-sort" style="font-size: 0.75rem; opacity: 0.6; margin-left: 4px;"></i></th>
                       <th>Total Added</th>
-                      <th>Available Stock</th>
-                      <th>Total Sold</th>
+                      <th onclick="toggleEntriesSort('stock')" style="cursor: pointer; user-select: none;" title="Sort by Stock">Available Stock <i id="entries-th-stock-icon" class="fa-solid fa-sort" style="font-size: 0.75rem; opacity: 0.6; margin-left: 4px;"></i></th>
+                      <th onclick="toggleEntriesSort('sold')" style="cursor: pointer; user-select: none;" title="Sort by Sold">Total Sold <i id="entries-th-sold-icon" class="fa-solid fa-sort" style="font-size: 0.75rem; opacity: 0.6; margin-left: 4px;"></i></th>
                       <th>Avg Days to Sell</th>
                       <th>Lowest Sold</th>
                       <th>Total Revenue</th>
-                      <th>Net Profit</th>
-                      <th>ROI %</th>
-                      <th>Margin %</th>
+                      <th onclick="toggleEntriesSort('profit')" style="cursor: pointer; user-select: none;" title="Sort by Profit">Net Profit <i id="entries-th-profit-icon" class="fa-solid fa-sort" style="font-size: 0.75rem; opacity: 0.6; margin-left: 4px;"></i></th>
+                      <th onclick="toggleEntriesSort('roi')" style="cursor: pointer; user-select: none;" title="Sort by ROI %">ROI % <i id="entries-th-roi-icon" class="fa-solid fa-sort" style="font-size: 0.75rem; opacity: 0.6; margin-left: 4px;"></i></th>
+                      <th onclick="toggleEntriesSort('margin')" style="cursor: pointer; user-select: none;" title="Sort by Margin %">Margin % <i id="entries-th-margin-icon" class="fa-solid fa-sort" style="font-size: 0.75rem; opacity: 0.6; margin-left: 4px;"></i></th>
                       <th style="text-align: right; width: 100px;">Actions</th>
                     </tr>
                   </thead>
@@ -3532,13 +3569,13 @@
   </div>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=36"></script>
-  <script src="src/state.js?v=36"></script>
-  <script src="src/api.js?v=36"></script>
-  <script src="src/charts.js?v=36"></script>
-  <script src="src/ui.js?v=36"></script>
-  <script src="src/ai.js?v=36"></script>
-  <script src="src/importer.js?v=36"></script>
-  <script src="app.js?v=36"></script>
+  <script src="config.js?v=37"></script>
+  <script src="src/state.js?v=37"></script>
+  <script src="src/api.js?v=37"></script>
+  <script src="src/charts.js?v=37"></script>
+  <script src="src/ui.js?v=37"></script>
+  <script src="src/ai.js?v=37"></script>
+  <script src="src/importer.js?v=37"></script>
+  <script src="app.js?v=37"></script>
 </body>
 </html>
