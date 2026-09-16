@@ -1617,6 +1617,9 @@ function bindSidebarEvents() {
           updateUI();
         } else if (targetHash === "#settings") {
           renderSidebarCustomizationSettings();
+          if (typeof window.updateSteamReviewsStats === "function") {
+            window.updateSteamReviewsStats();
+          }
         }
       } catch (err) {
         console.error("Error rendering view on navigation:", err);
@@ -11892,6 +11895,41 @@ function bindAdvancedSettingsControls() {
     window.updateArtworkSkippedBadge();
   }
 
+  // Steam Ratings Enricher buttons
+  const btnFetchAllReviews = document.getElementById("btn-fetch-all-reviews");
+  if (btnFetchAllReviews) {
+    btnFetchAllReviews.addEventListener("click", () => {
+      if (typeof window.triggerBatchFetchReviews === "function") {
+        window.triggerBatchFetchReviews();
+      }
+    });
+  }
+
+  const btnCancelReviews = document.getElementById("btn-cancel-review-fetch");
+  if (btnCancelReviews) {
+    btnCancelReviews.addEventListener("click", () => {
+      window.batchReviewFetchCancelled = true;
+      btnCancelReviews.disabled = true;
+      btnCancelReviews.textContent = "Stopping...";
+    });
+  }
+
+  const btnCleanReviews = document.getElementById("btn-clean-unrated-cache");
+  if (btnCleanReviews) {
+    btnCleanReviews.addEventListener("click", () => {
+      if (typeof window.cleanupPoisonedReviewsCache === "function") {
+        const cleaned = window.cleanupPoisonedReviewsCache();
+        if (typeof showToast === "function") {
+          showToast(`Cleaned ${cleaned} unrated/empty review cache entries.`, "success");
+        }
+      }
+    });
+  }
+
+  if (typeof window.updateSteamReviewsStats === "function") {
+    window.updateSteamReviewsStats();
+  }
+
   // Bind Profile settings controls
   bindProfileSettingsControls();
 }
@@ -12530,6 +12568,71 @@ window.getCatalogReviewsMap = function() {
   }
 };
 
+window.cleanupPoisonedReviewsCache = function() {
+  const reviews = window.getCatalogReviewsMap();
+  let cleanedCount = 0;
+  const keys = Object.keys(reviews);
+  keys.forEach(k => {
+    const r = reviews[k];
+    // Remove null percentages, generic "No Reviews" placeholders, or invalid counts
+    if (!r || r.percent === null || r.percent === undefined || r.text === "No Reviews" || (Number(r.count) === 0 && !r.percent)) {
+      delete reviews[k];
+      cleanedCount++;
+    }
+  });
+  state.catalogReviews = reviews;
+  try {
+    localStorage.setItem("gv_catalog_reviews", JSON.stringify(reviews));
+  } catch (e) {
+    console.warn("Could not save cleaned catalog reviews to localStorage:", e);
+  }
+  if (window.supabaseClient && typeof dbSaveSettings === "function") {
+    dbSaveSettings("catalogReviews", state.catalogReviews).catch(() => {});
+  }
+  console.log(`[Steam Reviews] Cleaned up ${cleanedCount} unrated/poisoned review entries from cache.`);
+  if (typeof window.updateSteamReviewsStats === "function") {
+    window.updateSteamReviewsStats();
+  }
+  return cleanedCount;
+};
+
+// Automatic one-time cleanup of poisoned review cache on initial run
+try {
+  if (!localStorage.getItem("gv_cleaned_poisoned_reviews_v1")) {
+    window.cleanupPoisonedReviewsCache();
+    localStorage.setItem("gv_cleaned_poisoned_reviews_v1", "true");
+  }
+} catch (e) {}
+
+window.updateSteamReviewsStats = function() {
+  const badge = document.getElementById("steam-review-stats-badge");
+  if (!badge) return;
+
+  const uniqueTitles = new Set();
+  (state.inventory || []).forEach(item => {
+    if (item && item.title && item.title.trim()) uniqueTitles.add(item.title.trim().toLowerCase());
+  });
+  (state.sales || []).forEach(sale => {
+    if (sale && sale.title && sale.title.trim()) uniqueTitles.add(sale.title.trim().toLowerCase());
+  });
+
+  const total = uniqueTitles.size;
+  const reviews = window.getCatalogReviewsMap();
+  let rated = 0;
+  let unrated = 0;
+
+  uniqueTitles.forEach(lower => {
+    const r = reviews[lower];
+    if (r && r.percent !== undefined && r.percent !== null && Number(r.percent) > 0) {
+      rated++;
+    } else {
+      unrated++;
+    }
+  });
+
+  badge.innerHTML = `<strong>${total.toLocaleString()}</strong> Games Total &bull; <strong style="color: var(--accent-emerald);">${rated.toLocaleString()}</strong> Rated &bull; <strong style="color: var(--accent-warning);">${unrated.toLocaleString()}</strong> Missing`;
+};
+
 window.setCatalogReview = function(title, reviewData) {
   if (!title) return;
   if (!state.catalogReviews) state.catalogReviews = {};
@@ -12631,14 +12734,24 @@ window.renderSteamRatingPill = function(title, options = {}) {
     `.trim();
   }
 
-  // If not yet fetched, schedule background lookup if autoFetch is allowed
+  // If explicitly confirmed not on Steam within the last 7 days, don't keep polling
+  if (data && data.notFound && data.checkedAt && (Date.now() - data.checkedAt < 7 * 86400000)) {
+    return "";
+  }
+
+  // If not yet fetched, schedule background lookup if autoFetch is allowed and not throttled
   if (options.autoFetch !== false) {
-    window.scheduleSteamReviewFetch(title, options.steamAppID || options.imageUrl);
+    const isCooldown = Date.now() < (window.steamReviewCooldownUntil || 0);
+    const isQueueManageable = (window.reviewFetchQueue || []).length < 35;
+    if (!isCooldown && isQueueManageable) {
+      window.scheduleSteamReviewFetch(title, options.steamAppID || options.imageUrl);
+    }
   }
 
   return "";
 };
 
+window.steamReviewCooldownUntil = window.steamReviewCooldownUntil || 0;
 window.pendingReviewFetches = window.pendingReviewFetches || new Set();
 window.reviewFetchQueue = window.reviewFetchQueue || [];
 let isProcessingReviewQueue = false;
@@ -12657,6 +12770,11 @@ window.scheduleSteamReviewFetch = function(title, hintAppIdOrUrl) {
       steamAppID = window.extractSteamAppId(hintAppIdOrUrl);
     }
   }
+  // If no appId from hint, check catalog artwork cache
+  if (!steamAppID) {
+    const catArt = (state.catalogArtwork && state.catalogArtwork[t]) || (state.catalogArtwork && state.catalogArtwork[title.trim()]);
+    if (catArt) steamAppID = window.extractSteamAppId(catArt);
+  }
 
   window.reviewFetchQueue.push({ title, steamAppID });
   processReviewFetchQueue();
@@ -12667,14 +12785,31 @@ async function processReviewFetchQueue() {
   isProcessingReviewQueue = true;
 
   while (window.reviewFetchQueue.length > 0) {
+    // Check circuit breaker cooldown
+    if (Date.now() < (window.steamReviewCooldownUntil || 0)) {
+      const waitTime = window.steamReviewCooldownUntil - Date.now();
+      console.log(`[Steam Review Queue] Cooldown active. Pausing queue for ${Math.ceil(waitTime / 1000)}s...`);
+      await new Promise(r => setTimeout(r, waitTime + 1000));
+    }
+
     const item = window.reviewFetchQueue.shift();
+    if (!item || !item.title) continue;
+
     try {
-      await window.fetchSteamReviewData(item.title, item.steamAppID);
+      const res = await window.fetchSteamReviewData(item.title, item.steamAppID);
+      if (res && res.rateLimited) {
+        // Re-enqueue at front so this title is not skipped
+        window.reviewFetchQueue.unshift(item);
+        const waitTime = Math.max(2000, (window.steamReviewCooldownUntil || (Date.now() + 65000)) - Date.now());
+        console.log(`[Steam Review Queue] Rate limited (429). Pausing queue for ${Math.ceil(waitTime / 1000)}s...`);
+        await new Promise(r => setTimeout(r, waitTime + 1000));
+        continue;
+      }
     } catch (e) {
       console.warn("Background review fetch error for:", item.title, e);
     }
-    // Respect rate limits with 400ms delay between calls
-    await new Promise(r => setTimeout(r, 400));
+    // Respect CheapShark rate limit of 60 req/min: delay 1300ms between calls
+    await new Promise(r => setTimeout(r, 1300));
   }
 
   isProcessingReviewQueue = false;
@@ -12683,6 +12818,21 @@ async function processReviewFetchQueue() {
 window.fetchSteamReviewData = async function(title, steamAppID) {
   if (!title) return null;
   const t = title.trim().toLowerCase();
+
+  // Check circuit breaker
+  if (Date.now() < (window.steamReviewCooldownUntil || 0)) {
+    return { rateLimited: true, waitMs: window.steamReviewCooldownUntil - Date.now() };
+  }
+
+  // Attempt to resolve Steam App ID from catalog artwork if missing
+  if (!steamAppID) {
+    const catArt = (state.catalogArtwork && state.catalogArtwork[t]) || (state.catalogArtwork && state.catalogArtwork[title.trim()]);
+    if (catArt) steamAppID = window.extractSteamAppId(catArt);
+  }
+  if (!steamAppID) {
+    const invMatch = (state.inventory || []).find(i => i && i.title && i.title.trim().toLowerCase() === t && i.imageUrl);
+    if (invMatch) steamAppID = window.extractSteamAppId(invMatch.imageUrl);
+  }
 
   const cleanTitle = (str) => {
     if (!str) return "";
@@ -12699,10 +12849,15 @@ window.fetchSteamReviewData = async function(title, steamAppID) {
   };
 
   try {
-    // 1. If steamAppID is provided, query CheapShark deals by steamAppID directly
+    // 1. If steamAppID is provided, query CheapShark deals by steamAppID directly (fast single call)
     if (steamAppID && steamAppID !== "0") {
       try {
         const res = await fetch(`https://www.cheapshark.com/api/1.0/deals?steamAppID=${encodeURIComponent(steamAppID)}`);
+        if (res.status === 429) {
+          window.steamReviewCooldownUntil = Date.now() + 65000;
+          console.warn(`[CheapShark 429] Rate limited on "${title}". Circuit breaker paused for 65s.`);
+          return { rateLimited: true, waitMs: 65000 };
+        }
         if (res.ok) {
           const deals = await res.json();
           if (Array.isArray(deals) && deals.length > 0) {
@@ -12720,14 +12875,22 @@ window.fetchSteamReviewData = async function(title, steamAppID) {
           }
         }
       } catch (e) {
-        console.warn(`CheapShark steamAppID lookup failed for ${title}:`, e);
+        console.warn(`CheapShark steamAppID lookup error for "${title}":`, e);
       }
     }
+
+    // Delay 1200ms before next call to stay within rate limits
+    await new Promise(r => setTimeout(r, 1200));
 
     // 2. Query CheapShark deals by title
     const cleaned = cleanTitle(title);
     try {
       const res = await fetch(`https://www.cheapshark.com/api/1.0/deals?title=${encodeURIComponent(cleaned)}&exact=0&pageSize=3`);
+      if (res.status === 429) {
+        window.steamReviewCooldownUntil = Date.now() + 65000;
+        console.warn(`[CheapShark 429] Rate limited on "${title}". Circuit breaker paused for 65s.`);
+        return { rateLimited: true, waitMs: 65000 };
+      }
       if (res.ok) {
         const deals = await res.json();
         if (Array.isArray(deals) && deals.length > 0) {
@@ -12745,18 +12908,31 @@ window.fetchSteamReviewData = async function(title, steamAppID) {
         }
       }
     } catch (e) {
-      console.warn(`CheapShark deals by title failed for ${title}:`, e);
+      console.warn(`CheapShark deals by title error for "${title}":`, e);
     }
+
+    // Delay 1200ms before next fallback call
+    await new Promise(r => setTimeout(r, 1200));
 
     // 3. Fallback: Query CheapShark games endpoint
     try {
       const gRes = await fetch(`https://www.cheapshark.com/api/1.0/games?title=${encodeURIComponent(cleaned)}`);
+      if (gRes.status === 429) {
+        window.steamReviewCooldownUntil = Date.now() + 65000;
+        console.warn(`[CheapShark 429] Rate limited on "${title}". Circuit breaker paused for 65s.`);
+        return { rateLimited: true, waitMs: 65000 };
+      }
       if (gRes.ok) {
         const games = await gRes.json();
         if (Array.isArray(games) && games.length > 0) {
           const game = games[0];
           if (game.cheapestDealID) {
+            await new Promise(r => setTimeout(r, 1200));
             const dRes = await fetch(`https://www.cheapshark.com/api/1.0/deals?id=${game.cheapestDealID}`);
+            if (dRes.status === 429) {
+              window.steamReviewCooldownUntil = Date.now() + 65000;
+              return { rateLimited: true, waitMs: 65000 };
+            }
             if (dRes.ok) {
               const deal = await dRes.json();
               const info = deal.gameInfo;
@@ -12775,15 +12951,169 @@ window.fetchSteamReviewData = async function(title, steamAppID) {
         }
       }
     } catch (e) {
-      console.warn(`CheapShark games fallback failed for ${title}:`, e);
+      console.warn(`CheapShark games fallback error for "${title}":`, e);
     }
 
-    // Record empty record to avoid infinite loop
-    window.setCatalogReview(title, { percent: null, count: 0, text: "No Reviews", steamAppID: steamAppID || null });
+    // Only record genuine not found if all API calls succeeded with 200 and returned no matches
+    window.setCatalogReview(title, {
+      percent: null,
+      count: 0,
+      text: "Not on Steam",
+      steamAppID: steamAppID || null,
+      notFound: true,
+      checkedAt: Date.now()
+    });
     return null;
   } catch (err) {
     console.error(`Error fetching Steam review data for "${title}":`, err);
+    // On unexpected network error, do NOT permanently cache null - return null for future retry
     return null;
+  }
+};
+
+// Dedicated Catalog-Wide Steam Reviews & Ratings Batch Enricher
+window.batchReviewFetchCancelled = false;
+
+window.triggerBatchFetchReviews = async function() {
+  window.batchReviewFetchCancelled = false;
+  const btnCancel = document.getElementById("btn-cancel-review-fetch");
+  const btnFetch = document.getElementById("btn-fetch-all-reviews");
+  const progressContainer = document.getElementById("review-fetch-progress-container");
+  const progressStatus = document.getElementById("review-fetch-progress-status");
+  const progressPercent = document.getElementById("review-fetch-progress-percent");
+  const progressBar = document.getElementById("review-fetch-progress-bar");
+  const progressDetail = document.getElementById("review-fetch-detail-status");
+
+  const overwrite = document.getElementById("settings-review-overwrite")?.checked === true;
+  const onlyUnrated = document.getElementById("settings-review-only-unrated")?.checked !== false;
+
+  // Gather all unique game titles across inventory and sales (1,271 catalog games)
+  const uniqueTitlesMap = new Map(); // lowerTitle -> { title, steamAppID }
+  
+  const registerTitle = (rawTitle, rawImg) => {
+    if (!rawTitle || typeof rawTitle !== "string" || !rawTitle.trim()) return;
+    const clean = rawTitle.trim();
+    const lower = clean.toLowerCase();
+    let appId = window.extractSteamAppId(rawImg);
+    if (!appId && state.catalogArtwork && state.catalogArtwork[lower]) {
+      appId = window.extractSteamAppId(state.catalogArtwork[lower]);
+    }
+    if (!uniqueTitlesMap.has(lower)) {
+      uniqueTitlesMap.set(lower, { title: clean, steamAppID: appId });
+    } else if (appId && !uniqueTitlesMap.get(lower).steamAppID) {
+      uniqueTitlesMap.get(lower).steamAppID = appId;
+    }
+  };
+
+  (state.inventory || []).forEach(item => {
+    if (item && item.title) registerTitle(item.title, item.imageUrl);
+  });
+  (state.sales || []).forEach(sale => {
+    if (sale && sale.title) registerTitle(sale.title, sale.imageUrl);
+  });
+
+  const reviewsMap = window.getCatalogReviewsMap();
+  const titlesToProcess = [];
+
+  uniqueTitlesMap.forEach((entry, lower) => {
+    const existing = reviewsMap[lower];
+    const hasValidRating = existing && existing.percent !== undefined && existing.percent !== null && Number(existing.percent) > 0;
+    const isNotFound = existing && existing.notFound;
+
+    if (hasValidRating && !overwrite) return; // Already rated
+    if (isNotFound && onlyUnrated && !overwrite) return; // Confirmed not on Steam previously
+
+    titlesToProcess.push(entry);
+  });
+
+  // Sort titles alphabetically (case-insensitive natural A-Z order)
+  titlesToProcess.sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base', numeric: true }));
+
+  if (titlesToProcess.length === 0) {
+    if (typeof showToast === "function") {
+      showToast("All catalog games already have Steam ratings! Check 'Force refresh' to re-query.", "info");
+    }
+    return;
+  }
+
+  if (progressContainer) progressContainer.classList.remove("hidden");
+  if (btnFetch) btnFetch.disabled = true;
+  if (btnCancel) {
+    btnCancel.disabled = false;
+    btnCancel.textContent = "Stop";
+  }
+
+  const total = titlesToProcess.length;
+  let processedCount = 0;
+  let ratedCount = 0;
+  let notFoundCount = 0;
+
+  for (let i = 0; i < total; i++) {
+    if (window.batchReviewFetchCancelled) {
+      if (progressStatus) progressStatus.textContent = "Enrichment stopped by user. Progress saved.";
+      break;
+    }
+
+    const item = titlesToProcess[i];
+    
+    // Update progress display
+    const pct = Math.round((processedCount / total) * 100);
+    if (progressPercent) progressPercent.textContent = `${pct}%`;
+    if (progressBar) progressBar.style.width = `${pct}%`;
+    if (progressStatus) progressStatus.textContent = `[${i + 1}/${total}] Fetching: "${item.title}"...`;
+    if (progressDetail) progressDetail.textContent = `${processedCount} of ${total} games processed (${ratedCount} rated, ${notFoundCount} not on Steam)`;
+
+    let success = false;
+    while (!success && !window.batchReviewFetchCancelled) {
+      // Check circuit breaker cooldown
+      if (Date.now() < (window.steamReviewCooldownUntil || 0)) {
+        let remainingSec = Math.ceil((window.steamReviewCooldownUntil - Date.now()) / 1000);
+        while (remainingSec > 0 && !window.batchReviewFetchCancelled) {
+          if (progressStatus) {
+            progressStatus.textContent = `Rate limited. Pausing for cooldown (resuming in ${remainingSec}s)...`;
+          }
+          await new Promise(r => setTimeout(r, 1000));
+          remainingSec = Math.ceil((window.steamReviewCooldownUntil - Date.now()) / 1000);
+        }
+        if (window.batchReviewFetchCancelled) break;
+      }
+
+      const res = await window.fetchSteamReviewData(item.title, item.steamAppID);
+      if (res && res.rateLimited) {
+        // Continue loop to wait out the circuit breaker
+        continue;
+      }
+
+      if (res && res.percent) {
+        ratedCount++;
+      } else {
+        notFoundCount++;
+      }
+      success = true;
+    }
+
+    processedCount++;
+    if (typeof window.updateSteamReviewsStats === "function") {
+      window.updateSteamReviewsStats();
+    }
+
+    // Spacing between titles to respect 60 req/min
+    await new Promise(r => setTimeout(r, 1300));
+  }
+
+  // Final UI updates
+  const finalPct = window.batchReviewFetchCancelled ? Math.round((processedCount / total) * 100) : 100;
+  if (progressPercent) progressPercent.textContent = `${finalPct}%`;
+  if (progressBar) progressBar.style.width = `${finalPct}%`;
+  if (progressDetail) progressDetail.textContent = `${processedCount} of ${total} games processed (${ratedCount} rated, ${notFoundCount} not on Steam)`;
+  if (progressStatus && !window.batchReviewFetchCancelled) {
+    progressStatus.textContent = `Completed! ${ratedCount} games enriched with Steam ratings.`;
+  }
+  if (btnFetch) btnFetch.disabled = false;
+  if (btnCancel) btnCancel.disabled = true;
+
+  if (typeof showToast === "function") {
+    showToast(`Batch ratings complete: ${ratedCount} games rated, ${notFoundCount} not on Steam.`, "success");
   }
 };
 
@@ -12866,10 +13196,8 @@ window.triggerBatchFetchArtworks = async function() {
     return;
   }
 
-  // Process in batches of 100 to prevent browser hangs, API throttling, and long wait states
-  const limitCount = 100;
-  const isSliced = titlesToFetch.length > limitCount;
-  const batchTitles = titlesToFetch.slice(0, limitCount);
+  // Process all titles requiring artwork (user can pause or stop anytime with the Stop button)
+  const batchTitles = titlesToFetch;
 
   if (progressContainer) progressContainer.classList.remove("hidden");
   if (btnFetch) btnFetch.disabled = true;
@@ -12936,9 +13264,10 @@ window.triggerBatchFetchArtworks = async function() {
         try {
           const response = await fetch(`https://www.cheapshark.com/api/1.0/games?title=${encodeURIComponent(searchTerm)}`);
           if (response.status === 429) {
+            window.steamReviewCooldownUntil = Date.now() + 65000;
             retries++;
-            const backoff = retries * 5000;
-            if (progressStatus) progressStatus.textContent = `Rate limited. Retrying "${title}" in ${backoff / 1000}s...`;
+            const backoff = 65000;
+            if (progressStatus) progressStatus.textContent = `Rate limited. Pausing for cooldown (resuming "${title}" in 65s)...`;
             await new Promise(resolve => setTimeout(resolve, backoff));
             continue;
           }
