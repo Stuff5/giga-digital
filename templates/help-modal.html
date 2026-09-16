@@ -74,13 +74,22 @@
                 <span class="badge badge-age-verystale" style="display: inline-block;">Very Stale</span> (180+ days).
               </p>
 
-              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Catalog Cover Artworks</h5>
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Steam Intelligence & Artwork Enrichment</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                GameVault enriches your product listings with official Steam rating metrics, sentiment tiers, and cover artwork via CheapShark and Steam Store APIs:
+                <br>
+                - <strong>Steam Rating Pills:</strong> Interactive compact pills on gallery cards and table rows display positive review percentages (e.g. <code>98%</code>) and review quantities (e.g. <code>(211k)</code>). Click any pill to open the official Steam Store page.
+                <br>
+                - <strong>Sentiment Color Tiers:</strong> Color-coded by Steam sentiment: <span style="color: #4cff8f; font-weight: 600;">Very/Overwhelmingly Positive</span> (&ge;80%), <span style="color: #66c0f4; font-weight: 600;">Mostly Positive</span> (70&ndash;79%), <span style="color: #b9a074; font-weight: 600;">Mixed</span> (40&ndash;69%), and <span style="color: #e35e5e; font-weight: 600;">Negative</span> (&lt;40%).
+                <br>
+                - <strong>Catalog Artwork Fetcher:</strong> In <strong>Settings &rarr; Data Tools & Utilities</strong>. Queries artwork and matches Steam App IDs for all catalog titles with live stop controls and circuit breaker cooldowns.
+                <br>
+                - <strong>Steam Ratings Enricher:</strong> A dedicated batch utility in Settings that enriches all 1,271 catalog titles (A&ndash;Z) with official Steam reviews, using a 1.3s safe delay and 65-second rate-limit circuit breaker.
+              </p>
+
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Supplier Logo Retrieval</h5>
               <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 0;">
-                GameVault fetches game covers dynamically via the CheapShark / Steam API:
-                <br>
-                - <strong>Single Fetch:</strong> Clicking the "Fetch Steam" button next to cover art inputs queries artwork links in real-time.
-                <br>
-                - <strong>Bulk Fetcher:</strong> Located in the unified <strong>Data Tools & Utilities</strong> card in Settings. It runs in safe batches of <strong>100 entries</strong> at a time to prevent rate-limiting and tab lag, featuring a Steam fallback search via <code>corsproxy.io</code> if CheapShark is blocked.
+                In the <strong>Suppliers</strong> tab, each supplier entry includes a one-click logo retrieval tool to automatically search, preview, and assign company branding logos to suppliers.
               </p>
             </div>
 
@@ -351,8 +360,24 @@
               </p>
 
               <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">8. Micro Visual Margin Bars</h5>
-              <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 0;">
+              <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 12px;">
                 Horizontal 3px bars represent ROI and margin proportions visually. Emerald bars stretch right for positive yield values; red bars stretch left for negative yield values, facilitating rapid visual analytics scans.
+              </p>
+
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">9. Steam Rating % in Restock Decisions</h5>
+              <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 12px;">
+                Measures consumer sentiment and market longevity on the Steam platform:
+                <br>
+                <code style="font-family: monospace; color: var(--accent-cyan);">Steam Rating % = (Positive Reviews / Total Reviews) * 100</code>
+                <br>
+                Titles with high ratings (&ge;80%) and substantial review volume indicate enduring customer demand and lower depreciation risk, providing actionable restock guidance when paired with healthy profit margins.
+              </p>
+
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">10. Multi-Metric Percentage Sorting & Filtering</h5>
+              <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 0;">
+                In the <strong>Catalog Entries</strong> view, you can sort and filter listings by three core percentage metrics:
+                <strong>Steam Rating %</strong>, <strong>Margin %</strong>, and <strong>ROI %</strong>.
+                Click column header sort triggers in Table view or use the dropdown selector in Gallery mode, along with percentage range sliders to isolate top-rated or highest-margin titles.
               </p>
             </div>
 
@@ -422,11 +447,29 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
-                <!-- v1.8.1 -->
+                <!-- v1.9.0 -->
                 <div style="border-left: 3px solid var(--accent-emerald); padding-left: 12px;">
                   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.8.1 — Full-Dataset Cloud Pagination, Data Integrity & Spreadsheet Upgrades</strong>
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.9.0 — Steam Rating Intelligence, Catalog Enrichment Engine & Supplier Automation</strong>
                     <span style="font-size: 0.75rem; color: var(--accent-emerald); font-weight: bold;">Current Version</span>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
+                    <li><strong>Official Steam Rating & Review Pills:</strong> Embedded compact sentiment rating pills displaying exact positive rating percentages (e.g., <code>98%</code>) and formatted review counts (e.g., <code>(211k)</code>) across both Gallery Cards and Table rows, with color-coded sentiment tiers (Overwhelmingly Positive, Mostly Positive, Mixed, Negative) and direct links to Steam store pages.</li>
+                    <li><strong>Dedicated Steam Ratings Enricher Tool:</strong> Added a full-catalog A&ndash;Z batch enrichment runner in Settings &rarr; Data Tools & Utilities with live progress tracking, unrated-only and force-refresh options, and real-time statistics (Total Games, Rated Games, Missing).</li>
+                    <li><strong>Circuit Breaker & Intelligent Rate Limiting:</strong> Implemented a 1,300ms safe inter-request delay conforming to CheapShark API limits (60 req/min), paired with a 65-second automatic circuit breaker pause with live UI countdowns upon encountering HTTP 429 errors to prevent IP throttling without dropping titles.</li>
+                    <li><strong>Poisoned Review Cache Purge:</strong> Added automatic startup migration and a manual "Clean Cache" utility that clears empty/rate-limited placeholder records, ensuring all games can be cleanly re-evaluated.</li>
+                    <li><strong>Direct Steam App ID Resolution:</strong> Automatically extracts Steam App IDs from catalog artwork URLs, enabling single-request precision deal lookups for instantaneous enrichment.</li>
+                    <li><strong>Percentage Sorting & Filtering:</strong> Added multi-metric percentage sorting and range filtering across the Catalog Entries view, allowing merchants to sort and filter by Steam Rating %, Profit Margin %, or ROI % to optimize restock strategies.</li>
+                    <li><strong>One-Click Supplier Logo Retrieval:</strong> Added a dedicated logo fetch button on supplier cards and rows to automatically fetch high-res branding and company logos.</li>
+                    <li><strong>Continuous Catalog Artwork Processing:</strong> Removed the 100-item batch cap on the Catalog Artwork Fetcher, allowing full-catalog image runs with responsive stop controls and backoff cooldowns.</li>
+                  </ul>
+                </div>
+
+                <!-- v1.8.1 -->
+                <div style="border-left: 3px solid var(--border-color); padding-left: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.8.1 — Full-Dataset Cloud Pagination, Data Integrity & Spreadsheet Upgrades</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Previous Version</span>
                   </div>
                   <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
                     <li><strong>Full-Scale Cloud Pagination:</strong> Implemented range-based chunked parallel querying in <code>supabaseFetchAll</code>, overcoming PostgREST's default 1,000-row limit to fetch complete sales and inventory datasets (restoring all 8,800+ transactions through 2026).</li>
