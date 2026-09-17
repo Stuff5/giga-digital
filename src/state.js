@@ -761,6 +761,184 @@ const DEFAULT_PLATFORM_LOGOS = {
 };
 window.DEFAULT_PLATFORM_LOGOS = DEFAULT_PLATFORM_LOGOS;
 
+const PUBLISHER_KNOWN_DOMAINS = {
+  "electronic arts": "ea.com",
+  "ea": "ea.com",
+  "ea games": "ea.com",
+  "ea sports": "ea.com",
+  "ubisoft": "ubisoft.com",
+  "capcom": "capcom.com",
+  "square enix": "square-enix.com",
+  "bandai namco": "bandainamcoent.com",
+  "bandai namco entertainment": "bandainamcoent.com",
+  "bandai": "bandainamcoent.com",
+  "namco": "bandainamcoent.com",
+  "bethesda": "bethesda.net",
+  "bethesda softworks": "bethesda.net",
+  "sega": "sega.com",
+  "konami": "konami.com",
+  "activision": "activision.com",
+  "blizzard": "blizzard.com",
+  "blizzard entertainment": "blizzard.com",
+  "activision blizzard": "activision.com",
+  "take-two": "take2games.com",
+  "take-two interactive": "take2games.com",
+  "2k": "2k.com",
+  "2k games": "2k.com",
+  "rockstar": "rockstargames.com",
+  "rockstar games": "rockstargames.com",
+  "cd projekt": "cdprojektred.com",
+  "cd projekt red": "cdprojektred.com",
+  "valve": "valvesoftware.com",
+  "valve corporation": "valvesoftware.com",
+  "sony": "playstation.com",
+  "sony interactive entertainment": "playstation.com",
+  "playstation pc llc": "playstation.com",
+  "playstation publishing llc": "playstation.com",
+  "microsoft": "xbox.com",
+  "xbox game studios": "xbox.com",
+  "warner bros": "warnerbros.com",
+  "warner bros. games": "warnerbros.com",
+  "warner bros. interactive entertainment": "warnerbros.com",
+  "wb games": "warnerbros.com",
+  "devolver digital": "devolverdigital.com",
+  "devolver": "devolverdigital.com",
+  "paradox interactive": "paradoxinteractive.com",
+  "paradox": "paradoxinteractive.com",
+  "thq nordic": "thqnordic.com",
+  "505 games": "505games.com",
+  "deep silver": "plaion.com",
+  "plaion": "plaion.com",
+  "koch media": "plaion.com",
+  "focus entertainment": "focus-entmt.com",
+  "focus home interactive": "focus-entmt.com",
+  "koei tecmo": "koeitecmoamerica.com",
+  "koei tecmo games": "koeitecmoamerica.com",
+  "remedy entertainment": "remedygames.com",
+  "remedy": "remedygames.com",
+  "team17": "team17.com",
+  "team17 digital": "team17.com",
+  "techland": "techland.net",
+  "bungie": "bungie.net",
+  "rebellion": "rebellion.com",
+  "frontier developments": "frontier.co.uk",
+  "krafton": "krafton.com",
+  "io interactive": "ioi.dk",
+  "fromsoftware": "fromsoftware.jp",
+  "atlus": "atlus.com",
+  "lucasarts": "lucasfilm.com",
+  "lucasfilm": "lucasfilm.com",
+  "disney": "disney.com",
+  "disney interactive": "disney.com",
+  "epic games": "epicgames.com",
+  "raw fury": "rawfury.com",
+  "tinybuild": "tinybuild.com",
+  "daedalic entertainment": "daedalic.com",
+  "dotemu": "dotemu.com",
+  "annapurna interactive": "annapurnainteractive.com",
+  "chucklefish": "chucklefish.org",
+  "tripwire interactive": "tripwireinteractive.com",
+  "crytek": "crytek.com",
+  "bohemia interactive": "bohemia.net",
+  "milestone": "milestone.it",
+  "milestone s.r.l.": "milestone.it",
+  "nis america": "nisamerica.com",
+  "spike chunsoft": "spike-chunsoft.com",
+  "arc system works": "arcsystemworks.com",
+  "snk": "snk-corp.co.jp",
+  "snk corporation": "snk-corp.co.jp",
+  "marvelous": "marvelous.co.jp",
+  "aspyr": "aspyr.com",
+  "aspyr media": "aspyr.com",
+  "saber interactive": "saber.com",
+  "gearbox publishing": "gearboxsoftware.com",
+  "curve games": "curvegames.com",
+  "curve digital": "curvegames.com",
+  "playway": "playway.com",
+  "playway s.a.": "playway.com",
+  "humble games": "humblegames.com",
+  "riot games": "riotgames.com"
+};
+window.PUBLISHER_KNOWN_DOMAINS = PUBLISHER_KNOWN_DOMAINS;
+
+function resolvePublisherDomain(publisherName) {
+  if (!publisherName) return "";
+  const clean = publisherName.toLowerCase().trim();
+  if (clean === "no publisher" || clean === "unknown" || clean === "other" || clean === "direct") return "";
+  if (PUBLISHER_KNOWN_DOMAINS[clean]) return PUBLISHER_KNOWN_DOMAINS[clean];
+  
+  for (const [key, domain] of Object.entries(PUBLISHER_KNOWN_DOMAINS)) {
+    if (clean.includes(key)) return domain;
+  }
+  
+  const domainMatch = clean.match(/(?:https?:\/\/)?(?:www\.)?([a-z0-9-]+(?:\.[a-z0-9-]+)+)/i);
+  if (domainMatch && domainMatch[1]) {
+    return domainMatch[1];
+  }
+  
+  const stripped = clean.replace(/[^a-z0-9]/g, "");
+  return stripped ? `${stripped}.com` : "";
+}
+window.resolvePublisherDomain = resolvePublisherDomain;
+
+function getPublisherAutoLogo(publisherName) {
+  if (!publisherName) return null;
+  const domain = resolvePublisherDomain(publisherName);
+  if (!domain) return null;
+  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+}
+window.getPublisherAutoLogo = getPublisherAutoLogo;
+
+function getPublisherLogoCaseInsensitive(map, name) {
+  if (!map || !name) return null;
+  const clean = String(name).trim();
+  if (map[clean]) return map[clean];
+  const lower = clean.toLowerCase();
+  for (const [k, v] of Object.entries(map)) {
+    if (k && k.trim().toLowerCase() === lower && v) return v;
+  }
+  return null;
+}
+window.getPublisherLogoCaseInsensitive = getPublisherLogoCaseInsensitive;
+
+const DEFAULT_PUBLISHER_LOGOS = {
+  "Ubisoft": "https://www.google.com/s2/favicons?domain=ubisoft.com&sz=128",
+  "Electronic Arts": "https://www.google.com/s2/favicons?domain=ea.com&sz=128",
+  "EA": "https://www.google.com/s2/favicons?domain=ea.com&sz=128",
+  "Capcom": "https://www.google.com/s2/favicons?domain=capcom.com&sz=128",
+  "Square Enix": "https://www.google.com/s2/favicons?domain=square-enix.com&sz=128",
+  "Bandai Namco": "https://www.google.com/s2/favicons?domain=bandainamcoent.com&sz=128",
+  "Bethesda": "https://www.google.com/s2/favicons?domain=bethesda.net&sz=128",
+  "Bethesda Softworks": "https://www.google.com/s2/favicons?domain=bethesda.net&sz=128",
+  "Sega": "https://www.google.com/s2/favicons?domain=sega.com&sz=128",
+  "Konami": "https://www.google.com/s2/favicons?domain=konami.com&sz=128",
+  "Activision": "https://www.google.com/s2/favicons?domain=activision.com&sz=128",
+  "Blizzard": "https://www.google.com/s2/favicons?domain=blizzard.com&sz=128",
+  "2K": "https://www.google.com/s2/favicons?domain=2k.com&sz=128",
+  "2K Games": "https://www.google.com/s2/favicons?domain=2k.com&sz=128",
+  "Rockstar Games": "https://www.google.com/s2/favicons?domain=rockstargames.com&sz=128",
+  "CD Projekt Red": "https://www.google.com/s2/favicons?domain=cdprojektred.com&sz=128",
+  "Valve": "https://www.google.com/s2/favicons?domain=valvesoftware.com&sz=128",
+  "Sony": "https://www.google.com/s2/favicons?domain=playstation.com&sz=128",
+  "PlayStation PC LLC": "https://www.google.com/s2/favicons?domain=playstation.com&sz=128",
+  "Xbox Game Studios": "https://www.google.com/s2/favicons?domain=xbox.com&sz=128",
+  "Warner Bros": "https://www.google.com/s2/favicons?domain=warnerbros.com&sz=128",
+  "Devolver Digital": "https://www.google.com/s2/favicons?domain=devolverdigital.com&sz=128",
+  "Paradox Interactive": "https://www.google.com/s2/favicons?domain=paradoxinteractive.com&sz=128",
+  "THQ Nordic": "https://www.google.com/s2/favicons?domain=thqnordic.com&sz=128",
+  "505 Games": "https://www.google.com/s2/favicons?domain=505games.com&sz=128",
+  "Deep Silver": "https://www.google.com/s2/favicons?domain=plaion.com&sz=128",
+  "Focus Entertainment": "https://www.google.com/s2/favicons?domain=focus-entmt.com&sz=128",
+  "Koei Tecmo": "https://www.google.com/s2/favicons?domain=koeitecmoamerica.com&sz=128",
+  "Remedy Entertainment": "https://www.google.com/s2/favicons?domain=remedygames.com&sz=128",
+  "Team17": "https://www.google.com/s2/favicons?domain=team17.com&sz=128",
+  "Techland": "https://www.google.com/s2/favicons?domain=techland.net&sz=128",
+  "FromSoftware": "https://www.google.com/s2/favicons?domain=fromsoftware.jp&sz=128",
+  "Atlus": "https://www.google.com/s2/favicons?domain=atlus.com&sz=128",
+  "Epic Games": "https://www.google.com/s2/favicons?domain=epicgames.com&sz=128"
+};
+window.DEFAULT_PUBLISHER_LOGOS = DEFAULT_PUBLISHER_LOGOS;
+
 // ==========================================================================
 // APPLICATION STATE
 // ==========================================================================
@@ -803,6 +981,7 @@ let state = {
   platformDisplayMode: "name", // "name", "logo"
   supplierLogos: { ...DEFAULT_SUPPLIER_LOGOS }, // Key-value map: supplierName -> logoUrl
   platformLogos: { ...DEFAULT_PLATFORM_LOGOS }, // Key-value map: platformName -> logoUrl
+  publisherLogos: { ...DEFAULT_PUBLISHER_LOGOS }, // Key-value map: publisherName -> logoUrl
   inventorySortBy: "date-desc", // "date-desc", "date-asc", "title-asc", "title-desc", "duration-desc", "duration-asc"
   filterDuplicatesOnly: false,
   inventoryPageSize: 25,
@@ -1386,6 +1565,15 @@ function loadStateFromStorage() {
     }
 
     try {
+      const storedPubLogos = localStorage.getItem("gv_publisher_logos" + userSuffix) || localStorage.getItem("gv_publisher_logos");
+      const parsedPubLogos = storedPubLogos ? JSON.parse(storedPubLogos) : {};
+      state.publisherLogos = { ...DEFAULT_PUBLISHER_LOGOS, ...(parsedPubLogos || {}) };
+    } catch (e) {
+      console.error("Error parsing publisher logos:", e);
+      state.publisherLogos = { ...DEFAULT_PUBLISHER_LOGOS };
+    }
+
+    try {
       const storedSuppliers = localStorage.getItem("gv_suppliers" + userSuffix) || localStorage.getItem("gv_suppliers");
       if (storedSuppliers) {
         const rawSuppliers = JSON.parse(storedSuppliers);
@@ -1735,6 +1923,7 @@ function loadStateFromStorage() {
     state.supplierLogos = {};
     state.platforms = [];
     state.platformLogos = {};
+    state.publisherLogos = {};
     state.customLogo = null;
   }
 }
@@ -1753,6 +1942,8 @@ function saveStateToStorage() {
   localStorage.setItem("gv_platforms" + userSuffix, JSON.stringify(state.platforms));
   localStorage.setItem("gv_platform_logos" + userSuffix, JSON.stringify(state.platformLogos || {}));
   localStorage.setItem("gv_platform_logos", JSON.stringify(state.platformLogos || {}));
+  localStorage.setItem("gv_publisher_logos" + userSuffix, JSON.stringify(state.publisherLogos || {}));
+  localStorage.setItem("gv_publisher_logos", JSON.stringify(state.publisherLogos || {}));
   localStorage.setItem("gv_recycle_bin" + userSuffix, JSON.stringify(state.recycleBin));
   localStorage.setItem("gv_payouts" + userSuffix, JSON.stringify(state.payouts));
   localStorage.setItem("gv_expense_categories" + userSuffix, JSON.stringify(state.expenseCategories));

@@ -963,6 +963,7 @@ async function dbLoadState() {
     // First inspect settingsData for cloud logo backups
     let cloudSupplierLogos = null;
     let cloudPlatformLogos = null;
+    let cloudPublisherLogos = null;
     if (settingsData && settingsData.length > 0) {
       const supLogosItem = settingsData.find(s => s.key === "supplierLogos");
       if (supLogosItem && supLogosItem.value) {
@@ -982,9 +983,18 @@ async function dbLoadState() {
           console.error("Error parsing platformLogos from Supabase:", e);
         }
       }
+      const pubLogosItem = settingsData.find(s => s.key === "publisherLogos");
+      if (pubLogosItem && pubLogosItem.value) {
+        try {
+          cloudPublisherLogos = typeof pubLogosItem.value === 'string' ? JSON.parse(pubLogosItem.value) : pubLogosItem.value;
+          state.publisherLogos = { ...(window.DEFAULT_PUBLISHER_LOGOS || {}), ...(state.publisherLogos || {}), ...(cloudPublisherLogos || {}) };
+        } catch (e) {
+          console.error("Error parsing publisherLogos from Supabase:", e);
+        }
+      }
     }
 
-    // Ensure state.supplierLogos and state.platformLogos check local storage and merge with cloud
+    // Ensure state.supplierLogos, state.platformLogos, and state.publisherLogos check local storage and merge with cloud
     try {
       const userSuffix = (state.currentUser && state.currentUser !== "guest") ? `_${state.currentUser}` : "";
       const storage = window.safeStorage || window.localStorage;
@@ -1002,6 +1012,16 @@ async function dbLoadState() {
       if (fallbackPlatLogos) {
         const parsedPlat = JSON.parse(fallbackPlatLogos) || {};
         state.platformLogos = { ...parsedPlat, ...(state.platformLogos || {}) };
+      }
+    } catch (e) {}
+
+    try {
+      const userSuffix = (state.currentUser && state.currentUser !== "guest") ? `_${state.currentUser}` : "";
+      const storage = window.safeStorage || window.localStorage;
+      const fallbackPubLogos = storage.getItem("gv_publisher_logos" + userSuffix) || storage.getItem("gv_publisher_logos");
+      if (fallbackPubLogos) {
+        const parsedPub = JSON.parse(fallbackPubLogos) || {};
+        state.publisherLogos = { ...parsedPub, ...(state.publisherLogos || {}) };
       }
     } catch (e) {}
 
@@ -1065,6 +1085,9 @@ async function dbLoadState() {
     }
     if (state.platformLogos && Object.keys(state.platformLogos).length > 0) {
       await dbSaveSettings("platformLogos", state.platformLogos);
+    }
+    if (state.publisherLogos && Object.keys(state.publisherLogos).length > 0) {
+      await dbSaveSettings("publisherLogos", state.publisherLogos);
     }
 
     if (customData && customData.length > 0) {
@@ -1279,6 +1302,13 @@ async function dbLoadState() {
           } catch(e) {
             console.error("Error parsing platformLogos from database sync:", e);
           }
+        } else if (s.key === "publisherLogos") {
+          try {
+            const parsed = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+            state.publisherLogos = { ...(state.publisherLogos || {}), ...(parsed || {}) };
+          } catch(e) {
+            console.error("Error parsing publisherLogos from database sync:", e);
+          }
         }
       });
     }
@@ -1394,6 +1424,7 @@ async function dbSeedDatabase() {
       { key: "customLogo", value: state.customLogo },
       { key: "supplierLogos", value: state.supplierLogos || {} },
       { key: "platformLogos", value: state.platformLogos || {} },
+      { key: "publisherLogos", value: state.publisherLogos || {} },
       { key: "lowStockThreshold", value: state.lowStockThreshold },
       { key: "defaultMarkupType", value: state.defaultMarkupType },
       { key: "defaultMarkupValue", value: state.defaultMarkupValue },

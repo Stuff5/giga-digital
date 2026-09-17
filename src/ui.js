@@ -12,7 +12,7 @@ window.loadHTMLTemplates = async () => {
   await Promise.all(templates.map(async t => {
     try {
       // Use version and timestamp cache-busting to ensure fresh HTML templates are loaded
-      const ver = window.APP_VERSION || "v1.9.6";
+      const ver = window.APP_VERSION || "v1.9.7";
       const res = await fetch(`${t.url}?v=${ver}&t=${Date.now()}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -6122,14 +6122,363 @@ function initRetrieveSupplierLogoHandlers() {
 }
 window.initRetrieveSupplierLogoHandlers = initRetrieveSupplierLogoHandlers;
 
+// ==========================================================================
+// PUBLISHER LOGO RETRIEVAL & LOOKUP ENGINE
+// ==========================================================================
+
+function getPublisherLogoCandidates(domain) {
+  if (!domain) return [];
+  const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
+  if (!cleanDomain) return [];
+
+  return [
+    {
+      label: "Google Icon HD",
+      sublabel: "128px Clean Icon",
+      url: `https://www.google.com/s2/favicons?domain=${encodeURIComponent(cleanDomain)}&sz=128`
+    },
+    {
+      label: "DuckDuckGo Icon",
+      sublabel: "Official Favicon",
+      url: `https://icons.duckduckgo.com/ip3/${encodeURIComponent(cleanDomain)}.ico`
+    },
+    {
+      label: "Unavatar Brand",
+      sublabel: "Multi-Source Icon",
+      url: `https://unavatar.io/${encodeURIComponent(cleanDomain)}`
+    }
+  ];
+}
+
+function selectPublisherCandidateCard(card, url) {
+  const grid = document.getElementById("retrieve-publisher-candidates-grid");
+  const selectedUrlHidden = document.getElementById("retrieve-publisher-selected-url");
+  const customUrlInput = document.getElementById("retrieve-publisher-custom-url");
+
+  if (grid) {
+    grid.querySelectorAll(".logo-candidate-card").forEach(c => c.classList.remove("selected"));
+  }
+  if (card) {
+    card.classList.add("selected");
+  }
+  if (selectedUrlHidden) selectedUrlHidden.value = url;
+  if (customUrlInput) customUrlInput.value = url;
+}
+
+function renderPublisherLogoCandidates(domain, preselectedUrl = "") {
+  const grid = document.getElementById("retrieve-publisher-candidates-grid");
+  const noCandidatesMsg = document.getElementById("retrieve-publisher-no-candidates");
+  const selectedUrlHidden = document.getElementById("retrieve-publisher-selected-url");
+  if (!grid) return;
+
+  grid.innerHTML = "";
+  const candidates = getPublisherLogoCandidates(domain);
+
+  if (candidates.length === 0) {
+    if (noCandidatesMsg) noCandidatesMsg.style.display = "block";
+    return;
+  }
+  if (noCandidatesMsg) noCandidatesMsg.style.display = "none";
+
+  let hasSelected = false;
+
+  candidates.forEach(cand => {
+    const card = document.createElement("div");
+    card.className = "logo-candidate-card";
+    card.setAttribute("data-url", cand.url);
+
+    card.innerHTML = `
+      <div class="logo-candidate-check"><i class="fa-solid fa-check"></i></div>
+      <div class="logo-candidate-img-box">
+        <img src="${escapeHTML(cand.url)}" alt="${escapeHTML(cand.label)}" loading="lazy">
+      </div>
+      <div class="logo-candidate-label">${escapeHTML(cand.label)}</div>
+      <div style="font-size: 0.65rem; color: var(--text-muted);">${escapeHTML(cand.sublabel)}</div>
+    `;
+
+    const img = card.querySelector("img");
+    img.onerror = () => {
+      card.style.display = "none";
+      const visibleCards = grid.querySelectorAll('.logo-candidate-card:not([style*="display: none"])');
+      if (visibleCards.length === 0 && noCandidatesMsg) {
+        noCandidatesMsg.style.display = "block";
+      }
+    };
+
+    img.onload = () => {
+      if (!hasSelected) {
+        if (!selectedUrlHidden.value || preselectedUrl === cand.url || !preselectedUrl) {
+          hasSelected = true;
+          selectPublisherCandidateCard(card, cand.url);
+        }
+      }
+    };
+
+    card.addEventListener("click", () => {
+      selectPublisherCandidateCard(card, cand.url);
+    });
+
+    grid.appendChild(card);
+  });
+}
+
+window.triggerRetrievePublisherLogo = function(pubName) {
+  initRetrievePublisherLogoHandlers();
+
+  if (!pubName || pubName === "No Publisher") {
+    showToast("Cannot assign logo to unnamed publisher.", "warning");
+    return;
+  }
+
+  const nameHidden = document.getElementById("retrieve-publisher-name-hidden");
+  const nameDisplay = document.getElementById("retrieve-publisher-name-display");
+  const statusBadge = document.getElementById("retrieve-publisher-status-badge");
+  const previewBox = document.getElementById("retrieve-publisher-current-preview");
+  const domainInput = document.getElementById("retrieve-publisher-domain-input");
+  const customUrlInput = document.getElementById("retrieve-publisher-custom-url");
+  const selectedUrlHidden = document.getElementById("retrieve-publisher-selected-url");
+  const btnRemove = document.getElementById("btn-remove-publisher-logo");
+
+  if (nameHidden) nameHidden.value = pubName;
+  if (nameDisplay) nameDisplay.textContent = pubName;
+
+  const currentLogo = (state.publisherLogos && (state.publisherLogos[pubName] || (typeof getPublisherLogoCaseInsensitive === "function" && getPublisherLogoCaseInsensitive(state.publisherLogos, pubName)))) || null;
+  const autoLogo = (typeof getPublisherAutoLogo === "function" ? getPublisherAutoLogo(pubName) : null);
+  const activeLogo = currentLogo || autoLogo;
+
+  if (previewBox) {
+    if (activeLogo) {
+      previewBox.innerHTML = `<img src="${escapeHTML(activeLogo)}" class="supplier-logo-thumbnail" style="width: 40px; height: 40px;" alt="${escapeHTML(pubName)}">`;
+    } else {
+      previewBox.innerHTML = `<div class="supplier-logo-placeholder" style="width: 40px; height: 40px; font-size: 1.2rem;"><i class="fa-solid fa-building"></i></div>`;
+    }
+  }
+
+  if (statusBadge) {
+    if (currentLogo) {
+      statusBadge.innerHTML = `<span style="color: var(--accent-purple);"><i class="fa-solid fa-check"></i> Custom Logo Active</span>`;
+    } else if (autoLogo) {
+      statusBadge.innerHTML = `<span style="color: var(--accent-teal);"><i class="fa-solid fa-wand-magic-sparkles"></i> Auto-Detected Logo</span>`;
+    } else {
+      statusBadge.innerHTML = `<span style="color: var(--text-muted);">No custom logo set</span>`;
+    }
+  }
+
+  if (btnRemove) {
+    btnRemove.style.display = currentLogo ? "inline-flex" : "none";
+  }
+
+  const detectedDomain = (typeof resolvePublisherDomain === "function" ? resolvePublisherDomain(pubName) : "");
+  if (domainInput) domainInput.value = detectedDomain;
+  if (customUrlInput) customUrlInput.value = currentLogo || "";
+  if (selectedUrlHidden) selectedUrlHidden.value = currentLogo || "";
+
+  renderPublisherLogoCandidates(detectedDomain, currentLogo || autoLogo || "");
+  openModal("retrieve-publisher-logo-modal");
+};
+
+let retrievePublisherLogoInitialized = false;
+function initRetrievePublisherLogoHandlers() {
+  if (retrievePublisherLogoInitialized) return;
+
+  const form = document.getElementById("retrieve-publisher-logo-form");
+  if (!form) return;
+  retrievePublisherLogoInitialized = true;
+
+  const btnSearch = document.getElementById("btn-fetch-publisher-logo-candidates");
+  const domainInput = document.getElementById("retrieve-publisher-domain-input");
+  const customUrlInput = document.getElementById("retrieve-publisher-custom-url");
+  const selectedUrlHidden = document.getElementById("retrieve-publisher-selected-url");
+  const btnRemove = document.getElementById("btn-remove-publisher-logo");
+
+  if (btnSearch && domainInput) {
+    const doSearch = () => {
+      const d = domainInput.value.trim();
+      if (!d) {
+        showToast("Please enter a website or domain to search.", "warning");
+        return;
+      }
+      renderPublisherLogoCandidates(d);
+    };
+
+    btnSearch.addEventListener("click", doSearch);
+    domainInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        doSearch();
+      }
+    });
+  }
+
+  if (customUrlInput) {
+    customUrlInput.addEventListener("input", (e) => {
+      const val = e.target.value.trim();
+      if (selectedUrlHidden) selectedUrlHidden.value = val;
+      const grid = document.getElementById("retrieve-publisher-candidates-grid");
+      if (grid) {
+        grid.querySelectorAll(".logo-candidate-card").forEach(c => c.classList.remove("selected"));
+      }
+    });
+  }
+
+  if (btnRemove) {
+    btnRemove.addEventListener("click", async () => {
+      const pubName = document.getElementById("retrieve-publisher-name-hidden")?.value;
+      if (!pubName) return;
+      if (!state.publisherLogos) state.publisherLogos = {};
+      delete state.publisherLogos[pubName];
+      saveStateToStorage();
+      if (window.supabaseClient && typeof dbSaveSettings === "function") {
+        await dbSaveSettings("publisherLogos", state.publisherLogos || {});
+      }
+      updateUI();
+      closeModal("retrieve-publisher-logo-modal");
+      showToast(`Removed custom logo for "${pubName}".`, "info");
+    });
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const pubName = document.getElementById("retrieve-publisher-name-hidden")?.value;
+    if (!pubName) return;
+
+    const chosenUrl = (selectedUrlHidden?.value || customUrlInput?.value || "").trim();
+    if (!state.publisherLogos) state.publisherLogos = {};
+    if (chosenUrl) {
+      state.publisherLogos[pubName] = chosenUrl;
+    } else {
+      delete state.publisherLogos[pubName];
+    }
+
+    saveStateToStorage();
+    if (window.supabaseClient && typeof dbSaveSettings === "function") {
+      await dbSaveSettings("publisherLogos", state.publisherLogos || {});
+    }
+
+    updateUI();
+    closeModal("retrieve-publisher-logo-modal");
+
+    if (chosenUrl) {
+      showToast(`Updated logo for publisher "${pubName}"!`, "success");
+    } else {
+      showToast(`No logo applied for "${pubName}".`, "info");
+    }
+  });
+
+  // Quick auto-retrieve in Edit Publisher Modal
+  const btnEditAutofetch = document.getElementById("btn-edit-publisher-autofetch-logo");
+  if (btnEditAutofetch) {
+    btnEditAutofetch.addEventListener("click", () => {
+      const nameInput = document.getElementById("edit-publisher-new-name");
+      const urlInput = document.getElementById("edit-publisher-logo-url");
+      const previewBox = document.getElementById("edit-publisher-logo-preview");
+      const name = nameInput ? nameInput.value.trim() : "";
+      if (!name) {
+        showToast("Please enter a publisher name first.", "warning");
+        return;
+      }
+      const autoLogo = (typeof getPublisherAutoLogo === "function" ? getPublisherAutoLogo(name) : null);
+      if (autoLogo) {
+        if (urlInput) urlInput.value = autoLogo;
+        if (previewBox) {
+          previewBox.innerHTML = `<img src="${escapeHTML(autoLogo)}" style="width: 100%; height: 100%; object-fit: contain;">`;
+        }
+        showToast(`Auto-retrieved logo for "${name}"!`, "success");
+      } else {
+        showToast(`Could not determine website for "${name}".`, "warning");
+      }
+    });
+  }
+
+  // Browse Candidates in Edit Publisher Modal
+  const btnEditBrowseCandidates = document.getElementById("btn-edit-publisher-browse-candidates");
+  if (btnEditBrowseCandidates) {
+    btnEditBrowseCandidates.addEventListener("click", () => {
+      const nameInput = document.getElementById("edit-publisher-new-name");
+      const name = nameInput ? nameInput.value.trim() : "";
+      if (!name) {
+        showToast("Please enter a publisher name first.", "warning");
+        return;
+      }
+      window.triggerRetrievePublisherLogo(name);
+    });
+  }
+
+  // Auto-Fetch All Missing Logos button in Publishers Tab
+  const btnFetchAll = document.getElementById("btn-fetch-all-publisher-logos");
+  if (btnFetchAll) {
+    btnFetchAll.addEventListener("click", async () => {
+      let countUpdated = 0;
+      if (!state.publisherLogos) state.publisherLogos = {};
+
+      // Gather all unique publishers from inventory
+      const publishers = new Set();
+      state.inventory.forEach(item => {
+        const pub = String(item.publisher || "").trim();
+        if (pub && pub !== "No Publisher") publishers.add(pub);
+      });
+
+      publishers.forEach(pub => {
+        const existing = state.publisherLogos[pub] || (typeof getPublisherLogoCaseInsensitive === "function" && getPublisherLogoCaseInsensitive(state.publisherLogos, pub));
+        if (!existing) {
+          const autoLogo = (typeof getPublisherAutoLogo === "function" ? getPublisherAutoLogo(pub) : null);
+          if (autoLogo) {
+            state.publisherLogos[pub] = autoLogo;
+            countUpdated++;
+          }
+        }
+      });
+
+      if (countUpdated > 0) {
+        saveStateToStorage();
+        if (window.supabaseClient && typeof dbSaveSettings === "function") {
+          await dbSaveSettings("publisherLogos", state.publisherLogos || {});
+        }
+        updateUI();
+        showToast(`Fetched and saved logos for ${countUpdated} publisher(s)!`, "success");
+      } else {
+        showToast("All publishers already have logos assigned or resolved.", "info");
+      }
+    });
+  }
+}
+window.initRetrievePublisherLogoHandlers = initRetrievePublisherLogoHandlers;
+
 window.triggerEditPublisher = function(name) {
+  initRetrievePublisherLogoHandlers();
   const modal = document.getElementById("edit-publisher-modal");
   const oldNameInput = document.getElementById("edit-publisher-old-name");
   const newNameInput = document.getElementById("edit-publisher-new-name");
+  const logoUrlInput = document.getElementById("edit-publisher-logo-url");
+  const previewBox = document.getElementById("edit-publisher-logo-preview");
   
   if (modal && oldNameInput && newNameInput) {
     oldNameInput.value = name;
     newNameInput.value = name;
+
+    const existingLogo = (state.publisherLogos && (state.publisherLogos[name] || (typeof getPublisherLogoCaseInsensitive === "function" && getPublisherLogoCaseInsensitive(state.publisherLogos, name))))
+      || (typeof getPublisherAutoLogo === "function" ? getPublisherAutoLogo(name) : "");
+
+    if (logoUrlInput) logoUrlInput.value = existingLogo || "";
+    if (previewBox) {
+      if (existingLogo) {
+        previewBox.innerHTML = `<img src="${escapeHTML(existingLogo)}" style="width: 100%; height: 100%; object-fit: contain;">`;
+      } else {
+        previewBox.innerHTML = `<i class="fa-solid fa-building text-purple"></i>`;
+      }
+    }
+
+    if (logoUrlInput && previewBox) {
+      logoUrlInput.oninput = (e) => {
+        const val = e.target.value.trim();
+        if (val) {
+          previewBox.innerHTML = `<img src="${escapeHTML(val)}" style="width: 100%; height: 100%; object-fit: contain;" onerror="this.parentElement.innerHTML='<i class=\\\'fa-solid fa-building text-purple\\\'></i>';">`;
+        } else {
+          previewBox.innerHTML = `<i class="fa-solid fa-building text-purple"></i>`;
+        }
+      };
+    }
+
     openModal("edit-publisher-modal");
   }
 };
@@ -6650,66 +6999,101 @@ async function handleEditPublisherSubmit(e) {
   
   const oldName = document.getElementById("edit-publisher-old-name").value;
   const newName = document.getElementById("edit-publisher-new-name").value.trim();
+  const logoUrl = (document.getElementById("edit-publisher-logo-url")?.value || "").trim();
   
   if (!newName) {
     showToast("Publisher name cannot be empty.", "error");
     return;
   }
   
-  if (oldName === newName) {
+  if (!state.publisherLogos) state.publisherLogos = {};
+  let logoChanged = false;
+  const existingLogo = state.publisherLogos[oldName] || "";
+  
+  if (oldName !== newName) {
+    if (state.publisherLogos[oldName]) {
+      delete state.publisherLogos[oldName];
+    }
+    if (logoUrl) {
+      state.publisherLogos[newName] = logoUrl;
+    }
+    logoChanged = true;
+  } else {
+    if (logoUrl !== existingLogo) {
+      if (logoUrl) {
+        state.publisherLogos[newName] = logoUrl;
+      } else {
+        delete state.publisherLogos[newName];
+      }
+      logoChanged = true;
+    }
+  }
+
+  if (oldName === newName && !logoChanged) {
     closeModal("edit-publisher-modal");
     return;
   }
 
   pushToUndoStack();
   
-  // Update all inventory items matching the old publisher name
+  // Update all inventory items matching the old publisher name if renamed
   let inventoryUpdateCount = 0;
-  state.inventory.forEach(item => {
-    if (String(item.publisher || "").trim() === oldName) {
-      item.publisher = newName;
-      inventoryUpdateCount++;
-    }
-  });
+  if (oldName !== newName) {
+    state.inventory.forEach(item => {
+      if (String(item.publisher || "").trim() === oldName) {
+        item.publisher = newName;
+        inventoryUpdateCount++;
+      }
+    });
+  }
 
   saveStateToStorage();
   
-  // Sync to Supabase in a single batch upsert
-  if (window.supabaseClient && state.syncMode === "realtime") {
-    try {
-      const updatedItems = state.inventory.filter(item => item.publisher === newName);
-      const upsertData = updatedItems.map(item => ({
-        id: item.id,
-        title: item.title,
-        platform: item.platform,
-        key: item.key,
-        cost: item.cost,
-        source: item.source,
-        purchaseDate: item.purchaseDate,
-        imageUrl: item.imageUrl || null,
-        status: item.status,
-        notes: item.notes || null,
-        publisher: item.publisher || null
-      }));
-      
-      if (upsertData.length > 0) {
-        const { error } = await window.supabaseClient
-          .from('inventory')
-          .upsert(upsertData);
-        if (error) throw error;
-      }
-    } catch (err) {
-      console.error("Error syncing renamed publisher keys to Supabase:", err);
-      showToast("Publisher renamed locally, but cloud sync failed.", "warning");
+  // Sync to Supabase
+  if (window.supabaseClient) {
+    if (logoChanged && typeof dbSaveSettings === "function") {
+      await dbSaveSettings("publisherLogos", state.publisherLogos || {});
     }
-  } else if (state.syncMode === "manual" || window.supabaseClient) {
-    setUnsyncedChanges(true);
+    if (oldName !== newName && state.syncMode === "realtime") {
+      try {
+        const updatedItems = state.inventory.filter(item => item.publisher === newName);
+        const upsertData = updatedItems.map(item => ({
+          id: item.id,
+          title: item.title,
+          platform: item.platform,
+          key: item.key,
+          cost: item.cost,
+          source: item.source,
+          purchaseDate: item.purchaseDate,
+          imageUrl: item.imageUrl || null,
+          status: item.status,
+          notes: item.notes || null,
+          publisher: item.publisher || null
+        }));
+        
+        if (upsertData.length > 0) {
+          const { error } = await window.supabaseClient
+            .from('inventory')
+            .upsert(upsertData);
+          if (error) throw error;
+        }
+      } catch (err) {
+        console.error("Error syncing renamed publisher keys to Supabase:", err);
+        showToast("Publisher renamed locally, but cloud sync failed.", "warning");
+      }
+    } else if (oldName !== newName && (state.syncMode === "manual" || window.supabaseClient)) {
+      setUnsyncedChanges(true);
+    }
   }
 
   updateUI();
   closeModal("edit-publisher-modal");
   
-  showToast(`Renamed publisher "${oldName}" to "${newName}" across ${inventoryUpdateCount} key(s)`, "success");
+  if (oldName !== newName) {
+    showToast(`Renamed publisher "${oldName}" to "${newName}" across ${inventoryUpdateCount} key(s)`, "success");
+  } else {
+    showToast(`Updated logo for publisher "${newName}"`, "success");
+  }
 }
 
 window.triggerDeletePlatform = async function(name) {
@@ -12183,6 +12567,10 @@ window.triggerPurgeGame = async function(gameId) {
 let activeExpandedPublishers = new Set();
 
 function renderPublishersTab() {
+  if (typeof initRetrievePublisherLogoHandlers === "function") {
+    initRetrievePublisherLogoHandlers();
+  }
+
   const tbody = DOM["publishers-table-body"] || document.getElementById("publishers-table-body");
   if (!tbody) return;
   tbody.innerHTML = "";
@@ -12262,12 +12650,28 @@ function renderPublishersTab() {
 
     const isNoPublisher = pub.name === "No Publisher";
     const escapedPubName = pub.name.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+
+    const resolvedPubLogo = !isNoPublisher ? (
+      (state.publisherLogos && (state.publisherLogos[pub.name] || (typeof getPublisherLogoCaseInsensitive === "function" && getPublisherLogoCaseInsensitive(state.publisherLogos, pub.name))))
+      || (typeof getPublisherAutoLogo === "function" ? getPublisherAutoLogo(pub.name) : null)
+    ) : null;
+
+    const pubLogoHtml = isNoPublisher ? '' : (
+      resolvedPubLogo
+        ? `<img src="${escapeHTML(resolvedPubLogo)}" class="supplier-logo-thumbnail" alt="${escapeHTML(pub.name)}" style="width: 24px; height: 24px; border-radius: 4px; object-fit: contain; margin-right: 8px; flex-shrink: 0; background: var(--bg-card); border: 1px solid var(--border-color); padding: 1px;" onerror="if(!this.dataset.ddTried){this.dataset.ddTried='1';const d=window.resolvePublisherDomain?window.resolvePublisherDomain('${escapeHTML(escapedPubName)}'):'';if(d){this.src='https://icons.duckduckgo.com/ip3/'+encodeURIComponent(d)+'.ico';return;}}this.style.display='none';if(this.nextElementSibling)this.nextElementSibling.style.display='inline-flex';"><div class="supplier-logo-placeholder" style="display: none; width: 24px; height: 24px; font-size: 0.7rem; margin-right: 8px; flex-shrink: 0;"><i class="fa-solid fa-building"></i></div>`
+        : `<div class="supplier-logo-placeholder" style="width: 24px; height: 24px; font-size: 0.7rem; margin-right: 8px; flex-shrink: 0;"><i class="fa-solid fa-building"></i></div>`
+    );
+
+    const retrieveLogoBtnHtml = isNoPublisher
+      ? ""
+      : `<button class="btn btn-outline btn-xs" onclick="event.stopPropagation(); triggerRetrievePublisherLogo('${escapeHTML(escapedPubName)}')" title="Retrieve Publisher Logo" style="padding: 2px 6px; font-size: 0.75rem; margin-right: 6px;"><i class="fa-solid fa-cloud-arrow-down text-purple"></i> Logo</button>`;
+
     const editBtnHtml = isNoPublisher 
       ? "" 
       : `<button class="btn btn-outline btn-xs" onclick="event.stopPropagation(); triggerEditPublisher('${escapeHTML(escapedPubName)}')" style="padding: 2px 6px; font-size: 0.75rem;"><i class="fa-solid fa-pen-to-square"></i> Edit</button>`;
 
     tr.innerHTML = `
-      <td><span style="display: inline-flex; align-items: center;">${chevronIcon}<strong>${escapeHTML(pub.name)}</strong></span></td>
+      <td><span style="display: inline-flex; align-items: center;">${chevronIcon}${pubLogoHtml}<strong>${escapeHTML(pub.name)}</strong></span></td>
       <td>${pub.purchased}</td>
       <td>${pub.sold}</td>
       <td>${pub.inStock}</td>
@@ -12276,7 +12680,7 @@ function renderPublishersTab() {
       <td class="${profitClass}"><strong>${profitSign}${formatCurrency(pub.totalNetProfit)}</strong></td>
       <td class="${profitClass}">${roi.toFixed(1)}%</td>
       <td>${avgDuration} ${pub.durationCount > 0 ? 'days' : ''}</td>
-      <td style="text-align: right;">${editBtnHtml}</td>
+      <td style="text-align: right; white-space: nowrap;">${retrieveLogoBtnHtml}${editBtnHtml}</td>
     `;
 
     // Row Click toggle listener (excluding interactive buttons)

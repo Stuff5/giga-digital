@@ -1320,6 +1320,7 @@ async function synchronizeCloudDatabase() {
       { key: "customLogo", value: state.customLogo },
       { key: "supplierLogos", value: state.supplierLogos || {} },
       { key: "platformLogos", value: state.platformLogos || {} },
+      { key: "publisherLogos", value: state.publisherLogos || {} },
       { key: "lowStockThreshold", value: state.lowStockThreshold },
       { key: "defaultMarkupType", value: state.defaultMarkupType },
       { key: "defaultMarkupValue", value: state.defaultMarkupValue },

@@ -1750,8 +1750,13 @@
 
             <!-- Publishers Tab Content (Hidden by default) -->
             <div id="publishers-tab-content" class="calc-card hidden" style="width: 100%;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; flex-wrap: wrap; gap: 12px;">
                 <h3 style="margin-bottom: 0; border: none; padding-bottom: 0;">Publisher Analytics & Distribution</h3>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <button class="btn btn-outline btn-sm" id="btn-fetch-all-publisher-logos" style="height: 32px; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-wand-magic-sparkles text-purple"></i> Auto-Fetch All Logos
+                  </button>
+                </div>
               </div>
               <div class="table-responsive">
                 <table class="table" id="publishers-table">
@@ -3633,13 +3638,13 @@
   </div>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=48"></script>
-  <script src="src/state.js?v=48"></script>
-  <script src="src/api.js?v=48"></script>
-  <script src="src/charts.js?v=48"></script>
-  <script src="src/ui.js?v=48"></script>
-  <script src="src/ai.js?v=48"></script>
-  <script src="src/importer.js?v=48"></script>
-  <script src="app.js?v=48"></script>
+  <script src="config.js?v=49"></script>
+  <script src="src/state.js?v=49"></script>
+  <script src="src/api.js?v=49"></script>
+  <script src="src/charts.js?v=49"></script>
+  <script src="src/ui.js?v=49"></script>
+  <script src="src/ai.js?v=49"></script>
+  <script src="src/importer.js?v=49"></script>
+  <script src="app.js?v=49"></script>
 </body>
 </html>
