@@ -567,8 +567,168 @@ function getSupplierColorName(supplierName) {
   if (name.includes("cdkeys")) return "teal";
   if (name.includes("gamestop")) return "gold";
   if (name.includes("direct")) return "emerald";
-  return "slate";
+// Predefined Known Domains for instant logo auto-resolution
+const SUPPLIER_KNOWN_DOMAINS = {
+  "humble bundle": "humblebundle.com",
+  "humble": "humblebundle.com",
+  "fanatical": "fanatical.com",
+  "cdkeys": "cdkeys.com",
+  "gamestop": "gamestop.com",
+  "greenman": "greenmangaming.com",
+  "greenmangaming": "greenmangaming.com",
+  "g2a": "g2a.com",
+  "kinguin": "kinguin.net",
+  "king": "kinguin.net",
+  "eneba": "eneba.com",
+  "gamersgate": "gamersgate.com",
+  "instant gaming": "instant-gaming.com",
+  "instgam": "instant-gaming.com",
+  "difmark": "difmark.com",
+  "k4g": "k4g.com",
+  "mmoga": "mmoga.com",
+  "play-asia": "play-asia.com",
+  "playasia": "play-asia.com",
+  "gamersoutlet": "gamers-outlet.net",
+  "gamers outlet": "gamers-outlet.net",
+  "gamesplanet": "gamesplanet.com",
+  "indiegala": "indiegala.com",
+  "wingamestore": "wingamestore.com",
+  "wingame": "wingamestore.com",
+  "gamivo": "gamivo.com",
+  "yuplay": "yuplay.com",
+  "hrk": "hrkgame.com",
+  "hrk game": "hrkgame.com",
+  "bestbuy": "bestbuy.com",
+  "target": "target.com",
+  "walmart": "walmart.com",
+  "steam": "store.steampowered.com",
+  "playstation": "playstation.com",
+  "xbox": "xbox.com",
+  "nintendo": "nintendo.com",
+  "epic games": "epicgames.com",
+  "epic": "epicgames.com",
+  "gog": "gog.com",
+  "ubisoft": "ubisoft.com",
+  "ea": "ea.com",
+  "voidu": "voidu.com"
+};
+window.SUPPLIER_KNOWN_DOMAINS = SUPPLIER_KNOWN_DOMAINS;
+
+const PLATFORM_KNOWN_DOMAINS = {
+  "steam": "store.steampowered.com",
+  "playstation": "playstation.com",
+  "ps5": "playstation.com",
+  "ps4": "playstation.com",
+  "playstation 5": "playstation.com",
+  "playstation 4": "playstation.com",
+  "xbox": "xbox.com",
+  "xbox series x/s": "xbox.com",
+  "xbox series": "xbox.com",
+  "xbox one": "xbox.com",
+  "nintendo": "nintendo.com",
+  "nintendo switch": "nintendo.com",
+  "switch": "nintendo.com",
+  "epic games": "epicgames.com",
+  "epic": "epicgames.com",
+  "gog": "gog.com",
+  "ubisoft": "ubisoft.com",
+  "ea": "ea.com",
+  "origin": "ea.com",
+  "battle.net": "battle.net"
+};
+window.PLATFORM_KNOWN_DOMAINS = PLATFORM_KNOWN_DOMAINS;
+
+function resolveSupplierDomain(supplierName) {
+  if (!supplierName) return "";
+  const clean = supplierName.toLowerCase().trim();
+  if (clean === "direct" || clean === "other") return "";
+  if (SUPPLIER_KNOWN_DOMAINS[clean]) return SUPPLIER_KNOWN_DOMAINS[clean];
+  
+  for (const [key, domain] of Object.entries(SUPPLIER_KNOWN_DOMAINS)) {
+    if (clean.includes(key)) return domain;
+  }
+  
+  if (clean.includes(".") && !clean.includes(" ")) {
+    return clean;
+  }
+  
+  const stripped = clean.replace(/[^a-z0-9]/g, "");
+  return stripped ? `${stripped}.com` : "";
 }
+window.resolveSupplierDomain = resolveSupplierDomain;
+
+function getSupplierAutoLogo(supplierName) {
+  if (!supplierName) return null;
+  const domain = resolveSupplierDomain(supplierName);
+  if (!domain) return null;
+  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+}
+window.getSupplierAutoLogo = getSupplierAutoLogo;
+
+function getPlatformAutoLogo(platformName) {
+  if (!platformName) return null;
+  const clean = platformName.toLowerCase().trim();
+  if (clean === "other") return null;
+  let domain = PLATFORM_KNOWN_DOMAINS[clean];
+  if (!domain) {
+    for (const [k, d] of Object.entries(PLATFORM_KNOWN_DOMAINS)) {
+      if (clean.includes(k)) { domain = d; break; }
+    }
+  }
+  if (!domain) return null;
+  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+}
+window.getPlatformAutoLogo = getPlatformAutoLogo;
+
+function getSupplierLogoCaseInsensitive(map, name) {
+  if (!map || !name) return null;
+  const clean = String(name).trim();
+  if (map[clean]) return map[clean];
+  const lower = clean.toLowerCase();
+  for (const [k, v] of Object.entries(map)) {
+    if (k && k.trim().toLowerCase() === lower && v) return v;
+  }
+  return null;
+}
+window.getSupplierLogoCaseInsensitive = getSupplierLogoCaseInsensitive;
+
+// Default pre-seeded logo registries so no store ever lacks an icon
+const DEFAULT_SUPPLIER_LOGOS = {
+  "G2A": "https://www.google.com/s2/favicons?domain=g2a.com&sz=128",
+  "HRK": "https://www.google.com/s2/favicons?domain=hrkgame.com&sz=128",
+  "K4G": "https://www.google.com/s2/favicons?domain=k4g.com&sz=128",
+  "King": "https://www.google.com/s2/favicons?domain=kinguin.net&sz=128",
+  "Eneba": "https://www.google.com/s2/favicons?domain=eneba.com&sz=128",
+  "MMOGA": "https://www.google.com/s2/favicons?domain=mmoga.com&sz=128",
+  "CDKeys": "https://www.google.com/s2/favicons?domain=cdkeys.com&sz=128",
+  "Gamivo": "https://www.google.com/s2/favicons?domain=gamivo.com&sz=128",
+  "YuPlay": "https://www.google.com/s2/favicons?domain=yuplay.com&sz=128",
+  "DifMark": "https://www.google.com/s2/favicons?domain=difmark.com&sz=128",
+  "InstGam": "https://www.google.com/s2/favicons?domain=instant-gaming.com&sz=128",
+  "Kinguin": "https://www.google.com/s2/favicons?domain=kinguin.net&sz=128",
+  "WinGame": "https://www.google.com/s2/favicons?domain=wingamestore.com&sz=128",
+  "GameStop": "https://www.google.com/s2/favicons?domain=gamestop.com&sz=128",
+  "GreenMan": "https://www.google.com/s2/favicons?domain=greenmangaming.com&sz=128",
+  "PlayAsia": "https://www.google.com/s2/favicons?domain=play-asia.com&sz=128",
+  "Fanatical": "https://www.google.com/s2/favicons?domain=fanatical.com&sz=128",
+  "IndieGala": "https://www.google.com/s2/favicons?domain=indiegala.com&sz=128",
+  "GamersGate": "https://www.google.com/s2/favicons?domain=gamersgate.com&sz=128",
+  "GamesPlanet": "https://www.google.com/s2/favicons?domain=gamesplanet.com&sz=128",
+  "GamersOutlet": "https://www.google.com/s2/favicons?domain=gamers-outlet.net&sz=128",
+  "GreenManGaming": "https://www.google.com/s2/favicons?domain=greenmangaming.com&sz=128",
+  "Humble Bundle": "https://www.google.com/s2/favicons?domain=humblebundle.com&sz=128"
+};
+window.DEFAULT_SUPPLIER_LOGOS = DEFAULT_SUPPLIER_LOGOS;
+
+const DEFAULT_PLATFORM_LOGOS = {
+  "Steam": "https://www.google.com/s2/favicons?domain=store.steampowered.com&sz=128",
+  "PlayStation 5": "https://www.google.com/s2/favicons?domain=playstation.com&sz=128",
+  "PlayStation 4": "https://www.google.com/s2/favicons?domain=playstation.com&sz=128",
+  "Xbox Series X/S": "https://www.google.com/s2/favicons?domain=xbox.com&sz=128",
+  "Nintendo Switch": "https://www.google.com/s2/favicons?domain=nintendo.com&sz=128",
+  "Epic Games": "https://www.google.com/s2/favicons?domain=epicgames.com&sz=128"
+};
+window.DEFAULT_PLATFORM_LOGOS = DEFAULT_PLATFORM_LOGOS;
 
 // ==========================================================================
 // APPLICATION STATE
@@ -610,8 +770,8 @@ let state = {
   entriesRatingFilter: "all", // "all", "80plus", "70plus", "40to69", "under40", "unrated"
   supplierDisplayMode: "name", // "name", "logo"
   platformDisplayMode: "name", // "name", "logo"
-  supplierLogos: {}, // Key-value map: supplierName -> logoUrl
-  platformLogos: {}, // Key-value map: platformName -> logoUrl
+  supplierLogos: { ...DEFAULT_SUPPLIER_LOGOS }, // Key-value map: supplierName -> logoUrl
+  platformLogos: { ...DEFAULT_PLATFORM_LOGOS }, // Key-value map: platformName -> logoUrl
   inventorySortBy: "date-desc", // "date-desc", "date-asc", "title-asc", "title-desc", "duration-desc", "duration-asc"
   filterDuplicatesOnly: false,
   inventoryPageSize: 25,
@@ -1178,31 +1338,21 @@ function loadStateFromStorage() {
 
     try {
       const storedSupLogos = localStorage.getItem("gv_supplier_logos" + userSuffix) || localStorage.getItem("gv_supplier_logos");
-      state.supplierLogos = storedSupLogos ? JSON.parse(storedSupLogos) : {};
+      const parsedSupLogos = storedSupLogos ? JSON.parse(storedSupLogos) : {};
+      state.supplierLogos = { ...DEFAULT_SUPPLIER_LOGOS, ...(parsedSupLogos || {}) };
     } catch (e) {
       console.error("Error parsing supplier logos:", e);
-      state.supplierLogos = {};
+      state.supplierLogos = { ...DEFAULT_SUPPLIER_LOGOS };
     }
 
     try {
       const storedPlatLogos = localStorage.getItem("gv_platform_logos" + userSuffix) || localStorage.getItem("gv_platform_logos");
-      state.platformLogos = storedPlatLogos ? JSON.parse(storedPlatLogos) : {};
+      const parsedPlatLogos = storedPlatLogos ? JSON.parse(storedPlatLogos) : {};
+      state.platformLogos = { ...DEFAULT_PLATFORM_LOGOS, ...(parsedPlatLogos || {}) };
     } catch (e) {
       console.error("Error parsing platform logos:", e);
-      state.platformLogos = {};
+      state.platformLogos = { ...DEFAULT_PLATFORM_LOGOS };
     }
-
-function getSupplierLogoCaseInsensitive(map, name) {
-  if (!map || !name) return null;
-  const clean = String(name).trim();
-  if (map[clean]) return map[clean];
-  const lower = clean.toLowerCase();
-  for (const [k, v] of Object.entries(map)) {
-    if (k && k.trim().toLowerCase() === lower && v) return v;
-  }
-  return null;
-}
-window.getSupplierLogoCaseInsensitive = getSupplierLogoCaseInsensitive;
 
     try {
       const storedSuppliers = localStorage.getItem("gv_suppliers" + userSuffix) || localStorage.getItem("gv_suppliers");

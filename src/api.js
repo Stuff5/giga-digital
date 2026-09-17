@@ -968,7 +968,7 @@ async function dbLoadState() {
       if (supLogosItem && supLogosItem.value) {
         try {
           cloudSupplierLogos = typeof supLogosItem.value === 'string' ? JSON.parse(supLogosItem.value) : supLogosItem.value;
-          state.supplierLogos = { ...(state.supplierLogos || {}), ...(cloudSupplierLogos || {}) };
+          state.supplierLogos = { ...(window.DEFAULT_SUPPLIER_LOGOS || {}), ...(state.supplierLogos || {}), ...(cloudSupplierLogos || {}) };
         } catch (e) {
           console.error("Error parsing supplierLogos from Supabase:", e);
         }
@@ -977,7 +977,7 @@ async function dbLoadState() {
       if (platLogosItem && platLogosItem.value) {
         try {
           cloudPlatformLogos = typeof platLogosItem.value === 'string' ? JSON.parse(platLogosItem.value) : platLogosItem.value;
-          state.platformLogos = { ...(state.platformLogos || {}), ...(cloudPlatformLogos || {}) };
+          state.platformLogos = { ...(window.DEFAULT_PLATFORM_LOGOS || {}), ...(state.platformLogos || {}), ...(cloudPlatformLogos || {}) };
         } catch (e) {
           console.error("Error parsing platformLogos from Supabase:", e);
         }

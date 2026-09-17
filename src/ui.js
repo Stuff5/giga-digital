@@ -12,7 +12,7 @@ window.loadHTMLTemplates = async () => {
   await Promise.all(templates.map(async t => {
     try {
       // Use version and timestamp cache-busting to ensure fresh HTML templates are loaded
-      const ver = window.APP_VERSION || "v1.9.3";
+      const ver = window.APP_VERSION || "v1.9.4";
       const res = await fetch(`${t.url}?v=${ver}&t=${Date.now()}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -5101,7 +5101,7 @@ function renderSuppliers() {
         || (typeof getSupplierAutoLogo === "function" ? getSupplierAutoLogo(supplierName) : null);
 
       const logoHtml = resolvedSupLogo
-        ? `<img src="${escapeHTML(resolvedSupLogo)}" class="supplier-logo-thumbnail" alt="${escapeHTML(supplierName)}" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-flex';"><div class="supplier-logo-placeholder" style="display: none; background-color: ${colorPreset.value}20; color: ${colorPreset.value}; border: 1px solid ${colorPreset.value}40;"><i class="fa-solid fa-truck-ramp-box"></i></div>`
+        ? `<img src="${escapeHTML(resolvedSupLogo)}" class="supplier-logo-thumbnail" alt="${escapeHTML(supplierName)}" onerror="if(!this.dataset.ddTried){this.dataset.ddTried='1';const d=window.resolveSupplierDomain?window.resolveSupplierDomain('${escapeHTML(escapedNameForJS)}'):'';if(d){this.src='https://icons.duckduckgo.com/ip3/'+encodeURIComponent(d)+'.ico';return;}}this.style.display='none';if(this.nextElementSibling)this.nextElementSibling.style.display='inline-flex';"><div class="supplier-logo-placeholder" style="display: none; background-color: ${colorPreset.value}20; color: ${colorPreset.value}; border: 1px solid ${colorPreset.value}40;"><i class="fa-solid fa-truck-ramp-box"></i></div>`
         : `<div class="supplier-logo-placeholder" style="background-color: ${colorPreset.value}20; color: ${colorPreset.value}; border: 1px solid ${colorPreset.value}40;"><i class="fa-solid fa-truck-ramp-box"></i></div>`;
 
       const tr = document.createElement("tr");
@@ -5526,8 +5526,11 @@ async function handleAddSupplierSubmit(e) {
     }
   }
 
-  const newSupplier = { name: name, dateAdded: Date.now(), color: color, enabled: true, logo: logo || null };
+  const finalLogo = logo || (typeof window.getSupplierAutoLogo === "function" ? window.getSupplierAutoLogo(name) : null) || null;
+  const newSupplier = { name: name, dateAdded: Date.now(), color: color, enabled: true, logo: finalLogo };
   state.suppliers.push(newSupplier);
+  if (!state.supplierLogos) state.supplierLogos = {};
+  if (finalLogo) state.supplierLogos[name] = finalLogo;
   saveStateToStorage();
   if (window.supabaseClient) {
     await dbSaveSupplier(newSupplier);
@@ -6386,8 +6389,9 @@ function renderPlatforms() {
         || (state.platformLogos && (state.platformLogos[platformName] || (typeof getSupplierLogoCaseInsensitive === "function" && getSupplierLogoCaseInsensitive(state.platformLogos, platformName)))) 
         || (typeof getPlatformAutoLogo === "function" ? getPlatformAutoLogo(platformName) : null);
 
+      const escapedPlatForJS = platformName.replace(/'/g, "\\'").replace(/"/g, "&quot;");
       const logoHtml = resolvedPlatLogo
-        ? `<img src="${escapeHTML(resolvedPlatLogo)}" class="supplier-logo-thumbnail" alt="${escapeHTML(platformName)}" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-flex';"><div class="supplier-logo-placeholder" style="display: none; background-color: var(--border-color); color: var(--text-secondary); border: 1px solid var(--border-color);"><i class="fa-solid fa-gamepad"></i></div>`
+        ? `<img src="${escapeHTML(resolvedPlatLogo)}" class="supplier-logo-thumbnail" alt="${escapeHTML(platformName)}" onerror="if(!this.dataset.ddTried){this.dataset.ddTried='1';const d=window.PLATFORM_KNOWN_DOMAINS?window.PLATFORM_KNOWN_DOMAINS['${escapeHTML(escapedPlatForJS).toLowerCase()}']:'';if(d){this.src='https://icons.duckduckgo.com/ip3/'+encodeURIComponent(d)+'.ico';return;}}this.style.display='none';if(this.nextElementSibling)this.nextElementSibling.style.display='inline-flex';"><div class="supplier-logo-placeholder" style="display: none; background-color: var(--border-color); color: var(--text-secondary); border: 1px solid var(--border-color);"><i class="fa-solid fa-gamepad"></i></div>`
         : `<div class="supplier-logo-placeholder" style="background-color: var(--border-color); color: var(--text-secondary); border: 1px solid var(--border-color);"><i class="fa-solid fa-gamepad"></i></div>`;
 
       const tr = document.createElement("tr");
@@ -6486,8 +6490,11 @@ async function handleAddPlatformSubmit(e) {
     }
   }
 
-  const newPlatform = { name: name, dateAdded: Date.now(), enabled: true, logo: logo || null };
+  const finalLogo = logo || (typeof window.getPlatformAutoLogo === "function" ? window.getPlatformAutoLogo(name) : null) || null;
+  const newPlatform = { name: name, dateAdded: Date.now(), enabled: true, logo: finalLogo };
   state.platforms.push(newPlatform);
+  if (!state.platformLogos) state.platformLogos = {};
+  if (finalLogo) state.platformLogos[name] = finalLogo;
   saveStateToStorage();
   if (window.supabaseClient) {
     await dbSavePlatform(newPlatform);
@@ -7477,7 +7484,8 @@ function buildInventoryRowHTML(item, salesMap, dupMap) {
       || (state.supplierLogos && (state.supplierLogos[sourceStr] || (typeof getSupplierLogoCaseInsensitive === "function" && getSupplierLogoCaseInsensitive(state.supplierLogos, sourceStr)))) 
       || (typeof getSupplierAutoLogo === "function" ? getSupplierAutoLogo(sourceStr) : null);
     if (resolvedSupLogo) {
-      supplierBadge = `<img src="${escapeHTML(resolvedSupLogo)}" class="supplier-logo-thumbnail" style="width: 28px; height: 28px; vertical-align: middle; border-radius: 4px; object-fit: contain; background-color: var(--bg-card); border: 1px solid var(--border-color); padding: 1px;" title="${escapeHTML(sourceStr)}" alt="${escapeHTML(sourceStr)}" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-flex';"><div class="supplier-logo-placeholder" style="display: none; width: 28px; height: 28px; border-radius: 4px; background-color: ${colorPreset.value}20; color: ${colorPreset.value}; border: 1px solid ${colorPreset.value}40; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; vertical-align: middle;" title="${escapeHTML(sourceStr)}">${escapeHTML(sourceStr.charAt(0).toUpperCase())}</div>`;
+      const escapedSrcForJS = sourceStr.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+      supplierBadge = `<img src="${escapeHTML(resolvedSupLogo)}" class="supplier-logo-thumbnail" style="width: 28px; height: 28px; vertical-align: middle; border-radius: 4px; object-fit: contain; background-color: var(--bg-card); border: 1px solid var(--border-color); padding: 1px;" title="${escapeHTML(sourceStr)}" alt="${escapeHTML(sourceStr)}" onerror="if(!this.dataset.ddTried){this.dataset.ddTried='1';const d=window.resolveSupplierDomain?window.resolveSupplierDomain('${escapeHTML(escapedSrcForJS)}'):'';if(d){this.src='https://icons.duckduckgo.com/ip3/'+encodeURIComponent(d)+'.ico';return;}}this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-flex';"><div class="supplier-logo-placeholder" style="display: none; width: 28px; height: 28px; border-radius: 4px; background-color: ${colorPreset.value}20; color: ${colorPreset.value}; border: 1px solid ${colorPreset.value}40; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; vertical-align: middle;" title="${escapeHTML(sourceStr)}">${escapeHTML(sourceStr.charAt(0).toUpperCase())}</div>`;
     } else {
       supplierBadge = `
         <div class="supplier-logo-placeholder" style="width: 28px; height: 28px; border-radius: 4px; background-color: ${colorPreset.value}20; color: ${colorPreset.value}; border: 1px solid ${colorPreset.value}40; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; vertical-align: middle;" title="${escapeHTML(sourceStr)}">
