@@ -1677,6 +1677,151 @@ a {
 }
 
 /* ==========================================================================
+   GAME CATALOG ENTRIES FILTER BAR (SINGLE ROW)
+   ========================================================================== */
+.entries-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  margin-bottom: 20px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.entries-filter-bar::-webkit-scrollbar {
+  height: 4px;
+}
+
+.entries-filter-bar::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+.entries-filter-bar .search-bar {
+  flex: 1 1 240px;
+  min-width: 180px;
+  max-width: 340px;
+  margin-bottom: 0;
+  position: relative;
+}
+
+.entries-filter-bar .search-bar input {
+  height: 38px;
+  padding: 0 14px 0 38px;
+  font-size: 0.85rem;
+  width: 100%;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  outline: none;
+  transition: var(--transition-smooth);
+}
+
+.entries-filter-bar .search-bar input:focus {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 10px var(--accent-cyan-glow);
+  background-color: var(--bg-input-focus);
+}
+
+.entries-filter-bar .search-bar i {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  pointer-events: none;
+}
+
+.entries-filter-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--bg-input);
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  height: 38px;
+  flex-shrink: 0;
+  transition: var(--transition-smooth);
+}
+
+.entries-filter-pill:focus-within {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 8px var(--accent-cyan-glow);
+}
+
+.entries-filter-pill label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.entries-filter-pill select {
+  border: none;
+  background: transparent;
+  padding: 2px 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-main);
+  height: 100%;
+  cursor: pointer;
+  outline: none;
+}
+
+.entries-filter-pill select option {
+  background-color: var(--bg-app);
+  color: var(--text-main);
+}
+
+.entries-filter-bar .btn-fav-filter {
+  height: 38px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.entries-filter-bar .layout-toggle-group {
+  margin-left: auto;
+  margin-right: 0;
+  flex-shrink: 0;
+  height: 38px;
+  padding: 3px 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.entries-filter-bar .layout-toggle-group .btn {
+  height: 30px;
+  padding: 0 10px;
+  font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ==========================================================================
    FORM CONTROLS
    ========================================================================== */
 .form-group {

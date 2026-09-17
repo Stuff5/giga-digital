@@ -29,7 +29,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=26">
+  <link rel="stylesheet" href="styles.css?v=27">
   
   <!-- Early theme application to prevent FOUC / light theme flicker -->
   <script>
@@ -1857,65 +1857,68 @@
 
           <!-- ENTRIES VIEW -->
           <section id="entries-view" class="content-view">
-            <div class="view-header flex-header">
-              <div>
-                <h2 class="view-title">Game Catalog Entries</h2>
-                <p class="view-subtitle">Track sales performance, purchase counts, and available stock per unique game title.</p>
+            <div class="view-header" style="margin-bottom: 16px;">
+              <h2 class="view-title">Game Catalog Entries</h2>
+              <p class="view-subtitle">Track sales performance, purchase counts, and available stock per unique game title.</p>
+            </div>
+
+            <!-- Entries Filter Toolbar (Single Unified Row) -->
+            <div class="entries-filter-bar">
+              <!-- Search Bar -->
+              <div class="search-bar">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="entries-search-input" placeholder="Search game title..." autocomplete="off">
               </div>
-              <div class="action-buttons" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                <!-- Catalog View Toggles -->
-                <div class="layout-toggle-group">
-                  <button class="btn btn-outline btn-sm active" id="btn-entries-layout-table" title="Table View" onclick="setEntriesLayout('table')">
-                    <i class="fa-solid fa-table"></i>
-                  </button>
-                  <button class="btn btn-outline btn-sm" id="btn-entries-layout-gallery" title="Gallery View" onclick="setEntriesLayout('gallery')">
-                    <i class="fa-solid fa-image"></i>
-                  </button>
-                </div>
 
-                <!-- Rating / Percentage Filter Dropdown -->
-                <div style="display: flex; align-items: center; gap: 6px; background: var(--bg-input); padding: 2px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); height: 36px;">
-                  <label for="entries-rating-filter" style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); margin: 0; white-space: nowrap; display: flex; align-items: center; gap: 4px;">
-                    <i class="fa-solid fa-filter text-cyan" style="font-size: 0.72rem;"></i> Rating %:
-                  </label>
-                  <select id="entries-rating-filter" class="form-control form-control-sm" style="border: none; background: transparent; padding: 2px 6px; font-size: 0.78rem; font-weight: 500; color: var(--text-main); height: 30px; cursor: pointer;">
-                    <option value="all" selected>All Ratings</option>
-                    <option value="80plus">&ge; 80% (Positive)</option>
-                    <option value="70plus">&ge; 70% (Mostly Positive)</option>
-                    <option value="40to69">40% &ndash; 69% (Mixed)</option>
-                    <option value="under40">&lt; 40% (Negative)</option>
-                    <option value="unrated">Unrated / Pending</option>
-                  </select>
-                </div>
+              <!-- Rating / Percentage Filter Dropdown -->
+              <div class="entries-filter-pill">
+                <label for="entries-rating-filter">
+                  <i class="fa-solid fa-filter text-cyan" style="font-size: 0.72rem;"></i> Rating %:
+                </label>
+                <select id="entries-rating-filter" class="form-control form-control-sm">
+                  <option value="all" selected>All Ratings</option>
+                  <option value="80plus">&ge; 80% (Positive)</option>
+                  <option value="70plus">&ge; 70% (Mostly Positive)</option>
+                  <option value="40to69">40% &ndash; 69% (Mixed)</option>
+                  <option value="under40">&lt; 40% (Negative)</option>
+                  <option value="unrated">Unrated / Pending</option>
+                </select>
+              </div>
 
-                <!-- Sort By Dropdown (Percentage & Performance) -->
-                <div style="display: flex; align-items: center; gap: 6px; background: var(--bg-input); padding: 2px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); height: 36px;">
-                  <label for="entries-sort-by" style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); margin: 0; white-space: nowrap; display: flex; align-items: center; gap: 4px;">
-                    <i class="fa-solid fa-arrow-down-wide-short text-cyan" style="font-size: 0.72rem;"></i> Sort:
-                  </label>
-                  <select id="entries-sort-by" class="form-control form-control-sm" style="border: none; background: transparent; padding: 2px 6px; font-size: 0.78rem; font-weight: 500; color: var(--text-main); height: 30px; cursor: pointer;">
-                    <option value="rating-desc" selected>Steam Rating % (High &rarr; Low)</option>
-                    <option value="rating-asc">Steam Rating % (Low &rarr; High)</option>
-                    <option value="margin-desc">Margin % (High &rarr; Low)</option>
-                    <option value="margin-asc">Margin % (Low &rarr; High)</option>
-                    <option value="roi-desc">ROI % (High &rarr; Low)</option>
-                    <option value="roi-asc">ROI % (Low &rarr; High)</option>
-                    <option value="title-asc">Game Title (A &ndash; Z)</option>
-                    <option value="title-desc">Game Title (Z &ndash; A)</option>
-                    <option value="stock-asc">Available Stock (Low &ndash; Restock)</option>
-                    <option value="stock-desc">Available Stock (Highest)</option>
-                    <option value="sold-desc">Total Sold (Highest)</option>
-                    <option value="profit-desc">Net Profit (Highest)</option>
-                  </select>
-                </div>
+              <!-- Sort By Dropdown (Percentage & Performance) -->
+              <div class="entries-filter-pill">
+                <label for="entries-sort-by">
+                  <i class="fa-solid fa-arrow-down-wide-short text-cyan" style="font-size: 0.72rem;"></i> Sort:
+                </label>
+                <select id="entries-sort-by" class="form-control form-control-sm">
+                  <option value="rating-desc" selected>Steam Rating % (High &rarr; Low)</option>
+                  <option value="rating-asc">Steam Rating % (Low &rarr; High)</option>
+                  <option value="margin-desc">Margin % (High &rarr; Low)</option>
+                  <option value="margin-asc">Margin % (Low &rarr; High)</option>
+                  <option value="roi-desc">ROI % (High &rarr; Low)</option>
+                  <option value="roi-asc">ROI % (Low &rarr; High)</option>
+                  <option value="title-asc">Game Title (A &ndash; Z)</option>
+                  <option value="title-desc">Game Title (Z &ndash; A)</option>
+                  <option value="stock-asc">Available Stock (Low &ndash; Restock)</option>
+                  <option value="stock-desc">Available Stock (Highest)</option>
+                  <option value="sold-desc">Total Sold (Highest)</option>
+                  <option value="profit-desc">Net Profit (Highest)</option>
+                </select>
+              </div>
 
-                <button type="button" class="btn btn-outline btn-sm" id="btn-entries-fav-filter" style="height: 36px; padding: 0 12px; display: flex; align-items: center; gap: 6px; font-weight: 600;" title="Filter by Favorites">
-                  <i class="fa-regular fa-star" id="entries-fav-filter-icon" style="color: var(--accent-warning);"></i> <span id="entries-fav-filter-text">Favorites</span>
+              <!-- Favorites Filter Toggle -->
+              <button type="button" class="btn btn-outline btn-sm btn-fav-filter" id="btn-entries-fav-filter" title="Filter by Favorites">
+                <i class="fa-regular fa-star" id="entries-fav-filter-icon" style="color: var(--accent-warning);"></i> <span id="entries-fav-filter-text">Favorites</span>
+              </button>
+
+              <!-- Catalog View Toggles (Table / Gallery) -->
+              <div class="layout-toggle-group">
+                <button class="btn btn-outline btn-sm active" id="btn-entries-layout-table" title="Table View" onclick="setEntriesLayout('table')">
+                  <i class="fa-solid fa-table"></i>
                 </button>
-                <div class="search-bar" style="margin-bottom: 0;">
-                  <i class="fa-solid fa-magnifying-glass"></i>
-                  <input type="text" id="entries-search-input" placeholder="Search game title..." autocomplete="off">
-                </div>
+                <button class="btn btn-outline btn-sm" id="btn-entries-layout-gallery" title="Gallery View" onclick="setEntriesLayout('gallery')">
+                  <i class="fa-solid fa-image"></i>
+                </button>
               </div>
             </div>
 
