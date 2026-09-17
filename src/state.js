@@ -567,59 +567,89 @@ function getSupplierColorName(supplierName) {
   if (name.includes("cdkeys")) return "teal";
   if (name.includes("gamestop")) return "gold";
   if (name.includes("direct")) return "emerald";
+  return "slate";
+}
+
 // Predefined Known Domains for instant logo auto-resolution
 const SUPPLIER_KNOWN_DOMAINS = {
   "humble bundle": "humblebundle.com",
   "humble": "humblebundle.com",
+  "humblebundle": "humblebundle.com",
   "fanatical": "fanatical.com",
+  "bundle stars": "fanatical.com",
   "cdkeys": "cdkeys.com",
-  "gamestop": "gamestop.com",
-  "greenman": "greenmangaming.com",
-  "greenmangaming": "greenmangaming.com",
-  "g2a": "g2a.com",
+  "cdkeys.com": "cdkeys.com",
   "kinguin": "kinguin.net",
   "king": "kinguin.net",
   "eneba": "eneba.com",
-  "gamersgate": "gamersgate.com",
+  "gamivo": "gamivo.com",
+  "g2a": "g2a.com",
+  "gamestop": "gamestop.com",
+  "green man gaming": "greenmangaming.com",
+  "greenman": "greenmangaming.com",
+  "greenmangaming": "greenmangaming.com",
+  "gmg": "greenmangaming.com",
   "instant gaming": "instant-gaming.com",
   "instgam": "instant-gaming.com",
+  "gamersoutlet": "gamers-outlet.net",
+  "gamers outlet": "gamers-outlet.net",
   "difmark": "difmark.com",
   "k4g": "k4g.com",
   "mmoga": "mmoga.com",
-  "play-asia": "play-asia.com",
   "playasia": "play-asia.com",
-  "gamersoutlet": "gamers-outlet.net",
-  "gamers outlet": "gamers-outlet.net",
-  "gamesplanet": "gamesplanet.com",
+  "play asia": "play-asia.com",
+  "play-asia": "play-asia.com",
+  "steam": "store.steampowered.com",
+  "valve": "valvesoftware.com",
+  "gog": "gog.com",
+  "gog.com": "gog.com",
+  "good old games": "gog.com",
+  "epic games": "epicgames.com",
+  "epic": "epicgames.com",
   "indiegala": "indiegala.com",
-  "wingamestore": "wingamestore.com",
-  "wingame": "wingamestore.com",
-  "gamivo": "gamivo.com",
-  "yuplay": "yuplay.com",
+  "indie gala": "indiegala.com",
+  "voidu": "voidu.com",
+  "2game": "2game.com",
+  "loaded": "loaded.com",
   "hrk": "hrkgame.com",
   "hrk game": "hrkgame.com",
+  "yuplay": "yuplay.com",
+  "gamesplanet": "gamesplanet.com",
+  "allyouplay": "allyouplay.com",
+  "wingamestore": "wingamestore.com",
+  "wingame": "wingamestore.com",
+  "macgamestore": "macgamestore.com",
+  "dlgamer": "dlgamer.com",
+  "gamersgate": "gamersgate.com",
+  "playstation": "playstation.com",
+  "psn": "playstation.com",
+  "sony": "playstation.com",
+  "xbox": "xbox.com",
+  "microsoft": "microsoft.com",
+  "nintendo": "nintendo.com",
+  "ubisoft": "ubisoft.com",
+  "ea": "ea.com",
+  "origin": "ea.com",
+  "electronic arts": "ea.com",
+  "battle.net": "battle.net",
+  "battlenet": "battle.net",
+  "blizzard": "blizzard.com",
+  "amazon": "amazon.com",
+  "best buy": "bestbuy.com",
   "bestbuy": "bestbuy.com",
   "target": "target.com",
   "walmart": "walmart.com",
-  "steam": "store.steampowered.com",
-  "playstation": "playstation.com",
-  "xbox": "xbox.com",
-  "nintendo": "nintendo.com",
-  "epic games": "epicgames.com",
-  "epic": "epicgames.com",
-  "gog": "gog.com",
-  "ubisoft": "ubisoft.com",
-  "ea": "ea.com",
-  "voidu": "voidu.com"
+  "ebay": "ebay.com",
+  "playerauctions": "playerauctions.com"
 };
 window.SUPPLIER_KNOWN_DOMAINS = SUPPLIER_KNOWN_DOMAINS;
 
 const PLATFORM_KNOWN_DOMAINS = {
   "steam": "store.steampowered.com",
   "playstation": "playstation.com",
+  "playstation 5": "playstation.com",
   "ps5": "playstation.com",
   "ps4": "playstation.com",
-  "playstation 5": "playstation.com",
   "playstation 4": "playstation.com",
   "xbox": "xbox.com",
   "xbox series x/s": "xbox.com",
@@ -648,8 +678,9 @@ function resolveSupplierDomain(supplierName) {
     if (clean.includes(key)) return domain;
   }
   
-  if (clean.includes(".") && !clean.includes(" ")) {
-    return clean;
+  const domainMatch = clean.match(/(?:https?:\/\/)?(?:www\.)?([a-z0-9-]+(?:\.[a-z0-9-]+)+)/i);
+  if (domainMatch && domainMatch[1]) {
+    return domainMatch[1];
   }
   
   const stripped = clean.replace(/[^a-z0-9]/g, "");

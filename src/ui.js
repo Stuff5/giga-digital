@@ -12,7 +12,7 @@ window.loadHTMLTemplates = async () => {
   await Promise.all(templates.map(async t => {
     try {
       // Use version and timestamp cache-busting to ensure fresh HTML templates are loaded
-      const ver = window.APP_VERSION || "v1.9.4";
+      const ver = window.APP_VERSION || "v1.9.5";
       const res = await fetch(`${t.url}?v=${ver}&t=${Date.now()}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -5710,142 +5710,8 @@ window.triggerToggleSupplier = async function(name) {
 
 // ==========================================================================
 // SUPPLIER LOGO RETRIEVAL & LOOKUP ENGINE
+// (Domains, auto-logo resolvers, and pre-seeded registries are defined in src/state.js)
 // ==========================================================================
-
-const SUPPLIER_KNOWN_DOMAINS = {
-  "humble bundle": "humblebundle.com",
-  "humble": "humblebundle.com",
-  "humblebundle": "humblebundle.com",
-  "fanatical": "fanatical.com",
-  "bundle stars": "fanatical.com",
-  "cdkeys": "cdkeys.com",
-  "cdkeys.com": "cdkeys.com",
-  "kinguin": "kinguin.net",
-  "king": "kinguin.net",
-  "eneba": "eneba.com",
-  "gamivo": "gamivo.com",
-  "g2a": "g2a.com",
-  "gamestop": "gamestop.com",
-  "green man gaming": "greenmangaming.com",
-  "greenman": "greenmangaming.com",
-  "greenmangaming": "greenmangaming.com",
-  "gmg": "greenmangaming.com",
-  "instant gaming": "instant-gaming.com",
-  "instgam": "instant-gaming.com",
-  "gamersoutlet": "gamers-outlet.net",
-  "gamers outlet": "gamers-outlet.net",
-  "difmark": "difmark.com",
-  "k4g": "k4g.com",
-  "mmoga": "mmoga.com",
-  "playasia": "play-asia.com",
-  "play asia": "play-asia.com",
-  "play-asia": "play-asia.com",
-  "steam": "store.steampowered.com",
-  "valve": "valvesoftware.com",
-  "gog": "gog.com",
-  "gog.com": "gog.com",
-  "good old games": "gog.com",
-  "epic games": "epicgames.com",
-  "epic": "epicgames.com",
-  "indiegala": "indiegala.com",
-  "indie gala": "indiegala.com",
-  "voidu": "voidu.com",
-  "2game": "2game.com",
-  "loaded": "loaded.com",
-  "hrk": "hrkgame.com",
-  "hrk game": "hrkgame.com",
-  "yuplay": "yuplay.com",
-  "gamesplanet": "gamesplanet.com",
-  "allyouplay": "allyouplay.com",
-  "wingamestore": "wingamestore.com",
-  "wingame": "wingamestore.com",
-  "macgamestore": "macgamestore.com",
-  "dlgamer": "dlgamer.com",
-  "gamersgate": "gamersgate.com",
-  "playstation": "playstation.com",
-  "psn": "playstation.com",
-  "sony": "playstation.com",
-  "xbox": "xbox.com",
-  "microsoft": "microsoft.com",
-  "nintendo": "nintendo.com",
-  "ubisoft": "ubisoft.com",
-  "ea": "ea.com",
-  "origin": "ea.com",
-  "electronic arts": "ea.com",
-  "battle.net": "battle.net",
-  "battlenet": "battle.net",
-  "blizzard": "blizzard.com",
-  "amazon": "amazon.com",
-  "best buy": "bestbuy.com",
-  "target": "target.com",
-  "walmart": "walmart.com",
-  "ebay": "ebay.com",
-  "playerauctions": "playerauctions.com"
-};
-
-const PLATFORM_KNOWN_DOMAINS = {
-  "steam": "store.steampowered.com",
-  "playstation": "playstation.com",
-  "playstation 5": "playstation.com",
-  "ps5": "playstation.com",
-  "ps4": "playstation.com",
-  "xbox": "xbox.com",
-  "xbox series x/s": "xbox.com",
-  "xbox series": "xbox.com",
-  "nintendo": "nintendo.com",
-  "nintendo switch": "nintendo.com",
-  "switch": "nintendo.com",
-  "epic games": "epicgames.com",
-  "epic": "epicgames.com",
-  "gog": "gog.com",
-  "ubisoft": "ubisoft.com",
-  "ea": "ea.com",
-  "origin": "ea.com",
-  "battle.net": "battle.net"
-};
-
-function resolveSupplierDomain(supplierName) {
-  if (!supplierName) return "";
-  const clean = supplierName.toLowerCase().trim();
-  if (clean === "direct" || clean === "other") return "";
-  if (SUPPLIER_KNOWN_DOMAINS[clean]) return SUPPLIER_KNOWN_DOMAINS[clean];
-  
-  for (const [key, domain] of Object.entries(SUPPLIER_KNOWN_DOMAINS)) {
-    if (clean.includes(key)) return domain;
-  }
-  
-  const domainMatch = clean.match(/(?:https?:\/\/)?(?:www\.)?([a-z0-9-]+(?:\.[a-z0-9-]+)+)/i);
-  if (domainMatch && domainMatch[1]) {
-    return domainMatch[1];
-  }
-  
-  const stripped = clean.replace(/[^a-z0-9]/g, "");
-  return stripped ? `${stripped}.com` : "";
-}
-window.resolveSupplierDomain = resolveSupplierDomain;
-
-function getSupplierAutoLogo(supplierName) {
-  if (!supplierName) return null;
-  const domain = resolveSupplierDomain(supplierName);
-  if (!domain) return null;
-  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
-}
-window.getSupplierAutoLogo = getSupplierAutoLogo;
-
-function getPlatformAutoLogo(platformName) {
-  if (!platformName) return null;
-  const clean = platformName.toLowerCase().trim();
-  if (clean === "other") return null;
-  let domain = PLATFORM_KNOWN_DOMAINS[clean];
-  if (!domain) {
-    for (const [k, d] of Object.entries(PLATFORM_KNOWN_DOMAINS)) {
-      if (clean.includes(k)) { domain = d; break; }
-    }
-  }
-  if (!domain) return null;
-  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
-}
-window.getPlatformAutoLogo = getPlatformAutoLogo;
 
 function getSupplierLogoCandidates(domain) {
   if (!domain) return [];
