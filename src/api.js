@@ -1922,28 +1922,29 @@ window.triggerAutoFetchSteamCover = async function(titleInputId, targetInputId, 
       console.warn("CheapShark fetch failed, trying fallback:", err);
     }
     
-    // Attempt 2 Fallback: Steam Search via corsproxy.io
-    if (!matches || matches.length === 0) {
-      try {
-        const steamUrl = `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(searchTerm)}&l=english&cc=US`;
-        const response = await fetch(`https://corsproxy.io/?${steamUrl}`);
-        if (response.ok) {
-          const data = await response.json();
-          if (data && data.items && data.items.length > 0) {
-            matches = data.items.map(item => ({
-              steamAppID: item.id ? item.id.toString() : null,
-              external: item.name,
-              thumb: item.tiny_image
-            }));
+    // Attempt 2 Fallback: Colon/dash subtitle split on CheapShark
+    if ((!matches || matches.length === 0) && (searchTerm.includes(":") || searchTerm.includes("-"))) {
+      let fallbackTerm = searchTerm.includes(":") ? searchTerm.split(":")[0].trim() : searchTerm.split("-")[0].trim();
+      if (fallbackTerm && fallbackTerm.length > 2) {
+        try {
+          const response = await fetch(`https://www.cheapshark.com/api/1.0/games?title=${encodeURIComponent(fallbackTerm)}`);
+          if (response.ok && response.status !== 429) {
+            matches = await response.json();
           }
+        } catch (err) {
+          console.warn("CheapShark fallback fetch failed:", err);
         }
-      } catch (err) {
-        console.warn("Steam fallback fetch failed:", err);
       }
     }
     
     if (matches && matches.length > 0) {
-      const match = matches.find(m => m.steamAppID && m.steamAppID !== "0") || matches[0];
+      let match = matches.find(m => m.external && m.external.toLowerCase() === title.toLowerCase() && m.steamAppID && m.steamAppID !== "0");
+      if (!match) {
+        match = matches.find(m => m.external && m.external.toLowerCase() === searchTerm.toLowerCase() && m.steamAppID && m.steamAppID !== "0");
+      }
+      if (!match) {
+        match = matches.find(m => m.steamAppID && m.steamAppID !== "0") || matches[0];
+      }
       let imageUrl = "";
       
       if (match.steamAppID && match.steamAppID !== "0") {

@@ -12,7 +12,7 @@ window.loadHTMLTemplates = async () => {
   await Promise.all(templates.map(async t => {
     try {
       // Use version and timestamp cache-busting to ensure fresh HTML templates are loaded
-      const ver = window.APP_VERSION || "v1.9.8";
+      const ver = window.APP_VERSION || "v1.9.9";
       const res = await fetch(`${t.url}?v=${ver}&t=${Date.now()}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -13019,6 +13019,19 @@ window.setCatalogArtwork = function(title, imageUrl) {
   }
 };
 
+// One-time automatic cleanup to unpoison cache caused by previous batch fetch rate limiting
+(function() {
+  try {
+    if (!localStorage.getItem("gv_artwork_not_found_cleaned_v2")) {
+      localStorage.removeItem("gv_artwork_not_found");
+      localStorage.setItem("gv_artwork_not_found_cleaned_v2", "true");
+      console.log("[Artwork Cache] Purged legacy/poisoned artwork unmatchable cache.");
+    }
+  } catch (e) {
+    console.warn("[Artwork Cache] Error checking cache version:", e);
+  }
+})();
+
 window.getArtworkNotFoundCache = function() {
   try {
     const raw = localStorage.getItem("gv_artwork_not_found");
@@ -13239,7 +13252,8 @@ window.renderSteamRatingPill = function(title, options = {}) {
   if (options.autoFetch !== false) {
     const isCooldown = Date.now() < (window.steamReviewCooldownUntil || 0);
     const isQueueManageable = (window.reviewFetchQueue || []).length < 35;
-    if (!isCooldown && isQueueManageable) {
+    const isArtworkBatchBusy = window.isBatchArtworkFetching === true;
+    if (!isCooldown && isQueueManageable && !isArtworkBatchBusy) {
       window.scheduleSteamReviewFetch(title, options.steamAppID || options.imageUrl);
     }
   }
@@ -13281,6 +13295,11 @@ async function processReviewFetchQueue() {
   isProcessingReviewQueue = true;
 
   while (window.reviewFetchQueue.length > 0) {
+    // If artwork batch fetcher is running, pause review queue to prevent concurrent CheapShark API flood
+    if (window.isBatchArtworkFetching) {
+      await new Promise(r => setTimeout(r, 2000));
+      continue;
+    }
     // Check circuit breaker cooldown
     if (Date.now() < (window.steamReviewCooldownUntil || 0)) {
       const waitTime = window.steamReviewCooldownUntil - Date.now();
@@ -13532,12 +13551,21 @@ window.triggerBatchFetchReviews = async function() {
     return;
   }
 
-  if (progressContainer) progressContainer.classList.remove("hidden");
-  if (btnFetch) btnFetch.disabled = true;
-  if (btnCancel) {
-    btnCancel.disabled = false;
-    btnCancel.textContent = "Stop";
+  if (window.isBatchArtworkFetching) {
+    if (typeof showToast === "function") {
+      showToast("Artwork batch fetcher is currently active. Please wait for it to finish or stop it before fetching ratings.", "warning");
+    }
+    return;
   }
+
+  window.isBatchReviewFetching = true;
+  try {
+    if (progressContainer) progressContainer.classList.remove("hidden");
+    if (btnFetch) btnFetch.disabled = true;
+    if (btnCancel) {
+      btnCancel.disabled = false;
+      btnCancel.textContent = "Stop";
+    }
 
   const total = titlesToProcess.length;
   let processedCount = 0;
@@ -13611,11 +13639,23 @@ window.triggerBatchFetchReviews = async function() {
   if (typeof showToast === "function") {
     showToast(`Batch ratings complete: ${ratedCount} games rated, ${notFoundCount} not on Steam.`, "success");
   }
+  } finally {
+    window.isBatchReviewFetching = false;
+  }
 };
 
-// Auto fetch game cover image from Steam Web Store API via CheapShark or Steam Search fallback
+// Auto fetch game cover image from Steam Web Store API via CheapShark
 window.triggerBatchFetchArtworks = async function() {
+  if (window.isBatchReviewFetching) {
+    if (typeof showToast === "function") {
+      showToast("Steam Ratings Enricher is currently running. Please wait for it to finish or stop it before running artwork fetch.", "warning");
+    }
+    return;
+  }
+
   window.artworkFetchCancelled = false;
+  window.isBatchArtworkFetching = true;
+
   const btnCancel = document.getElementById("btn-cancel-artwork-fetch");
   if (btnCancel) {
     btnCancel.disabled = false;
@@ -13666,7 +13706,7 @@ window.triggerBatchFetchArtworks = async function() {
       return; // Skip: already has artwork
     }
     if (isUnfound && skipFailed && !overwrite) {
-      return; // Skip: previously checked and no artwork found on Steam/CheapShark
+      return; // Skip: previously checked and confirmed no artwork found
     }
 
     titlesToFetch.push(title);
@@ -13683,6 +13723,7 @@ window.triggerBatchFetchArtworks = async function() {
   const btnFetch = document.getElementById("btn-fetch-all-artworks");
 
   if (titlesToFetch.length === 0) {
+    window.isBatchArtworkFetching = false;
     const skippedCount = notFoundCache.size;
     let msg = "No games found requiring artwork update.";
     if (skippedCount > 0 && skipFailed && !overwrite) {
@@ -13702,8 +13743,6 @@ window.triggerBatchFetchArtworks = async function() {
   let successCount = 0;
   const total = batchTitles.length;
   const batchRange = total > 1 ? `"${batchTitles[0]}" to "${batchTitles[total - 1]}"` : `"${batchTitles[0]}"`;
-  const isSliced = false;
-  const limitCount = total;
 
   const modifiedInventoryItems = [];
 
@@ -13731,54 +13770,85 @@ window.triggerBatchFetchArtworks = async function() {
     progressStatus.textContent = `Starting A-Z artwork fetch for ${total} game(s) (${batchRange})...`;
   }
 
-  for (let i = 0; i < total; i++) {
-    // Check cancellation
-    if (window.artworkFetchCancelled) {
-      if (progressStatus) progressStatus.textContent = "Stopping fetcher and saving progress...";
-      break;
-    }
+  try {
+    const baseDelay = 1300; // 1.3s delay strictly enforces <= 46 req/min (well below CheapShark's 60 req/min limit)
 
-    const title = batchTitles[i];
-    const searchTerm = cleanTitle(title);
-    if (progressStatus) progressStatus.textContent = `[${i + 1}/${total}] Fetching: "${title}"...`;
-    
-    // Update progress bar
-    const pct = Math.round((processedCount / total) * 100);
-    if (progressPercent) progressPercent.textContent = `${pct}%`;
-    if (progressBar) progressBar.style.width = `${pct}%`;
-    if (progressDetail) progressDetail.textContent = `${processedCount} of ${total} games processed (${successCount} successful)`;
+    for (let i = 0; i < total; i++) {
+      // Check cancellation
+      if (window.artworkFetchCancelled) {
+        if (progressStatus) progressStatus.textContent = "Stopping fetcher and saving progress...";
+        break;
+      }
 
-    let retries = 0;
-    let requestSuccess = false;
-    let baseDelay = 1000; // 1s base delay to comply with 1 request per second CheapShark limit
+      const title = batchTitles[i];
+      const searchTerm = cleanTitle(title);
+      if (progressStatus) progressStatus.textContent = `[${i + 1}/${total}] Fetching: "${title}"...`;
+      
+      // Update progress bar
+      const pct = Math.round((processedCount / total) * 100);
+      if (progressPercent) progressPercent.textContent = `${pct}%`;
+      if (progressBar) progressBar.style.width = `${pct}%`;
+      if (progressDetail) progressDetail.textContent = `${processedCount} of ${total} games processed (${successCount} successful)`;
 
-    while (retries < 3 && !requestSuccess && !window.artworkFetchCancelled) {
-      try {
+      let retries = 0;
+      let requestSuccess = false;
+
+      while (retries < 3 && !requestSuccess && !window.artworkFetchCancelled) {
+        // Handle active rate limit cooldown if set
+        if (Date.now() < (window.steamReviewCooldownUntil || 0)) {
+          let remainingSec = Math.ceil((window.steamReviewCooldownUntil - Date.now()) / 1000);
+          while (remainingSec > 0 && !window.artworkFetchCancelled) {
+            if (progressStatus) {
+              progressStatus.textContent = `Rate limited. Pausing cooldown (${remainingSec}s remaining, will retry "${title}")...`;
+            }
+            await new Promise(r => setTimeout(r, 1000));
+            remainingSec = Math.ceil((window.steamReviewCooldownUntil - Date.now()) / 1000);
+          }
+          if (window.artworkFetchCancelled) break;
+        }
+
+        // Pacing delay
         await new Promise(resolve => setTimeout(resolve, baseDelay));
-        let matches = [];
-        let fetchedFromCheapShark = false;
+        if (window.artworkFetchCancelled) break;
 
-        // Try CheapShark first
+        let matches = [];
+        let queryOk = false;
+
+        // Query CheapShark
         try {
           const response = await fetch(`https://www.cheapshark.com/api/1.0/games?title=${encodeURIComponent(searchTerm)}`);
           if (response.status === 429) {
-            window.steamReviewCooldownUntil = Date.now() + 65000;
-            retries++;
-            const backoff = 65000;
-            if (progressStatus) progressStatus.textContent = `Rate limited. Pausing for cooldown (resuming "${title}" in 65s)...`;
-            await new Promise(resolve => setTimeout(resolve, backoff));
+            let retrySec = 65;
+            const retryHeader = response.headers.get("retry-after");
+            if (retryHeader && !isNaN(parseInt(retryHeader, 10))) {
+              retrySec = Math.max(10, parseInt(retryHeader, 10) + 2);
+            }
+            window.steamReviewCooldownUntil = Date.now() + (retrySec * 1000);
+            console.warn(`[Artwork Fetch] Rate limit 429 encountered for "${title}". Cooldown set to ${retrySec}s.`);
+            // Loop will handle cooldown and retry the exact same title without marking as not found
             continue;
           }
           if (response.ok) {
-            matches = await response.json();
-            fetchedFromCheapShark = true;
+            const data = await response.json();
+            if (Array.isArray(data)) {
+              matches = data;
+              queryOk = true;
+            }
           }
         } catch (csErr) {
-          console.warn(`CheapShark failed for "${title}", trying Steam direct fallback:`, csErr);
+          console.warn(`CheapShark network error for "${title}":`, csErr);
+          retries++;
+          if (retries < 3 && !window.artworkFetchCancelled) {
+            if (progressStatus) progressStatus.textContent = `Connection glitch. Retrying "${title}" in 3s (attempt ${retries + 1}/3)...`;
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            continue;
+          }
+          // Exhausted retries due to network failure: do NOT add to notFoundCache
+          break;
         }
 
-        // Try colon/dash splitting fallback on CheapShark
-        if (fetchedFromCheapShark && (!matches || matches.length === 0) && (searchTerm.includes(":") || searchTerm.includes("-"))) {
+        // If primary search returned 0 matches, try subtitle split on CheapShark (: or -)
+        if (queryOk && matches.length === 0 && (searchTerm.includes(":") || searchTerm.includes("-"))) {
           let fallbackTerm = "";
           if (searchTerm.includes(":")) {
             fallbackTerm = searchTerm.split(":")[0].trim();
@@ -13788,178 +13858,154 @@ window.triggerBatchFetchArtworks = async function() {
           if (fallbackTerm && fallbackTerm.length > 2) {
             try {
               await new Promise(resolve => setTimeout(resolve, baseDelay));
-              const response = await fetch(`https://www.cheapshark.com/api/1.0/games?title=${encodeURIComponent(fallbackTerm)}`);
-              if (response.ok) {
-                matches = await response.json();
+              if (window.artworkFetchCancelled) break;
+
+              const fbRes = await fetch(`https://www.cheapshark.com/api/1.0/games?title=${encodeURIComponent(fallbackTerm)}`);
+              if (fbRes.status === 429) {
+                let retrySec = 65;
+                const retryHeader = fbRes.headers.get("retry-after");
+                if (retryHeader && !isNaN(parseInt(retryHeader, 10))) {
+                  retrySec = Math.max(10, parseInt(retryHeader, 10) + 2);
+                }
+                window.steamReviewCooldownUntil = Date.now() + (retrySec * 1000);
+                continue;
+              }
+              if (fbRes.ok) {
+                const fbData = await fbRes.json();
+                if (Array.isArray(fbData) && fbData.length > 0) {
+                  matches = fbData;
+                }
               }
             } catch (csFbErr) {
-              console.warn(`CheapShark fallback failed:`, csFbErr);
+              console.warn(`CheapShark fallback failed for "${fallbackTerm}":`, csFbErr);
             }
           }
         }
 
-        // Try Steam Search via corsproxy.io if CheapShark returned no matches or failed
-        if (!matches || matches.length === 0) {
-          try {
-            const steamUrl = `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(searchTerm)}&l=english&cc=US`;
-            const steamResponse = await fetch(`https://corsproxy.io/?${steamUrl}`);
-            if (steamResponse.ok) {
-              const data = await steamResponse.json();
-              if (data && data.items && data.items.length > 0) {
-                matches = data.items.map(item => ({
-                  steamAppID: item.id ? item.id.toString() : null,
-                  external: item.name,
-                  thumb: item.tiny_image
-                }));
-              }
+        // Process resolved matches only if query succeeded with valid 200 OK
+        if (queryOk) {
+          if (matches && matches.length > 0) {
+            // Match ranking:
+            // 1. Exact title match with steamAppID
+            // 2. Cleaned title match with steamAppID
+            // 3. First match with valid steamAppID
+            // 4. First match overall
+            let match = matches.find(m => m.external && m.external.toLowerCase() === title.toLowerCase() && m.steamAppID && m.steamAppID !== "0");
+            if (!match) {
+              match = matches.find(m => m.external && m.external.toLowerCase() === searchTerm.toLowerCase() && m.steamAppID && m.steamAppID !== "0");
             }
-          } catch (steamErr) {
-            console.warn(`Steam fallback failed for "${title}":`, steamErr);
-          }
-        }
+            if (!match) {
+              match = matches.find(m => m.steamAppID && m.steamAppID !== "0") || matches[0];
+            }
 
-        // Try Steam Search with colon/dash split fallback
-        if ((!matches || matches.length === 0) && (searchTerm.includes(":") || searchTerm.includes("-"))) {
-          let fallbackTerm = "";
-          if (searchTerm.includes(":")) {
-            fallbackTerm = searchTerm.split(":")[0].trim();
-          } else if (searchTerm.includes("-")) {
-            fallbackTerm = searchTerm.split("-")[0].trim();
-          }
-          if (fallbackTerm && fallbackTerm.length > 2) {
-            try {
-              const steamUrl = `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(fallbackTerm)}&l=english&cc=US`;
-              const steamResponse = await fetch(`https://corsproxy.io/?${steamUrl}`);
-              if (steamResponse.ok) {
-                const data = await steamResponse.json();
-                if (data && data.items && data.items.length > 0) {
-                  matches = data.items.map(item => ({
-                    steamAppID: item.id ? item.id.toString() : null,
-                    external: item.name,
-                    thumb: item.tiny_image
-                  }));
+            let imageUrl = "";
+            if (match.steamAppID && match.steamAppID !== "0") {
+              imageUrl = `https://cdn.akamai.steamstatic.com/steam/apps/${match.steamAppID}/header.jpg`;
+            } else if (match.thumb) {
+              imageUrl = match.thumb;
+            }
+
+            if (imageUrl) {
+              // Update all matching items in inventory
+              state.inventory.forEach(item => {
+                if (item && item.title && item.title.trim().toLowerCase() === title.toLowerCase()) {
+                  item.imageUrl = imageUrl;
+                  if (!item.key) item.key = "NO-KEY";
+                  if (!modifiedInventoryItems.includes(item)) {
+                    modifiedInventoryItems.push(item);
+                  }
                 }
-              }
-            } catch (steamFbErr) {
-              console.warn(`Steam fallback split failed for "${title}":`, steamFbErr);
-            }
-          }
-        }
-
-        // Process resolved matches
-        if (matches && matches.length > 0) {
-          const match = matches.find(m => m.steamAppID && m.steamAppID !== "0") || matches[0];
-          let imageUrl = "";
-          if (match.steamAppID && match.steamAppID !== "0") {
-            imageUrl = `https://cdn.akamai.steamstatic.com/steam/apps/${match.steamAppID}/header.jpg`;
-          } else if (match.thumb) {
-            imageUrl = match.thumb;
-          }
-
-          if (imageUrl) {
-            // Update all matching items in inventory
-            state.inventory.forEach(item => {
-              if (item && item.title && item.title.trim().toLowerCase() === title.toLowerCase()) {
-                item.imageUrl = imageUrl;
-                if (!item.key) item.key = "NO-KEY";
-                if (!modifiedInventoryItems.includes(item)) {
-                  modifiedInventoryItems.push(item);
+              });
+              // Update all matching sales items
+              state.sales.forEach(sale => {
+                if (sale && sale.title && sale.title.trim().toLowerCase() === title.toLowerCase()) {
+                  sale.imageUrl = imageUrl;
                 }
-              }
-            });
-            // Update all matching sales items
-            state.sales.forEach(sale => {
-              if (sale && sale.title && sale.title.trim().toLowerCase() === title.toLowerCase()) {
-                sale.imageUrl = imageUrl;
-              }
-            });
-            // Update persistent catalog artwork map
-            window.setCatalogArtwork(title, imageUrl);
-            if (typeof window.scheduleSteamReviewFetch === "function") {
-              window.scheduleSteamReviewFetch(title, match.steamAppID || imageUrl);
+              });
+              // Update persistent catalog artwork map
+              window.setCatalogArtwork(title, imageUrl);
+              // Note: Review fetching is intentionally decoupled to avoid concurrent API floods
+              successCount++;
+              notFoundCache.delete(title.toLowerCase());
+            } else {
+              notFoundCache.add(title.toLowerCase());
             }
-            successCount++;
-            notFoundCache.delete(title.toLowerCase());
+            requestSuccess = true;
           } else {
+            // Verified 200 OK with zero results on both main and fallback queries: title genuinely unmatchable
             notFoundCache.add(title.toLowerCase());
+            requestSuccess = true;
           }
-          requestSuccess = true;
-        } else {
-          // No matches found on any source, don't keep retrying this title
-          notFoundCache.add(title.toLowerCase());
-          requestSuccess = true;
         }
-      } catch (err) {
-        console.error(`Failed loop execution for "${title}" (attempt ${retries + 1}):`, err);
-        retries++;
       }
+
+      processedCount++;
     }
 
-    processedCount++;
-  }
+    // Persist skipped unmatchable titles cache to avoid re-querying on future runs
+    window.saveArtworkNotFoundCache(notFoundCache);
+    window.updateArtworkSkippedBadge();
 
-  // Persist skipped unmatchable titles cache to avoid re-querying on future runs
-  window.saveArtworkNotFoundCache(notFoundCache);
-  window.updateArtworkSkippedBadge();
+    // Update progress bar to final status
+    const finalPct = window.artworkFetchCancelled ? Math.round((processedCount / total) * 100) : 100;
+    if (progressPercent) progressPercent.textContent = `${finalPct}%`;
+    if (progressBar) progressBar.style.width = `${finalPct}%`;
+    if (progressDetail) progressDetail.textContent = `${processedCount} of ${total} games processed (${successCount} successful)`;
+    if (progressStatus) progressStatus.textContent = window.artworkFetchCancelled ? "Save complete. Stopped." : "Save complete. Finished.";
 
-  // Update progress bar to final status
-  const finalPct = window.artworkFetchCancelled ? Math.round((processedCount / total) * 100) : 100;
-  if (progressPercent) progressPercent.textContent = `${finalPct}%`;
-  if (progressBar) progressBar.style.width = `${finalPct}%`;
-  if (progressDetail) progressDetail.textContent = `${processedCount} of ${total} games processed (${successCount} successful)`;
-  if (progressStatus) progressStatus.textContent = window.artworkFetchCancelled ? "Save complete. Stopped." : "Save complete. Finished.";
-
-  // Save changes
-  if (successCount > 0 || modifiedInventoryItems.length > 0) {
-    pushToUndoStack();
-    saveStateToStorage();
-    
-    // Sync to Supabase in batches of 200
-    if (window.supabaseClient && state.syncMode !== "manual" && modifiedInventoryItems.length > 0) {
-      try {
-        const syncBatchSize = 200;
-        for (let j = 0; j < modifiedInventoryItems.length; j += syncBatchSize) {
-          const batch = modifiedInventoryItems.slice(j, j + syncBatchSize).map(item => ({
-            id: item.id,
-            title: item.title || "Untitled Game",
-            platform: item.platform || "PC",
-            key: (item.key && String(item.key).trim()) ? String(item.key).trim() : "NO-KEY",
-            cost: item.cost !== undefined ? item.cost : 0,
-            source: item.source || "Direct",
-            purchaseDate: item.purchaseDate || new Date().toISOString().split("T")[0],
-            imageUrl: item.imageUrl || null,
-            status: item.status || "Available",
-            notes: item.notes || null,
-            publisher: item.publisher || null
-          }));
-          const { error } = await window.supabaseClient.from('inventory').upsert(batch);
-          if (error) throw error;
+    // Save changes
+    if (successCount > 0 || modifiedInventoryItems.length > 0) {
+      pushToUndoStack();
+      saveStateToStorage();
+      
+      // Sync to Supabase in batches of 200
+      if (window.supabaseClient && state.syncMode !== "manual" && modifiedInventoryItems.length > 0) {
+        try {
+          const syncBatchSize = 200;
+          for (let j = 0; j < modifiedInventoryItems.length; j += syncBatchSize) {
+            const batch = modifiedInventoryItems.slice(j, j + syncBatchSize).map(item => ({
+              id: item.id,
+              title: item.title || "Untitled Game",
+              platform: item.platform || "PC",
+              key: (item.key && String(item.key).trim()) ? String(item.key).trim() : "NO-KEY",
+              cost: item.cost !== undefined ? item.cost : 0,
+              source: item.source || "Direct",
+              purchaseDate: item.purchaseDate || new Date().toISOString().split("T")[0],
+              imageUrl: item.imageUrl || null,
+              status: item.status || "Available",
+              notes: item.notes || null,
+              publisher: item.publisher || null
+            }));
+            const { error } = await window.supabaseClient.from('inventory').upsert(batch);
+            if (error) throw error;
+          }
+        } catch (dbErr) {
+          console.error("Failed to sync batch cover updates to Supabase:", dbErr);
+          showToast("Local updates saved, but database synchronization failed.", "warning");
         }
-      } catch (dbErr) {
-        console.error("Failed to sync batch cover updates to Supabase:", dbErr);
-        showToast("Local updates saved, but database synchronization failed.", "warning");
       }
+      
+      updateUI();
+      const finalMsg = window.artworkFetchCancelled 
+        ? `Stopped. Successfully updated covers for ${successCount} games.`
+        : `Finished batch. Successfully updated covers for ${successCount} games.`;
+      showToast(finalMsg, "success");
+      logActionNotification(`Batch fetched cover artworks: ${successCount} games updated (stopped: ${window.artworkFetchCancelled ? 'Yes' : 'No'})`);
+    } else {
+      showToast(window.artworkFetchCancelled ? "Stopped. No new covers were resolved." : "Completed batch. No new covers were resolved.", "info");
     }
-    
-    updateUI();
-    const finalMsg = window.artworkFetchCancelled 
-      ? `Stopped. Successfully updated covers for ${successCount} games.`
-      : `Finished batch. Successfully updated covers for ${successCount} games.`;
-    showToast(finalMsg, "success");
-    logActionNotification(`Batch fetched cover artworks: ${successCount} games updated (stopped: ${window.artworkFetchCancelled ? 'Yes' : 'No'})`);
-  } else {
-    showToast(window.artworkFetchCancelled ? "Stopped. No new covers were resolved." : "Completed batch. No new covers were resolved.", "info");
+  } finally {
+    window.isBatchArtworkFetching = false;
+    // Hide progress bar container after 4 seconds
+    setTimeout(() => {
+      if (progressContainer) progressContainer.classList.add("hidden");
+      if (btnFetch) btnFetch.disabled = false;
+      if (btnCancel) {
+        btnCancel.disabled = false;
+        btnCancel.textContent = "Stop";
+      }
+    }, 4000);
   }
-
-  // Hide progress bar container after 4 seconds
-  setTimeout(() => {
-    if (progressContainer) progressContainer.classList.add("hidden");
-    if (btnFetch) btnFetch.disabled = false;
-    if (btnCancel) {
-      btnCancel.disabled = false;
-      btnCancel.textContent = "Stop";
-    }
-  }, 4000);
 };
 
 function applyRoleBasedAccessControls() {
