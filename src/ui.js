@@ -12,7 +12,7 @@ window.loadHTMLTemplates = async () => {
   await Promise.all(templates.map(async t => {
     try {
       // Use version and timestamp cache-busting to ensure fresh HTML templates are loaded
-      const ver = window.APP_VERSION || "v1.9.7";
+      const ver = window.APP_VERSION || "v1.9.8";
       const res = await fetch(`${t.url}?v=${ver}&t=${Date.now()}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -13702,6 +13702,8 @@ window.triggerBatchFetchArtworks = async function() {
   let successCount = 0;
   const total = batchTitles.length;
   const batchRange = total > 1 ? `"${batchTitles[0]}" to "${batchTitles[total - 1]}"` : `"${batchTitles[0]}"`;
+  const isSliced = false;
+  const limitCount = total;
 
   const modifiedInventoryItems = [];
 
@@ -13724,9 +13726,9 @@ window.triggerBatchFetchArtworks = async function() {
     return clean || t;
   };
 
-  // Inform user about batch slicing
-  if (isSliced && progressStatus) {
-    progressStatus.textContent = `A-Z Batch (1-100 of ${titlesToFetch.length} remaining): ${batchRange}...`;
+  // Inform user about batch progress
+  if (progressStatus) {
+    progressStatus.textContent = `Starting A-Z artwork fetch for ${total} game(s) (${batchRange})...`;
   }
 
   for (let i = 0; i < total; i++) {
@@ -13942,11 +13944,11 @@ window.triggerBatchFetchArtworks = async function() {
     updateUI();
     const finalMsg = window.artworkFetchCancelled 
       ? `Stopped. Successfully updated covers for ${successCount} games.`
-      : `Finished alphabetical batch. Updated covers for ${successCount} games.${isSliced ? ` (${titlesToFetch.length - limitCount} remaining in catalog - click again for next batch)` : ''}`;
+      : `Finished batch. Successfully updated covers for ${successCount} games.`;
     showToast(finalMsg, "success");
-    logActionNotification(`Batch fetched cover artworks: ${successCount} games updated (crashed/stopped: ${window.artworkFetchCancelled ? 'Yes' : 'No'})`);
+    logActionNotification(`Batch fetched cover artworks: ${successCount} games updated (stopped: ${window.artworkFetchCancelled ? 'Yes' : 'No'})`);
   } else {
-    showToast(window.artworkFetchCancelled ? "Stopped. No new covers were resolved." : `Completed batch. No new covers were resolved.${isSliced ? ` (${titlesToFetch.length - limitCount} remaining in catalog - click again for next batch)` : ''}`, "info");
+    showToast(window.artworkFetchCancelled ? "Stopped. No new covers were resolved." : "Completed batch. No new covers were resolved.", "info");
   }
 
   // Hide progress bar container after 4 seconds
