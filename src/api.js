@@ -1701,6 +1701,24 @@ async function dbDeleteSupplier(name) {
   }
 }
 
+async function dbReassignSupplier(oldName, newName) {
+  if (!window.supabaseClient) return;
+  if (state.syncMode === "manual") {
+    setUnsyncedChanges(true);
+    return;
+  }
+  try {
+    const { error } = await window.supabaseClient
+      .from('inventory')
+      .update({ source: newName })
+      .eq('source', oldName);
+    if (error) throw error;
+  } catch (err) {
+    console.error("Error reassigning supplier keys in Supabase:", err);
+  }
+}
+window.dbReassignSupplier = dbReassignSupplier;
+
 async function dbSaveCustomization(key, title, icon) {
   if (!window.supabaseClient) return;
   if (state.syncMode === "manual") {

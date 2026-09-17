@@ -537,6 +537,68 @@
     </div>
   </div>
 
+  <!-- DELETE SUPPLIER MODAL -->
+  <div class="modal-backdrop" id="delete-supplier-modal">
+    <div class="modal-card" style="max-width: 480px; width: 95%;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-danger);"></i> Delete Supplier</h3>
+        <button class="modal-close-btn" data-close-modal="delete-supplier-modal">&times;</button>
+      </div>
+      <form id="delete-supplier-form">
+        <input type="hidden" id="delete-supplier-target-name">
+        <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
+          <!-- Target Supplier Card Preview -->
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div id="delete-supplier-logo-preview"></div>
+              <div>
+                <h4 id="delete-supplier-name-display" style="margin: 0; font-size: 1rem; color: var(--text-main);">Supplier Name</h4>
+                <div id="delete-supplier-stats-badge" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">0 keys in inventory</div>
+              </div>
+            </div>
+            <span class="badge badge-sold" style="background: hsla(355, 85%, 55%, 0.15); color: var(--accent-danger); border: 1px solid hsla(355, 85%, 55%, 0.3);">
+              Deletion
+            </span>
+          </div>
+
+          <!-- Keys Reassignment Warning Box -->
+          <div id="delete-supplier-warning-box" style="padding: 12px 14px; background: hsla(40, 95%, 55%, 0.08); border: 1px solid var(--accent-warning); border-radius: var(--radius-md);">
+            <div style="display: flex; align-items: flex-start; gap: 8px;">
+              <i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-warning); font-size: 1rem; margin-top: 2px;"></i>
+              <div>
+                <strong id="delete-supplier-keys-msg" style="color: var(--text-main); font-size: 0.88rem;">This supplier has keys in your catalog.</strong>
+                <p style="margin: 4px 0 0 0; font-size: 0.78rem; color: var(--text-secondary); line-height: 1.4;">
+                  Please select another supplier below. All associated inventory keys, sold items, and metrics will be automatically reassigned to the selected supplier before deletion.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Reassignment Dropdown Group -->
+          <div class="form-group" id="delete-supplier-reassign-group" style="margin-bottom: 0;">
+            <label for="delete-supplier-replacement-select" class="required" style="font-size: 0.85rem; font-weight: 600;">
+              Reassign All Keys To:
+            </label>
+            <select id="delete-supplier-replacement-select" class="form-control" required style="font-weight: 500;">
+              <!-- Dynamically populated with other suppliers -->
+            </select>
+          </div>
+
+          <!-- Simple Deletion Notice (shown when 0 keys) -->
+          <div id="delete-supplier-zero-keys-notice" style="display: none; font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4;">
+            No inventory game keys are currently assigned to this supplier. Deleting it will permanently remove it from your suppliers list.
+          </div>
+        </div>
+        <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+          <button type="button" class="btn btn-outline" data-close-modal="delete-supplier-modal">Cancel</button>
+          <button type="submit" class="btn btn-danger" id="btn-submit-delete-supplier" style="background-color: var(--accent-danger); border-color: var(--accent-danger); color: #fff; display: inline-flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-trash"></i> <span id="btn-submit-delete-supplier-text">Reassign & Delete</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- EDIT PLATFORM MODAL -->
   <div class="modal-backdrop" id="edit-platform-modal">
     <div class="modal-card" style="max-width: 450px;">

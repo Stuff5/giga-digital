@@ -12,7 +12,7 @@ window.loadHTMLTemplates = async () => {
   await Promise.all(templates.map(async t => {
     try {
       // Use version and timestamp cache-busting to ensure fresh HTML templates are loaded
-      const ver = window.APP_VERSION || "v1.9.5";
+      const ver = window.APP_VERSION || "v1.9.6";
       const res = await fetch(`${t.url}?v=${ver}&t=${Date.now()}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -5674,24 +5674,148 @@ async function handleEditSupplierSubmit(e) {
 }
 
 window.triggerDeleteSupplier = async function(name) {
-  // Check if supplier is in use
-  const countInUse = state.inventory.filter(item => item.source === name).length;
-  
-  let msg = `Are you sure you want to delete supplier "${name}"?`;
-  if (countInUse > 0) {
-    msg = `WARNING: "${name}" is currently assigned to ${countInUse} game key(s) in your stock.\n\nDeleting this supplier will leave those items without a dynamic supplier reference. Are you sure you want to proceed?`;
+  const supplierObj = state.suppliers.find(s => s.name === name);
+  if (!supplierObj) {
+    showToast(`Supplier "${name}" not found.`, "error");
+    return;
   }
-  
-  if (confirm(msg)) {
-    state.suppliers = state.suppliers.filter(s => s.name !== name);
-    saveStateToStorage();
-    if (window.supabaseClient) {
-      await dbDeleteSupplier(name);
+
+  // Count assigned inventory keys
+  const assignedKeys = state.inventory.filter(item => item.source === name);
+  const countInUse = assignedKeys.length;
+  const inStockCount = assignedKeys.filter(item => item.status !== "Sold").length;
+  const remainingSuppliers = state.suppliers.filter(s => s.name !== name);
+
+  if (countInUse > 0 && remainingSuppliers.length === 0) {
+    showToast(`Cannot delete "${name}" because ${countInUse} key(s) are assigned to it and no other suppliers exist. Please register another supplier first.`, "warning");
+    return;
+  }
+
+  const targetHidden = document.getElementById("delete-supplier-target-name");
+  const nameDisplay = document.getElementById("delete-supplier-name-display");
+  const statsBadge = document.getElementById("delete-supplier-stats-badge");
+  const previewBox = document.getElementById("delete-supplier-logo-preview");
+  const warningBox = document.getElementById("delete-supplier-warning-box");
+  const reassignGroup = document.getElementById("delete-supplier-reassign-group");
+  const selectEl = document.getElementById("delete-supplier-replacement-select");
+  const zeroKeysNotice = document.getElementById("delete-supplier-zero-keys-notice");
+  const submitBtnText = document.getElementById("btn-submit-delete-supplier-text");
+
+  if (targetHidden) targetHidden.value = name;
+  if (nameDisplay) nameDisplay.textContent = name;
+  if (statsBadge) {
+    statsBadge.textContent = `${countInUse} key(s) in catalog (${inStockCount} in stock)`;
+  }
+
+  if (previewBox) {
+    const colorName = supplierObj.color || (typeof getSupplierColorName === "function" ? getSupplierColorName(name) : "slate");
+    const colorPreset = SUPPLIER_COLORS.find(c => c.name === colorName) || SUPPLIER_COLORS[0];
+    const resolvedLogo = supplierObj.logo 
+      || (state.supplierLogos && (state.supplierLogos[name] || (typeof getSupplierLogoCaseInsensitive === "function" && getSupplierLogoCaseInsensitive(state.supplierLogos, name)))) 
+      || (typeof getSupplierAutoLogo === "function" ? getSupplierAutoLogo(name) : null);
+
+    if (resolvedLogo) {
+      previewBox.innerHTML = `<img src="${escapeHTML(resolvedLogo)}" class="supplier-logo-thumbnail" style="width: 38px; height: 38px;" alt="${escapeHTML(name)}" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-flex';"><div class="supplier-logo-placeholder" style="display: none; width: 38px; height: 38px; background-color: ${colorPreset.value}20; color: ${colorPreset.value}; border: 1px solid ${colorPreset.value}40;"><i class="fa-solid fa-truck-ramp-box"></i></div>`;
+    } else {
+      previewBox.innerHTML = `<div class="supplier-logo-placeholder" style="width: 38px; height: 38px; background-color: ${colorPreset.value}20; color: ${colorPreset.value}; border: 1px solid ${colorPreset.value}40;"><i class="fa-solid fa-truck-ramp-box"></i></div>`;
     }
-    updateUI();
+  }
+
+  if (countInUse > 0) {
+    if (warningBox) warningBox.style.display = "block";
+    if (reassignGroup) reassignGroup.style.display = "block";
+    if (zeroKeysNotice) zeroKeysNotice.style.display = "none";
+    const keysMsg = document.getElementById("delete-supplier-keys-msg");
+    if (keysMsg) {
+      keysMsg.textContent = `"${name}" currently has ${countInUse} key(s) assigned (${inStockCount} in stock).`;
+    }
+    if (submitBtnText) submitBtnText.textContent = "Reassign & Delete";
+    
+    if (selectEl) {
+      selectEl.required = true;
+      const sorted = [...remainingSuppliers].sort((a, b) => a.name.localeCompare(b.name));
+      selectEl.innerHTML = sorted.map(s => `<option value="${escapeHTML(s.name)}">${escapeHTML(s.name)}${s.enabled === false ? ' (Disabled)' : ''}</option>`).join("");
+      const otherOption = sorted.find(s => s.name.toLowerCase() === "other");
+      if (otherOption) selectEl.value = otherOption.name;
+      else if (sorted.length > 0) selectEl.value = sorted[0].name;
+    }
+  } else {
+    if (warningBox) warningBox.style.display = "none";
+    if (reassignGroup) reassignGroup.style.display = "none";
+    if (zeroKeysNotice) zeroKeysNotice.style.display = "block";
+    if (selectEl) {
+      selectEl.required = false;
+      selectEl.innerHTML = "";
+    }
+    if (submitBtnText) submitBtnText.textContent = "Confirm Delete";
+  }
+
+  openModal("delete-supplier-modal");
+};
+
+async function handleDeleteSupplierSubmit(e) {
+  e.preventDefault();
+  const name = document.getElementById("delete-supplier-target-name")?.value;
+  if (!name) return;
+
+  const countInUse = state.inventory.filter(item => item.source === name).length;
+  const selectEl = document.getElementById("delete-supplier-replacement-select");
+  const targetSupplier = selectEl ? selectEl.value : "";
+
+  if (countInUse > 0 && !targetSupplier) {
+    showToast("Please select a replacement supplier to reassign keys to.", "warning");
+    return;
+  }
+
+  // 1. Reassign in-memory inventory and recycle bin keys
+  let reassignedCount = 0;
+  if (countInUse > 0 && targetSupplier) {
+    state.inventory.forEach(item => {
+      if (item.source === name) {
+        item.source = targetSupplier;
+        reassignedCount++;
+      }
+    });
+    if (state.recycleBin && Array.isArray(state.recycleBin.inventory)) {
+      state.recycleBin.inventory.forEach(item => {
+        if (item.source === name) {
+          item.source = targetSupplier;
+        }
+      });
+    }
+  }
+
+  // 2. Remove supplier and logo from state
+  state.suppliers = state.suppliers.filter(s => s.name !== name);
+  if (state.supplierLogos) {
+    delete state.supplierLogos[name];
+  }
+
+  // 3. Persist updated state locally
+  saveStateToStorage();
+
+  // 4. Synchronize with Supabase Cloud
+  if (window.supabaseClient) {
+    if (reassignedCount > 0 && typeof dbReassignSupplier === "function") {
+      await dbReassignSupplier(name, targetSupplier);
+    }
+    await dbDeleteSupplier(name);
+    if (typeof dbSaveSettings === "function") {
+      await dbSaveSettings("supplierLogos", state.supplierLogos || {});
+    }
+  }
+
+  // 5. Close modal, update UI, and notify
+  closeModal("delete-supplier-modal");
+  updateUI();
+
+  if (reassignedCount > 0) {
+    showToast(`Deleted "${name}" and reassigned ${reassignedCount} key(s) to "${targetSupplier}".`, "success");
+  } else {
     showToast(`Removed supplier: ${name}`, "info");
   }
-};
+}
+window.handleDeleteSupplierSubmit = handleDeleteSupplierSubmit;
 
 window.triggerToggleSupplier = async function(name) {
   const supplierObj = state.suppliers.find(s => s.name === name);

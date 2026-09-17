@@ -4,7 +4,7 @@
  */
 
 document.addEventListener("DOMContentLoaded", async () => {
-  const currentVersion = window.APP_VERSION || "v1.9.5";
+  const currentVersion = window.APP_VERSION || "v1.9.6";
   console.log(`[GameVault] DOMContentLoaded - Booting ${currentVersion}...`);
   console.log("[GameVault] Native gv_active_user:", window.localStorage.getItem("gv_active_user"));
 
@@ -146,6 +146,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     const editSupplierForm = document.getElementById("edit-supplier-form");
     if (editSupplierForm) {
       editSupplierForm.addEventListener("submit", handleEditSupplierSubmit);
+    }
+
+    // Register Delete Supplier submit handler
+    const deleteSupplierForm = document.getElementById("delete-supplier-form");
+    if (deleteSupplierForm) {
+      deleteSupplierForm.addEventListener("submit", handleDeleteSupplierSubmit);
     }
 
     // Register Retrieve Supplier Logo form and auto-retrieve handlers
