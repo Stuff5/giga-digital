@@ -1218,6 +1218,9 @@ async function synchronizeCloudDatabase() {
             enabled: s.enabled !== false
           })));
         if (fallbackErr) throw fallbackErr;
+        if (typeof dbSaveSettings === "function") {
+          await dbSaveSettings("supplierLogos", state.supplierLogos || {});
+        }
       }
     }
 
@@ -1276,6 +1279,9 @@ async function synchronizeCloudDatabase() {
                 enabled: p.enabled !== false
               })));
             if (fallbackErr) console.warn("Platforms sync fallback warning:", fallbackErr);
+            if (typeof dbSaveSettings === "function") {
+              await dbSaveSettings("platformLogos", state.platformLogos || {});
+            }
           } else {
             console.warn("Supabase platforms upsert warning:", error);
           }
@@ -1312,6 +1318,8 @@ async function synchronizeCloudDatabase() {
       { key: "metricOrder", value: state.metricOrder },
       { key: "supMetricOrder", value: state.supMetricOrder },
       { key: "customLogo", value: state.customLogo },
+      { key: "supplierLogos", value: state.supplierLogos || {} },
+      { key: "platformLogos", value: state.platformLogos || {} },
       { key: "lowStockThreshold", value: state.lowStockThreshold },
       { key: "defaultMarkupType", value: state.defaultMarkupType },
       { key: "defaultMarkupValue", value: state.defaultMarkupValue },

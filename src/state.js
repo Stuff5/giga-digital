@@ -191,22 +191,41 @@ const safeStorage = (() => {
     _memoryStore: memoryStore,
 
     getItem(key) {
-      return Object.prototype.hasOwnProperty.call(memoryStore, key) ? memoryStore[key] : null;
+      if (Object.prototype.hasOwnProperty.call(memoryStore, key)) {
+        return memoryStore[key];
+      }
+      try {
+        const val = window.localStorage.getItem(key);
+        if (val !== null) {
+          memoryStore[key] = val;
+          return val;
+        }
+      } catch (e) {}
+      return null;
     },
     setItem(key, value) {
       const stringValue = String(value);
       memoryStore[key] = stringValue;
       indexedDBStorage.setItem(key, stringValue);
+      try {
+        window.localStorage.setItem(key, stringValue);
+      } catch (e) {}
     },
     removeItem(key) {
       delete memoryStore[key];
       indexedDBStorage.removeItem(key);
+      try {
+        window.localStorage.removeItem(key);
+      } catch (e) {}
     },
     clear() {
       for (const key in memoryStore) {
         delete memoryStore[key];
       }
       indexedDBStorage.clear();
+      try {
+        window.localStorage.clear();
+      } catch (e) {}
     }
   };
 })();
@@ -591,6 +610,8 @@ let state = {
   entriesRatingFilter: "all", // "all", "80plus", "70plus", "40to69", "under40", "unrated"
   supplierDisplayMode: "name", // "name", "logo"
   platformDisplayMode: "name", // "name", "logo"
+  supplierLogos: {}, // Key-value map: supplierName -> logoUrl
+  platformLogos: {}, // Key-value map: platformName -> logoUrl
   inventorySortBy: "date-desc", // "date-desc", "date-asc", "title-asc", "title-desc", "duration-desc", "duration-asc"
   filterDuplicatesOnly: false,
   inventoryPageSize: 25,
@@ -1156,43 +1177,91 @@ function loadStateFromStorage() {
     if (!Array.isArray(state.sales)) state.sales = isCloud ? [] : [...MOCK_SALES];
 
     try {
+      const storedSupLogos = localStorage.getItem("gv_supplier_logos" + userSuffix) || localStorage.getItem("gv_supplier_logos");
+      state.supplierLogos = storedSupLogos ? JSON.parse(storedSupLogos) : {};
+    } catch (e) {
+      console.error("Error parsing supplier logos:", e);
+      state.supplierLogos = {};
+    }
+
+    try {
+      const storedPlatLogos = localStorage.getItem("gv_platform_logos" + userSuffix) || localStorage.getItem("gv_platform_logos");
+      state.platformLogos = storedPlatLogos ? JSON.parse(storedPlatLogos) : {};
+    } catch (e) {
+      console.error("Error parsing platform logos:", e);
+      state.platformLogos = {};
+    }
+
+function getSupplierLogoCaseInsensitive(map, name) {
+  if (!map || !name) return null;
+  const clean = String(name).trim();
+  if (map[clean]) return map[clean];
+  const lower = clean.toLowerCase();
+  for (const [k, v] of Object.entries(map)) {
+    if (k && k.trim().toLowerCase() === lower && v) return v;
+  }
+  return null;
+}
+window.getSupplierLogoCaseInsensitive = getSupplierLogoCaseInsensitive;
+
+    try {
+      const storedSuppliers = localStorage.getItem("gv_suppliers" + userSuffix) || localStorage.getItem("gv_suppliers");
       if (storedSuppliers) {
         const rawSuppliers = JSON.parse(storedSuppliers);
         if (Array.isArray(rawSuppliers)) {
           state.suppliers = rawSuppliers.map((s, idx) => {
+            const supName = typeof s === "string" ? s : (s && s.name ? s.name : "");
+            const autoLogo = (typeof window.getSupplierAutoLogo === "function" ? window.getSupplierAutoLogo(supName) : null);
+            const sLogo = (s && s.logo) || (supName && (state.supplierLogos[supName] || getSupplierLogoCaseInsensitive(state.supplierLogos, supName))) || autoLogo || null;
+            if (sLogo && supName) state.supplierLogos[supName] = sLogo;
             if (typeof s === "string") {
               return { 
-                name: s, 
+                name: supName, 
                 dateAdded: Date.now() - (rawSuppliers.length - idx) * 1000,
-                color: getSupplierColorName(s)
+                color: getSupplierColorName(supName),
+                logo: sLogo
               };
             }
             return {
               ...s,
-              color: s.color || getSupplierColorName(s.name)
+              name: supName,
+              color: s.color || getSupplierColorName(supName),
+              logo: sLogo
             };
           });
         } else {
-          state.suppliers = DEFAULT_SUPPLIERS.map((s, idx) => ({
-            name: s,
-            dateAdded: Date.now() - (DEFAULT_SUPPLIERS.length - idx) * 1000,
-            color: getSupplierColorName(s)
-          }));
+          state.suppliers = DEFAULT_SUPPLIERS.map((s, idx) => {
+            const autoLogo = (typeof window.getSupplierAutoLogo === "function" ? window.getSupplierAutoLogo(s) : null);
+            return {
+              name: s,
+              dateAdded: Date.now() - (DEFAULT_SUPPLIERS.length - idx) * 1000,
+              color: getSupplierColorName(s),
+              logo: (state.supplierLogos && (state.supplierLogos[s] || getSupplierLogoCaseInsensitive(state.supplierLogos, s))) || autoLogo || null
+            };
+          });
         }
       } else {
-        state.suppliers = DEFAULT_SUPPLIERS.map((s, idx) => ({
-          name: s,
-          dateAdded: Date.now() - (DEFAULT_SUPPLIERS.length - idx) * 1000,
-          color: getSupplierColorName(s)
-        }));
+        state.suppliers = DEFAULT_SUPPLIERS.map((s, idx) => {
+          const autoLogo = (typeof window.getSupplierAutoLogo === "function" ? window.getSupplierAutoLogo(s) : null);
+          return {
+            name: s,
+            dateAdded: Date.now() - (DEFAULT_SUPPLIERS.length - idx) * 1000,
+            color: getSupplierColorName(s),
+            logo: (state.supplierLogos && (state.supplierLogos[s] || getSupplierLogoCaseInsensitive(state.supplierLogos, s))) || autoLogo || null
+          };
+        });
       }
     } catch (e) {
       console.error("Error parsing suppliers data, resetting to defaults", e);
-      state.suppliers = DEFAULT_SUPPLIERS.map((s, idx) => ({
-        name: s,
-        dateAdded: Date.now() - (DEFAULT_SUPPLIERS.length - idx) * 1000,
-        color: getSupplierColorName(s)
-      }));
+      state.suppliers = DEFAULT_SUPPLIERS.map((s, idx) => {
+        const autoLogo = (typeof window.getSupplierAutoLogo === "function" ? window.getSupplierAutoLogo(s) : null);
+        return {
+          name: s,
+          dateAdded: Date.now() - (DEFAULT_SUPPLIERS.length - idx) * 1000,
+          color: getSupplierColorName(s),
+          logo: (state.supplierLogos && (state.supplierLogos[s] || getSupplierLogoCaseInsensitive(state.supplierLogos, s))) || autoLogo || null
+        };
+      });
     }
 
     const defaultPlatforms = [
@@ -1204,15 +1273,46 @@ function loadStateFromStorage() {
     ];
 
     try {
-      const storedPlatforms = localStorage.getItem("gv_platforms" + userSuffix);
+      const storedPlatforms = localStorage.getItem("gv_platforms" + userSuffix) || localStorage.getItem("gv_platforms");
       if (storedPlatforms) {
-        state.platforms = JSON.parse(storedPlatforms) || [];
+        const rawPlatforms = JSON.parse(storedPlatforms) || [];
+        state.platforms = rawPlatforms.map(p => {
+          const platName = typeof p === "string" ? p : (p && p.name ? p.name : "");
+          const autoPlatLogo = (typeof window.getPlatformAutoLogo === "function" ? window.getPlatformAutoLogo(platName) : null);
+          const pLogo = (p && p.logo) || (platName && (state.platformLogos[platName] || getSupplierLogoCaseInsensitive(state.platformLogos, platName))) || autoPlatLogo || null;
+          if (pLogo && platName) state.platformLogos[platName] = pLogo;
+          if (typeof p === "string") {
+            return {
+              name: platName,
+              dateAdded: Date.now(),
+              enabled: true,
+              logo: pLogo
+            };
+          }
+          return {
+            ...p,
+            name: platName,
+            logo: pLogo
+          };
+        });
       } else {
-        state.platforms = [...defaultPlatforms];
+        state.platforms = defaultPlatforms.map(p => {
+          const autoPlatLogo = (typeof window.getPlatformAutoLogo === "function" ? window.getPlatformAutoLogo(p.name) : null);
+          return {
+            ...p,
+            logo: (state.platformLogos && (state.platformLogos[p.name] || getSupplierLogoCaseInsensitive(state.platformLogos, p.name))) || autoPlatLogo || null
+          };
+        });
       }
     } catch (e) {
       console.error("Error parsing platforms data:", e);
-      state.platforms = [...defaultPlatforms];
+      state.platforms = defaultPlatforms.map(p => {
+        const autoPlatLogo = (typeof window.getPlatformAutoLogo === "function" ? window.getPlatformAutoLogo(p.name) : null);
+        return {
+          ...p,
+          logo: (state.platformLogos && (state.platformLogos[p.name] || getSupplierLogoCaseInsensitive(state.platformLogos, p.name))) || autoPlatLogo || null
+        };
+      });
     }
 
     state.customLogo = localStorage.getItem("gv_custom_logo") || null;
@@ -1451,6 +1551,9 @@ function loadStateFromStorage() {
     state.inventory = [];
     state.sales = [];
     state.suppliers = [];
+    state.supplierLogos = {};
+    state.platforms = [];
+    state.platformLogos = {};
     state.customLogo = null;
   }
 }
@@ -1464,7 +1567,11 @@ function saveStateToStorage() {
   localStorage.setItem("gv_favorite_games" + userSuffix, JSON.stringify(state.favoriteGames || []));
   localStorage.setItem("gv_sales" + userSuffix, JSON.stringify(state.sales));
   localStorage.setItem("gv_suppliers" + userSuffix, JSON.stringify(state.suppliers));
+  localStorage.setItem("gv_supplier_logos" + userSuffix, JSON.stringify(state.supplierLogos || {}));
+  localStorage.setItem("gv_supplier_logos", JSON.stringify(state.supplierLogos || {}));
   localStorage.setItem("gv_platforms" + userSuffix, JSON.stringify(state.platforms));
+  localStorage.setItem("gv_platform_logos" + userSuffix, JSON.stringify(state.platformLogos || {}));
+  localStorage.setItem("gv_platform_logos", JSON.stringify(state.platformLogos || {}));
   localStorage.setItem("gv_recycle_bin" + userSuffix, JSON.stringify(state.recycleBin));
   localStorage.setItem("gv_payouts" + userSuffix, JSON.stringify(state.payouts));
   localStorage.setItem("gv_expense_categories" + userSuffix, JSON.stringify(state.expenseCategories));

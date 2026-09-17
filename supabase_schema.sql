@@ -8,14 +8,16 @@ CREATE TABLE IF NOT EXISTS suppliers (
   name TEXT PRIMARY KEY,
   "dateAdded" NUMERIC NOT NULL,
   color TEXT,
-  enabled BOOLEAN NOT NULL DEFAULT true
+  enabled BOOLEAN NOT NULL DEFAULT true,
+  logo TEXT
 );
 
 -- 2. Create platforms table
 CREATE TABLE IF NOT EXISTS platforms (
   name TEXT PRIMARY KEY,
   "dateAdded" NUMERIC NOT NULL,
-  enabled BOOLEAN NOT NULL DEFAULT true
+  enabled BOOLEAN NOT NULL DEFAULT true,
+  logo TEXT
 );
 
 -- 3. Create inventory table
@@ -62,6 +64,14 @@ CREATE TABLE IF NOT EXISTS app_settings (
   key TEXT PRIMARY KEY,
   value JSONB NOT NULL
 );
+
+-- 7. Ensure modern columns exist on existing tables
+ALTER TABLE sales ADD COLUMN IF NOT EXISTS "supplierRefunded" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE sales ADD COLUMN IF NOT EXISTS disputed BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE inventory ADD COLUMN IF NOT EXISTS "imageUrl" TEXT;
+ALTER TABLE inventory ADD COLUMN IF NOT EXISTS publisher TEXT;
+ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS logo TEXT;
+ALTER TABLE platforms ADD COLUMN IF NOT EXISTS logo TEXT;
 
 -- ==========================================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES

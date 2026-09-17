@@ -12,7 +12,7 @@ window.loadHTMLTemplates = async () => {
   await Promise.all(templates.map(async t => {
     try {
       // Use version and timestamp cache-busting to ensure fresh HTML templates are loaded
-      const ver = window.APP_VERSION || "v1.9.0";
+      const ver = window.APP_VERSION || "v1.9.3";
       const res = await fetch(`${t.url}?v=${ver}&t=${Date.now()}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -5096,8 +5096,12 @@ function renderSuppliers() {
         </button>
       `;
 
-      const logoHtml = supplierObj.logo
-        ? `<img src="${escapeHTML(supplierObj.logo)}" class="supplier-logo-thumbnail" alt="${escapeHTML(supplierName)}">`
+      const resolvedSupLogo = supplierObj.logo 
+        || (state.supplierLogos && (state.supplierLogos[supplierName] || (typeof getSupplierLogoCaseInsensitive === "function" && getSupplierLogoCaseInsensitive(state.supplierLogos, supplierName)))) 
+        || (typeof getSupplierAutoLogo === "function" ? getSupplierAutoLogo(supplierName) : null);
+
+      const logoHtml = resolvedSupLogo
+        ? `<img src="${escapeHTML(resolvedSupLogo)}" class="supplier-logo-thumbnail" alt="${escapeHTML(supplierName)}" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-flex';"><div class="supplier-logo-placeholder" style="display: none; background-color: ${colorPreset.value}20; color: ${colorPreset.value}; border: 1px solid ${colorPreset.value}40;"><i class="fa-solid fa-truck-ramp-box"></i></div>`
         : `<div class="supplier-logo-placeholder" style="background-color: ${colorPreset.value}20; color: ${colorPreset.value}; border: 1px solid ${colorPreset.value}40;"><i class="fa-solid fa-truck-ramp-box"></i></div>`;
 
       const tr = document.createElement("tr");
@@ -5623,6 +5627,15 @@ async function handleEditSupplierSubmit(e) {
     supplierObj.color = color;
     supplierObj.logo = logo || null;
   }
+
+  if (!state.supplierLogos) state.supplierLogos = {};
+  if (newName !== oldName) {
+    delete state.supplierLogos[oldName];
+    if (supplierObj.logo) state.supplierLogos[newName] = supplierObj.logo;
+  } else {
+    if (supplierObj.logo) state.supplierLogos[newName] = supplierObj.logo;
+    else delete state.supplierLogos[newName];
+  }
   
   let updateCount = 0;
   if (newName !== oldName) {
@@ -5637,7 +5650,7 @@ async function handleEditSupplierSubmit(e) {
   saveStateToStorage();
   if (window.supabaseClient) {
     if (newName !== oldName) {
-      await dbSaveSupplier({ name: newName, dateAdded: supplierObj.dateAdded, color: color, enabled: supplierObj.enabled !== false });
+      await dbSaveSupplier(supplierObj);
       const itemsToUpdate = state.inventory.filter(item => item.source === newName);
       for (const item of itemsToUpdate) {
         await dbSaveInventory(item);
@@ -5705,13 +5718,25 @@ const SUPPLIER_KNOWN_DOMAINS = {
   "cdkeys": "cdkeys.com",
   "cdkeys.com": "cdkeys.com",
   "kinguin": "kinguin.net",
+  "king": "kinguin.net",
   "eneba": "eneba.com",
   "gamivo": "gamivo.com",
   "g2a": "g2a.com",
   "gamestop": "gamestop.com",
   "green man gaming": "greenmangaming.com",
+  "greenman": "greenmangaming.com",
+  "greenmangaming": "greenmangaming.com",
   "gmg": "greenmangaming.com",
   "instant gaming": "instant-gaming.com",
+  "instgam": "instant-gaming.com",
+  "gamersoutlet": "gamers-outlet.net",
+  "gamers outlet": "gamers-outlet.net",
+  "difmark": "difmark.com",
+  "k4g": "k4g.com",
+  "mmoga": "mmoga.com",
+  "playasia": "play-asia.com",
+  "play asia": "play-asia.com",
+  "play-asia": "play-asia.com",
   "steam": "store.steampowered.com",
   "valve": "valvesoftware.com",
   "gog": "gog.com",
@@ -5720,6 +5745,7 @@ const SUPPLIER_KNOWN_DOMAINS = {
   "epic games": "epicgames.com",
   "epic": "epicgames.com",
   "indiegala": "indiegala.com",
+  "indie gala": "indiegala.com",
   "voidu": "voidu.com",
   "2game": "2game.com",
   "loaded": "loaded.com",
@@ -5729,6 +5755,7 @@ const SUPPLIER_KNOWN_DOMAINS = {
   "gamesplanet": "gamesplanet.com",
   "allyouplay": "allyouplay.com",
   "wingamestore": "wingamestore.com",
+  "wingame": "wingamestore.com",
   "macgamestore": "macgamestore.com",
   "dlgamer": "dlgamer.com",
   "gamersgate": "gamersgate.com",
@@ -5753,9 +5780,31 @@ const SUPPLIER_KNOWN_DOMAINS = {
   "playerauctions": "playerauctions.com"
 };
 
+const PLATFORM_KNOWN_DOMAINS = {
+  "steam": "store.steampowered.com",
+  "playstation": "playstation.com",
+  "playstation 5": "playstation.com",
+  "ps5": "playstation.com",
+  "ps4": "playstation.com",
+  "xbox": "xbox.com",
+  "xbox series x/s": "xbox.com",
+  "xbox series": "xbox.com",
+  "nintendo": "nintendo.com",
+  "nintendo switch": "nintendo.com",
+  "switch": "nintendo.com",
+  "epic games": "epicgames.com",
+  "epic": "epicgames.com",
+  "gog": "gog.com",
+  "ubisoft": "ubisoft.com",
+  "ea": "ea.com",
+  "origin": "ea.com",
+  "battle.net": "battle.net"
+};
+
 function resolveSupplierDomain(supplierName) {
   if (!supplierName) return "";
   const clean = supplierName.toLowerCase().trim();
+  if (clean === "direct" || clean === "other") return "";
   if (SUPPLIER_KNOWN_DOMAINS[clean]) return SUPPLIER_KNOWN_DOMAINS[clean];
   
   for (const [key, domain] of Object.entries(SUPPLIER_KNOWN_DOMAINS)) {
@@ -5770,6 +5819,30 @@ function resolveSupplierDomain(supplierName) {
   const stripped = clean.replace(/[^a-z0-9]/g, "");
   return stripped ? `${stripped}.com` : "";
 }
+window.resolveSupplierDomain = resolveSupplierDomain;
+
+function getSupplierAutoLogo(supplierName) {
+  if (!supplierName) return null;
+  const domain = resolveSupplierDomain(supplierName);
+  if (!domain) return null;
+  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+}
+window.getSupplierAutoLogo = getSupplierAutoLogo;
+
+function getPlatformAutoLogo(platformName) {
+  if (!platformName) return null;
+  const clean = platformName.toLowerCase().trim();
+  if (clean === "other") return null;
+  let domain = PLATFORM_KNOWN_DOMAINS[clean];
+  if (!domain) {
+    for (const [k, d] of Object.entries(PLATFORM_KNOWN_DOMAINS)) {
+      if (clean.includes(k)) { domain = d; break; }
+    }
+  }
+  if (!domain) return null;
+  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+}
+window.getPlatformAutoLogo = getPlatformAutoLogo;
 
 function getSupplierLogoCandidates(domain) {
   if (!domain) return [];
@@ -5783,17 +5856,12 @@ function getSupplierLogoCandidates(domain) {
       url: `https://www.google.com/s2/favicons?domain=${encodeURIComponent(cleanDomain)}&sz=128`
     },
     {
-      label: "Clearbit Logo",
-      sublabel: "Brand Vector/PNG",
-      url: `https://logo.clearbit.com/${encodeURIComponent(cleanDomain)}`
-    },
-    {
-      label: "DuckDuckGo",
+      label: "DuckDuckGo Icon",
       sublabel: "Official Favicon",
       url: `https://icons.duckduckgo.com/ip3/${encodeURIComponent(cleanDomain)}.ico`
     },
     {
-      label: "Unavatar",
+      label: "Unavatar Brand",
       sublabel: "Multi-Source Icon",
       url: `https://unavatar.io/${encodeURIComponent(cleanDomain)}`
     }
@@ -5970,6 +6038,8 @@ function initRetrieveSupplierLogoHandlers() {
       const supplierObj = state.suppliers.find(s => s.name === supName);
       if (supplierObj) {
         supplierObj.logo = null;
+        if (!state.supplierLogos) state.supplierLogos = {};
+        delete state.supplierLogos[supName];
         saveStateToStorage();
         if (window.supabaseClient) {
           await dbSaveSupplier(supplierObj);
@@ -5991,6 +6061,12 @@ function initRetrieveSupplierLogoHandlers() {
 
     const chosenUrl = (selectedUrlHidden?.value || customUrlInput?.value || "").trim();
     supplierObj.logo = chosenUrl || null;
+    if (!state.supplierLogos) state.supplierLogos = {};
+    if (supplierObj.logo) {
+      state.supplierLogos[supName] = supplierObj.logo;
+    } else {
+      delete state.supplierLogos[supName];
+    }
 
     saveStateToStorage();
     if (window.supabaseClient) {
@@ -6306,8 +6382,12 @@ function renderPlatforms() {
         </button>
       `;
 
-      const logoHtml = platformObj.logo
-        ? `<img src="${escapeHTML(platformObj.logo)}" class="supplier-logo-thumbnail" alt="${escapeHTML(platformName)}">`
+      const resolvedPlatLogo = platformObj.logo 
+        || (state.platformLogos && (state.platformLogos[platformName] || (typeof getSupplierLogoCaseInsensitive === "function" && getSupplierLogoCaseInsensitive(state.platformLogos, platformName)))) 
+        || (typeof getPlatformAutoLogo === "function" ? getPlatformAutoLogo(platformName) : null);
+
+      const logoHtml = resolvedPlatLogo
+        ? `<img src="${escapeHTML(resolvedPlatLogo)}" class="supplier-logo-thumbnail" alt="${escapeHTML(platformName)}" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-flex';"><div class="supplier-logo-placeholder" style="display: none; background-color: var(--border-color); color: var(--text-secondary); border: 1px solid var(--border-color);"><i class="fa-solid fa-gamepad"></i></div>`
         : `<div class="supplier-logo-placeholder" style="background-color: var(--border-color); color: var(--text-secondary); border: 1px solid var(--border-color);"><i class="fa-solid fa-gamepad"></i></div>`;
 
       const tr = document.createElement("tr");
@@ -6500,6 +6580,15 @@ async function handleEditPlatformSubmit(e) {
   if (platformObj) {
     platformObj.name = newName;
     platformObj.logo = logo || null;
+  }
+
+  if (!state.platformLogos) state.platformLogos = {};
+  if (newName !== oldName) {
+    delete state.platformLogos[oldName];
+    if (platformObj.logo) state.platformLogos[newName] = platformObj.logo;
+  } else {
+    if (platformObj.logo) state.platformLogos[newName] = platformObj.logo;
+    else delete state.platformLogos[newName];
   }
   
   let inventoryUpdateCount = 0;
@@ -7384,8 +7473,11 @@ function buildInventoryRowHTML(item, salesMap, dupMap) {
   
   let supplierBadge = "";
   if (state.supplierDisplayMode === "logo") {
-    if (supplierObj && supplierObj.logo) {
-      supplierBadge = `<img src="${escapeHTML(supplierObj.logo)}" class="supplier-logo-thumbnail" style="width: 28px; height: 28px; vertical-align: middle; border-radius: 4px; object-fit: contain; background-color: var(--bg-card); border: 1px solid var(--border-color); padding: 1px;" title="${escapeHTML(sourceStr)}" alt="${escapeHTML(sourceStr)}">`;
+    const resolvedSupLogo = (supplierObj && supplierObj.logo) 
+      || (state.supplierLogos && (state.supplierLogos[sourceStr] || (typeof getSupplierLogoCaseInsensitive === "function" && getSupplierLogoCaseInsensitive(state.supplierLogos, sourceStr)))) 
+      || (typeof getSupplierAutoLogo === "function" ? getSupplierAutoLogo(sourceStr) : null);
+    if (resolvedSupLogo) {
+      supplierBadge = `<img src="${escapeHTML(resolvedSupLogo)}" class="supplier-logo-thumbnail" style="width: 28px; height: 28px; vertical-align: middle; border-radius: 4px; object-fit: contain; background-color: var(--bg-card); border: 1px solid var(--border-color); padding: 1px;" title="${escapeHTML(sourceStr)}" alt="${escapeHTML(sourceStr)}" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-flex';"><div class="supplier-logo-placeholder" style="display: none; width: 28px; height: 28px; border-radius: 4px; background-color: ${colorPreset.value}20; color: ${colorPreset.value}; border: 1px solid ${colorPreset.value}40; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; vertical-align: middle;" title="${escapeHTML(sourceStr)}">${escapeHTML(sourceStr.charAt(0).toUpperCase())}</div>`;
     } else {
       supplierBadge = `
         <div class="supplier-logo-placeholder" style="width: 28px; height: 28px; border-radius: 4px; background-color: ${colorPreset.value}20; color: ${colorPreset.value}; border: 1px solid ${colorPreset.value}40; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; vertical-align: middle;" title="${escapeHTML(sourceStr)}">
@@ -11407,14 +11499,16 @@ CREATE TABLE IF NOT EXISTS suppliers (
   name TEXT PRIMARY KEY,
   "dateAdded" NUMERIC NOT NULL,
   color TEXT,
-  enabled BOOLEAN NOT NULL DEFAULT true
+  enabled BOOLEAN NOT NULL DEFAULT true,
+  logo TEXT
 );
 
 -- 2. Create platforms table
 CREATE TABLE IF NOT EXISTS platforms (
   name TEXT PRIMARY KEY,
   "dateAdded" NUMERIC NOT NULL,
-  enabled BOOLEAN NOT NULL DEFAULT true
+  enabled BOOLEAN NOT NULL DEFAULT true,
+  logo TEXT
 );
 
 -- 3. Create inventory table

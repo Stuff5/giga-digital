@@ -300,6 +300,25 @@ window.runSupabaseDiagnostics = async function() {
       report.push(`<span style="color: var(--accent-danger); font-weight: 500;">✗ Table "${t}" connection error: ${e.message}</span>`);
     }
   }
+
+  // Check modern logo columns
+  try {
+    const { error: supColErr } = await window.supabaseClient.from('suppliers').select('logo').limit(1);
+    if (supColErr && isMissingColumnError(supColErr, 'logo')) {
+      report.push(`<span style="color: var(--accent-warning); font-weight: 500;">⚠ Column "logo" in "suppliers" missing (cloud app_settings fallback active). Run: <code>ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS logo TEXT;</code></span>`);
+    } else if (!supColErr) {
+      report.push(`<span style="color: var(--accent-teal); font-weight: 500;">✓ Column "suppliers.logo" verified native.</span>`);
+    }
+  } catch (e) {}
+
+  try {
+    const { error: platColErr } = await window.supabaseClient.from('platforms').select('logo').limit(1);
+    if (platColErr && isMissingColumnError(platColErr, 'logo')) {
+      report.push(`<span style="color: var(--accent-warning); font-weight: 500;">⚠ Column "logo" in "platforms" missing (cloud app_settings fallback active). Run: <code>ALTER TABLE platforms ADD COLUMN IF NOT EXISTS logo TEXT;</code></span>`);
+    } else if (!platColErr) {
+      report.push(`<span style="color: var(--accent-teal); font-weight: 500;">✓ Column "platforms.logo" verified native.</span>`);
+    }
+  } catch (e) {}
   
   const diagOutput = document.getElementById("supabase-diag-output");
   if (diagOutput) {
@@ -941,23 +960,111 @@ async function dbLoadState() {
     state.inventory = inventoryData || [];
     state.sales = salesData || [];
     
+    // First inspect settingsData for cloud logo backups
+    let cloudSupplierLogos = null;
+    let cloudPlatformLogos = null;
+    if (settingsData && settingsData.length > 0) {
+      const supLogosItem = settingsData.find(s => s.key === "supplierLogos");
+      if (supLogosItem && supLogosItem.value) {
+        try {
+          cloudSupplierLogos = typeof supLogosItem.value === 'string' ? JSON.parse(supLogosItem.value) : supLogosItem.value;
+          state.supplierLogos = { ...(state.supplierLogos || {}), ...(cloudSupplierLogos || {}) };
+        } catch (e) {
+          console.error("Error parsing supplierLogos from Supabase:", e);
+        }
+      }
+      const platLogosItem = settingsData.find(s => s.key === "platformLogos");
+      if (platLogosItem && platLogosItem.value) {
+        try {
+          cloudPlatformLogos = typeof platLogosItem.value === 'string' ? JSON.parse(platLogosItem.value) : platLogosItem.value;
+          state.platformLogos = { ...(state.platformLogos || {}), ...(cloudPlatformLogos || {}) };
+        } catch (e) {
+          console.error("Error parsing platformLogos from Supabase:", e);
+        }
+      }
+    }
+
+    // Ensure state.supplierLogos and state.platformLogos check local storage and merge with cloud
+    try {
+      const userSuffix = (state.currentUser && state.currentUser !== "guest") ? `_${state.currentUser}` : "";
+      const storage = window.safeStorage || window.localStorage;
+      const fallbackLogos = storage.getItem("gv_supplier_logos" + userSuffix) || storage.getItem("gv_supplier_logos");
+      if (fallbackLogos) {
+        const parsed = JSON.parse(fallbackLogos) || {};
+        state.supplierLogos = { ...parsed, ...(state.supplierLogos || {}) };
+      }
+    } catch (e) {}
+
+    try {
+      const userSuffix = (state.currentUser && state.currentUser !== "guest") ? `_${state.currentUser}` : "";
+      const storage = window.safeStorage || window.localStorage;
+      const fallbackPlatLogos = storage.getItem("gv_platform_logos" + userSuffix) || storage.getItem("gv_platform_logos");
+      if (fallbackPlatLogos) {
+        const parsedPlat = JSON.parse(fallbackPlatLogos) || {};
+        state.platformLogos = { ...parsedPlat, ...(state.platformLogos || {}) };
+      }
+    } catch (e) {}
+
+    const resolveEntityLogo = (logosMap, name, fallbackLogo) => {
+      if (fallbackLogo) return fallbackLogo;
+      if (!logosMap || !name) return null;
+      const trimmed = String(name).trim();
+      if (logosMap[trimmed]) return logosMap[trimmed];
+      if (typeof window.getSupplierLogoCaseInsensitive === "function") {
+        return window.getSupplierLogoCaseInsensitive(logosMap, trimmed);
+      }
+      const lower = trimmed.toLowerCase();
+      for (const [k, v] of Object.entries(logosMap)) {
+        if (k && k.trim().toLowerCase() === lower && v) return v;
+      }
+      return null;
+    };
+
     if (suppliersData && suppliersData.length > 0) {
-      state.suppliers = suppliersData.map(s => ({
-        name: s.name,
-        dateAdded: Number(s.dateAdded),
-        color: s.color,
-        enabled: s.enabled !== false,
-        logo: s.logo || null
-      }));
+      const existingLocalMap = new Map((state.suppliers || []).map(ls => [(ls.name || "").trim().toLowerCase(), ls]));
+      state.suppliers = suppliersData.map(s => {
+        const supName = (s.name || "").trim();
+        const localSup = existingLocalMap.get(supName.toLowerCase());
+        const autoLogo = (typeof window.getSupplierAutoLogo === "function" ? window.getSupplierAutoLogo(supName) : null);
+        const resolvedLogo = resolveEntityLogo(state.supplierLogos, supName, s.logo) || (localSup ? localSup.logo : null) || autoLogo || null;
+        if (resolvedLogo && state.supplierLogos) {
+          state.supplierLogos[supName] = resolvedLogo;
+        }
+        return {
+          name: supName,
+          dateAdded: Number(s.dateAdded),
+          color: s.color,
+          enabled: s.enabled !== false,
+          logo: resolvedLogo
+        };
+      });
     }
 
     if (platformsData && platformsData.length > 0) {
-      state.platforms = platformsData.map(p => ({
-        name: p.name,
-        dateAdded: Number(p.dateAdded),
-        enabled: p.enabled !== false,
-        logo: p.logo || null
-      }));
+      const existingLocalPlatMap = new Map((state.platforms || []).map(lp => [(lp.name || "").trim().toLowerCase(), lp]));
+      state.platforms = platformsData.map(p => {
+        const platName = (p.name || "").trim();
+        const localPlat = existingLocalPlatMap.get(platName.toLowerCase());
+        const autoPlatLogo = (typeof window.getPlatformAutoLogo === "function" ? window.getPlatformAutoLogo(platName) : null);
+        const resolvedLogo = resolveEntityLogo(state.platformLogos, platName, p.logo) || (localPlat ? localPlat.logo : null) || autoPlatLogo || null;
+        if (resolvedLogo && state.platformLogos) {
+          state.platformLogos[platName] = resolvedLogo;
+        }
+        return {
+          name: platName,
+          dateAdded: Number(p.dateAdded),
+          enabled: p.enabled !== false,
+          logo: resolvedLogo
+        };
+      });
+    }
+
+    // Persist resolved logos to app_settings so cloud always has the current state
+    if (state.supplierLogos && Object.keys(state.supplierLogos).length > 0) {
+      await dbSaveSettings("supplierLogos", state.supplierLogos);
+    }
+    if (state.platformLogos && Object.keys(state.platformLogos).length > 0) {
+      await dbSaveSettings("platformLogos", state.platformLogos);
     }
 
     if (customData && customData.length > 0) {
@@ -1158,6 +1265,20 @@ async function dbLoadState() {
           } catch(e) {
             console.error("Error parsing catalogReviews from database sync:", e);
           }
+        } else if (s.key === "supplierLogos") {
+          try {
+            const parsed = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+            state.supplierLogos = { ...(state.supplierLogos || {}), ...(parsed || {}) };
+          } catch(e) {
+            console.error("Error parsing supplierLogos from database sync:", e);
+          }
+        } else if (s.key === "platformLogos") {
+          try {
+            const parsed = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+            state.platformLogos = { ...(state.platformLogos || {}), ...(parsed || {}) };
+          } catch(e) {
+            console.error("Error parsing platformLogos from database sync:", e);
+          }
         }
       });
     }
@@ -1165,6 +1286,7 @@ async function dbLoadState() {
     applyMenuIcons();
     applyMenuTitles();
     renderSidebarCustomizationSettings();
+    saveStateToStorage();
     updateUI();
     showToast("Cloud database synchronized successfully.", "success");
   } catch (err) {
@@ -1270,6 +1392,8 @@ async function dbSeedDatabase() {
       { key: "metricOrder", value: state.metricOrder },
       { key: "supMetricOrder", value: state.supMetricOrder },
       { key: "customLogo", value: state.customLogo },
+      { key: "supplierLogos", value: state.supplierLogos || {} },
+      { key: "platformLogos", value: state.platformLogos || {} },
       { key: "lowStockThreshold", value: state.lowStockThreshold },
       { key: "defaultMarkupType", value: state.defaultMarkupType },
       { key: "defaultMarkupValue", value: state.defaultMarkupValue },
@@ -1504,6 +1628,16 @@ async function dbSaveSupplier(supplier) {
   }
   try {
     if (!state.dbMissingColumns) state.dbMissingColumns = {};
+    if (!state.supplierLogos) state.supplierLogos = {};
+
+    if (supplier.logo) {
+      state.supplierLogos[supplier.name] = supplier.logo;
+    } else {
+      delete state.supplierLogos[supplier.name];
+    }
+
+    // Always persist supplierLogos to app_settings first so cloud persistence is guaranteed
+    await dbSaveSettings("supplierLogos", state.supplierLogos);
 
     const payload = {
       name: supplier.name,
@@ -1540,6 +1674,12 @@ async function dbSaveSupplier(supplier) {
 }
 
 async function dbDeleteSupplier(name) {
+  if (state.supplierLogos && state.supplierLogos[name]) {
+    delete state.supplierLogos[name];
+    if (window.supabaseClient && state.syncMode !== "manual") {
+      dbSaveSettings("supplierLogos", state.supplierLogos).catch(e => console.warn(e));
+    }
+  }
   if (!window.supabaseClient) return;
   if (state.syncMode === "manual") {
     if (!state.pendingDeletes.suppliers.includes(name)) {
@@ -1586,7 +1726,7 @@ async function dbSaveSettings(key, value) {
   try {
     const { error } = await window.supabaseClient
       .from('app_settings')
-      .upsert({ key, value });
+      .upsert({ key, value }, { onConflict: 'key' });
     if (error) throw error;
   } catch (err) {
     console.error(`Error saving app setting "${key}" to Supabase:`, err);
@@ -1601,6 +1741,16 @@ async function dbSavePlatform(platform) {
   }
   try {
     if (!state.dbMissingColumns) state.dbMissingColumns = {};
+    if (!state.platformLogos) state.platformLogos = {};
+
+    if (platform.logo) {
+      state.platformLogos[platform.name] = platform.logo;
+    } else {
+      delete state.platformLogos[platform.name];
+    }
+
+    // Always persist platformLogos to app_settings first so cloud persistence is guaranteed
+    await dbSaveSettings("platformLogos", state.platformLogos);
 
     const payload = {
       name: platform.name,
@@ -1635,6 +1785,12 @@ async function dbSavePlatform(platform) {
 }
 
 async function dbDeletePlatform(name) {
+  if (state.platformLogos && state.platformLogos[name]) {
+    delete state.platformLogos[name];
+    if (window.supabaseClient && state.syncMode !== "manual") {
+      dbSaveSettings("platformLogos", state.platformLogos).catch(e => console.warn(e));
+    }
+  }
   if (!window.supabaseClient) return;
   if (state.syncMode === "manual") {
     if (!state.pendingDeletes.platforms.includes(name)) {
