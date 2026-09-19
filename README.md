@@ -2,7 +2,7 @@
 
 > High-performance digital game license inventory pipeline, sales ledger, and financial analytics platform designed for digital key merchants, distributors, and online publishers.
 
-![Version](https://img.shields.io/badge/version-v2.0.1-cyan.svg)
+![Version](https://img.shields.io/badge/version-v2.1.0-cyan.svg)
 ![Status](https://img.shields.io/badge/status-active-emerald.svg)
 ![Platform](https://img.shields.io/badge/platform-Web%20SPA-purple.svg)
 
@@ -50,7 +50,7 @@ From bulk spreadsheet imports and real-time inventory tracking to financial marg
 - **Ending Inventory Valuation**: Automatic asset valuation of unsold keys on period closing dates.
 
 ### 6. Supplier, Publisher & Platform Management
-- **Key Reassignment on Supplier Deletion**: Seamlessly transfer existing inventory keys to another designated supplier when deleting a supplier.
+- **Key Reassignment on Deletion**: Seamlessly transfer existing inventory keys and sales records to another designated supplier or platform when deleting a supplier or platform from your catalog.
 - **Automated Logo Retrieval**: Automatically retrieve high-resolution company branding logos for both suppliers and publishers with a single click.
 - **Dynamic Dropdown Synchronization**: Global alphabetical synchronization of supplier and platform dropdowns across all inventory modals and view filters.
 - **Platform Analytics**: Summary metrics tracking channel counts, active inventory, top platform by volume, and top platform by profit.
@@ -106,4 +106,4 @@ game-sales-tracker/
 
 See [CHANGELOG.md](CHANGELOG.md) for full release notes and development milestones.
 
-Current Release: **v2.0.1** (2026-09-19)
+Current Release: **v2.1.0** (2026-09-19)

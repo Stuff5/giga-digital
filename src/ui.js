@@ -12,7 +12,7 @@ window.loadHTMLTemplates = async () => {
   await Promise.all(templates.map(async t => {
     try {
       // Use version and timestamp cache-busting to ensure fresh HTML templates are loaded
-      const ver = window.APP_VERSION || "v2.0.1";
+      const ver = window.APP_VERSION || "v2.1.0";
       const res = await fetch(`${t.url}?v=${ver}&t=${Date.now()}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -7147,25 +7147,155 @@ async function handleEditPublisherSubmit(e) {
 }
 
 window.triggerDeletePlatform = async function(name) {
+  const platformObj = state.platforms.find(p => p.name === name);
+  if (!platformObj) {
+    showToast(`Platform "${name}" not found.`, "error");
+    return;
+  }
+
+  // Count assigned inventory keys and sales
+  const assignedKeys = state.inventory.filter(item => item.platform === name);
+  const countInventory = assignedKeys.length;
+  const inStockCount = assignedKeys.filter(item => item.status !== "Sold").length;
+  const countSales = state.sales.filter(sale => sale.platform === name).length;
+  const countInUse = countInventory + countSales;
+  const remainingPlatforms = state.platforms.filter(p => p.name !== name);
+
+  if (countInUse > 0 && remainingPlatforms.length === 0) {
+    showToast(`Cannot delete "${name}" because ${countInUse} key(s)/sale(s) are assigned to it and no other platforms exist. Please add another platform first.`, "warning");
+    return;
+  }
+
+  const targetHidden = document.getElementById("delete-platform-target-name");
+  const nameDisplay = document.getElementById("delete-platform-name-display");
+  const statsBadge = document.getElementById("delete-platform-stats-badge");
+  const previewBox = document.getElementById("delete-platform-logo-preview");
+  const warningBox = document.getElementById("delete-platform-warning-box");
+  const reassignGroup = document.getElementById("delete-platform-reassign-group");
+  const selectEl = document.getElementById("delete-platform-replacement-select");
+  const zeroKeysNotice = document.getElementById("delete-platform-zero-keys-notice");
+  const submitBtnText = document.getElementById("btn-submit-delete-platform-text");
+
+  if (targetHidden) targetHidden.value = name;
+  if (nameDisplay) nameDisplay.textContent = name;
+  if (statsBadge) {
+    statsBadge.textContent = `${countInventory} key(s) in catalog (${inStockCount} in stock)${countSales > 0 ? `, ${countSales} sale(s)` : ''}`;
+  }
+
+  if (previewBox) {
+    const resolvedLogo = platformObj.logo 
+      || (state.platformLogos && state.platformLogos[name]) 
+      || (typeof getPlatformAutoLogo === "function" ? getPlatformAutoLogo(name) : null);
+
+    if (resolvedLogo) {
+      previewBox.innerHTML = `<img src="${escapeHTML(resolvedLogo)}" class="platform-logo-thumbnail" style="width: 38px; height: 38px; object-fit: contain;" alt="${escapeHTML(name)}" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-flex';"><div class="platform-logo-placeholder" style="display: none; width: 38px; height: 38px;"><i class="fa-solid fa-gamepad"></i></div>`;
+    } else {
+      previewBox.innerHTML = `<div class="platform-logo-placeholder" style="width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); border-radius: 6px;"><i class="fa-solid fa-gamepad"></i></div>`;
+    }
+  }
+
+  if (countInUse > 0) {
+    if (warningBox) warningBox.style.display = "block";
+    if (reassignGroup) reassignGroup.style.display = "block";
+    if (zeroKeysNotice) zeroKeysNotice.style.display = "none";
+    const keysMsg = document.getElementById("delete-platform-keys-msg");
+    if (keysMsg) {
+      keysMsg.textContent = `"${name}" currently has ${countInventory} key(s) (${inStockCount} in stock) and ${countSales} sale(s) assigned.`;
+    }
+    if (submitBtnText) submitBtnText.textContent = "Reassign & Delete";
+    
+    if (selectEl) {
+      selectEl.required = true;
+      const sorted = [...remainingPlatforms].sort((a, b) => a.name.localeCompare(b.name));
+      selectEl.innerHTML = sorted.map(p => `<option value="${escapeHTML(p.name)}">${escapeHTML(p.name)}${p.enabled === false ? ' (Disabled)' : ''}</option>`).join("");
+      const steamOption = sorted.find(p => p.name.toLowerCase() === "steam");
+      if (steamOption) selectEl.value = steamOption.name;
+      else if (sorted.length > 0) selectEl.value = sorted[0].name;
+    }
+  } else {
+    if (warningBox) warningBox.style.display = "none";
+    if (reassignGroup) reassignGroup.style.display = "none";
+    if (zeroKeysNotice) zeroKeysNotice.style.display = "block";
+    if (selectEl) {
+      selectEl.required = false;
+      selectEl.innerHTML = "";
+    }
+    if (submitBtnText) submitBtnText.textContent = "Confirm Delete";
+  }
+
+  openModal("delete-platform-modal");
+};
+
+async function handleDeletePlatformSubmit(e) {
+  e.preventDefault();
+  const name = document.getElementById("delete-platform-target-name")?.value;
+  if (!name) return;
+
   const countInventory = state.inventory.filter(item => item.platform === name).length;
   const countSales = state.sales.filter(sale => sale.platform === name).length;
   const countInUse = countInventory + countSales;
-  
-  let msg = `Are you sure you want to delete platform "${name}"?`;
-  if (countInUse > 0) {
-    msg = `WARNING: "${name}" is currently assigned to ${countInventory} game key(s) in inventory and ${countSales} sale(s).\n\nDeleting this platform will leave those items without a platform reference. Are you sure you want to proceed?`;
+  const selectEl = document.getElementById("delete-platform-replacement-select");
+  const targetPlatform = selectEl ? selectEl.value : "";
+
+  if (countInUse > 0 && !targetPlatform) {
+    showToast("Please select a replacement platform to reassign keys to.", "warning");
+    return;
   }
-  
-  if (confirm(msg)) {
-    state.platforms = state.platforms.filter(p => p.name !== name);
-    saveStateToStorage();
-    if (window.supabaseClient) {
-      await dbDeletePlatform(name);
+
+  // 1. Reassign in-memory inventory, recycle bin keys, and sales
+  let reassignedCount = 0;
+  if (countInUse > 0 && targetPlatform) {
+    state.inventory.forEach(item => {
+      if (item.platform === name) {
+        item.platform = targetPlatform;
+        reassignedCount++;
+      }
+    });
+    if (state.recycleBin && Array.isArray(state.recycleBin.inventory)) {
+      state.recycleBin.inventory.forEach(item => {
+        if (item.platform === name) {
+          item.platform = targetPlatform;
+        }
+      });
     }
-    updateUI();
+    state.sales.forEach(sale => {
+      if (sale.platform === name) {
+        sale.platform = targetPlatform;
+      }
+    });
+  }
+
+  // 2. Remove platform and logo from state
+  state.platforms = state.platforms.filter(p => p.name !== name);
+  if (state.platformLogos) {
+    delete state.platformLogos[name];
+  }
+
+  // 3. Persist updated state locally
+  saveStateToStorage();
+
+  // 4. Synchronize with Supabase Cloud
+  if (window.supabaseClient) {
+    if (reassignedCount > 0 && typeof dbReassignPlatform === "function") {
+      await dbReassignPlatform(name, targetPlatform);
+    }
+    await dbDeletePlatform(name);
+    if (typeof dbSaveSettings === "function") {
+      await dbSaveSettings("platformLogos", state.platformLogos || {});
+    }
+  }
+
+  // 5. Close modal, update UI, and notify
+  closeModal("delete-platform-modal");
+  updateUI();
+
+  if (reassignedCount > 0) {
+    showToast(`Deleted "${name}" and reassigned ${reassignedCount} item(s) to "${targetPlatform}".`, "success");
+  } else {
     showToast(`Removed platform: ${name}`, "info");
   }
-};
+}
+window.handleDeletePlatformSubmit = handleDeletePlatformSubmit;
 
 window.triggerTogglePlatform = async function(name) {
   const platformObj = state.platforms.find(p => p.name === name);

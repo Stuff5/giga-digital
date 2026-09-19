@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v2.1.0] - 2026-09-19
+
+### Added
+- **Platform Key & Sales Reassignment Workflow**: When deleting a platform in the Platforms menu, merchants are now prompted with a dedicated reassignment dialog allowing all active inventory keys and sales records to be seamlessly transferred to another designated platform before deletion, preventing orphaned records and maintaining complete catalog integrity.
+
+---
+
 ## [v2.0.1] - 2026-09-19
 
 ### Changed

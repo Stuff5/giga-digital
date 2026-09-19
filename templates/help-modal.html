@@ -87,9 +87,9 @@
                 - <strong>Steam Ratings Enricher:</strong> A dedicated batch utility in Settings that enriches all 1,271 catalog titles (A&ndash;Z) with official Steam reviews, using a 1.3s safe delay and 65-second rate-limit circuit breaker.
               </p>
 
-              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Supplier & Publisher Logo Retrieval & Key Reassignment</h5>
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Supplier & Platform Key Reassignment & Logo Retrieval</h5>
               <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 0;">
-                In the <strong>Suppliers</strong> tab, both the "By Supplier" and "By Publisher" views include automated one-click logo retrieval tools to fetch high-res company branding and publisher logos. When deleting a supplier, the system prompts you to reassign existing keys to another supplier to maintain complete inventory integrity.
+                In both the <strong>Suppliers</strong> and <strong>Platforms</strong> tabs, deleting any supplier or platform with active inventory keys or sales records prompts you with an interactive reassignment dialog. You can select another designated supplier or platform to seamlessly transfer all items, preventing orphaned keys and maintaining complete catalog integrity. Both views also feature automated logo retrieval tools to fetch high-res branding.
               </p>
             </div>
 
@@ -447,11 +447,22 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
-                <!-- v2.0.1 -->
+                <!-- v2.1.0 -->
                 <div style="border-left: 3px solid var(--accent-emerald); padding-left: 12px;">
                   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.0.1 — Clean Sale Price Workflow in Record Key Sale</strong>
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.1.0 — Platform Key & Sales Reassignment Workflow</strong>
                     <span style="font-size: 0.75rem; color: var(--accent-emerald); font-weight: bold;">Current Version</span>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
+                    <li><strong>Platform Key Reassignment Prompt:</strong> When deleting a platform from the Platforms menu, merchants are now prompted with a dedicated reassignment dialog to transfer all associated active inventory keys and sales records to another platform, preventing orphaned catalog records and ensuring complete historical consistency.</li>
+                  </ul>
+                </div>
+
+                <!-- v2.0.1 -->
+                <div style="border-left: 3px solid var(--border-color); padding-left: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.0.1 — Clean Sale Price Workflow in Record Key Sale</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Previous Version</span>
                   </div>
                   <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
                     <li><strong>Blank Sale Price Field:</strong> In the "Record Key Sale" modal, the sale price field is now kept clean and empty by default (both when opening directly from Inventory or selecting via autocomplete search), eliminating confusing pre-filled markup calculations and enabling fast, direct manual price entry.</li>

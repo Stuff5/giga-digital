@@ -1860,6 +1860,30 @@ async function dbDeletePlatform(name) {
   }
 }
 
+async function dbReassignPlatform(oldName, newName) {
+  if (!window.supabaseClient) return;
+  if (state.syncMode === "manual") {
+    setUnsyncedChanges(true);
+    return;
+  }
+  try {
+    const { error: invErr } = await window.supabaseClient
+      .from('inventory')
+      .update({ platform: newName })
+      .eq('platform', oldName);
+    if (invErr) console.error("Error reassigning platform in inventory Supabase:", invErr);
+
+    const { error: salesErr } = await window.supabaseClient
+      .from('sales')
+      .update({ platform: newName })
+      .eq('platform', oldName);
+    if (salesErr) console.error("Error reassigning platform in sales Supabase:", salesErr);
+  } catch (err) {
+    console.error("Error reassigning platform in Supabase:", err);
+  }
+}
+window.dbReassignPlatform = dbReassignPlatform;
+
 // Auto-Sync schedules background variables and runners
 function triggerDebouncedGitHubPush() {
   if (gitHubPushTimeout) {
