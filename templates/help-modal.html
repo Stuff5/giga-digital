@@ -87,9 +87,9 @@
                 - <strong>Steam Ratings Enricher:</strong> A dedicated batch utility in Settings that enriches all 1,271 catalog titles (A&ndash;Z) with official Steam reviews, using a 1.3s safe delay and 65-second rate-limit circuit breaker.
               </p>
 
-              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Supplier Logo Retrieval</h5>
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Supplier & Publisher Logo Retrieval & Key Reassignment</h5>
               <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 0;">
-                In the <strong>Suppliers</strong> tab, each supplier entry includes a one-click logo retrieval tool to automatically search, preview, and assign company branding logos to suppliers.
+                In the <strong>Suppliers</strong> tab, both the "By Supplier" and "By Publisher" views include automated one-click logo retrieval tools to fetch high-res company branding and publisher logos. When deleting a supplier, the system prompts you to reassign existing keys to another supplier to maintain complete inventory integrity.
               </p>
             </div>
 
@@ -447,11 +447,36 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
-                <!-- v1.9.0 -->
+                <!-- v2.0.1 -->
                 <div style="border-left: 3px solid var(--accent-emerald); padding-left: 12px;">
                   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.9.0 — Steam Rating Intelligence, Catalog Enrichment Engine & Supplier Automation</strong>
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.0.1 — Clean Sale Price Workflow in Record Key Sale</strong>
                     <span style="font-size: 0.75rem; color: var(--accent-emerald); font-weight: bold;">Current Version</span>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
+                    <li><strong>Blank Sale Price Field:</strong> In the "Record Key Sale" modal, the sale price field is now kept clean and empty by default (both when opening directly from Inventory or selecting via autocomplete search), eliminating confusing pre-filled markup calculations and enabling fast, direct manual price entry.</li>
+                  </ul>
+                </div>
+
+                <!-- v2.0.0 -->
+                <div style="border-left: 3px solid var(--border-color); padding-left: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.0.0 — Supplier Key Reassignment, Publisher Logos & App-Wide Dropdown Sync</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Previous Version</span>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
+                    <li><strong>Supplier Key Reassignment Prompt:</strong> When deleting a supplier from the Suppliers menu, merchants are prompted with a reassignment dialog allowing all active keys to be seamlessly transferred to another designated supplier, preventing orphaned keys and data loss.</li>
+                    <li><strong>Publisher & Supplier Logo Retrieval:</strong> Added automatic logo retrieval for both suppliers and publishers (in the "By Publisher" tab) with high-res icon resolution and instant visual preview.</li>
+                    <li><strong>App-Wide Supplier & Platform Dropdowns:</strong> Centralized dropdown population helpers (<code>populateSupplierDropdowns</code> and <code>populatePlatformDropdowns</code>) ensuring all forms (Add Game Key modal, Edit Game modal) and filters (Inventory, Sales, Dashboard, Suppliers) display active suppliers and platforms alphabetically regardless of the active navigation tab.</li>
+                    <li><strong>Full-Catalog Artwork Fetching Enhancements:</strong> Fixed catalog artwork batch fetcher across all letters A&ndash;Z, resolving script scope errors (<code>isSliced</code>) and ensuring complete cover artwork population across all titles.</li>
+                  </ul>
+                </div>
+
+                <!-- v1.9.0 -->
+                <div style="border-left: 3px solid var(--border-color); padding-left: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v1.9.0 — Steam Rating Intelligence, Catalog Enrichment Engine & Supplier Automation</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Previous Version</span>
                   </div>
                   <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
                     <li><strong>Official Steam Rating & Review Pills:</strong> Embedded compact sentiment rating pills displaying exact positive rating percentages (e.g., <code>98%</code>) and formatted review counts (e.g., <code>(211k)</code>) across both Gallery Cards and Table rows, with color-coded sentiment tiers (Overwhelmingly Positive, Mostly Positive, Mixed, Negative) and direct links to Steam store pages.</li>

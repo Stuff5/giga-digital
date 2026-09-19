@@ -2,7 +2,7 @@
 
 > High-performance digital game license inventory pipeline, sales ledger, and financial analytics platform designed for digital key merchants, distributors, and online publishers.
 
-![Version](https://img.shields.io/badge/version-v1.9.0-cyan.svg)
+![Version](https://img.shields.io/badge/version-v2.0.1-cyan.svg)
 ![Status](https://img.shields.io/badge/status-active-emerald.svg)
 ![Platform](https://img.shields.io/badge/platform-Web%20SPA-purple.svg)
 
@@ -38,6 +38,7 @@ From bulk spreadsheet imports and real-time inventory tracking to financial marg
 - **Percentage Range Filters**: Isolate high-yielding or top-rated games with minimum and maximum percentage thresholds.
 
 ### 4. Inventory & Sales Pipeline
+- **Clean Sale Registration**: Dedicated "Record Key Sale" modal with blank price entry for rapid, error-free transaction logging.
 - **Activation State Tracking**: Available, Sold, Reserved, and Rejected keys.
 - **Inventory Stock Aging Alerts**: Fresh (<30d), Aging (30-90d), Stale (90-180d), and Very Stale (180d+).
 - **Dispute & Refund Reconciliation**: Amber dispute flagging, revenue recalculation, supplier refund tracking, and pulsing sidebar alert counters.
@@ -48,8 +49,10 @@ From bulk spreadsheet imports and real-time inventory tracking to financial marg
 - **Outflow Allocation**: Allocation doughnut chart breaking down acquisition costs vs operational payouts.
 - **Ending Inventory Valuation**: Automatic asset valuation of unsold keys on period closing dates.
 
-### 6. Supplier & Platform Management
-- **One-Click Logo Retrieval**: Automatically retrieve high-resolution company branding logos for suppliers.
+### 6. Supplier, Publisher & Platform Management
+- **Key Reassignment on Supplier Deletion**: Seamlessly transfer existing inventory keys to another designated supplier when deleting a supplier.
+- **Automated Logo Retrieval**: Automatically retrieve high-resolution company branding logos for both suppliers and publishers with a single click.
+- **Dynamic Dropdown Synchronization**: Global alphabetical synchronization of supplier and platform dropdowns across all inventory modals and view filters.
 - **Platform Analytics**: Summary metrics tracking channel counts, active inventory, top platform by volume, and top platform by profit.
 
 ### 7. AI Merchant Assistant (Gemini & OpenAI)
@@ -103,4 +106,4 @@ game-sales-tracker/
 
 See [CHANGELOG.md](CHANGELOG.md) for full release notes and development milestones.
 
-Current Release: **v1.9.0** (2026-09-16)
+Current Release: **v2.0.1** (2026-09-19)

@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v2.0.1] - 2026-09-19
+
+### Changed
+- **Blank Sale Price in "Record Key Sale" Modal**: Kept the sale price field empty by default in the Record Key Sale modal (when launched directly from the Inventory list or selected via autocomplete search inside the dialog), eliminating confusing pre-filled markup calculations and facilitating clean, direct manual price entry.
+
+---
+
+## [v2.0.0] - 2026-09-19
+
+### Added
+- **Supplier Key Reassignment Workflow**: When deleting a supplier in the Suppliers view, the system now prompts the user with a dialog to reassign all existing inventory keys to another supplier, preventing orphaned keys and maintaining inventory data integrity.
+- **Publisher & Supplier Logo Retrieval**: Added automatic high-resolution branding logo fetching for both suppliers and publishers in the "By Publisher" tab with fallback searches, domain resolutions, and instant previews.
+- **App-Wide Dynamic Dropdown Synchronization**: Extracted centralized `populateSupplierDropdowns` and `populatePlatformDropdowns` functions to ensure all modals (Add Game Key, Edit Game) and view filters (Inventory, Sales, Dashboard, Suppliers) are consistently populated in alphabetical order across all views.
+- **Catalog Artwork Utility Fixes**: Fixed batch artwork fetching across letters A–Z, resolved variable scope errors (`isSliced`), and enhanced reliability of artwork enrichment runs.
+
+---
+
 ## [v1.9.0] - 2026-09-16
 
 ### Added
