@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v2.1.1] - 2026-09-19
+
+### Changed
+- **Blank Purchased Price in "Add Digital Game Key" Modal**: Kept the purchase price field empty by default when opening the Add Digital Game Key modal and when selecting title suggestions via autocomplete, preventing accidental pre-filling of prices from previous inventory records and allowing direct manual entry.
+
+---
+
 ## [v2.1.0] - 2026-09-19
 
 ### Added

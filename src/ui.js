@@ -12,7 +12,7 @@ window.loadHTMLTemplates = async () => {
   await Promise.all(templates.map(async t => {
     try {
       // Use version and timestamp cache-busting to ensure fresh HTML templates are loaded
-      const ver = window.APP_VERSION || "v2.1.0";
+      const ver = window.APP_VERSION || "v2.1.1";
       const res = await fetch(`${t.url}?v=${ver}&t=${Date.now()}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -1763,6 +1763,8 @@ function initEventHandlers() {
     btnAddGameModal.addEventListener("click", () => {
       if (typeof populateSupplierDropdowns === "function") populateSupplierDropdowns();
       if (typeof populatePlatformDropdowns === "function") populatePlatformDropdowns();
+      const costInput = document.getElementById("game-cost");
+      if (costInput) costInput.value = "";
       openModal("add-game-modal");
     });
   }
@@ -2877,8 +2879,9 @@ function initEventHandlers() {
       if (platformSelect && match.platform) {
         platformSelect.value = match.platform;
       }
-      if (costInput && match.cost) {
-        costInput.value = match.cost;
+      // Keep purchased price field empty for manual entry
+      if (costInput) {
+        costInput.value = "";
       }
       if (sourceSelect && match.source) {
         sourceSelect.value = match.source;
@@ -3754,6 +3757,10 @@ function openModal(id) {
     else if (typeof window.populateSupplierDropdowns === "function") window.populateSupplierDropdowns();
     if (typeof populatePlatformDropdowns === "function") populatePlatformDropdowns();
     else if (typeof window.populatePlatformDropdowns === "function") window.populatePlatformDropdowns();
+  }
+  if (id === "add-game-modal") {
+    const costInput = document.getElementById("game-cost");
+    if (costInput) costInput.value = "";
   }
   const modal = DOM[id] || document.getElementById(id);
   if (modal) {
