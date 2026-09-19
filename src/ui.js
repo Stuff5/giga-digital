@@ -12,7 +12,7 @@ window.loadHTMLTemplates = async () => {
   await Promise.all(templates.map(async t => {
     try {
       // Use version and timestamp cache-busting to ensure fresh HTML templates are loaded
-      const ver = window.APP_VERSION || "v2.0.0";
+      const ver = window.APP_VERSION || "v2.0.1";
       const res = await fetch(`${t.url}?v=${ver}&t=${Date.now()}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -1854,16 +1854,8 @@ function initEventHandlers() {
           document.getElementById("sell-selected-game-card").style.display = "block";
           sellAutocompleteList.style.display = "none";
           
-          // Auto fill sell price with default markup
-          let defaultSalePrice;
-          if (item.sellPrice !== undefined && item.sellPrice > 0) {
-            defaultSalePrice = item.sellPrice.toFixed(2);
-          } else if (state.defaultMarkupType === "percent") {
-            defaultSalePrice = (item.cost * (1 + state.defaultMarkupValue / 100)).toFixed(2);
-          } else {
-            defaultSalePrice = (item.cost + state.defaultMarkupValue).toFixed(2);
-          }
-          document.getElementById("sale-price").value = defaultSalePrice;
+          // Keep sales price field empty for user input
+          document.getElementById("sale-price").value = "";
         });
         
         sellAutocompleteList.appendChild(itemEl);
@@ -4029,16 +4021,8 @@ window.triggerSellGame = function(gameId) {
   document.getElementById("sell-selected-game-card").style.display = "block";
   document.getElementById("sell-autocomplete-list").style.display = "none";
 
-  // Default values
-  let defaultSalePrice;
-  if (game.sellPrice !== undefined && game.sellPrice > 0) {
-    defaultSalePrice = game.sellPrice.toFixed(2);
-  } else if (state.defaultMarkupType === "percent") {
-    defaultSalePrice = (game.cost * (1 + state.defaultMarkupValue / 100)).toFixed(2);
-  } else {
-    defaultSalePrice = (game.cost + state.defaultMarkupValue).toFixed(2);
-  }
-  document.getElementById("sale-price").value = defaultSalePrice;
+  // Keep sales price field empty for user input
+  document.getElementById("sale-price").value = "";
 
   document.getElementById("sale-fees").value = "0.00";
 
