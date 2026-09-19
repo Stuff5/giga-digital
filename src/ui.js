@@ -12,7 +12,7 @@ window.loadHTMLTemplates = async () => {
   await Promise.all(templates.map(async t => {
     try {
       // Use version and timestamp cache-busting to ensure fresh HTML templates are loaded
-      const ver = window.APP_VERSION || "v1.9.9";
+      const ver = window.APP_VERSION || "v2.0.0";
       const res = await fetch(`${t.url}?v=${ver}&t=${Date.now()}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -1758,7 +1758,14 @@ function initEventHandlers() {
   });
 
   // Modal opening buttons
-  document.getElementById("btn-add-game-modal").addEventListener("click", () => openModal("add-game-modal"));
+  const btnAddGameModal = document.getElementById("btn-add-game-modal");
+  if (btnAddGameModal) {
+    btnAddGameModal.addEventListener("click", () => {
+      if (typeof populateSupplierDropdowns === "function") populateSupplierDropdowns();
+      if (typeof populatePlatformDropdowns === "function") populatePlatformDropdowns();
+      openModal("add-game-modal");
+    });
+  }
   const btnCreateSupplier = document.getElementById("btn-create-supplier");
   if (btnCreateSupplier) {
     btnCreateSupplier.addEventListener("click", () => openModal("add-supplier-modal"));
@@ -3750,6 +3757,12 @@ function applyBulkPriceAdjustment(costAction, costVal, costIsPercent, sellAction
 
 // Modal helper functions
 function openModal(id) {
+  if (id === "add-game-modal" || id === "edit-game-modal") {
+    if (typeof populateSupplierDropdowns === "function") populateSupplierDropdowns();
+    else if (typeof window.populateSupplierDropdowns === "function") window.populateSupplierDropdowns();
+    if (typeof populatePlatformDropdowns === "function") populatePlatformDropdowns();
+    else if (typeof window.populatePlatformDropdowns === "function") window.populatePlatformDropdowns();
+  }
   const modal = DOM[id] || document.getElementById(id);
   if (modal) {
     modal.classList.add("active");
@@ -4879,6 +4892,18 @@ function updateUI() {
     window.updateDuplicateFilterButtonState();
   }
 
+  // Ensure dropdowns across modals and filters are populated with current state
+  if (typeof populateSupplierDropdowns === "function") {
+    populateSupplierDropdowns();
+  } else if (typeof window.populateSupplierDropdowns === "function") {
+    window.populateSupplierDropdowns();
+  }
+  if (typeof populatePlatformDropdowns === "function") {
+    populatePlatformDropdowns();
+  } else if (typeof window.populatePlatformDropdowns === "function") {
+    window.populatePlatformDropdowns();
+  }
+
   // 1. Get filtered data
   const filteredSales = getFilteredSales();
   const filteredInventory = getFilteredInventory();
@@ -5004,6 +5029,153 @@ function updateUI() {
     updateAIContextBadge();
   }
 }
+
+// Global helper to populate supplier dropdowns and filters across the entire app
+function populateSupplierDropdowns() {
+  const addSelect = document.getElementById("game-source");
+  const editSelect = document.getElementById("edit-game-source");
+  const filterSelect = document.getElementById("inv-filter-supplier");
+  const salesFilterSelect = document.getElementById("sales-filter-supplier");
+  const dbFilterSelect = document.getElementById("db-filter-supplier");
+  const supFilterSelect = document.getElementById("sup-filter-supplier");
+
+  const rawSuppliers = (Array.isArray(state.suppliers) && state.suppliers.length > 0)
+    ? state.suppliers
+    : (typeof DEFAULT_SUPPLIERS !== "undefined" ? DEFAULT_SUPPLIERS : ["Humble Bundle", "Fanatical", "GreenManGaming", "Direct"]);
+
+  // Normalize to objects with name and enabled
+  const normalizedSuppliers = rawSuppliers.map(s => {
+    if (typeof s === "string") return { name: s, enabled: true };
+    return { name: s.name || "", enabled: s.enabled !== false };
+  }).filter(s => s.name.trim() !== "");
+
+  // Dropdowns are always sorted alphabetically (A-Z) for clean UX
+  const dropdownSuppliers = [...normalizedSuppliers].sort((a, b) => a.name.localeCompare(b.name));
+  const addDropdownSuppliers = dropdownSuppliers.filter(s => s.enabled !== false);
+
+  // 1. Add Game Key modal dropdown
+  if (addSelect) {
+    const prevAddVal = addSelect.value;
+    addSelect.innerHTML = `<option value="" disabled ${!prevAddVal ? 'selected' : ''}>Select Supplier</option>` + 
+      addDropdownSuppliers.map(s => `<option value="${escapeHTML(s.name)}">${escapeHTML(s.name)}</option>`).join("");
+    
+    if (prevAddVal && addDropdownSuppliers.some(s => s.name === prevAddVal)) {
+      addSelect.value = prevAddVal;
+    }
+  }
+
+  // 2. Edit Game Info modal dropdown
+  if (editSelect) {
+    const prevEditVal = editSelect.value;
+    editSelect.innerHTML = dropdownSuppliers.map(s => `<option value="${escapeHTML(s.name)}">${escapeHTML(s.name)}${s.enabled === false ? ' (Disabled)' : ''}</option>`).join("");
+    
+    if (prevEditVal && dropdownSuppliers.some(s => s.name === prevEditVal)) {
+      editSelect.value = prevEditVal;
+    }
+  }
+
+  // 3. Filter dropdowns (Inventory, Sales, Dashboard, Suppliers)
+  const optionsHTML = '<option value="all">All Suppliers</option>' +
+    dropdownSuppliers.map(s => `<option value="${escapeHTML(s.name)}">${escapeHTML(s.name)}${s.enabled === false ? ' (Disabled)' : ''}</option>`).join("");
+
+  if (filterSelect) {
+    const prevFilterVal = filterSelect.value;
+    filterSelect.innerHTML = optionsHTML;
+    if (prevFilterVal && (prevFilterVal === "all" || dropdownSuppliers.some(s => s.name === prevFilterVal))) {
+      filterSelect.value = prevFilterVal;
+    } else {
+      filterSelect.value = "all";
+    }
+  }
+
+  if (salesFilterSelect) {
+    const prevSalesFilterVal = salesFilterSelect.value;
+    salesFilterSelect.innerHTML = optionsHTML;
+    if (prevSalesFilterVal && (prevSalesFilterVal === "all" || dropdownSuppliers.some(s => s.name === prevSalesFilterVal))) {
+      salesFilterSelect.value = prevSalesFilterVal;
+    } else {
+      salesFilterSelect.value = "all";
+    }
+  }
+
+  if (dbFilterSelect) {
+    const prevDbFilterVal = dbFilterSelect.value;
+    dbFilterSelect.innerHTML = optionsHTML;
+    if (prevDbFilterVal && (prevDbFilterVal === "all" || dropdownSuppliers.some(s => s.name === prevDbFilterVal))) {
+      dbFilterSelect.value = prevDbFilterVal;
+    } else {
+      dbFilterSelect.value = "all";
+    }
+  }
+
+  if (supFilterSelect) {
+    const prevSupFilterVal = supFilterSelect.value;
+    supFilterSelect.innerHTML = optionsHTML;
+    if (prevSupFilterVal && (prevSupFilterVal === "all" || dropdownSuppliers.some(s => s.name === prevSupFilterVal))) {
+      supFilterSelect.value = prevSupFilterVal;
+    } else {
+      supFilterSelect.value = "all";
+    }
+  }
+}
+window.populateSupplierDropdowns = populateSupplierDropdowns;
+
+// Global helper to populate platform dropdowns and filters across the entire app
+function populatePlatformDropdowns() {
+  const addSelect = document.getElementById("game-platform");
+  const editSelect = document.getElementById("edit-game-platform");
+  const filterSelect = document.getElementById("inv-filter-platform");
+
+  const rawPlatforms = (Array.isArray(state.platforms) && state.platforms.length > 0)
+    ? state.platforms
+    : [
+      { name: "Steam", enabled: true },
+      { name: "PlayStation 5", enabled: true },
+      { name: "Xbox Series X/S", enabled: true },
+      { name: "Nintendo Switch", enabled: true },
+      { name: "Epic Games", enabled: true },
+      { name: "GOG", enabled: true },
+      { name: "Ubisoft Connect", enabled: true },
+      { name: "EA App", enabled: true }
+    ];
+
+  const normalizedPlatforms = rawPlatforms.map(p => {
+    if (typeof p === "string") return { name: p, enabled: true };
+    return { name: p.name || "", enabled: p.enabled !== false };
+  }).filter(p => p.name.trim() !== "");
+
+  const dropdownPlatforms = [...normalizedPlatforms].sort((a, b) => a.name.localeCompare(b.name));
+  const addDropdownPlatforms = dropdownPlatforms.filter(p => p.enabled !== false);
+
+  if (addSelect) {
+    const prevAddVal = addSelect.value;
+    addSelect.innerHTML = `<option value="" disabled ${!prevAddVal ? 'selected' : ''}>Select Platform</option>` + 
+      addDropdownPlatforms.map(p => `<option value="${escapeHTML(p.name)}">${escapeHTML(p.name)}</option>`).join("");
+    if (prevAddVal && addDropdownPlatforms.some(p => p.name === prevAddVal)) {
+      addSelect.value = prevAddVal;
+    }
+  }
+
+  if (editSelect) {
+    const prevEditVal = editSelect.value;
+    editSelect.innerHTML = dropdownPlatforms.filter(p => p.enabled !== false).map(p => `<option value="${escapeHTML(p.name)}">${escapeHTML(p.name)}</option>`).join("");
+    if (prevEditVal && dropdownPlatforms.some(p => p.name === prevEditVal)) {
+      editSelect.value = prevEditVal;
+    }
+  }
+
+  if (filterSelect) {
+    const prevFilterVal = filterSelect.value;
+    filterSelect.innerHTML = '<option value="all">All Platforms</option>' +
+      dropdownPlatforms.map(p => `<option value="${escapeHTML(p.name)}">${escapeHTML(p.name)}${p.enabled === false ? ' (Disabled)' : ''}</option>`).join("");
+    if (prevFilterVal && (prevFilterVal === "all" || dropdownPlatforms.some(p => p.name === prevFilterVal))) {
+      filterSelect.value = prevFilterVal;
+    } else {
+      filterSelect.value = "all";
+    }
+  }
+}
+window.populatePlatformDropdowns = populatePlatformDropdowns;
 
 function renderSuppliers() {
   const tbody = DOM["suppliers-table-body"] || document.getElementById("suppliers-table-body");
@@ -5158,90 +5330,11 @@ function renderSuppliers() {
     });
   }
 
-  // Populate dynamic select dropdowns
-  const addSelect = document.getElementById("game-source");
-  const editSelect = document.getElementById("edit-game-source");
-  const filterSelect = document.getElementById("inv-filter-supplier");
-  
-  if (addSelect && editSelect) {
-    // Retain selected values if any
-    const prevAddVal = addSelect.value;
-    const prevEditVal = editSelect.value;
+  // Populate dynamic select dropdowns across the app
+  window.populateSupplierDropdowns();
 
-    // Dropdowns are always sorted alphabetically (A-Z) for clean UX
-    const dropdownSuppliers = [...state.suppliers].sort((a, b) => a.name.localeCompare(b.name));
-    
-    // For adding keys, only show enabled suppliers
-    const addDropdownSuppliers = dropdownSuppliers.filter(s => s.enabled !== false);
-
-    addSelect.innerHTML = `<option value="" disabled ${!prevAddVal ? 'selected' : ''}>Select Supplier</option>` + 
-      addDropdownSuppliers.map(s => `<option value="${s.name}">${s.name}</option>`).join("");
-      
-    // For editing keys, show all enabled suppliers initially (triggerEditGame handles current disabled source)
-    editSelect.innerHTML = dropdownSuppliers.filter(s => s.enabled !== false).map(s => `<option value="${s.name}">${s.name}</option>`).join("");
-    
-    // Restore previous selection if it still exists in the list
-    if (prevAddVal && state.suppliers.some(s => s.name === prevAddVal)) addSelect.value = prevAddVal;
-    if (prevEditVal && state.suppliers.some(s => s.name === prevEditVal)) editSelect.value = prevEditVal;
-
-    // Populate inventory & sales filter dropdowns as well
-    if (filterSelect) {
-      const prevFilterVal = filterSelect.value;
-      const salesFilterSelect = document.getElementById("sales-filter-supplier");
-      const prevSalesFilterVal = salesFilterSelect ? salesFilterSelect.value : "all";
-
-      const optionsHTML = '<option value="all">All Suppliers</option>' +
-        dropdownSuppliers.map(s => `<option value="${s.name}">${s.name}${s.enabled === false ? ' (Disabled)' : ''}</option>`).join("");
-      
-      filterSelect.innerHTML = optionsHTML;
-      if (salesFilterSelect) salesFilterSelect.innerHTML = optionsHTML;
-      
-      if (prevFilterVal && (prevFilterVal === "all" || state.suppliers.some(s => s.name === prevFilterVal))) {
-        filterSelect.value = prevFilterVal;
-      } else {
-        filterSelect.value = "all";
-      }
-
-      if (salesFilterSelect) {
-        if (prevSalesFilterVal && (prevSalesFilterVal === "all" || state.suppliers.some(s => s.name === prevSalesFilterVal))) {
-          salesFilterSelect.value = prevSalesFilterVal;
-        } else {
-          salesFilterSelect.value = "all";
-        }
-      }
-    }
-
-    // Populate dashboard filter dropdown as well
-    const dbFilterSelect = document.getElementById("db-filter-supplier");
-    if (dbFilterSelect) {
-      const prevDbFilterVal = dbFilterSelect.value;
-      dbFilterSelect.innerHTML = '<option value="all">All Suppliers</option>' +
-        dropdownSuppliers.map(s => `<option value="${s.name}">${s.name}${s.enabled === false ? ' (Disabled)' : ''}</option>`).join("");
-      
-      if (prevDbFilterVal && (prevDbFilterVal === "all" || state.suppliers.some(s => s.name === prevDbFilterVal))) {
-        dbFilterSelect.value = prevDbFilterVal;
-      } else {
-        dbFilterSelect.value = "all";
-      }
-    }
-
-    // Populate suppliers view filter dropdown as well
-    const supFilterSelect = document.getElementById("sup-filter-supplier");
-    if (supFilterSelect) {
-      const prevSupFilterVal = supFilterSelect.value;
-      supFilterSelect.innerHTML = '<option value="all">All Suppliers</option>' +
-        dropdownSuppliers.map(s => `<option value="${s.name}">${s.name}${s.enabled === false ? ' (Disabled)' : ''}</option>`).join("");
-      
-      if (prevSupFilterVal && (prevSupFilterVal === "all" || state.suppliers.some(s => s.name === prevSupFilterVal))) {
-        supFilterSelect.value = prevSupFilterVal;
-      } else {
-        supFilterSelect.value = "all";
-      }
-    }
-
-    // Render the leaderboard and ROI matrix
-    renderSupplierAnalytics();
-  }
+  // Render the leaderboard and ROI matrix
+  renderSupplierAnalytics();
 }
 
 // Render Supplier Analytics: Leaderboard & ROI Matrix Scatter Chart
@@ -6770,38 +6863,11 @@ function renderPlatforms() {
     });
   }
 
-  // Populate dynamic select dropdowns
-  const addSelect = document.getElementById("game-platform");
-  const editSelect = document.getElementById("edit-game-platform");
-  const filterSelect = document.getElementById("inv-filter-platform");
-
-  if (addSelect && editSelect) {
-    const prevAddVal = addSelect.value;
-    const prevEditVal = editSelect.value;
-
-    const dropdownPlatforms = [...state.platforms].sort((a, b) => a.name.localeCompare(b.name));
-    const addDropdownPlatforms = dropdownPlatforms.filter(p => p.enabled !== false);
-
-    addSelect.innerHTML = `<option value="" disabled ${!prevAddVal ? 'selected' : ''}>Select Platform</option>` + 
-      addDropdownPlatforms.map(p => `<option value="${p.name}">${p.name}</option>`).join("");
-      
-    editSelect.innerHTML = dropdownPlatforms.filter(p => p.enabled !== false).map(p => `<option value="${p.name}">${p.name}</option>`).join("");
-
-    if (prevAddVal && state.platforms.some(p => p.name === prevAddVal)) addSelect.value = prevAddVal;
-    if (prevEditVal && state.platforms.some(p => p.name === prevEditVal)) editSelect.value = prevEditVal;
-  }
-
-  if (filterSelect) {
-    const prevFilterVal = filterSelect.value;
-    const dropdownPlatforms = [...state.platforms].sort((a, b) => a.name.localeCompare(b.name));
-    filterSelect.innerHTML = '<option value="all">All Platforms</option>' +
-      dropdownPlatforms.map(p => `<option value="${p.name}">${p.name}${p.enabled === false ? ' (Disabled)' : ''}</option>`).join("");
-    
-    if (prevFilterVal && (prevFilterVal === "all" || state.platforms.some(p => p.name === prevFilterVal))) {
-      filterSelect.value = prevFilterVal;
-    } else {
-      filterSelect.value = "all";
-    }
+  // Populate dynamic select dropdowns across the app
+  if (typeof populatePlatformDropdowns === "function") {
+    populatePlatformDropdowns();
+  } else if (typeof window.populatePlatformDropdowns === "function") {
+    window.populatePlatformDropdowns();
   }
 }
 

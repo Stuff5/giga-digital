@@ -4,7 +4,7 @@
  */
 
 document.addEventListener("DOMContentLoaded", async () => {
-  const currentVersion = window.APP_VERSION || "v1.9.9";
+  const currentVersion = window.APP_VERSION || "v2.0.0";
   console.log(`[GameVault] DOMContentLoaded - Booting ${currentVersion}...`);
   console.log("[GameVault] Native gv_active_user:", window.localStorage.getItem("gv_active_user"));
 
@@ -18,14 +18,22 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Load HTML templates dynamically
     await loadHTMLTemplates();
 
+    // Initialize DOM cache layer
+    initDOMCache();
+
+    // Populate dynamic supplier and platform dropdowns immediately from templates
+    if (typeof window.populateSupplierDropdowns === "function") {
+      window.populateSupplierDropdowns();
+    }
+    if (typeof window.populatePlatformDropdowns === "function") {
+      window.populatePlatformDropdowns();
+    }
+
     // Show Dev Mode badge if running locally
     const devBadge = document.getElementById("dev-mode-badge");
     if (devBadge && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
       devBadge.classList.remove("hidden");
     }
-
-    // Initialize DOM cache layer
-    initDOMCache();
     
     // Initialize IndexedDB storage and populate memory cache
     await initIndexedDBStorage();
@@ -33,6 +41,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     
     // Load State and check session
     loadStateFromStorage();
+
+    // Refresh dropdowns after storage state is loaded
+    if (typeof window.populateSupplierDropdowns === "function") {
+      window.populateSupplierDropdowns();
+    }
+    if (typeof window.populatePlatformDropdowns === "function") {
+      window.populatePlatformDropdowns();
+    }
     
     // Apply theme
     applyTheme(state.themeMode, state.themeColor);
