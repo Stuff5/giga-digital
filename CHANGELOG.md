@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v2.1.2] - 2026-09-19
+
+### Enhanced
+- **Steam Ratings Enricher Normalization**: Implemented smart multi-stage title normalization in `window.fetchSteamReviewData` that strips regional indicators (`EU`, `RoW`, `NA`, `EMEA`), edition variations (`Anniversary`, `Definitive`, `Reboot`, `Enhanced`, `GOTY`), and punctuation separators, paired with prefix title fallbacks to reliably resolve catalog games.
+- **Multi-Candidate Deals & Games Search**: Upgraded CheapShark API lookup from single-candidate inspection (`games[0]`) to multi-candidate evaluation (top 8 candidates), extracting Steam App IDs from candidate objects and directly retrieving authentic Steam rating percentages, counts, and sentiment tiers.
+- **Cache Un-Poisoning & Batch Filter Fix**: Resolved the unrated filter trap in `window.triggerBatchFetchReviews` so that "Fetch only unrated games" re-evaluates all games lacking a valid rating (including previously failed ones), accompanied by automatic unrated cache purging (`gv_cleaned_poisoned_reviews_v2`) to allow instant re-enrichment of the entire catalog.
+
+---
+
 ## [v2.1.1] - 2026-09-19
 
 ### Changed

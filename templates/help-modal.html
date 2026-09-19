@@ -447,11 +447,24 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
-                <!-- v2.1.1 -->
+                <!-- v2.1.2 -->
                 <div style="border-left: 3px solid var(--accent-emerald); padding-left: 12px;">
                   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.1.1 — Clean Purchase Price in Add Digital Game Key</strong>
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.1.2 — Enhanced Steam Ratings Enricher & Multi-Candidate Matching</strong>
                     <span style="font-size: 0.75rem; color: var(--accent-emerald); font-weight: bold;">Current Version</span>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
+                    <li><strong>Smart Multi-Stage Title Matching:</strong> Enhanced the Steam Ratings Enricher with comprehensive normalization for regional markers (EU, RoW, NA), edition variations (Anniversary, Definitive, Reboot, Enhanced, GOTY), and subtitle prefix fallbacks, dramatically improving recognition of catalog titles.</li>
+                    <li><strong>Multi-Candidate Deals & Games Search:</strong> Upgraded CheapShark API integration to evaluate top candidates rather than stopping at the first entry, extracting Steam App IDs from candidate items and retrieving accurate Steam rating percentages, counts, and sentiment tiers.</li>
+                    <li><strong>Cache Un-Poisoning & Unrated Filter:</strong> Ensured the "Fetch only unrated games" option re-evaluates previously unrated or missing titles, auto-cleaning stale unrated records so merchants can seamlessly enrich their entire catalog.</li>
+                  </ul>
+                </div>
+
+                <!-- v2.1.1 -->
+                <div style="border-left: 3px solid var(--border-color); padding-left: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.1.1 — Clean Purchase Price in Add Digital Game Key</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Previous Version</span>
                   </div>
                   <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
                     <li><strong>Blank Purchased Price Field:</strong> In the "Add Digital Game Key" modal, the purchase price field is now kept clean and empty by default (both when launching the modal and when selecting title suggestions via autocomplete), preventing accidental pre-filling of prices from previous inventory records and allowing direct manual entry.</li>

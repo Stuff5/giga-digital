@@ -12,7 +12,7 @@ window.loadHTMLTemplates = async () => {
   await Promise.all(templates.map(async t => {
     try {
       // Use version and timestamp cache-busting to ensure fresh HTML templates are loaded
-      const ver = window.APP_VERSION || "v2.1.1";
+      const ver = window.APP_VERSION || "v2.1.2";
       const res = await fetch(`${t.url}?v=${ver}&t=${Date.now()}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -13270,8 +13270,8 @@ window.cleanupPoisonedReviewsCache = function() {
   const keys = Object.keys(reviews);
   keys.forEach(k => {
     const r = reviews[k];
-    // Remove null percentages, generic "No Reviews" placeholders, or invalid counts
-    if (!r || r.percent === null || r.percent === undefined || r.text === "No Reviews" || (Number(r.count) === 0 && !r.percent)) {
+    // Remove null percentages, generic "No Reviews" placeholders, notFound markers, or invalid counts
+    if (!r || r.notFound || r.percent === null || r.percent === undefined || r.text === "No Reviews" || r.text === "Not on Steam" || (Number(r.count) === 0 && !r.percent)) {
       delete reviews[k];
       cleanedCount++;
     }
@@ -13292,11 +13292,11 @@ window.cleanupPoisonedReviewsCache = function() {
   return cleanedCount;
 };
 
-// Automatic one-time cleanup of poisoned review cache on initial run
+// Automatic one-time cleanup of poisoned review cache on initial run (v2: clears notFound flags)
 try {
-  if (!localStorage.getItem("gv_cleaned_poisoned_reviews_v1")) {
+  if (!localStorage.getItem("gv_cleaned_poisoned_reviews_v2")) {
     window.cleanupPoisonedReviewsCache();
-    localStorage.setItem("gv_cleaned_poisoned_reviews_v1", "true");
+    localStorage.setItem("gv_cleaned_poisoned_reviews_v2", "true");
   }
 } catch (e) {}
 
@@ -13541,13 +13541,33 @@ window.fetchSteamReviewData = async function(title, steamAppID) {
     let clean = str.replace(/\([^)]*\)/g, " ").replace(/\[[^\]]*\]/g, " ");
     const terms = [
       /\bpc\b/i, /\bsteam\b/i, /\bkey\b/i, /\bglobal\b/i, /\bcd-key\b/i, /\bcdkey\b/i, 
-      /\bgog\b/i, /\borigin\b/i, /\buplay\b/i, /\bepic\b/i, /\bconnect\b/i, /\bedition\b/i,
+      /\bgog\b/i, /\borigin\b/i, /\buplay\b/i, /\bepic\b/i, /\bconnect\b/i,
       /\bstandard\b/i, /\bdeluxe\b/i, /\bultimate\b/i, /\bpremium\b/i, /\brow\b/i, /\bfree\b/i,
-      /\bregion\b/i, /\bdownload\b/i, /\bcode\b/i, /\bactivation\b/i, /\bdigital\b/i
+      /\bregion\b/i, /\bdownload\b/i, /\bcode\b/i, /\bactivation\b/i, /\bdigital\b/i,
+      // Regional markers
+      /\beu\b/i, /\bna\b/i, /\bus\b/i, /\buk\b/i, /\bww\b/i, /\bemea\b/i, /\blatam\b/i, /\basia\b/i,
+      // Editions and release packaging
+      /\bgame of the year\b/i, /\bgoty\b/i, /\bdefinitive edition\b/i, /\benhanced edition\b/i,
+      /\bremastered\b/i, /\banniversary edition\b/i, /\bcomplete edition\b/i, /\bcollector'?s edition\b/i,
+      /\bgold edition\b/i, /\bspecial edition\b/i, /\bdirector'?s cut\b/i, /\breboot edition\b/i,
+      /\bencore edition\b/i, /\bedition\b/i, /\bhd\b/i, /\bvr\b/i, /\bbundle\b/i,
+      /\bcollection\b/i, /\bpack\b/i, /\bdlc\b/i, /\bexpansion\b/i, /\bseason pass\b/i
     ];
     terms.forEach(regex => { clean = clean.replace(regex, " "); });
-    clean = clean.replace(/[\u2122\u00ae\u00a9]/g, "").replace(/\s+/g, " ").trim();
+    clean = clean.replace(/[\u2122\u00ae\u00a9]/g, "");
+    clean = clean.replace(/[\s:\-–—/]+$/, "");
+    clean = clean.replace(/^[\s:\-–—/]+/, "");
+    clean = clean.replace(/\s+/g, " ").trim();
     return clean || str;
+  };
+
+  const getPrefixTitle = (str) => {
+    if (!str) return null;
+    const parts = str.split(/[:\-–—/]/);
+    if (parts.length > 1 && parts[0].trim().length >= 3) {
+      return cleanTitle(parts[0].trim());
+    }
+    return null;
   };
 
   try {
@@ -13563,13 +13583,13 @@ window.fetchSteamReviewData = async function(title, steamAppID) {
         if (res.ok) {
           const deals = await res.json();
           if (Array.isArray(deals) && deals.length > 0) {
-            const deal = deals[0];
-            if (deal.steamRatingPercent && parseInt(deal.steamRatingPercent) > 0) {
+            const dealWithRating = deals.find(d => d.steamRatingPercent && parseInt(d.steamRatingPercent) > 0) || deals[0];
+            if (dealWithRating.steamRatingPercent && parseInt(dealWithRating.steamRatingPercent) > 0) {
               const reviewData = {
-                percent: parseInt(deal.steamRatingPercent),
-                count: parseInt(deal.steamRatingCount) || 0,
-                text: deal.steamRatingText || "Positive",
-                steamAppID: deal.steamAppID || steamAppID
+                percent: parseInt(dealWithRating.steamRatingPercent),
+                count: parseInt(dealWithRating.steamRatingCount) || 0,
+                text: dealWithRating.steamRatingText || "Positive",
+                steamAppID: dealWithRating.steamAppID || steamAppID
               };
               window.setCatalogReview(title, reviewData);
               return reviewData;
@@ -13581,82 +13601,134 @@ window.fetchSteamReviewData = async function(title, steamAppID) {
       }
     }
 
-    // Delay 1200ms before next call to stay within rate limits
-    await new Promise(r => setTimeout(r, 1200));
-
-    // 2. Query CheapShark deals by title
+    // Prepare search queries: [cleaned, prefix (if different), raw (if different)]
     const cleaned = cleanTitle(title);
-    try {
-      const res = await fetch(`https://www.cheapshark.com/api/1.0/deals?title=${encodeURIComponent(cleaned)}&exact=0&pageSize=3`);
-      if (res.status === 429) {
-        window.steamReviewCooldownUntil = Date.now() + 65000;
-        console.warn(`[CheapShark 429] Rate limited on "${title}". Circuit breaker paused for 65s.`);
-        return { rateLimited: true, waitMs: 65000 };
-      }
-      if (res.ok) {
-        const deals = await res.json();
-        if (Array.isArray(deals) && deals.length > 0) {
-          const matchingDeal = deals.find(d => d.steamRatingPercent && parseInt(d.steamRatingPercent) > 0);
-          if (matchingDeal) {
-            const reviewData = {
-              percent: parseInt(matchingDeal.steamRatingPercent),
-              count: parseInt(matchingDeal.steamRatingCount) || 0,
-              text: matchingDeal.steamRatingText || "Positive",
-              steamAppID: matchingDeal.steamAppID || steamAppID || null
-            };
-            window.setCatalogReview(title, reviewData);
-            return reviewData;
-          }
-        }
-      }
-    } catch (e) {
-      console.warn(`CheapShark deals by title error for "${title}":`, e);
+    const prefix = getPrefixTitle(title);
+    const searchQueries = [];
+    if (cleaned) searchQueries.push(cleaned);
+    if (prefix && prefix.toLowerCase() !== cleaned.toLowerCase()) searchQueries.push(prefix);
+    if (title.trim() && !searchQueries.some(q => q.toLowerCase() === title.trim().toLowerCase())) {
+      searchQueries.push(title.trim());
     }
 
-    // Delay 1200ms before next fallback call
-    await new Promise(r => setTimeout(r, 1200));
+    for (const query of searchQueries) {
+      // Delay 1200ms before next call to stay within rate limits (60 req/min)
+      await new Promise(r => setTimeout(r, 1200));
 
-    // 3. Fallback: Query CheapShark games endpoint
-    try {
-      const gRes = await fetch(`https://www.cheapshark.com/api/1.0/games?title=${encodeURIComponent(cleaned)}`);
-      if (gRes.status === 429) {
-        window.steamReviewCooldownUntil = Date.now() + 65000;
-        console.warn(`[CheapShark 429] Rate limited on "${title}". Circuit breaker paused for 65s.`);
-        return { rateLimited: true, waitMs: 65000 };
-      }
-      if (gRes.ok) {
-        const games = await gRes.json();
-        if (Array.isArray(games) && games.length > 0) {
-          const game = games[0];
-          if (game.cheapestDealID) {
-            await new Promise(r => setTimeout(r, 1200));
-            const dRes = await fetch(`https://www.cheapshark.com/api/1.0/deals?id=${game.cheapestDealID}`);
-            if (dRes.status === 429) {
-              window.steamReviewCooldownUntil = Date.now() + 65000;
-              return { rateLimited: true, waitMs: 65000 };
+      // 2. Query CheapShark deals by title (pageSize=15 to avoid missing Steam deals)
+      try {
+        const res = await fetch(`https://www.cheapshark.com/api/1.0/deals?title=${encodeURIComponent(query)}&exact=0&pageSize=15`);
+        if (res.status === 429) {
+          window.steamReviewCooldownUntil = Date.now() + 65000;
+          console.warn(`[CheapShark 429] Rate limited on "${title}". Circuit breaker paused for 65s.`);
+          return { rateLimited: true, waitMs: 65000 };
+        }
+        if (res.ok) {
+          const deals = await res.json();
+          if (Array.isArray(deals) && deals.length > 0) {
+            // Find deal with valid Steam rating
+            const matchingDeal = deals.find(d => d.steamRatingPercent && parseInt(d.steamRatingPercent) > 0);
+            if (matchingDeal) {
+              const reviewData = {
+                percent: parseInt(matchingDeal.steamRatingPercent),
+                count: parseInt(matchingDeal.steamRatingCount) || 0,
+                text: matchingDeal.steamRatingText || "Positive",
+                steamAppID: matchingDeal.steamAppID || steamAppID || null
+              };
+              window.setCatalogReview(title, reviewData);
+              return reviewData;
             }
-            if (dRes.ok) {
-              const deal = await dRes.json();
-              const info = deal.gameInfo;
-              if (info && info.steamRatingPercent && parseInt(info.steamRatingPercent) > 0) {
-                const reviewData = {
-                  percent: parseInt(info.steamRatingPercent),
-                  count: parseInt(info.steamRatingCount) || 0,
-                  text: info.steamRatingText || "Positive",
-                  steamAppID: info.steamAppID || game.steamAppID || steamAppID || null
-                };
-                window.setCatalogReview(title, reviewData);
-                return reviewData;
+          }
+        }
+      } catch (e) {
+        console.warn(`CheapShark deals by title error for "${query}":`, e);
+      }
+
+      // Delay 1200ms before games call
+      await new Promise(r => setTimeout(r, 1200));
+
+      // 3. Fallback: Query CheapShark games endpoint (inspecting top candidates)
+      try {
+        const gRes = await fetch(`https://www.cheapshark.com/api/1.0/games?title=${encodeURIComponent(query)}`);
+        if (gRes.status === 429) {
+          window.steamReviewCooldownUntil = Date.now() + 65000;
+          console.warn(`[CheapShark 429] Rate limited on "${title}". Circuit breaker paused for 65s.`);
+          return { rateLimited: true, waitMs: 65000 };
+        }
+        if (gRes.ok) {
+          const games = await gRes.json();
+          if (Array.isArray(games) && games.length > 0) {
+            // Check top candidates (up to 8)
+            const candidates = games.slice(0, 8);
+            for (const candidate of candidates) {
+              const candSteamId = candidate.steamAppID && candidate.steamAppID !== "0" 
+                ? candidate.steamAppID 
+                : window.extractSteamAppId(candidate.thumb);
+
+              // If candidate has a Steam App ID, look up its deals directly
+              if (candSteamId) {
+                await new Promise(r => setTimeout(r, 1200));
+                try {
+                  const dRes = await fetch(`https://www.cheapshark.com/api/1.0/deals?steamAppID=${encodeURIComponent(candSteamId)}`);
+                  if (dRes.status === 429) {
+                    window.steamReviewCooldownUntil = Date.now() + 65000;
+                    return { rateLimited: true, waitMs: 65000 };
+                  }
+                  if (dRes.ok) {
+                    const cDeals = await dRes.json();
+                    if (Array.isArray(cDeals) && cDeals.length > 0) {
+                      const validDeal = cDeals.find(d => d.steamRatingPercent && parseInt(d.steamRatingPercent) > 0);
+                      if (validDeal) {
+                        const reviewData = {
+                          percent: parseInt(validDeal.steamRatingPercent),
+                          count: parseInt(validDeal.steamRatingCount) || 0,
+                          text: validDeal.steamRatingText || "Positive",
+                          steamAppID: candSteamId
+                        };
+                        window.setCatalogReview(title, reviewData);
+                        return reviewData;
+                      }
+                    }
+                  }
+                } catch (e) {
+                  console.warn(`CheapShark candidate steamAppID lookup error for "${candSteamId}":`, e);
+                }
+              } else if (candidate.cheapestDealID) {
+                // Fallback to checking cheapest deal
+                await new Promise(r => setTimeout(r, 1200));
+                try {
+                  const dRes = await fetch(`https://www.cheapshark.com/api/1.0/deals?id=${encodeURIComponent(candidate.cheapestDealID)}`);
+                  if (dRes.status === 429) {
+                    window.steamReviewCooldownUntil = Date.now() + 65000;
+                    return { rateLimited: true, waitMs: 65000 };
+                  }
+                  if (dRes.ok) {
+                    const deal = await dRes.json();
+                    const info = deal && deal.gameInfo;
+                    if (info && info.steamRatingPercent && parseInt(info.steamRatingPercent) > 0) {
+                      const reviewData = {
+                        percent: parseInt(info.steamRatingPercent),
+                        count: parseInt(info.steamRatingCount) || 0,
+                        text: info.steamRatingText || "Positive",
+                        steamAppID: info.steamAppID || steamAppID || null
+                      };
+                      window.setCatalogReview(title, reviewData);
+                      return reviewData;
+                    }
+                  }
+                } catch (e) {
+                  console.warn(`CheapShark cheapestDeal lookup error for "${candidate.cheapestDealID}":`, e);
+                }
               }
             }
           }
         }
+      } catch (e) {
+        console.warn(`CheapShark games fallback error for "${query}":`, e);
       }
-    } catch (e) {
-      console.warn(`CheapShark games fallback error for "${title}":`, e);
     }
 
-    // Only record genuine not found if all API calls succeeded with 200 and returned no matches
+    // Only record genuine not found if all queries and candidate checks completed without match
     window.setCatalogReview(title, {
       percent: null,
       count: 0,
@@ -13720,11 +13792,11 @@ window.triggerBatchFetchReviews = async function() {
   uniqueTitlesMap.forEach((entry, lower) => {
     const existing = reviewsMap[lower];
     const hasValidRating = existing && existing.percent !== undefined && existing.percent !== null && Number(existing.percent) > 0;
-    const isNotFound = existing && existing.notFound;
 
-    if (hasValidRating && !overwrite) return; // Already rated
-    if (isNotFound && onlyUnrated && !overwrite) return; // Confirmed not on Steam previously
+    // If game is already rated and user is not forcing overwrite, skip it
+    if (hasValidRating && !overwrite) return;
 
+    // "Fetch only unrated games" targets any game without a valid rating (including previously failed ones)
     titlesToProcess.push(entry);
   });
 
