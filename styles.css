@@ -5912,6 +5912,111 @@ textarea.form-control {
   color: #cbd5e1;
 }
 
+/* ==========================================================================
+   Catalog Keys Modal - Horizontal Cover Banner
+   ========================================================================== */
+.catalog-keys-cover-banner {
+  position: relative;
+  width: 100%;
+  height: 170px;
+  overflow: hidden;
+  background-color: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
+}
+
+@media (max-width: 640px) {
+  .catalog-keys-cover-banner {
+    height: 125px;
+  }
+}
+
+.catalog-keys-cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 25%;
+  display: block;
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.catalog-keys-cover-banner:hover .catalog-keys-cover-img {
+  transform: scale(1.02);
+}
+
+.catalog-keys-cover-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(10, 12, 18, 0.25) 0%,
+    transparent 35%,
+    rgba(10, 12, 18, 0.5) 70%,
+    rgba(10, 12, 18, 0.9) 100%
+  );
+}
+
+.catalog-keys-cover-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: linear-gradient(135deg, hsl(224, 25%, 16%), hsl(224, 25%, 10%));
+}
+
+.catalog-keys-cover-placeholder .placeholder-art-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 2rem;
+}
+
+.catalog-keys-cover-placeholder #catalog-keys-placeholder-text {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+  font-family: 'Outfit', sans-serif;
+}
+
+.catalog-keys-banner-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  z-index: 10;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 1.35rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.catalog-keys-banner-close:hover {
+  background: rgba(239, 68, 68, 0.85);
+  border-color: rgba(239, 68, 68, 0.9);
+  color: #fff;
+  transform: scale(1.08);
+}
+
+
 
 
 

@@ -4619,14 +4619,136 @@ window.triggerViewCatalogKeys = function(title, openModalFlag = true) {
     }
   }
 
-  document.getElementById("catalog-keys-modal-title").textContent = `Keys list for "${title}"`;
+  const titleEl = document.getElementById("catalog-keys-modal-title");
+  if (titleEl) titleEl.textContent = title;
   
   const tbody = document.getElementById("catalog-keys-table-body");
   if (!tbody) return;
   tbody.innerHTML = "";
   
   // Find all matching keys in inventory (both available and sold/reserved)
-  const matchingKeys = state.inventory.filter(item => item.title.trim().toLowerCase() === titleLower);
+  const matchingKeys = state.inventory.filter(item => item && item.title && item.title.trim().toLowerCase() === titleLower);
+
+  // Smart resolution cascade for game cover banner
+  let coverUrl = "";
+  const itemWithImg = matchingKeys.find(item => item.imageUrl && typeof item.imageUrl === "string" && item.imageUrl.trim() !== "");
+  if (itemWithImg) {
+    coverUrl = itemWithImg.imageUrl.trim();
+  } else {
+    const saleWithImg = state.sales.find(s => s && s.title && s.title.trim().toLowerCase() === titleLower && s.imageUrl && typeof s.imageUrl === "string" && s.imageUrl.trim() !== "");
+    if (saleWithImg) {
+      coverUrl = saleWithImg.imageUrl.trim();
+    } else if (typeof window.resolveGameArtwork === "function") {
+      coverUrl = window.resolveGameArtwork(title) || "";
+    } else if (state.catalogArtwork && state.catalogArtwork[titleLower]) {
+      coverUrl = state.catalogArtwork[titleLower];
+    }
+  }
+
+  // Populate cover banner and fallback placeholder
+  const coverImg = document.getElementById("catalog-keys-cover-img");
+  const placeholder = document.getElementById("catalog-keys-cover-placeholder");
+  const placeholderText = document.getElementById("catalog-keys-placeholder-text");
+  const initials = title.split(" ").map(w => w ? w[0] : "").join("").slice(0, 3) || "???";
+
+  if (coverImg && placeholder) {
+    if (coverUrl) {
+      coverImg.onerror = () => {
+        coverImg.style.display = "none";
+        placeholder.style.display = "flex";
+        if (typeof window.getHashGradient === "function") {
+          placeholder.style.background = window.getHashGradient(title);
+        }
+        if (placeholderText) placeholderText.textContent = initials;
+      };
+      coverImg.onload = () => {
+        coverImg.style.display = "block";
+        placeholder.style.display = "none";
+      };
+      coverImg.src = coverUrl;
+      coverImg.alt = title;
+      if (coverImg.complete && coverImg.naturalWidth > 0) {
+        coverImg.style.display = "block";
+        placeholder.style.display = "none";
+      }
+    } else {
+      coverImg.removeAttribute("src");
+      coverImg.style.display = "none";
+      placeholder.style.display = "flex";
+      if (typeof window.getHashGradient === "function") {
+        placeholder.style.background = window.getHashGradient(title);
+      }
+      if (placeholderText) placeholderText.textContent = initials;
+    }
+  }
+
+  // Populate modal header subtitle with key stats & publisher
+  const subtitleEl = document.getElementById("catalog-keys-modal-subtitle");
+  if (subtitleEl) {
+    const totalCount = matchingKeys.length;
+    const availableCount = matchingKeys.filter(k => k.status === "Available").length;
+    const soldCount = matchingKeys.filter(k => k.status === "Sold").length;
+    const reservedCount = matchingKeys.filter(k => k.status === "Reserved").length;
+    const disputedCount = matchingKeys.filter(k => k.status === "Disputed").length;
+    const rejectedCount = matchingKeys.filter(k => k.status === "Rejected").length;
+
+    const pubItem = matchingKeys.find(k => k.publisher && String(k.publisher).trim() !== "") ||
+      state.sales.find(s => s && s.title && s.title.trim().toLowerCase() === titleLower && s.publisher);
+    const publisherName = pubItem ? String(pubItem.publisher).trim() : "";
+
+    const ratingPill = typeof window.renderSteamRatingPill === "function" 
+      ? window.renderSteamRatingPill(title, { imageUrl: coverUrl, steamAppID: window.extractSteamAppId?.(coverUrl) })
+      : "";
+
+    let badgesHtml = `
+      <span class="badge" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: var(--text-main); font-weight: 600;">
+        <i class="fa-solid fa-layer-group" style="margin-right: 4px; color: var(--accent-cyan);"></i>${totalCount} Key${totalCount === 1 ? '' : 's'} Total
+      </span>
+      <span class="badge badge-available">
+        <i class="fa-solid fa-circle-check" style="margin-right: 4px;"></i>${availableCount} Available
+      </span>
+    `;
+
+    if (soldCount > 0) {
+      badgesHtml += `
+        <span class="badge badge-sold">
+          <i class="fa-solid fa-tag" style="margin-right: 4px;"></i>${soldCount} Sold
+        </span>
+      `;
+    }
+    if (reservedCount > 0) {
+      badgesHtml += `
+        <span class="badge badge-reserved">
+          <i class="fa-solid fa-clock" style="margin-right: 4px;"></i>${reservedCount} Reserved
+        </span>
+      `;
+    }
+    if (disputedCount > 0) {
+      badgesHtml += `
+        <span class="badge badge-disputed">
+          <i class="fa-solid fa-triangle-exclamation" style="margin-right: 4px;"></i>${disputedCount} Disputed
+        </span>
+      `;
+    }
+    if (rejectedCount > 0) {
+      badgesHtml += `
+        <span class="badge badge-rejected">
+          <i class="fa-solid fa-ban" style="margin-right: 4px;"></i>${rejectedCount} Rejected
+        </span>
+      `;
+    }
+    if (ratingPill) {
+      badgesHtml += ratingPill;
+    }
+    if (publisherName) {
+      badgesHtml += `
+        <span style="color: var(--text-secondary); font-size: 0.8rem; margin-left: 4px; display: inline-flex; align-items: center; gap: 4px;">
+          <i class="fa-solid fa-building" style="opacity: 0.7;"></i> ${escapeHTML(publisherName)}
+        </span>
+      `;
+    }
+    subtitleEl.innerHTML = badgesHtml;
+  }
   
   if (matchingKeys.length === 0) {
     tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="text-align: center; padding: 30px; color: var(--text-muted);">No keys found for this game.</td></tr>`;
