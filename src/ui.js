@@ -12,7 +12,7 @@ window.loadHTMLTemplates = async () => {
   await Promise.all(templates.map(async t => {
     try {
       // Use version and timestamp cache-busting to ensure fresh HTML templates are loaded
-      const ver = window.APP_VERSION || "v2.1.5";
+      const ver = window.APP_VERSION || "v2.1.6";
       const res = await fetch(`${t.url}?v=${ver}&t=${Date.now()}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -1600,6 +1600,9 @@ function bindSidebarEvents() {
           renderSidebarCustomizationSettings();
           if (typeof window.updateSteamReviewsStats === "function") {
             window.updateSteamReviewsStats();
+          }
+          if (typeof window.syncAISettingsUI === "function") {
+            window.syncAISettingsUI();
           }
         }
       } catch (err) {

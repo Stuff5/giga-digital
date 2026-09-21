@@ -4,7 +4,7 @@
  */
 
 document.addEventListener("DOMContentLoaded", async () => {
-  const currentVersion = window.APP_VERSION || "v2.1.5";
+  const currentVersion = window.APP_VERSION || "v2.1.6";
   console.log(`[GameVault] DOMContentLoaded - Booting ${currentVersion}...`);
   console.log("[GameVault] Native gv_active_user:", window.localStorage.getItem("gv_active_user"));
 
@@ -130,6 +130,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     } else {
       state.currentUser = activeUser;
       loadStateFromStorage();
+      if (typeof window.syncAISettingsUI === "function") {
+        window.syncAISettingsUI();
+      }
       if (appContainer) appContainer.classList.remove("hidden");
       if (authContainer) authContainer.classList.add("hidden");
       if (logoutBtn) logoutBtn.classList.remove("hidden");

@@ -5,6 +5,16 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.1.6] - 2026-09-21
+
+### Fixed
+- **Persistent AI Merchant Assistant Verification**: Resolved an issue where the "AI Merchant Assistant Setup" configuration card in the Settings menu always displayed "Not Verified" after a page reload or hard refresh despite having previously connected.
+- **Dynamic Verification State Synchronization**: Added comprehensive status synchronization in `syncAISettingsUI()`, correctly evaluating and restoring the `ai-test-status-badge` and authenticated connection banner on app boot, storage reloads, settings navigation, and cloud database updates.
+- **Backward-Compatible Self-Healing**: Existing valid configured API keys automatically self-heal and display verified active status without requiring re-testing, while preserving explicit connection results in persistent storage (`localStorage` & Supabase `app_settings`).
+- **Reactive Key Input & Provider Switch Listeners**: Live status feedback immediately reflects key changes, clearing stale verification when keys are edited and restoring active verification status if a verified key or provider is selected.
+
+---
+
 ## [v2.1.5] - 2026-09-21
 
 ### Fixed

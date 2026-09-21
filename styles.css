@@ -1483,7 +1483,8 @@ a {
   font-size: 0.75rem;
   font-weight: 600;
 }
-.badge-available {
+.badge-available,
+.badge-active {
   background-color: hsla(175, 90%, 48%, 0.15);
   color: var(--accent-teal);
 }

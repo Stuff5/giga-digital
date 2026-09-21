@@ -1132,7 +1132,11 @@ let state = {
     model: "gemini-2.5-flash",
     customBaseUrl: "https://api.openai.com/v1",
     includeContext: true,
-    temperature: 0.7
+    temperature: 0.7,
+    isVerified: false,
+    verifiedProvider: "",
+    verifiedKey: "",
+    verifiedAt: null
   }
 };
 

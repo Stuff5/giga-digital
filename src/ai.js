@@ -318,6 +318,22 @@ async function discoverAndPopulateAIModels() {
     populateModelDropdown(models.map(m => ({ id: m.id, name: m.name ? `${m.name}` : m.id })));
     showToast(`Discovered ${models.length} available models!`, "success");
 
+    if (state.aiSettings) {
+      state.aiSettings.isVerified = true;
+      state.aiSettings.verifiedKey = apiKey;
+      state.aiSettings.verifiedProvider = provider;
+      state.aiSettings.verifiedAt = Date.now();
+      saveStateToStorage();
+      if (window.supabaseClient) {
+        dbSaveSettings("aiSettings", state.aiSettings);
+      }
+    }
+    const statusBadge = document.getElementById("ai-test-status-badge");
+    if (statusBadge) {
+      statusBadge.textContent = "Connected & Verified ✓";
+      statusBadge.className = "badge badge-available";
+    }
+
     if (errDetails) {
       errDetails.style.display = "block";
       errDetails.style.background = "rgba(0, 204, 136, 0.1)";
@@ -444,19 +460,85 @@ function syncAISettingsUI() {
   // Update dynamic options and sub-panels
   updateAIProviderUI(provider, cfg.model || (provider === "gemini" ? "gemini-2.5-flash" : "gpt-4o-mini"));
 
+  const cleanKey = sanitizeApiKey(currentKey);
+
   // Update AI status label in drawer
   const statusLabel = document.getElementById("ai-drawer-provider-badge");
   if (statusLabel) {
-    const cleanKey = sanitizeApiKey(currentKey);
     if (cleanKey) {
       statusLabel.textContent = provider === "gemini" ? "Gemini Active" : "OpenAI Active";
-      statusLabel.className = "badge badge-active";
+      statusLabel.className = "badge badge-available";
     } else {
       statusLabel.textContent = "Demo / Offline Mode";
       statusLabel.className = "badge badge-disputed";
     }
   }
+
+  // Synchronize Settings Card AI status badge
+  const statusBadge = document.getElementById("ai-test-status-badge");
+  const errDetails = document.getElementById("ai-test-error-details");
+  if (statusBadge) {
+    if (!cleanKey) {
+      statusBadge.textContent = "Not Verified";
+      statusBadge.className = "badge badge-sold";
+      if (errDetails && errDetails.style.display !== "none" && !errDetails.querySelector(".fa-triangle-exclamation")) {
+        errDetails.style.display = "none";
+      }
+    } else {
+      // Check if key is verified:
+      // 1. Explicitly verified with matching key & provider
+      // 2. Legacy backwards-compatibility: if key exists in saved state and isVerified hasn't been set to false
+      const isExplicitlyVerified = Boolean(
+        cfg.isVerified === true &&
+        (!cfg.verifiedKey || cfg.verifiedKey === cleanKey) &&
+        (!cfg.verifiedProvider || cfg.verifiedProvider === provider)
+      );
+      const isLegacySavedKey = Boolean(
+        cfg.isVerified === undefined &&
+        cleanKey &&
+        (cleanKey === cfg.geminiApiKey || cleanKey === cfg.openaiApiKey || cleanKey === cfg.apiKey)
+      );
+
+      if (isExplicitlyVerified || isLegacySavedKey) {
+        statusBadge.textContent = "Connected & Verified ✓";
+        statusBadge.className = "badge badge-available";
+
+        // Auto-heal state if it was a legacy saved key
+        if (!cfg.isVerified && state.aiSettings) {
+          state.aiSettings.isVerified = true;
+          state.aiSettings.verifiedKey = cleanKey;
+          state.aiSettings.verifiedProvider = provider;
+          state.aiSettings.verifiedAt = state.aiSettings.verifiedAt || Date.now();
+          saveStateToStorage();
+        }
+
+        // Display connection info banner if not already displaying an active error
+        if (errDetails && (errDetails.style.display === "none" || !errDetails.innerHTML.includes("Connection Failed"))) {
+          errDetails.style.display = "block";
+          errDetails.style.background = "rgba(0, 204, 136, 0.1)";
+          errDetails.style.border = "1px solid var(--accent-teal)";
+          const providerName = provider === 'gemini' ? 'Google Gemini' : 'OpenAI';
+          const displayModel = cfg.model || (provider === 'gemini' ? 'gemini-2.5-flash' : 'gpt-4o-mini');
+          errDetails.innerHTML = `
+            <div style="color: var(--accent-teal); font-weight: 600; margin-bottom: 4px;">
+              <i class="fa-solid fa-circle-check"></i> Connection Active &amp; Verified
+            </div>
+            <div style="color: var(--text-secondary); font-size: 0.8rem;">
+              Authenticated with <strong>${providerName}</strong> (Model: <code>${escapeHtml(displayModel)}</code>). Ready for store analysis and co-pilot reasoning.
+            </div>
+          `;
+        }
+      } else {
+        statusBadge.textContent = "Not Verified";
+        statusBadge.className = "badge badge-sold";
+        if (errDetails && errDetails.style.display !== "none" && !errDetails.querySelector(".fa-triangle-exclamation")) {
+          errDetails.style.display = "none";
+        }
+      }
+    }
+  }
 }
+window.syncAISettingsUI = syncAISettingsUI;
 
 // Generate live structured business context for AI prompt
 function getAIAppContext() {
@@ -1309,7 +1391,7 @@ async function testAIConnection() {
     }
 
     statusBadge.textContent = "Connected & Verified ✓";
-    statusBadge.className = "badge badge-active";
+    statusBadge.className = "badge badge-available";
     showToast("AI Assistant connected successfully!", "success");
 
     const activeModel = (provider === "gemini")
@@ -1344,6 +1426,12 @@ async function testAIConnection() {
     state.aiSettings.includeContext = document.getElementById("settings-ai-include-context") ? document.getElementById("settings-ai-include-context").checked : true;
     state.aiSettings.temperature = 0.7;
 
+    // Track persistent verification state
+    state.aiSettings.isVerified = true;
+    state.aiSettings.verifiedProvider = provider;
+    state.aiSettings.verifiedKey = apiKey;
+    state.aiSettings.verifiedAt = Date.now();
+
     saveStateToStorage();
     if (window.supabaseClient) {
       dbSaveSettings("aiSettings", state.aiSettings);
@@ -1353,6 +1441,14 @@ async function testAIConnection() {
     console.error("Test AI Connection Failed:", err);
     statusBadge.textContent = "Connection Failed ✗";
     statusBadge.className = "badge badge-sold";
+    if (state.aiSettings) {
+      state.aiSettings.isVerified = false;
+      state.aiSettings.verifiedKey = "";
+      saveStateToStorage();
+      if (window.supabaseClient) {
+        dbSaveSettings("aiSettings", state.aiSettings);
+      }
+    }
     showToast(`Test failed: ${err.message}`, "error");
 
     if (errDetails) {
@@ -1540,6 +1636,29 @@ function bindAIEvents() {
       state.aiSettings.includeContext = includeContext;
       state.aiSettings.temperature = 0.7;
 
+      // Preserve or update verification state
+      const wasVerified = Boolean(
+        state.aiSettings &&
+        state.aiSettings.isVerified === true &&
+        state.aiSettings.verifiedKey === apiKey &&
+        state.aiSettings.verifiedProvider === provider
+      );
+      const isLegacySaved = Boolean(
+        state.aiSettings &&
+        state.aiSettings.isVerified === undefined &&
+        apiKey
+      );
+
+      if (wasVerified || isLegacySaved) {
+        state.aiSettings.isVerified = true;
+        state.aiSettings.verifiedKey = apiKey;
+        state.aiSettings.verifiedProvider = provider;
+        state.aiSettings.verifiedAt = state.aiSettings.verifiedAt || Date.now();
+      } else if (!apiKey) {
+        state.aiSettings.isVerified = false;
+        state.aiSettings.verifiedKey = "";
+      }
+
       saveStateToStorage();
       if (window.supabaseClient) {
         dbSaveSettings("aiSettings", state.aiSettings);
@@ -1589,19 +1708,8 @@ function bindAIEvents() {
       updateAIProviderUI(newProvider, defaultModel);
       state.aiSettings.model = defaultModel;
 
-      const errDetails = document.getElementById("ai-test-error-details");
-      if (errDetails) {
-        errDetails.style.display = "none";
-        errDetails.innerHTML = "";
-      }
-
-      const statusBadge = document.getElementById("ai-test-status-badge");
-      if (statusBadge) {
-        statusBadge.textContent = nextKey ? "Ready to Test" : "API Key Required";
-        statusBadge.className = nextKey ? "badge badge-active" : "badge badge-disputed";
-      }
-
       prevProvider = newProvider;
+      syncAISettingsUI();
     });
   }
 
@@ -1631,10 +1739,47 @@ function bindAIEvents() {
       const raw = e.target.value;
       const curProvider = document.getElementById("settings-ai-provider") ? document.getElementById("settings-ai-provider").value : "gemini";
       if (!state.aiSettings) state.aiSettings = {};
+      const sanitized = sanitizeApiKey(raw);
       if (curProvider === "gemini") {
-        state.aiSettings.geminiApiKey = sanitizeApiKey(raw);
+        state.aiSettings.geminiApiKey = sanitized;
       } else {
-        state.aiSettings.openaiApiKey = sanitizeApiKey(raw);
+        state.aiSettings.openaiApiKey = sanitized;
+      }
+
+      const statusBadge = document.getElementById("ai-test-status-badge");
+      const errDetails = document.getElementById("ai-test-error-details");
+      if (statusBadge) {
+        if (!sanitized) {
+          statusBadge.textContent = "Not Verified";
+          statusBadge.className = "badge badge-sold";
+          if (errDetails && !errDetails.querySelector(".fa-triangle-exclamation")) {
+            errDetails.style.display = "none";
+          }
+        } else if (state.aiSettings && state.aiSettings.isVerified && state.aiSettings.verifiedKey === sanitized && state.aiSettings.verifiedProvider === curProvider) {
+          statusBadge.textContent = "Connected & Verified ✓";
+          statusBadge.className = "badge badge-available";
+          if (errDetails && (errDetails.style.display === "none" || !errDetails.innerHTML.includes("Connection Failed"))) {
+            errDetails.style.display = "block";
+            errDetails.style.background = "rgba(0, 204, 136, 0.1)";
+            errDetails.style.border = "1px solid var(--accent-teal)";
+            const providerName = curProvider === 'gemini' ? 'Google Gemini' : 'OpenAI';
+            const displayModel = state.aiSettings.model || (curProvider === 'gemini' ? 'gemini-2.5-flash' : 'gpt-4o-mini');
+            errDetails.innerHTML = `
+              <div style="color: var(--accent-teal); font-weight: 600; margin-bottom: 4px;">
+                <i class="fa-solid fa-circle-check"></i> Active Connection Verified
+              </div>
+              <div style="color: var(--text-secondary); font-size: 0.8rem;">
+                Authenticated with <strong>${providerName}</strong> (Model: <code>${escapeHtml(displayModel)}</code>).
+              </div>
+            `;
+          }
+        } else {
+          statusBadge.textContent = "Not Verified";
+          statusBadge.className = "badge badge-sold";
+          if (errDetails && !errDetails.querySelector(".fa-triangle-exclamation")) {
+            errDetails.style.display = "none";
+          }
+        }
       }
     });
   }

@@ -447,11 +447,24 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
-                <!-- v2.1.5 -->
+                <!-- v2.1.6 -->
                 <div style="border-left: 3px solid var(--accent-emerald); padding-left: 12px;">
                   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.1.5 — Unified Game Artwork Resolution & Auto-Healing</strong>
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.1.6 — Persistent AI Connection &amp; Verification State</strong>
                     <span style="font-size: 0.75rem; color: var(--accent-emerald); font-weight: bold;">Current Version</span>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
+                    <li><strong>Persistent AI Verification Badge:</strong> Resolved an issue where the AI Merchant Assistant Setup card in Settings always reverted to &quot;Not Verified&quot; after a hard refresh. The verification state is now persistently recorded and synchronized with local and cloud storage.</li>
+                    <li><strong>Reactive Status Synchronization:</strong> Added dynamic status badge updates in <code>syncAISettingsUI()</code> on app boot, storage reloads, settings navigation, and cloud database sync.</li>
+                    <li><strong>Smart Key Matching &amp; Auto-Healing:</strong> Existing configured keys automatically self-heal and display verified active status, with live feedback on key modification, model discovery, and provider switching.</li>
+                  </ul>
+                </div>
+
+                <!-- v2.1.5 -->
+                <div style="border-left: 3px solid var(--border-color); padding-left: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.1.5 — Unified Game Artwork Resolution &amp; Auto-Healing</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Previous Version</span>
                   </div>
                   <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
                     <li><strong>Inventory Artwork Synchronization:</strong> Game keys in the Inventory Table and Grid Card layouts now automatically display fetched game cover artwork by resolving titles against the catalog artwork cache, matching the Entries menu experience.</li>
