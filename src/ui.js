@@ -5,7 +5,7 @@
 // Asynchronously loads critical HTML templates (modals.html) on application boot
 window.loadHTMLTemplates = async () => {
   try {
-    const ver = window.APP_VERSION || "v2.2.0";
+    const ver = window.APP_VERSION || "v2.2.2";
     const res = await fetch(`templates/modals.html?v=${ver}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const html = await res.text();
@@ -4607,9 +4607,9 @@ window.copyTextToClipboard = function(text, message) {
   });
 };
 
-window.triggerViewCatalogKeys = function(title, openModalFlag = true) {
+window.triggerViewCatalogKeys = function(title, openModalFlag = true, explicitImageUrl = null) {
   state.activeCatalogKeysTitle = title;
-  const titleLower = title.trim().toLowerCase();
+  const titleLower = (title || "").trim().toLowerCase();
   
   if (openModalFlag) {
     state.catalogKeysCurrentPage = 1;
@@ -4619,30 +4619,166 @@ window.triggerViewCatalogKeys = function(title, openModalFlag = true) {
     }
   }
 
+  // Ensure dynamic banner styles are available even if styles.css was cached
+  if (!document.getElementById("catalog-keys-cover-styles")) {
+    const styleTag = document.createElement("style");
+    styleTag.id = "catalog-keys-cover-styles";
+    styleTag.textContent = `
+      .catalog-keys-cover-banner {
+        position: relative;
+        width: 100%;
+        height: 170px;
+        overflow: hidden;
+        background-color: var(--bg-card, #151922);
+        border-bottom: 1px solid var(--border-color, rgba(255,255,255,0.1));
+      }
+      @media (max-width: 640px) {
+        .catalog-keys-cover-banner { height: 125px; }
+      }
+      .catalog-keys-cover-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center 25%;
+        display: block;
+        transition: transform 0.4s ease;
+      }
+      .catalog-keys-cover-banner:hover .catalog-keys-cover-img {
+        transform: scale(1.02);
+      }
+      .catalog-keys-cover-overlay {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        pointer-events: none;
+        background: linear-gradient(to bottom, rgba(10, 12, 18, 0.25) 0%, transparent 35%, rgba(10, 12, 18, 0.5) 70%, rgba(10, 12, 18, 0.9) 100%);
+      }
+      .catalog-keys-cover-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        background: linear-gradient(135deg, hsl(224, 25%, 16%), hsl(224, 25%, 10%));
+      }
+      .catalog-keys-cover-placeholder .placeholder-art-content {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 2rem;
+      }
+      .catalog-keys-cover-placeholder #catalog-keys-placeholder-text {
+        font-size: 1.25rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.85);
+        font-family: 'Outfit', sans-serif;
+      }
+      .catalog-keys-banner-close {
+        position: absolute;
+        top: 12px;
+        right: 14px;
+        z-index: 10;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.55);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #fff;
+        font-size: 1.35rem;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .catalog-keys-banner-close:hover {
+        background: rgba(239, 68, 68, 0.85);
+        border-color: rgba(239, 68, 68, 0.9);
+        color: #fff;
+        transform: scale(1.08);
+      }
+    `;
+    document.head.appendChild(styleTag);
+  }
+
+  // Ensure cover banner exists in DOM (self-healing if templates/modals.html was cached)
+  let coverBanner = document.getElementById("catalog-keys-cover-banner");
+  const modalEl = document.getElementById("catalog-keys-modal");
+  const modalCard = modalEl ? modalEl.querySelector(".modal-card") : null;
+
+  if (!coverBanner && modalCard) {
+    coverBanner = document.createElement("div");
+    coverBanner.className = "catalog-keys-cover-banner";
+    coverBanner.id = "catalog-keys-cover-banner";
+    coverBanner.innerHTML = `
+      <img id="catalog-keys-cover-img" class="catalog-keys-cover-img" src="" alt="" style="display: none;">
+      <div id="catalog-keys-cover-placeholder" class="catalog-keys-cover-placeholder" style="display: none;">
+        <div class="placeholder-art-content">
+          <i class="fa-solid fa-gamepad"></i>
+          <span id="catalog-keys-placeholder-text"></span>
+        </div>
+      </div>
+      <div class="catalog-keys-cover-overlay"></div>
+      <button class="modal-close-btn catalog-keys-banner-close" data-close-modal="catalog-keys-modal" title="Close modal">&times;</button>
+    `;
+    modalCard.insertBefore(coverBanner, modalCard.firstChild);
+
+    // Wire up close button on dynamically inserted banner
+    const closeBtn = coverBanner.querySelector("[data-close-modal]");
+    if (closeBtn) {
+      closeBtn.addEventListener("click", () => closeModal("catalog-keys-modal"));
+    }
+  }
+
   const titleEl = document.getElementById("catalog-keys-modal-title");
   if (titleEl) titleEl.textContent = title;
   
   const tbody = document.getElementById("catalog-keys-table-body");
-  if (!tbody) return;
+  if (!tbody) {
+    if (openModalFlag) openModal("catalog-keys-modal");
+    return;
+  }
   tbody.innerHTML = "";
   
   // Find all matching keys in inventory (both available and sold/reserved)
   const matchingKeys = state.inventory.filter(item => item && item.title && item.title.trim().toLowerCase() === titleLower);
 
-  // Smart resolution cascade for game cover banner
-  let coverUrl = "";
-  const itemWithImg = matchingKeys.find(item => item.imageUrl && typeof item.imageUrl === "string" && item.imageUrl.trim() !== "");
-  if (itemWithImg) {
-    coverUrl = itemWithImg.imageUrl.trim();
-  } else {
+  // Multi-stage smart resolution cascade for game cover banner
+  let coverUrl = (explicitImageUrl && typeof explicitImageUrl === "string" && explicitImageUrl.trim() !== "") ? explicitImageUrl.trim() : "";
+  
+  if (!coverUrl) {
+    const itemWithImg = matchingKeys.find(item => item && item.imageUrl && typeof item.imageUrl === "string" && item.imageUrl.trim() !== "");
+    if (itemWithImg) coverUrl = itemWithImg.imageUrl.trim();
+  }
+
+  if (!coverUrl) {
     const saleWithImg = state.sales.find(s => s && s.title && s.title.trim().toLowerCase() === titleLower && s.imageUrl && typeof s.imageUrl === "string" && s.imageUrl.trim() !== "");
-    if (saleWithImg) {
-      coverUrl = saleWithImg.imageUrl.trim();
-    } else if (typeof window.resolveGameArtwork === "function") {
-      coverUrl = window.resolveGameArtwork(title) || "";
-    } else if (state.catalogArtwork && state.catalogArtwork[titleLower]) {
-      coverUrl = state.catalogArtwork[titleLower];
+    if (saleWithImg) coverUrl = saleWithImg.imageUrl.trim();
+  }
+
+  if (!coverUrl) {
+    const catalogMap = typeof window.getCatalogArtworkMap === "function" ? window.getCatalogArtworkMap() : (state.catalogArtwork || {});
+    if (catalogMap && catalogMap[titleLower]) {
+      coverUrl = catalogMap[titleLower];
+    } else if (catalogMap) {
+      const cleanT = typeof cleanTitleForArtwork === "function" ? cleanTitleForArtwork(title) : "";
+      if (cleanT && catalogMap[cleanT]) coverUrl = catalogMap[cleanT];
     }
+  }
+
+  if (!coverUrl && typeof window.resolveGameArtwork === "function") {
+    coverUrl = window.resolveGameArtwork(title) || "";
+  }
+
+  if (!coverUrl && state.catalogArtwork && state.catalogArtwork[titleLower]) {
+    coverUrl = state.catalogArtwork[titleLower];
   }
 
   // Populate cover banner and fallback placeholder
@@ -4653,6 +4789,9 @@ window.triggerViewCatalogKeys = function(title, openModalFlag = true) {
 
   if (coverImg && placeholder) {
     if (coverUrl) {
+      placeholder.style.display = "none";
+      coverImg.style.display = "block";
+      coverImg.alt = title;
       coverImg.onerror = () => {
         coverImg.style.display = "none";
         placeholder.style.display = "flex";
@@ -4666,7 +4805,6 @@ window.triggerViewCatalogKeys = function(title, openModalFlag = true) {
         placeholder.style.display = "none";
       };
       coverImg.src = coverUrl;
-      coverImg.alt = title;
       if (coverImg.complete && coverImg.naturalWidth > 0) {
         coverImg.style.display = "block";
         placeholder.style.display = "none";
@@ -4683,7 +4821,18 @@ window.triggerViewCatalogKeys = function(title, openModalFlag = true) {
   }
 
   // Populate modal header subtitle with key stats & publisher
-  const subtitleEl = document.getElementById("catalog-keys-modal-subtitle");
+  let subtitleEl = document.getElementById("catalog-keys-modal-subtitle");
+  if (!subtitleEl) {
+    const modalHeader = modalEl ? modalEl.querySelector(".modal-header") : null;
+    if (modalHeader) {
+      subtitleEl = document.createElement("div");
+      subtitleEl.id = "catalog-keys-modal-subtitle";
+      subtitleEl.className = "catalog-keys-modal-subtitle";
+      subtitleEl.style.cssText = "display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.82rem; margin-top: 6px;";
+      modalHeader.appendChild(subtitleEl);
+    }
+  }
+
   if (subtitleEl) {
     const totalCount = matchingKeys.length;
     const availableCount = matchingKeys.filter(k => k.status === "Available").length;
@@ -8779,7 +8928,7 @@ function renderEntriesGalleryLayout(entriesList) {
       card.style.cursor = "pointer";
       card.setAttribute("title", "Double-click to view all keys for this game");
       card.addEventListener("dblclick", () => {
-        triggerViewCatalogKeys(entry.title);
+        triggerViewCatalogKeys(entry.title, true, entry.imageUrl);
       });
 
       const titleStr = String(entry.title || "Untitled Game");
@@ -8895,7 +9044,10 @@ function renderEntriesGalleryLayout(entriesList) {
               <strong style="color: var(--accent-cyan);">${avgDurationStr}</strong>
             </div>
           </div>
-          <div class="gallery-card-hover-actions" style="margin-top: auto; display: flex; gap: 8px; width: 100%;">
+          <div class="gallery-card-hover-actions" style="margin-top: auto; display: flex; gap: 6px; width: 100%;">
+            <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); triggerViewCatalogKeys('${escapeHTML(safeTitle)}', true, '${escapeHTML(entry.imageUrl || '')}')" title="View Keys List" style="flex: 1; padding: 4px; font-size: 0.75rem; height: 28px;">
+              <i class="fa-solid fa-key text-teal" style="margin-right: 3px;"></i> Keys
+            </button>
             <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); triggerEditCatalogEntry('${escapeHTML(safeTitle)}')" title="Edit Catalog Entry" style="flex: 1; padding: 4px; font-size: 0.75rem; height: 28px;">
               <i class="fa-solid fa-pen" style="margin-right: 3px;"></i> Edit
             </button>
@@ -9759,7 +9911,7 @@ function renderEntries() {
       tr.style.cursor = "pointer";
       tr.setAttribute("title", "Double-click to view all keys for this game");
       tr.addEventListener("dblclick", () => {
-        triggerViewCatalogKeys(entry.title);
+        triggerViewCatalogKeys(entry.title, true, entry.imageUrl);
       });
 
       // ROI = Net Profit / Cost of Sold Keys * 100
@@ -9825,7 +9977,10 @@ function renderEntries() {
         <td>${getMiniMarginBar(roiPercentage)}</td>
         <td>${getMiniMarginBar(marginPercentage)}</td>
         <td style="text-align: right;">
-          <div style="display: inline-flex; gap: 8px; justify-content: flex-end; width: 100%;">
+          <div style="display: inline-flex; gap: 6px; justify-content: flex-end; width: 100%;">
+            <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); triggerViewCatalogKeys('${escapeHTML(safeTitle)}', true, '${escapeHTML(entry.imageUrl || '')}')" title="View Keys for this Game">
+              <i class="fa-solid fa-key text-teal"></i> Keys
+            </button>
             <button class="btn btn-outline btn-sm" onclick="triggerEditCatalogEntry('${escapeHTML(safeTitle)}')" title="Edit Catalog Entry">
               <i class="fa-solid fa-pen"></i> Edit
             </button>
