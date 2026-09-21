@@ -758,6 +758,8 @@ function renderTopBestsellersChart(widgetKey, listId, titleId, filteredSalesList
         gameMetrics[title].imageUrl = imgUrlById[sale.inventoryId];
       } else if (imgUrlByTitle[title.trim().toLowerCase()]) {
         gameMetrics[title].imageUrl = imgUrlByTitle[title.trim().toLowerCase()];
+      } else if (typeof window !== "undefined" && typeof window.resolveGameArtwork === "function") {
+        gameMetrics[title].imageUrl = window.resolveGameArtwork(title);
       }
     }
   });
@@ -998,13 +1000,15 @@ function renderSalesFeedWidget(filteredSalesList) {
   let html = '';
   sortedSales.forEach(sale => {
     const title = sale.title || "Unknown Game";
-    const imageUrl = sale.imageUrl || imgUrlByTitle[title.trim().toLowerCase()];
+    const imageUrl = sale.imageUrl 
+      || imgUrlByTitle[title.trim().toLowerCase()] 
+      || (typeof window !== "undefined" && typeof window.resolveGameArtwork === "function" ? window.resolveGameArtwork(sale) : null);
     const profitStr = formatCurrency(sale.profit);
     const profitClass = sale.profit >= 0 ? "text-success-neon" : "text-danger-soft";
     
     const initials = title.split(" ").map(w => w[0]).join("").slice(0, 3).toUpperCase();
     const thumbHTML = imageUrl
-      ? `<img src="${escapeHTML(imageUrl)}" class="sales-feed-thumb" alt="${escapeHTML(title)}">`
+      ? `<img src="${escapeHTML(imageUrl)}" class="sales-feed-thumb" alt="${escapeHTML(title)}" loading="lazy" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';"><div class="sales-feed-thumb-placeholder" style="display: none;">${escapeHTML(initials)}</div>`
       : `<div class="sales-feed-thumb-placeholder">${escapeHTML(initials)}</div>`;
 
     const formattedDate = sale.saleDate ? new Date(sale.saleDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : "-";

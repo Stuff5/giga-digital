@@ -4,7 +4,7 @@
  */
 
 document.addEventListener("DOMContentLoaded", async () => {
-  const currentVersion = window.APP_VERSION || "v2.1.4";
+  const currentVersion = window.APP_VERSION || "v2.1.5";
   console.log(`[GameVault] DOMContentLoaded - Booting ${currentVersion}...`);
   console.log("[GameVault] Native gv_active_user:", window.localStorage.getItem("gv_active_user"));
 
@@ -41,6 +41,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     
     // Load State and check session
     loadStateFromStorage();
+
+    // Auto-heal missing game cover image URLs from catalog artwork cache
+    if (typeof window.syncInventoryArtworkWithCatalog === "function") {
+      window.syncInventoryArtworkWithCatalog(false);
+    }
 
     // Refresh dropdowns after storage state is loaded
     if (typeof window.populateSupplierDropdowns === "function") {

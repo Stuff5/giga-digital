@@ -447,11 +447,24 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
-                <!-- v2.1.4 -->
+                <!-- v2.1.5 -->
                 <div style="border-left: 3px solid var(--accent-emerald); padding-left: 12px;">
                   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.1.4 — Cross-Browser User Password & Credential Synchronization</strong>
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.1.5 — Unified Game Artwork Resolution & Auto-Healing</strong>
                     <span style="font-size: 0.75rem; color: var(--accent-emerald); font-weight: bold;">Current Version</span>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
+                    <li><strong>Inventory Artwork Synchronization:</strong> Game keys in the Inventory Table and Grid Card layouts now automatically display fetched game cover artwork by resolving titles against the catalog artwork cache, matching the Entries menu experience.</li>
+                    <li><strong>Smart Multi-Stage Artwork Resolution:</strong> Implemented <code>resolveGameArtwork()</code> cascade supporting exact title matches, cleaned titles (stripping platform tags, editions, bracketed metadata), subtitle prefixes, and peer key lookups across inventory and sales records.</li>
+                    <li><strong>Auto-Healing & Graceful Degradation:</strong> Missing <code>imageUrl</code> properties are auto-healed on application boot, cloud database load, text/spreadsheet imports, and batch artwork fetches. Network-failed or blocked image links smoothly degrade to stylish initial gradients via native <code>onerror</code> fallbacks without breaking the layout.</li>
+                  </ul>
+                </div>
+
+                <!-- v2.1.4 -->
+                <div style="border-left: 3px solid var(--border-color); padding-left: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.1.4 — Cross-Browser User Password & Credential Synchronization</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Previous Version</span>
                   </div>
                   <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
                     <li><strong>Cross-Browser Credential Sync:</strong> User profile updates (new passwords, updated emails, 2FA settings) are now synchronized directly to cloud database storage (<code>app_settings</code> &rarr; <code>appUsers</code>) and Supabase Auth identities.</li>

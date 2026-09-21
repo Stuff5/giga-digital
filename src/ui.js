@@ -12,7 +12,7 @@ window.loadHTMLTemplates = async () => {
   await Promise.all(templates.map(async t => {
     try {
       // Use version and timestamp cache-busting to ensure fresh HTML templates are loaded
-      const ver = window.APP_VERSION || "v2.1.4";
+      const ver = window.APP_VERSION || "v2.1.5";
       const res = await fetch(`${t.url}?v=${ver}&t=${Date.now()}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -3877,12 +3877,9 @@ async function handleAddGameSubmit(e) {
     }
   }
 
-  // Fallback to existing cover artwork if title already exists in inventory
+  // Fallback to existing cover artwork if title already exists in inventory or catalogArtwork
   if (!imageUrl) {
-    const match = state.inventory.find(item => item.title.trim().toLowerCase() === title.toLowerCase() && item.imageUrl);
-    if (match) {
-      imageUrl = match.imageUrl;
-    }
+    imageUrl = (typeof window.resolveGameArtwork === "function" ? window.resolveGameArtwork(title) : "") || "";
   }
 
   const baseTime = Date.now();
@@ -4042,9 +4039,11 @@ window.triggerViewKey = function(gameId) {
 
   const artworkRow = document.getElementById("view-modal-artwork-row");
   const initials = game.title.split(" ").map(w => w[0]).join("").slice(0, 3);
-  if (game.imageUrl) {
+  const gameImg = (typeof window.resolveGameArtwork === "function" ? window.resolveGameArtwork(game) : game.imageUrl) || game.imageUrl;
+  if (gameImg) {
     artworkRow.innerHTML = `
-      <img src="${escapeHTML(game.imageUrl)}" class="view-modal-thumbnail" alt="${escapeHTML(game.title)}">
+      <img src="${escapeHTML(gameImg)}" class="view-modal-thumbnail" alt="${escapeHTML(game.title)}" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+      <div class="view-modal-thumbnail-placeholder" style="display: none;">${escapeHTML(initials)}</div>
       <div>
         <span class="key-label" style="margin-bottom: 2px;">Game Title</span>
         <h4 id="view-modal-title" style="font-size: 1.15rem; color: #fff;">${escapeHTML(game.title)}</h4>
@@ -4327,8 +4326,8 @@ window.triggerEditGame = function(gameId) {
   document.getElementById("edit-game-key").value = game.key;
   document.getElementById("edit-game-source").value = game.source;
   document.getElementById("edit-game-purchase-date").value = game.purchaseDate;
-  document.getElementById("edit-game-notes").value = game.notes || "";
-  document.getElementById("edit-game-image-url").value = game.imageUrl || "";
+  const resolvedImg = game.imageUrl || (typeof window.resolveGameArtwork === "function" ? window.resolveGameArtwork(game) : "");
+  document.getElementById("edit-game-image-url").value = resolvedImg || "";
   document.getElementById("edit-game-image-file").value = ""; // Reset file upload
   document.getElementById("edit-game-status").value = game.status; // Set current status
   
@@ -7819,10 +7818,142 @@ function calculateSupplierMetrics() {
   if (avgProfitSubtextEl) avgProfitSubtextEl.textContent = `Based on ${filteredSales.length} sales`;
 }
 
+// Retrieve catalog artwork map
+function getCatalogArtworkMap() {
+  try {
+    const raw = localStorage.getItem("gv_catalog_artwork");
+    return raw ? JSON.parse(raw) : (state.catalogArtwork || {});
+  } catch (e) {
+    return (state && state.catalogArtwork) ? state.catalogArtwork : {};
+  }
+}
+window.getCatalogArtworkMap = getCatalogArtworkMap;
+
+// Robust cascade resolver for game cover artwork across catalogArtwork, inventory, and sales
+function resolveGameArtwork(itemOrTitle) {
+  if (!itemOrTitle) return null;
+
+  // If item object already has valid imageUrl, return it
+  if (typeof itemOrTitle === "object" && itemOrTitle.imageUrl && typeof itemOrTitle.imageUrl === "string" && itemOrTitle.imageUrl.trim() !== "") {
+    return itemOrTitle.imageUrl.trim();
+  }
+
+  const rawTitle = typeof itemOrTitle === "string" ? itemOrTitle : (itemOrTitle.title || "");
+  if (!rawTitle || typeof rawTitle !== "string") return null;
+  const title = rawTitle.trim();
+  if (!title) return null;
+
+  const catalogMap = (typeof window !== "undefined" && typeof window.getCatalogArtworkMap === "function") 
+    ? window.getCatalogArtworkMap() 
+    : (typeof getCatalogArtworkMap === "function" ? getCatalogArtworkMap() : ((typeof state !== "undefined" && state.catalogArtwork) ? state.catalogArtwork : {}));
+
+  const lower = title.toLowerCase();
+
+  // 1. Direct match in catalogArtwork map
+  if (catalogMap && catalogMap[lower]) {
+    const found = catalogMap[lower];
+    if (typeof itemOrTitle === "object" && !itemOrTitle.imageUrl) itemOrTitle.imageUrl = found;
+    return found;
+  }
+
+  // 2. Cleaned title match (stripping tags, editions, bracketed platforms)
+  const cleanStr = title
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/\[[^\]]*\]/g, " ")
+    .replace(/[\u2122\u00ae\u00a9]/g, "")
+    .replace(/\b(pc|steam|key|global|cd-key|cdkey|gog|origin|uplay|epic|connect|edition|standard|deluxe|ultimate|premium|row|free|region|download|code|activation|digital)\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+
+  if (cleanStr && cleanStr !== lower && catalogMap && catalogMap[cleanStr]) {
+    const found = catalogMap[cleanStr];
+    if (typeof itemOrTitle === "object" && !itemOrTitle.imageUrl) itemOrTitle.imageUrl = found;
+    return found;
+  }
+
+  // 3. Subtitle / prefix match (before ':', '-', '/')
+  const prefixMatch = title.split(/[:\-\/]/)[0].trim().toLowerCase();
+  if (prefixMatch && prefixMatch.length > 2 && prefixMatch !== lower && catalogMap && catalogMap[prefixMatch]) {
+    const found = catalogMap[prefixMatch];
+    if (typeof itemOrTitle === "object" && !itemOrTitle.imageUrl) itemOrTitle.imageUrl = found;
+    return found;
+  }
+
+  // 4. Peer match in state.inventory (another key of the same game has an image)
+  if (typeof state !== "undefined" && Array.isArray(state.inventory)) {
+    const peerInv = state.inventory.find(i => 
+      i && i.imageUrl && i.imageUrl.trim() !== "" && i.title && 
+      (i.title.trim().toLowerCase() === lower || (cleanStr && i.title.trim().toLowerCase() === cleanStr) || (prefixMatch && prefixMatch.length > 2 && i.title.trim().toLowerCase().startsWith(prefixMatch)))
+    );
+    if (peerInv && peerInv.imageUrl) {
+      const found = peerInv.imageUrl.trim();
+      if (typeof itemOrTitle === "object" && !itemOrTitle.imageUrl) itemOrTitle.imageUrl = found;
+      return found;
+    }
+  }
+
+  // 5. Peer match in state.sales
+  if (typeof state !== "undefined" && Array.isArray(state.sales)) {
+    const peerSale = state.sales.find(s => 
+      s && s.imageUrl && s.imageUrl.trim() !== "" && s.title && 
+      (s.title.trim().toLowerCase() === lower || (cleanStr && s.title.trim().toLowerCase() === cleanStr) || (prefixMatch && prefixMatch.length > 2 && s.title.trim().toLowerCase().startsWith(prefixMatch)))
+    );
+    if (peerSale && peerSale.imageUrl) {
+      const found = peerSale.imageUrl.trim();
+      if (typeof itemOrTitle === "object" && !itemOrTitle.imageUrl) itemOrTitle.imageUrl = found;
+      return found;
+    }
+  }
+
+  return null;
+}
+window.resolveGameArtwork = resolveGameArtwork;
+
+// Backfill missing imageUrl fields across state.inventory and state.sales from catalogArtwork
+function syncInventoryArtworkWithCatalog(saveToStorage = true) {
+  if (typeof state === "undefined" || !Array.isArray(state.inventory)) return 0;
+  
+  let updatedCount = 0;
+
+  state.inventory.forEach(item => {
+    if (item && item.title && (!item.imageUrl || item.imageUrl.trim() === "")) {
+      const resolved = resolveGameArtwork(item);
+      if (resolved) {
+        item.imageUrl = resolved;
+        updatedCount++;
+      }
+    }
+  });
+
+  if (Array.isArray(state.sales)) {
+    state.sales.forEach(sale => {
+      if (sale && sale.title && (!sale.imageUrl || sale.imageUrl.trim() === "")) {
+        const resolved = resolveGameArtwork(sale);
+        if (resolved) {
+          sale.imageUrl = resolved;
+          updatedCount++;
+        }
+      }
+    });
+  }
+
+  if (updatedCount > 0 && saveToStorage && typeof saveStateToStorage === "function") {
+    saveStateToStorage();
+    console.log(`[Artwork Sync] Backfilled artwork covers for ${updatedCount} inventory/sales records.`);
+  }
+
+  return updatedCount;
+}
+window.syncInventoryArtworkWithCatalog = syncInventoryArtworkWithCatalog;
+
 // Render Table: Inventory Stock List Router
 function renderInventoryTable(itemsList) {
   try {
     state._activeRenderedItems = itemsList;
+    if (typeof syncInventoryArtworkWithCatalog === "function") {
+      syncInventoryArtworkWithCatalog(false);
+    }
     console.log("renderInventoryTable called with items count:", itemsList.length, "layout mode:", state.inventoryLayout);
     // Update inventory layout containers visibility
     const tableContainer = document.getElementById("inventory-table-container");
@@ -8008,8 +8139,9 @@ function buildInventoryRowHTML(item, salesMap, dupMap) {
 
   const titleStr = String(item.title || "Untitled Game");
   const initials = titleStr.split(" ").map(w => w ? w[0] : "").join("").slice(0, 3) || "???";
-  const titleCell = item.imageUrl 
-    ? `<div class="game-title-cell"><img src="${escapeHTML(item.imageUrl)}" class="game-thumbnail" alt="${escapeHTML(titleStr)}"><strong>${escapeHTML(titleStr)}</strong></div>`
+  const itemImg = resolveGameArtwork(item);
+  const titleCell = itemImg 
+    ? `<div class="game-title-cell"><img src="${escapeHTML(itemImg)}" class="game-thumbnail" alt="${escapeHTML(titleStr)}" loading="lazy" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';"><div class="game-thumbnail-placeholder" style="display: none; background: ${getHashGradient(titleStr)};">${escapeHTML(initials)}</div><strong>${escapeHTML(titleStr)}</strong></div>`
     : `<div class="game-title-cell"><div class="game-thumbnail-placeholder" style="background: ${getHashGradient(titleStr)};">${escapeHTML(initials)}</div><strong>${escapeHTML(titleStr)}</strong></div>`;
 
   // Retrieve closing date if sold
@@ -8250,10 +8382,11 @@ function renderInventoryGridLayout(itemsList) {
 
       const titleStr = String(item.title || "Untitled Game");
       const initials = titleStr.split(" ").map(w => w ? w[0] : "").join("").slice(0, 3) || "???";
-      const bannerHtml = item.imageUrl
-        ? `<img src="${escapeHTML(item.imageUrl)}" class="grid-card-img" alt="${escapeHTML(titleStr)}" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('loading');" onerror="this.parentElement.classList.remove('loading');">`
+      const itemImg = resolveGameArtwork(item);
+      const bannerHtml = itemImg
+        ? `<img src="${escapeHTML(itemImg)}" class="grid-card-img" alt="${escapeHTML(titleStr)}" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('loading');" onerror="this.parentElement.classList.remove('loading'); this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';"><div class="grid-card-placeholder" style="display: none;">${escapeHTML(initials)}</div>`
         : `<div class="grid-card-placeholder">${escapeHTML(initials)}</div>`;
-      const bannerClass = item.imageUrl ? "grid-card-banner loading" : "grid-card-banner";
+      const bannerClass = itemImg ? "grid-card-banner loading" : "grid-card-banner";
 
       // Platform icon classes
       const platformStr = String(item.platform || "PC");
@@ -8571,9 +8704,11 @@ function renderEntriesGalleryLayout(entriesList) {
 function buildSalesRowHTML(sale, inventoryMap) {
   const initials = sale.title.split(" ").map(w => w[0]).join("").slice(0, 3);
   const gameInInv = inventoryMap.get(sale.inventoryId);
-  const saleImgUrl = gameInInv ? gameInInv.imageUrl : null;
+  const saleImgUrl = (gameInInv && gameInInv.imageUrl) 
+    || sale.imageUrl 
+    || (typeof window.resolveGameArtwork === "function" ? window.resolveGameArtwork(sale) : null);
   const titleCell = saleImgUrl 
-    ? `<div class="game-title-cell"><img src="${escapeHTML(saleImgUrl)}" class="game-thumbnail" alt="${escapeHTML(sale.title)}"><strong>${escapeHTML(sale.title)}</strong></div>`
+    ? `<div class="game-title-cell"><img src="${escapeHTML(saleImgUrl)}" class="game-thumbnail" alt="${escapeHTML(sale.title)}" loading="lazy" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';"><div class="game-thumbnail-placeholder" style="display: none; background: ${getHashGradient(sale.title)};">${escapeHTML(initials)}</div><strong>${escapeHTML(sale.title)}</strong></div>`
     : `<div class="game-title-cell"><div class="game-thumbnail-placeholder" style="background: ${getHashGradient(sale.title)};">${escapeHTML(initials)}</div><strong>${escapeHTML(sale.title)}</strong></div>`;
 
   const isDisputed = sale.disputed === true;
@@ -8895,10 +9030,12 @@ function renderDashboardDetails(filteredSalesList, filteredInventoryList) {
       const tr = document.createElement("tr");
       const initials = sale.title.split(" ").map(w => w[0]).join("").slice(0, 3);
       const gameInInv = state.inventory.find(i => i.id === sale.inventoryId);
-      const saleImgUrl = gameInInv ? gameInInv.imageUrl : null;
+      const saleImgUrl = (gameInInv && gameInInv.imageUrl) 
+        || sale.imageUrl 
+        || (typeof window.resolveGameArtwork === "function" ? window.resolveGameArtwork(sale) : null);
       const titleCell = saleImgUrl 
-        ? `<div class="game-title-cell"><img src="${saleImgUrl}" class="game-thumbnail" alt="${sale.title}"><strong>${sale.title}</strong></div>`
-        : `<div class="game-title-cell"><div class="game-thumbnail-placeholder" style="background: ${getHashGradient(sale.title)};">${initials}</div><strong>${sale.title}</strong></div>`;
+        ? `<div class="game-title-cell"><img src="${escapeHTML(saleImgUrl)}" class="game-thumbnail" alt="${escapeHTML(sale.title)}" loading="lazy" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';"><div class="game-thumbnail-placeholder" style="display: none; background: ${getHashGradient(sale.title)};">${initials}</div><strong>${escapeHTML(sale.title)}</strong></div>`
+        : `<div class="game-title-cell"><div class="game-thumbnail-placeholder" style="background: ${getHashGradient(sale.title)};">${initials}</div><strong>${escapeHTML(sale.title)}</strong></div>`;
 
       tr.innerHTML = `
         <td>${titleCell}</td>
@@ -14008,6 +14145,10 @@ window.triggerBatchFetchArtworks = async function() {
 
   if (titlesToFetch.length === 0) {
     window.isBatchArtworkFetching = false;
+    // Auto-heal any inventory or sales items that can borrow artwork from catalog
+    if (typeof syncInventoryArtworkWithCatalog === "function") {
+      syncInventoryArtworkWithCatalog(true);
+    }
     const skippedCount = notFoundCache.size;
     let msg = "No games found requiring artwork update.";
     if (skippedCount > 0 && skipFailed && !overwrite) {
@@ -14269,6 +14410,9 @@ window.triggerBatchFetchArtworks = async function() {
         }
       }
       
+      if (typeof syncInventoryArtworkWithCatalog === "function") {
+        syncInventoryArtworkWithCatalog(false);
+      }
       updateUI();
       const finalMsg = window.artworkFetchCancelled 
         ? `Stopped. Successfully updated covers for ${successCount} games.`

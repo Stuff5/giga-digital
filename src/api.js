@@ -1278,6 +1278,9 @@ async function dbLoadState() {
           try {
             state.catalogArtwork = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
             localStorage.setItem("gv_catalog_artwork", JSON.stringify(state.catalogArtwork || {}));
+            if (typeof window.syncInventoryArtworkWithCatalog === "function") {
+              window.syncInventoryArtworkWithCatalog(false);
+            }
           } catch(e) {
             console.error("Error parsing catalogArtwork from database sync:", e);
           }
@@ -1328,6 +1331,9 @@ async function dbLoadState() {
     applyMenuIcons();
     applyMenuTitles();
     renderSidebarCustomizationSettings();
+    if (typeof window.syncInventoryArtworkWithCatalog === "function") {
+      window.syncInventoryArtworkWithCatalog(false);
+    }
     saveStateToStorage();
     updateUI();
     showToast("Cloud database synchronized successfully.", "success");

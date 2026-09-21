@@ -512,7 +512,9 @@ function initCSVImportWizard() {
         status,
         publisher,
         notes,
-        imageUrl: duplicateIndex !== -1 ? (state.inventory[duplicateIndex].imageUrl || "") : ""
+        imageUrl: duplicateIndex !== -1 
+          ? (state.inventory[duplicateIndex].imageUrl || "") 
+          : ((typeof window !== "undefined" && typeof window.resolveGameArtwork === "function" ? window.resolveGameArtwork(title) : "") || "")
       };
       
       if (duplicateIndex !== -1) {
@@ -534,17 +536,23 @@ function initCSVImportWizard() {
       // Auto-add new platform
       const platKey = platform.toLowerCase();
       if (platform && !currentPlatformNames.has(platKey)) {
-        const newPlat = { name: platform, dateAdded: Date.now(), enabled: true };
+        const newPlat = { name: platform, dateAdded: Date.now(), color: "cyan", enabled: true };
         state.platforms.push(newPlat);
         currentPlatformNames.add(platKey);
+        newPlatforms.push(newPlat);
       }
     }
     
     if (importedItems.length === 0) {
-      showToast("No valid inventory rows imported.", "warning");
+      showToast("No valid items to import.", "error");
       return;
     }
     
+    // Auto-resolve artwork across newly imported items
+    if (typeof window.syncInventoryArtworkWithCatalog === "function") {
+      window.syncInventoryArtworkWithCatalog(false);
+    }
+
     // Clean up empty database rows
     cleanupEmptyDatabaseRows();
     saveStateToStorage();
@@ -1772,7 +1780,11 @@ async function importStateFromSpreadsheet(file) {
                 existingItem.purchaseDate = purchaseDate;
                 existingItem.status = status;
                 if (notes) existingItem.notes = notes;
-                if (imageUrl) existingItem.imageUrl = imageUrl;
+                if (imageUrl) {
+                  existingItem.imageUrl = imageUrl;
+                } else if (!existingItem.imageUrl && typeof window !== "undefined" && typeof window.resolveGameArtwork === "function") {
+                  existingItem.imageUrl = window.resolveGameArtwork(title) || "";
+                }
                 if (publisher) existingItem.publisher = publisher;
                 existingItem.sellPrice = sellPrice || existingItem.sellPrice || 0;
                 if (key && (!existingItem.key || existingItem.key === "NO-KEY" || existingItem.key === "NO-KEY-PROVIDED")) {
@@ -1820,6 +1832,7 @@ async function importStateFromSpreadsheet(file) {
                 }
               } else {
                 // Genuinely new item
+                const resolvedArtwork = imageUrl || (typeof window !== "undefined" && typeof window.resolveGameArtwork === "function" ? window.resolveGameArtwork(title) || "" : "");
                 const gameId = "game_imported_" + i + "_" + Math.random().toString(36).substr(2, 5);
                 const gameItem = {
                   id: gameId,
@@ -1831,7 +1844,7 @@ async function importStateFromSpreadsheet(file) {
                   purchaseDate,
                   status,
                   notes,
-                  imageUrl,
+                  imageUrl: resolvedArtwork,
                   publisher,
                   sellPrice: sellPrice || 0
                 };
@@ -1887,6 +1900,9 @@ async function importStateFromSpreadsheet(file) {
             
             // Note: state.inventory and state.sales are already updated in place
             // and new items/sales have been pushed directly. No blind push!
+            if (typeof window.syncInventoryArtworkWithCatalog === "function") {
+              window.syncInventoryArtworkWithCatalog(false);
+            }
             saveStateToStorage();
             
             if (window.supabaseClient && state.syncMode !== "manual") {

@@ -5,6 +5,16 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.1.5] - 2026-09-21
+
+### Fixed
+- **Missing Game Cover Images in Inventory View**: Resolved an issue where game keys in the Inventory Table and Grid Card layouts displayed letter initial placeholders instead of fetched game covers. Inventory items now dynamically fall back to the catalog artwork cache (`state.catalogArtwork` / `gv_catalog_artwork`), ensuring complete visual parity with the Entries menu.
+- **Smart Multi-Stage Artwork Resolution Cascade**: Introduced `resolveGameArtwork()` to seamlessly identify cover artwork across multiple variations: exact title match, normalized title match (removing brackets, editions, store tags like `[Steam]`, and `(PC)`), prefix match (titles with subtitles before `:` or `-`), and peer key matches from other inventory or sales records.
+- **Universal Inventory Artwork Auto-Healing**: Implemented `syncInventoryArtworkWithCatalog()` which runs on application boot, cloud database sync, text list imports, spreadsheet imports, and batch artwork fetches to automatically backfill missing `imageUrl` properties across inventory items.
+- **Graceful Image Fallback Handling**: Added native `onerror` fallbacks across table rows, grid cards, modals, and charts, preventing broken image placeholders and cleanly falling back to vibrant initials gradients if an external image CDN fails to load.
+
+---
+
 ## [v2.1.4] - 2026-09-21
 
 ### Fixed
