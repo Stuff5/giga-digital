@@ -1,8 +1,8 @@
-  <div class="modal-backdrop" id="help-modal">
+  <div class="modal-backdrop" id="help-modal" onclick="if(event.target===this)closeModal('help-modal')">
     <div class="modal-card" style="max-width: 800px; width: 95%;">
       <div class="modal-header">
         <h3><i class="fa-solid fa-circle-question text-purple"></i> Help & Documentation Center</h3>
-        <button class="modal-close-btn" data-close-modal="help-modal">&times;</button>
+        <button class="modal-close-btn" data-close-modal="help-modal" onclick="closeModal('help-modal')">&times;</button>
       </div>
       <div class="modal-body" style="padding: 20px; overflow-y: hidden;">
         <div class="help-modal-grid" style="display: flex; gap: 24px; min-height: 420px;">
@@ -447,11 +447,24 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
-                <!-- v2.2.0 -->
+                <!-- v2.2.3 -->
                 <div style="border-left: 3px solid var(--accent-emerald); padding-left: 12px;">
                   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.2.0 — High-Performance Engine &amp; Instant Startup Optimization</strong>
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.2.3 — Changelog &amp; Help Modal Dismissal &amp; Cover Banners</strong>
                     <span style="font-size: 0.75rem; color: var(--accent-emerald); font-weight: bold;">Current Version</span>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
+                    <li><strong>Modal Close Fix:</strong> Resolved an issue where lazy-loaded Help and Changelog modals could not be closed. Added multi-layered event delegation, dedicated close bindings in <code>bindHelpModalEvents()</code>, and direct inline handlers on modal close buttons and backdrops.</li>
+                    <li><strong>Catalog Keys Cover Banner:</strong> Added horizontal cover image banner at the top of the Catalog Keys modal when double-clicking a game entry in the Entries menu.</li>
+                    <li><strong>Global Escape Key Dismissal:</strong> Ensured any active modal dialog can be promptly dismissed using the <kbd>Escape</kbd> keyboard shortcut.</li>
+                  </ul>
+                </div>
+
+                <!-- v2.2.0 -->
+                <div style="border-left: 3px solid var(--border-color); padding-left: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.2.0 — High-Performance Engine &amp; Instant Startup Optimization</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Previous Version</span>
                   </div>
                   <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
                     <li><strong>Instant Startup (&lt;150ms Boot):</strong> Converted cloud synchronization to a non-blocking background task (Stale-While-Revalidate pattern). Local cached data renders instantly, dismissing the loading screen without waiting for external cloud roundtrips.</li>
@@ -759,7 +772,7 @@
         </div>
       </div>
       <div class="modal-footer" style="display: flex; justify-content: flex-end; padding: 16px 24px; border-top: 1px solid var(--border-color); background: var(--bg-modal-footer);">
-        <button type="button" class="btn btn-primary" data-close-modal="help-modal">Got it!</button>
+        <button type="button" class="btn btn-primary" data-close-modal="help-modal" onclick="closeModal('help-modal')">Got it!</button>
       </div>
     </div>
   </div>

@@ -4,7 +4,7 @@
  */
 
 document.addEventListener("DOMContentLoaded", async () => {
-  const currentVersion = window.APP_VERSION || "v2.2.0";
+  const currentVersion = window.APP_VERSION || "v2.2.3";
   console.log(`[GameVault] DOMContentLoaded - Booting ${currentVersion}...`);
   console.log("[GameVault] Native gv_active_user:", window.localStorage.getItem("gv_active_user"));
 
@@ -263,6 +263,28 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Bind Help Modal Event Handlers
     function bindHelpModalEvents() {
+      const helpModal = document.getElementById("help-modal");
+      if (helpModal) {
+        if (typeof DOM !== "undefined") {
+          DOM["help-modal"] = helpModal;
+        }
+        if (!helpModal._boundCloseEvents) {
+          helpModal._boundCloseEvents = true;
+          helpModal.addEventListener("click", (e) => {
+            if (e.target === helpModal) {
+              closeModal("help-modal");
+            }
+          });
+          const closeBtns = helpModal.querySelectorAll("[data-close-modal='help-modal'], .modal-close-btn");
+          closeBtns.forEach(btn => {
+            btn.addEventListener("click", (e) => {
+              e.preventDefault();
+              closeModal("help-modal");
+            });
+          });
+        }
+      }
+
       const helpSearchInput = document.getElementById("help-search-input");
       const helpTabs = document.querySelectorAll(".help-tab-btn");
       const helpPanes = document.querySelectorAll(".help-tab-pane");
@@ -435,9 +457,14 @@ document.addEventListener("DOMContentLoaded", async () => {
           openModal("help-modal");
         }
       } else if (e.key === "Escape") {
-        const helpModal = document.getElementById("help-modal");
-        if (helpModal && helpModal.classList.contains("active")) {
-          closeModal("help-modal");
+        const activeBackdrops = document.querySelectorAll(".modal-backdrop.active");
+        if (activeBackdrops.length > 0) {
+          activeBackdrops.forEach(m => closeModal(m.id));
+        } else {
+          const helpModal = document.getElementById("help-modal");
+          if (helpModal && helpModal.classList.contains("active")) {
+            closeModal("help-modal");
+          }
         }
       }
     });

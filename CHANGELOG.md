@@ -5,6 +5,24 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.3] - 2026-09-21
+
+### Fixed
+- **Changelog & Help Modal Dismissal**: Resolved an issue where clicking the version number in the sidebar footer opened the changelog modal, but the modal could not be closed using the header `&times;` button, the footer "Got it!" button, or by clicking the backdrop.
+- **Multi-Tier Event Delegation**: Added global event delegation in `src/ui.js` for `[data-close-modal]` buttons and modal backdrop clicks so that lazily loaded HTML templates (`templates/help-modal.html`) automatically bind close listeners when dynamically injected into the DOM.
+- **Dedicated Modal Handlers**: Enhanced `bindHelpModalEvents()` in `app.js` to explicitly register close listeners and update the `DOM["help-modal"]` element cache upon lazy template insertion, supplemented with direct inline `onclick` handlers on close triggers.
+- **Universal Escape Shortcut**: Extended the global <kbd>Escape</kbd> key handler to dismiss all active dialog backdrops promptly.
+
+---
+
+## [v2.2.2] - 2026-09-21
+
+### Added
+- **Horizontal Game Cover Banner**: Added a horizontal panoramic cover image banner at the top of the Catalog Keys modal when double-clicking a game entry in the Entries menu (or clicking the dedicated "Keys" action button).
+- **Self-Healing Modal DOM Structure**: Added automatic DOM reconciliation for the cover banner container and status badges to guarantee display even if older cached HTML templates are present.
+
+---
+
 ## [v2.2.0] - 2026-09-21
 
 ### Optimized & Performance

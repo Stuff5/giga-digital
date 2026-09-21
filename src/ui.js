@@ -5,7 +5,7 @@
 // Asynchronously loads critical HTML templates (modals.html) on application boot
 window.loadHTMLTemplates = async () => {
   try {
-    const ver = window.APP_VERSION || "v2.2.2";
+    const ver = window.APP_VERSION || "v2.2.3";
     const res = await fetch(`templates/modals.html?v=${ver}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const html = await res.text();
@@ -33,12 +33,15 @@ window.ensureHelpModalLoaded = async () => {
 
   _helpModalLoadingPromise = (async () => {
     try {
-      const ver = window.APP_VERSION || "v2.2.0";
+      const ver = window.APP_VERSION || "v2.2.3";
       const res = await fetch(`templates/help-modal.html?v=${ver}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
       if (placeholder) {
         placeholder.innerHTML = html;
+        if (typeof DOM !== "undefined") {
+          DOM["help-modal"] = document.getElementById("help-modal");
+        }
       }
       if (typeof window.bindHelpModalEvents === "function") {
         window.bindHelpModalEvents();
@@ -1795,6 +1798,21 @@ function initEventHandlers() {
         closeModal(backdrop.id);
       }
     });
+  });
+
+  // Delegated close listener for dynamically loaded modals (e.g. templates/help-modal.html)
+  document.addEventListener("click", (e) => {
+    const closeBtn = e.target.closest ? e.target.closest("[data-close-modal]") : null;
+    if (closeBtn) {
+      const modalId = closeBtn.getAttribute("data-close-modal");
+      if (modalId) {
+        closeModal(modalId);
+      }
+      return;
+    }
+    if (e.target && e.target.classList && e.target.classList.contains("modal-backdrop") && e.target.classList.contains("active")) {
+      closeModal(e.target.id);
+    }
   });
 
   // Add Game Key Form Submission
@@ -3790,6 +3808,7 @@ function openModal(id) {
   }
   const modal = DOM[id] || document.getElementById(id);
   if (modal) {
+    if (typeof DOM !== "undefined") DOM[id] = modal;
     modal.classList.add("active");
   } else {
     console.warn(`openModal: Element with ID "${id}" not found.`);
@@ -3799,6 +3818,7 @@ function openModal(id) {
 function closeModal(id) {
   const modal = DOM[id] || document.getElementById(id);
   if (modal) {
+    if (typeof DOM !== "undefined") DOM[id] = modal;
     modal.classList.remove("active");
     
     // Custom reset for view key modal security
