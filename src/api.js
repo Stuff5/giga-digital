@@ -1309,6 +1309,18 @@ async function dbLoadState() {
           } catch(e) {
             console.error("Error parsing publisherLogos from database sync:", e);
           }
+        } else if (s.key === "appUsers") {
+          try {
+            const cloudUsers = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+            if (Array.isArray(cloudUsers) && cloudUsers.length > 0) {
+              const localUsers = (typeof window.getUsersFromStorage === "function") ? window.getUsersFromStorage() : (typeof getUsersFromStorage === "function" ? getUsersFromStorage() : []);
+              const mergeFn = window.mergeUsers || (typeof mergeUsers === "function" ? mergeUsers : null);
+              const merged = mergeFn ? mergeFn(localUsers, cloudUsers) : cloudUsers;
+              localStorage.setItem("gv_users", JSON.stringify(merged));
+            }
+          } catch(e) {
+            console.error("Error parsing appUsers from database sync:", e);
+          }
         }
       });
     }
@@ -1766,9 +1778,9 @@ async function dbSaveCustomization(key, title, icon) {
   }
 }
 
-async function dbSaveSettings(key, value) {
+async function dbSaveSettings(key, value, bypassManualSync = false) {
   if (!window.supabaseClient) return;
-  if (state.syncMode === "manual") {
+  if (!bypassManualSync && state.syncMode === "manual" && key !== "appUsers") {
     setUnsyncedChanges(true);
     return;
   }
@@ -1781,6 +1793,60 @@ async function dbSaveSettings(key, value) {
     console.error(`Error saving app setting "${key}" to Supabase:`, err);
   }
 }
+window.dbSaveSettings = dbSaveSettings;
+
+async function syncUsersFromCloud() {
+  if (!window.supabaseClient) {
+    // If supabaseClient is not yet set, attempt to initialize it if credentials exist
+    if (window.supabase) {
+      let activeUser = (typeof state !== "undefined" && state.currentUser) || localStorage.getItem("gv_last_active_user") || "";
+      const userSuffix = (activeUser && activeUser !== "guest") ? `_${activeUser}` : "";
+      let url = localStorage.getItem("gv_supabase_url" + userSuffix) || localStorage.getItem("gv_supabase_url");
+      let key = localStorage.getItem("gv_supabase_key" + userSuffix) || localStorage.getItem("gv_supabase_key");
+      if (!url && !key && window.GV_CONFIG && window.GV_CONFIG.supabaseUrl) {
+        url = window.GV_CONFIG.supabaseUrl;
+        key = window.GV_CONFIG.supabaseKey;
+      }
+      if (url && key) {
+        try {
+          window.supabaseClient = window.supabase.createClient(url, key);
+        } catch (e) {
+          console.warn("Could not create supabaseClient in syncUsersFromCloud:", e);
+        }
+      }
+    }
+  }
+
+  if (!window.supabaseClient) return null;
+
+  try {
+    const { data, error } = await window.supabaseClient
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'appUsers')
+      .maybeSingle();
+
+    if (error) {
+      console.warn("Error fetching appUsers from Supabase:", error);
+      return null;
+    }
+
+    if (data && data.value) {
+      const cloudUsers = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+      if (Array.isArray(cloudUsers) && cloudUsers.length > 0) {
+        const localUsers = (typeof window.getUsersFromStorage === "function") ? window.getUsersFromStorage() : (typeof getUsersFromStorage === "function" ? getUsersFromStorage() : []);
+        const mergeFn = window.mergeUsers || (typeof mergeUsers === "function" ? mergeUsers : null);
+        const merged = mergeFn ? mergeFn(localUsers, cloudUsers) : cloudUsers;
+        localStorage.setItem("gv_users", JSON.stringify(merged));
+        return merged;
+      }
+    }
+  } catch (err) {
+    console.warn("Exception in syncUsersFromCloud:", err);
+  }
+  return null;
+}
+window.syncUsersFromCloud = syncUsersFromCloud;
 
 async function dbSavePlatform(platform) {
   if (!window.supabaseClient) return;

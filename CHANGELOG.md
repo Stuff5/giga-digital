@@ -5,6 +5,15 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.1.4] - 2026-09-21
+
+### Fixed
+- **Cross-Browser Password & Credential Synchronization**: Resolved an issue where updating passwords in "My Profile Settings" did not take effect when logging in from another browser or device. User accounts and profile settings are now persistently synchronized to Supabase (`app_settings` with key `"appUsers"`) as well as the active Supabase Auth session.
+- **Multi-Device Login Hydration**: Added proactive cloud user synchronization (`syncUsersFromCloud`) on application boot and during login submissions, ensuring secondary browsers and incognito sessions fetch and merge the latest cloud passwords before authenticating.
+- **Universal User Storage Sync**: Enhanced `saveUsersToStorage` to automatically replicate user additions, modifications, role assignments, and password recoveries to cloud database storage immediately.
+
+---
+
 ## [v2.1.3] - 2026-09-21
 
 ### Added

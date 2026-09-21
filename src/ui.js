@@ -12,7 +12,7 @@ window.loadHTMLTemplates = async () => {
   await Promise.all(templates.map(async t => {
     try {
       // Use version and timestamp cache-busting to ensure fresh HTML templates are loaded
-      const ver = window.APP_VERSION || "v2.1.3";
+      const ver = window.APP_VERSION || "v2.1.4";
       const res = await fetch(`${t.url}?v=${ver}&t=${Date.now()}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -366,6 +366,9 @@ window.handleRecoverySubmit = function(e) {
 
 // Helper to get registered user list
 function getUsersFromStorage() {
+  if (typeof window !== "undefined" && typeof window.getUsersFromStorage === "function" && window.getUsersFromStorage !== getUsersFromStorage) {
+    return window.getUsersFromStorage();
+  }
   let arr = [];
   try {
     const users = localStorage.getItem("gv_users");
@@ -377,55 +380,16 @@ function getUsersFromStorage() {
     }
   } catch (err) {
     console.error("Error reading users from storage:", err);
-    try {
-      localStorage.removeItem("gv_users");
-    } catch (e) {}
   }
-
-  const hasAdmin = arr.some(u => u.username.toLowerCase() === "admin");
+  const hasAdmin = arr.some(u => u && u.username && u.username.toLowerCase() === "admin");
   if (!hasAdmin) {
-    const defaultAdmin = {
+    arr.push({
       username: "admin",
       email: "admin@gamevault.local",
       password: "password",
       role: "admin",
       twoFactorEnabled: false
-    };
-    arr.push(defaultAdmin);
-  }
-
-  // Ensure all users have a role assigned
-  let needsSave = false;
-  arr.forEach(u => {
-    if (!u.role) {
-      u.role = u.username.toLowerCase() === "admin" ? "admin" : "merchant";
-      needsSave = true;
-    }
-  });
-
-  if (needsSave || !hasAdmin) {
-    try {
-      localStorage.setItem("gv_users", JSON.stringify(arr));
-    } catch (e) {
-      console.error("Failed to seed default admin to storage:", e);
-    }
-  }
-
-  if (state.currentUser) {
-    const hasCurrent = arr.some(u => u.username.toLowerCase() === state.currentUser.toLowerCase());
-    if (!hasCurrent) {
-      const shadowUser = {
-        username: state.currentUser,
-        email: state.currentUser.includes("@") ? state.currentUser : `${state.currentUser}@gamevault.local`,
-        password: "cloud_authenticated_user_placeholder_pwd",
-        role: "merchant",
-        twoFactorEnabled: false
-      };
-      arr.push(shadowUser);
-      try {
-        localStorage.setItem("gv_users", JSON.stringify(arr));
-      } catch (e) {}
-    }
+    });
   }
   return arr;
 }
@@ -455,6 +419,17 @@ async function handleLoginSubmit(e) {
       return;
     }
 
+    // Ensure database client is initialized if available
+    if (!window.supabaseClient && typeof initSupabaseConnection === "function") {
+      await initSupabaseConnection();
+    }
+
+    // Synchronize latest cloud users (passwords & emails) before authentication
+    const syncFn = window.syncUsersFromCloud || (typeof syncUsersFromCloud === "function" ? syncUsersFromCloud : null);
+    if (syncFn) {
+      await syncFn();
+    }
+
     let authenticatedUser = null;
     let authMethod = "Local";
 
@@ -467,7 +442,10 @@ async function handleLoginSubmit(e) {
         password: password
       });
       if (error) {
-        // Fallback to local auth check!
+        // Fallback to local auth check with cloud sync
+        if (syncFn) {
+          await syncFn();
+        }
         const users = getUsersFromStorage();
         const matchedUser = users.find(u => u.username.toLowerCase() === username.toLowerCase());
         if (matchedUser && matchedUser.password === password) {
@@ -533,6 +511,9 @@ async function handleLoginSubmit(e) {
       }
     } else {
       // Local Auth Fallback
+      if (syncFn) {
+        await syncFn();
+      }
       const users = getUsersFromStorage();
       const matchedUser = users.find(u => u.username.toLowerCase() === username.toLowerCase());
 
@@ -14409,7 +14390,7 @@ function bindProfileSettingsControls() {
   const newForm = form.cloneNode(true);
   form.parentNode.replaceChild(newForm, form);
   
-  newForm.addEventListener("submit", (e) => {
+  newForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     try {
       const usersList = getUsersFromStorage();
@@ -14448,8 +14429,36 @@ function bindProfileSettingsControls() {
       
       userObj.email = newEmail;
       userObj.twoFactorEnabled = enable2FA;
+
+      // Update Supabase Auth if active session exists
+      if (window.supabaseClient && window.supabaseClient.auth) {
+        try {
+          const { data: sessionData } = await window.supabaseClient.auth.getSession();
+          if (sessionData && sessionData.session) {
+            const authPayload = {};
+            if (newPassword) authPayload.password = newPassword;
+            if (emailChanged) authPayload.email = newEmail;
+            if (Object.keys(authPayload).length > 0) {
+              const { error: authErr } = await window.supabaseClient.auth.updateUser(authPayload);
+              if (authErr) {
+                console.warn("Supabase Auth updateUser warning:", authErr.message);
+              } else {
+                console.log("Supabase Auth successfully updated with new credentials");
+              }
+            }
+          }
+        } catch (authEx) {
+          console.warn("Could not sync profile change to Supabase Auth:", authEx);
+        }
+      }
       
       saveUsersToStorage(usersList);
+
+      // Explicitly persist to cloud app_settings
+      const saveSettingsFn = window.dbSaveSettings || (typeof dbSaveSettings === "function" ? dbSaveSettings : null);
+      if (saveSettingsFn && window.supabaseClient) {
+        await saveSettingsFn("appUsers", usersList, true);
+      }
       
       if (emailChanged) window.logAuditAction("Update Email", `Email updated to ${newEmail}`);
       if (tfaChanged) window.logAuditAction("Toggle 2FA", `Toggled 2FA to ${enable2FA ? "Enabled" : "Disabled"}`);

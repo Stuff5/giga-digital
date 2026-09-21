@@ -2004,12 +2004,119 @@ function saveStateToStorage() {
   }
 }
 
+function getUsersFromStorage() {
+  let arr = [];
+  try {
+    const users = localStorage.getItem("gv_users");
+    if (users) {
+      const parsed = JSON.parse(users);
+      if (Array.isArray(parsed)) {
+        arr = parsed;
+      }
+    }
+  } catch (err) {
+    console.error("Error reading users from storage:", err);
+    try {
+      localStorage.removeItem("gv_users");
+    } catch (e) {}
+  }
+
+  const hasAdmin = arr.some(u => u && u.username && u.username.toLowerCase() === "admin");
+  if (!hasAdmin) {
+    const defaultAdmin = {
+      username: "admin",
+      email: "admin@gamevault.local",
+      password: "password",
+      role: "admin",
+      twoFactorEnabled: false
+    };
+    arr.push(defaultAdmin);
+  }
+
+  // Ensure all users have a role assigned
+  let needsSave = false;
+  arr.forEach(u => {
+    if (u && !u.role) {
+      u.role = (u.username && u.username.toLowerCase() === "admin") ? "admin" : "merchant";
+      needsSave = true;
+    }
+  });
+
+  if (needsSave || !hasAdmin) {
+    try {
+      localStorage.setItem("gv_users", JSON.stringify(arr));
+    } catch (e) {
+      console.error("Failed to seed default admin to storage:", e);
+    }
+  }
+
+  if (state.currentUser) {
+    const hasCurrent = arr.some(u => u && u.username && u.username.toLowerCase() === state.currentUser.toLowerCase());
+    if (!hasCurrent) {
+      const shadowUser = {
+        username: state.currentUser,
+        email: state.currentUser.includes("@") ? state.currentUser : `${state.currentUser}@gamevault.local`,
+        password: "cloud_authenticated_user_placeholder_pwd",
+        role: "merchant",
+        twoFactorEnabled: false
+      };
+      arr.push(shadowUser);
+      try {
+        localStorage.setItem("gv_users", JSON.stringify(arr));
+      } catch (e) {}
+    }
+  }
+  return arr;
+}
+
+function mergeUsers(localUsers = [], cloudUsers = []) {
+  if (!Array.isArray(cloudUsers) || cloudUsers.length === 0) {
+    return Array.isArray(localUsers) ? localUsers : [];
+  }
+
+  // Cloud users is the master list from the database
+  const userMap = new Map();
+  cloudUsers.forEach(u => {
+    if (u && u.username) {
+      userMap.set(u.username.toLowerCase(), { ...u });
+    }
+  });
+
+  // Ensure default admin always exists if missing
+  if (!userMap.has("admin")) {
+    userMap.set("admin", {
+      username: "admin",
+      email: "admin@gamevault.local",
+      password: "password",
+      role: "admin",
+      twoFactorEnabled: false
+    });
+  }
+
+  return Array.from(userMap.values());
+}
+
 function saveUsersToStorage(users) {
   try {
     localStorage.setItem("gv_users", JSON.stringify(users));
   } catch (err) {
     console.error("Error saving users to storage:", err);
   }
+
+  // Also sync to cloud app_settings if Supabase is connected
+  try {
+    const saveFn = window.dbSaveSettings || (typeof dbSaveSettings === "function" ? dbSaveSettings : null);
+    if (saveFn && window.supabaseClient) {
+      saveFn("appUsers", users, true).catch(err => {
+        console.warn("Failed to sync appUsers to cloud storage:", err);
+      });
+    }
+  } catch (syncErr) {
+    console.warn("Error triggering cloud user sync:", syncErr);
+  }
 }
 
-// Perform login submission
+// Global window bindings
+window.getUsersFromStorage = getUsersFromStorage;
+window.saveUsersToStorage = saveUsersToStorage;
+window.mergeUsers = mergeUsers;
