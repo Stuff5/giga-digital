@@ -5,6 +5,13 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.1.3] - 2026-09-21
+
+### Added
+- **Dedicated Raw Inventory Export in Data Tools & Utilities**: Promoted Raw Inventory Export to a prominent standalone card in **Settings &rarr; Data Tools & Utilities** (Section A) alongside Bulk Import, Catalog Artwork Utilities, and Steam Ratings Enricher.
+- **Excel (.xlsx) and CSV (.csv) Raw Inventory Downloads**: Integrated SheetJS (`xlsx.full.min.js`) with auto-sized column widths, RFC 4180 CSV generation with UTF-8 BOM encoding for seamless Microsoft Excel compatibility, exporting complete item keys, purchase costs, vendors, platforms, sale prices, and timestamps.
+- **Dual Export Access**: Provided access to Raw Inventory Exports in both the primary Data Tools & Utilities grid and the Database Maintenance & Data Exports section.
+
 ---
 
 ## [v2.1.2] - 2026-09-19

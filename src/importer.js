@@ -705,7 +705,8 @@ function exportSalesToCSV() {
 }
 
 function downloadCSV(csvContent, filename) {
-  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const contentWithBOM = csvContent.charCodeAt(0) === 0xFEFF ? csvContent : ("\uFEFF" + csvContent);
+  const blob = new Blob([contentWithBOM], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.setAttribute("href", url);
@@ -714,7 +715,233 @@ function downloadCSV(csvContent, filename) {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+// Prepares normalized raw inventory items joined with sales records for export
+function prepareRawInventoryExportData() {
+  if (!state.inventory || state.inventory.length === 0) {
+    return [];
+  }
+
+  // Fast lookup by inventoryId for corresponding sale record
+  const salesByInvId = new Map();
+  if (Array.isArray(state.sales)) {
+    for (const s of state.sales) {
+      if (s && s.inventoryId && !salesByInvId.has(s.inventoryId)) {
+        salesByInvId.set(s.inventoryId, s);
+      }
+    }
+  }
+
+  return state.inventory.map(item => {
+    const sale = salesByInvId.get(item.id);
+    const isSold = item.status === "Sold" || Boolean(sale);
+    
+    // Numeric acquisition cost
+    const cost = (item.cost !== null && item.cost !== undefined && !isNaN(item.cost)) ? Number(item.cost) : 0;
+    
+    // Sell price
+    let sellPrice = null;
+    if (sale && sale.sellPrice !== null && sale.sellPrice !== undefined && !isNaN(sale.sellPrice)) {
+      sellPrice = Number(sale.sellPrice);
+    } else if (item.sellPrice !== null && item.sellPrice !== undefined && item.sellPrice !== "" && !isNaN(item.sellPrice)) {
+      sellPrice = Number(item.sellPrice);
+    }
+
+    // Profit
+    let profit = null;
+    if (isSold && sellPrice !== null) {
+      if (sale && sale.profit !== null && sale.profit !== undefined && !isNaN(sale.profit)) {
+        profit = Number(sale.profit);
+      } else {
+        const fees = (sale && sale.fees !== null && !isNaN(sale.fees)) ? Number(sale.fees) : 0;
+        profit = Number((sellPrice - cost - fees).toFixed(2));
+      }
+    }
+
+    // Margin
+    let margin = "";
+    if (isSold && sellPrice !== null && sellPrice > 0 && profit !== null) {
+      margin = ((profit / sellPrice) * 100).toFixed(1) + "%";
+    }
+
+    const closedDate = sale ? (sale.saleDate || "") : "";
+    const platformSold = sale ? (sale.platformSold || "") : "";
+
+    return {
+      id: item.id || "",
+      title: item.title || "",
+      platform: item.platform || "Other",
+      key: item.key || "",
+      vendor: item.source || item.supplier || "Other",
+      cost: cost,
+      sell: sellPrice,
+      profit: profit,
+      margin: margin,
+      entryDate: item.purchaseDate || "",
+      closedDate: closedDate,
+      status: item.status || "Available",
+      platformSold: platformSold,
+      publisher: item.publisher || "",
+      imageUrl: item.imageUrl || "",
+      notes: item.notes || ""
+    };
+  });
+}
+
+// Export complete raw inventory dataset as an Excel workbook (.xlsx)
+function exportRawInventoryToExcel() {
+  if (!state.inventory || state.inventory.length === 0) {
+    showToast("No raw inventory data to export.", "warning");
+    return;
+  }
+
+  ensureSheetJS(() => {
+    try {
+      const records = prepareRawInventoryExportData();
+      if (records.length === 0) {
+        showToast("No raw inventory records available.", "warning");
+        return;
+      }
+
+      // Format records into Excel rows with canonical column headers matching import engine
+      const rows = records.map(r => ({
+        "ID": r.id,
+        "Name": r.title,
+        "Platform": r.platform,
+        "Key": r.key,
+        "Vendor": r.vendor,
+        "Cost": r.cost,
+        "Sell": r.sell !== null ? r.sell : "",
+        "Profit": r.profit !== null ? r.profit : "",
+        "Margin": r.margin,
+        "Entry Date": r.entryDate,
+        "Closed Date": r.closedDate,
+        "Status": r.status,
+        "Platform Sold": r.platformSold,
+        "Publisher": r.publisher,
+        "Img": r.imageUrl,
+        "Notes": r.notes
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+
+      // Auto-calculate column widths
+      const headers = Object.keys(rows[0] || {});
+      worksheet["!cols"] = headers.map(key => {
+        let maxLen = key.length;
+        for (let i = 0; i < Math.min(rows.length, 500); i++) {
+          const val = rows[i][key];
+          if (val !== null && val !== undefined) {
+            maxLen = Math.max(maxLen, String(val).length);
+          }
+        }
+        return { wch: Math.min(Math.max(maxLen + 3, 10), 45) };
+      });
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Inventory");
+
+      const dateStr = new Date().toISOString().slice(0, 10);
+      const filename = `GameVault_Raw_Inventory_Export_${dateStr}.xlsx`;
+      XLSX.writeFile(workbook, filename);
+
+      showToast(`Exported ${records.length} raw inventory records to Excel!`, "success");
+      if (typeof logActionNotification === "function") {
+        logActionNotification(`Exported raw inventory to Excel (${filename})`);
+      }
+    } catch (err) {
+      console.error("Failed to export raw inventory to Excel:", err);
+      showToast("Error exporting Excel file: " + err.message, "danger");
+    }
+  });
+}
+
+// Export complete raw inventory dataset as a standard CSV file (.csv)
+function exportRawInventoryToCSV() {
+  if (!state.inventory || state.inventory.length === 0) {
+    showToast("No raw inventory data to export.", "warning");
+    return;
+  }
+
+  try {
+    const records = prepareRawInventoryExportData();
+    if (records.length === 0) {
+      showToast("No raw inventory records available.", "warning");
+      return;
+    }
+
+    const headers = [
+      "ID",
+      "Name",
+      "Platform",
+      "Key",
+      "Vendor",
+      "Cost",
+      "Sell",
+      "Profit",
+      "Margin",
+      "Entry Date",
+      "Closed Date",
+      "Status",
+      "Platform Sold",
+      "Publisher",
+      "Img",
+      "Notes"
+    ];
+
+    const escapeCsvField = (val) => {
+      if (val === null || val === undefined) return "";
+      const str = String(val);
+      if (str.includes('"') || str.includes(',') || str.includes('\n') || str.includes('\r')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const csvLines = [];
+    csvLines.push(headers.join(","));
+
+    for (const r of records) {
+      const line = [
+        escapeCsvField(r.id),
+        escapeCsvField(r.title),
+        escapeCsvField(r.platform),
+        escapeCsvField(r.key),
+        escapeCsvField(r.vendor),
+        r.cost !== null ? r.cost.toFixed(2) : "0.00",
+        r.sell !== null ? r.sell.toFixed(2) : "",
+        r.profit !== null ? r.profit.toFixed(2) : "",
+        escapeCsvField(r.margin),
+        escapeCsvField(r.entryDate),
+        escapeCsvField(r.closedDate),
+        escapeCsvField(r.status),
+        escapeCsvField(r.platformSold),
+        escapeCsvField(r.publisher),
+        escapeCsvField(r.imageUrl),
+        escapeCsvField(r.notes)
+      ].join(",");
+      csvLines.push(line);
+    }
+
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const filename = `GameVault_Raw_Inventory_Export_${dateStr}.csv`;
+    downloadCSV(csvLines.join("\n"), filename);
+
+    showToast(`Exported ${records.length} raw inventory records to CSV!`, "success");
+    if (typeof logActionNotification === "function") {
+      logActionNotification(`Exported raw inventory to CSV (${filename})`);
+    }
+  } catch (err) {
+    console.error("Failed to export raw inventory to CSV:", err);
+    showToast("Error exporting CSV file: " + err.message, "danger");
+  }
+}
+
+window.prepareRawInventoryExportData = prepareRawInventoryExportData;
+window.exportRawInventoryToExcel = exportRawInventoryToExcel;
+window.exportRawInventoryToCSV = exportRawInventoryToCSV;
 
 // Settings Page Helpers
 function exportFinanceToCSV() {

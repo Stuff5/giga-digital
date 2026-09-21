@@ -12,7 +12,7 @@ window.loadHTMLTemplates = async () => {
   await Promise.all(templates.map(async t => {
     try {
       // Use version and timestamp cache-busting to ensure fresh HTML templates are loaded
-      const ver = window.APP_VERSION || "v2.1.2";
+      const ver = window.APP_VERSION || "v2.1.3";
       const res = await fetch(`${t.url}?v=${ver}&t=${Date.now()}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -3306,6 +3306,25 @@ function initEventHandlers() {
       }
     });
   }
+
+  // Settings Excel/CSV Raw Inventory Export Buttons
+  const btnSettingsExportExcel = document.getElementById("btn-settings-export-excel");
+  if (btnSettingsExportExcel) {
+    btnSettingsExportExcel.addEventListener("click", () => {
+      if (typeof exportRawInventoryToExcel === "function") {
+        exportRawInventoryToExcel();
+      }
+    });
+  }
+
+  const btnSettingsExportCsv = document.getElementById("btn-settings-export-csv");
+  if (btnSettingsExportCsv) {
+    btnSettingsExportCsv.addEventListener("click", () => {
+      if (typeof exportRawInventoryToCSV === "function") {
+        exportRawInventoryToCSV();
+      }
+    });
+  }
   
   if (typeof initCSVImportWizard === "function") {
     initCSVImportWizard();
@@ -4873,6 +4892,13 @@ function updateUI() {
       storageBadge.style.color = "var(--text-secondary)";
       storageBadge.style.border = "1px solid var(--border-color)";
     }
+  }
+
+  // Update Settings inventory export count badge
+  const settingsExportCount = document.getElementById("settings-inventory-export-count");
+  if (settingsExportCount) {
+    const invCount = (state.inventory || []).length;
+    settingsExportCount.textContent = `${invCount.toLocaleString()} ${invCount === 1 ? 'item' : 'items'}`;
   }
 
   applyRoleBasedAccessControls();
@@ -12519,6 +12545,24 @@ function bindAdvancedSettingsControls() {
     backupFileInput.addEventListener("change", (e) => {
       if (e.target.files && e.target.files[0]) {
         importStateBackupJSON(e.target.files[0]);
+      }
+    });
+  }
+
+  const btnExportRawExcel = document.getElementById("btn-export-raw-inventory-excel");
+  if (btnExportRawExcel) {
+    btnExportRawExcel.addEventListener("click", () => {
+      if (typeof exportRawInventoryToExcel === "function") {
+        exportRawInventoryToExcel();
+      }
+    });
+  }
+
+  const btnExportRawCsv = document.getElementById("btn-export-raw-inventory-csv");
+  if (btnExportRawCsv) {
+    btnExportRawCsv.addEventListener("click", () => {
+      if (typeof exportRawInventoryToCSV === "function") {
+        exportRawInventoryToCSV();
       }
     });
   }
