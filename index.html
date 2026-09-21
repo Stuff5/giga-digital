@@ -17,22 +17,8 @@
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   
-  <!-- Chart.js CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  
-  <!-- Supabase JS Client CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  
-  <!-- Firebase JS Client compat CDN -->
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-  
-  <!-- SheetJS (xlsx) CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=27">
+  <link rel="stylesheet" href="styles.css?v=28">
   
   <!-- Early theme application to prevent FOUC / light theme flicker -->
   <script>
@@ -3700,14 +3686,21 @@
     </div>
   </div>
 
+  <!-- External Library CDNs (Non-blocking page render) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=60"></script>
-  <script src="src/state.js?v=60"></script>
-  <script src="src/api.js?v=60"></script>
-  <script src="src/charts.js?v=60"></script>
-  <script src="src/ui.js?v=60"></script>
-  <script src="src/ai.js?v=60"></script>
-  <script src="src/importer.js?v=60"></script>
-  <script src="app.js?v=60"></script>
+  <script src="config.js?v=61"></script>
+  <script src="src/state.js?v=61"></script>
+  <script src="src/api.js?v=61"></script>
+  <script src="src/charts.js?v=61"></script>
+  <script src="src/ui.js?v=61"></script>
+  <script src="src/ai.js?v=61"></script>
+  <script src="src/importer.js?v=61"></script>
+  <script src="app.js?v=61"></script>
 </body>
 </html>

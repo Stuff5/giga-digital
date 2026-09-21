@@ -2,33 +2,56 @@
  * GameVault - User Interface Renderers & Routers (ui.js)
  */
 
-// Asynchronously loads external HTML templates and injects them into placeholder containers
+// Asynchronously loads critical HTML templates (modals.html) on application boot
 window.loadHTMLTemplates = async () => {
-  const templates = [
-    { url: "templates/modals.html", targetId: "modals-placeholder" },
-    { url: "templates/help-modal.html", targetId: "help-modal-placeholder" }
-  ];
-  
-  await Promise.all(templates.map(async t => {
+  try {
+    const ver = window.APP_VERSION || "v2.2.0";
+    const res = await fetch(`templates/modals.html?v=${ver}`);
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    const html = await res.text();
+    const placeholder = document.getElementById("modals-placeholder");
+    if (placeholder) {
+      placeholder.innerHTML = html;
+    }
+  } catch (err) {
+    console.error("Failed to load templates/modals.html:", err);
+    const placeholder = document.getElementById("modals-placeholder");
+    if (placeholder && !placeholder.innerHTML.trim()) {
+      placeholder.innerHTML = `<div style="padding: 20px; color: var(--accent-danger); text-align: center; border: 1px dashed var(--border-color); border-radius: 8px; margin: 10px;">Offline Local CORS Alert: Failed to load modals.html. If running locally, please run a web server (e.g. using VSCode Live Server or python -m http.server) or upload to GitHub Pages.</div>`;
+    }
+  }
+};
+
+// Lazily load the heavy help & documentation modal on demand or during browser idle
+let _helpModalLoadingPromise = null;
+window.ensureHelpModalLoaded = async () => {
+  const placeholder = document.getElementById("help-modal-placeholder");
+  if (placeholder && placeholder.innerHTML.trim().length > 100) {
+    return true;
+  }
+  if (_helpModalLoadingPromise) return _helpModalLoadingPromise;
+
+  _helpModalLoadingPromise = (async () => {
     try {
-      // Use version and timestamp cache-busting to ensure fresh HTML templates are loaded
-      const ver = window.APP_VERSION || "v2.1.6";
-      const res = await fetch(`${t.url}?v=${ver}&t=${Date.now()}`);
+      const ver = window.APP_VERSION || "v2.2.0";
+      const res = await fetch(`templates/help-modal.html?v=${ver}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
-      const placeholder = document.getElementById(t.targetId);
       if (placeholder) {
         placeholder.innerHTML = html;
       }
-    } catch (err) {
-      console.error(`Failed to load template ${t.url}:`, err);
-      // Fallback placeholder content in case of local file CORS blocks
-      const placeholder = document.getElementById(t.targetId);
-      if (placeholder && !placeholder.innerHTML.trim()) {
-        placeholder.innerHTML = `<div style="padding: 20px; color: var(--accent-danger); text-align: center; border: 1px dashed var(--border-color); border-radius: 8px; margin: 10px;">Offline Local CORS Alert: Failed to load ${t.url}. If running locally, please run a web server (e.g. using VSCode Live Server or python -m http.server) or upload to GitHub Pages.</div>`;
+      if (typeof window.bindHelpModalEvents === "function") {
+        window.bindHelpModalEvents();
       }
+      return true;
+    } catch (err) {
+      console.error("Failed to lazy load templates/help-modal.html:", err);
+      _helpModalLoadingPromise = null;
+      return false;
     }
-  }));
+  })();
+
+  return _helpModalLoadingPromise;
 };
 
 // Generate unique dynamic gradient background based on string characters
@@ -4937,17 +4960,22 @@ function updateUI() {
     applyFiguresVisibility();
     applyDashboardSpans();
 
-    renderSalesTrendChart(dbFilteredSales);
-    renderPlatformSplitChart(dbFilteredSales);
-    renderSupplierSplitChart(dbFilteredInventory);
-    renderTopBestsellersChart("topBestsellers", "top-bestsellers-list", "bestsellers-chart-title", dbFilteredSales);
-    renderTopBestsellersChart("topBestsellersRevenue", "top-bestsellers-revenue-list", "bestsellers-revenue-chart-title", dbFilteredSales);
-    renderTopBestsellersChart("topBestsellersSales", "top-bestsellers-sales-list", "bestsellers-sales-chart-title", dbFilteredSales);
-    renderDailyProfitMonthChart(dbFilteredSales);
-    renderStockSpeedChart(dbFilteredInventory, dbFilteredSales);
-    renderSalesFeedWidget(dbFilteredSales);
-    renderStockTurnoverChart(dbFilteredInventory, dbFilteredSales);
-    renderStockAgingChart(dbFilteredInventory);
+    const isWidgetVisible = (key) => {
+      if (!state.widgetSettings || !state.widgetSettings[key]) return true;
+      return state.widgetSettings[key].visible !== false;
+    };
+
+    if (isWidgetVisible("salesProfit")) renderSalesTrendChart(dbFilteredSales);
+    if (isWidgetVisible("platformSplit")) renderPlatformSplitChart(dbFilteredSales);
+    if (isWidgetVisible("supplierSplit")) renderSupplierSplitChart(dbFilteredInventory);
+    if (isWidgetVisible("topBestsellers")) renderTopBestsellersChart("topBestsellers", "top-bestsellers-list", "bestsellers-chart-title", dbFilteredSales);
+    if (isWidgetVisible("topBestsellersRevenue")) renderTopBestsellersChart("topBestsellersRevenue", "top-bestsellers-revenue-list", "bestsellers-revenue-chart-title", dbFilteredSales);
+    if (isWidgetVisible("topBestsellersSales")) renderTopBestsellersChart("topBestsellersSales", "top-bestsellers-sales-list", "bestsellers-sales-chart-title", dbFilteredSales);
+    if (isWidgetVisible("dailyProfitMonth")) renderDailyProfitMonthChart(dbFilteredSales);
+    if (isWidgetVisible("stockSpeed")) renderStockSpeedChart(dbFilteredInventory, dbFilteredSales);
+    if (isWidgetVisible("salesFeed")) renderSalesFeedWidget(dbFilteredSales);
+    if (isWidgetVisible("stockTurnover")) renderStockTurnoverChart(dbFilteredInventory, dbFilteredSales);
+    if (isWidgetVisible("stockAging")) renderStockAgingChart(dbFilteredInventory);
 
     renderDashboardDetails(dbFilteredSales, dbFilteredInventory);
   } 
@@ -7821,22 +7849,60 @@ function calculateSupplierMetrics() {
   if (avgProfitSubtextEl) avgProfitSubtextEl.textContent = `Based on ${filteredSales.length} sales`;
 }
 
-// Retrieve catalog artwork map
+// Memoized in-memory cache for catalog artwork
+let _cachedCatalogArtMap = null;
+let _cachedCatalogArtRaw = null;
+const _resolvedArtCache = new Map();
+
+// Title cleaning helper for artwork matching
+function cleanTitleForArtwork(title) {
+  if (!title || typeof title !== "string") return "";
+  return title
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/\[[^\]]*\]/g, " ")
+    .replace(/[\u2122\u00ae\u00a9]/g, "")
+    .replace(/\b(pc|steam|key|global|cd-key|cdkey|gog|origin|uplay|epic|connect|edition|standard|deluxe|ultimate|premium|row|free|region|download|code|activation|digital)\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+// Retrieve catalog artwork map with in-memory memoization (eliminates repeated JSON.parse)
 function getCatalogArtworkMap() {
+  if (state && state.catalogArtwork && typeof state.catalogArtwork === "object" && Object.keys(state.catalogArtwork).length > 0) {
+    return state.catalogArtwork;
+  }
   try {
-    const raw = localStorage.getItem("gv_catalog_artwork");
-    return raw ? JSON.parse(raw) : (state.catalogArtwork || {});
+    const storage = window.safeStorage || window.localStorage;
+    const raw = storage.getItem("gv_catalog_artwork");
+    if (!raw) return (state && state.catalogArtwork) ? state.catalogArtwork : {};
+    if (raw === _cachedCatalogArtRaw && _cachedCatalogArtMap) {
+      return _cachedCatalogArtMap;
+    }
+    _cachedCatalogArtRaw = raw;
+    _cachedCatalogArtMap = JSON.parse(raw);
+    if (state && _cachedCatalogArtMap && typeof _cachedCatalogArtMap === "object") {
+      state.catalogArtwork = _cachedCatalogArtMap;
+    }
+    return _cachedCatalogArtMap || {};
   } catch (e) {
     return (state && state.catalogArtwork) ? state.catalogArtwork : {};
   }
 }
 window.getCatalogArtworkMap = getCatalogArtworkMap;
 
-// Robust cascade resolver for game cover artwork across catalogArtwork, inventory, and sales
+// Clear artwork caches when catalog or inventory changes
+window.clearResolvedArtworkCache = function() {
+  _resolvedArtCache.clear();
+  _cachedCatalogArtRaw = null;
+  _cachedCatalogArtMap = null;
+};
+
+// High-speed O(1) cascade resolver for game cover artwork across catalogArtwork, inventory, and sales
 function resolveGameArtwork(itemOrTitle) {
   if (!itemOrTitle) return null;
 
-  // If item object already has valid imageUrl, return it
+  // If item object already has valid imageUrl, return it immediately
   if (typeof itemOrTitle === "object" && itemOrTitle.imageUrl && typeof itemOrTitle.imageUrl === "string" && itemOrTitle.imageUrl.trim() !== "") {
     return itemOrTitle.imageUrl.trim();
   }
@@ -7846,31 +7912,32 @@ function resolveGameArtwork(itemOrTitle) {
   const title = rawTitle.trim();
   if (!title) return null;
 
-  const catalogMap = (typeof window !== "undefined" && typeof window.getCatalogArtworkMap === "function") 
-    ? window.getCatalogArtworkMap() 
-    : (typeof getCatalogArtworkMap === "function" ? getCatalogArtworkMap() : ((typeof state !== "undefined" && state.catalogArtwork) ? state.catalogArtwork : {}));
-
   const lower = title.toLowerCase();
+
+  // Check in-memory resolution cache first (O(1))
+  if (_resolvedArtCache.has(lower)) {
+    const cached = _resolvedArtCache.get(lower);
+    if (cached && typeof itemOrTitle === "object" && !itemOrTitle.imageUrl) {
+      itemOrTitle.imageUrl = cached;
+    }
+    return cached;
+  }
+
+  const catalogMap = getCatalogArtworkMap();
 
   // 1. Direct match in catalogArtwork map
   if (catalogMap && catalogMap[lower]) {
     const found = catalogMap[lower];
+    _resolvedArtCache.set(lower, found);
     if (typeof itemOrTitle === "object" && !itemOrTitle.imageUrl) itemOrTitle.imageUrl = found;
     return found;
   }
 
   // 2. Cleaned title match (stripping tags, editions, bracketed platforms)
-  const cleanStr = title
-    .replace(/\([^)]*\)/g, " ")
-    .replace(/\[[^\]]*\]/g, " ")
-    .replace(/[\u2122\u00ae\u00a9]/g, "")
-    .replace(/\b(pc|steam|key|global|cd-key|cdkey|gog|origin|uplay|epic|connect|edition|standard|deluxe|ultimate|premium|row|free|region|download|code|activation|digital)\b/gi, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
-
+  const cleanStr = cleanTitleForArtwork(title);
   if (cleanStr && cleanStr !== lower && catalogMap && catalogMap[cleanStr]) {
     const found = catalogMap[cleanStr];
+    _resolvedArtCache.set(lower, found);
     if (typeof itemOrTitle === "object" && !itemOrTitle.imageUrl) itemOrTitle.imageUrl = found;
     return found;
   }
@@ -7879,71 +7946,99 @@ function resolveGameArtwork(itemOrTitle) {
   const prefixMatch = title.split(/[:\-\/]/)[0].trim().toLowerCase();
   if (prefixMatch && prefixMatch.length > 2 && prefixMatch !== lower && catalogMap && catalogMap[prefixMatch]) {
     const found = catalogMap[prefixMatch];
+    _resolvedArtCache.set(lower, found);
     if (typeof itemOrTitle === "object" && !itemOrTitle.imageUrl) itemOrTitle.imageUrl = found;
     return found;
   }
 
-  // 4. Peer match in state.inventory (another key of the same game has an image)
-  if (typeof state !== "undefined" && Array.isArray(state.inventory)) {
-    const peerInv = state.inventory.find(i => 
-      i && i.imageUrl && i.imageUrl.trim() !== "" && i.title && 
-      (i.title.trim().toLowerCase() === lower || (cleanStr && i.title.trim().toLowerCase() === cleanStr) || (prefixMatch && prefixMatch.length > 2 && i.title.trim().toLowerCase().startsWith(prefixMatch)))
-    );
-    if (peerInv && peerInv.imageUrl) {
-      const found = peerInv.imageUrl.trim();
-      if (typeof itemOrTitle === "object" && !itemOrTitle.imageUrl) itemOrTitle.imageUrl = found;
-      return found;
-    }
-  }
-
-  // 5. Peer match in state.sales
-  if (typeof state !== "undefined" && Array.isArray(state.sales)) {
-    const peerSale = state.sales.find(s => 
-      s && s.imageUrl && s.imageUrl.trim() !== "" && s.title && 
-      (s.title.trim().toLowerCase() === lower || (cleanStr && s.title.trim().toLowerCase() === cleanStr) || (prefixMatch && prefixMatch.length > 2 && s.title.trim().toLowerCase().startsWith(prefixMatch)))
-    );
-    if (peerSale && peerSale.imageUrl) {
-      const found = peerSale.imageUrl.trim();
-      if (typeof itemOrTitle === "object" && !itemOrTitle.imageUrl) itemOrTitle.imageUrl = found;
-      return found;
-    }
-  }
-
+  // Negative cache so repeated table rows don't repeat lookups
+  _resolvedArtCache.set(lower, null);
   return null;
 }
 window.resolveGameArtwork = resolveGameArtwork;
 
-// Backfill missing imageUrl fields across state.inventory and state.sales from catalogArtwork
+// High-speed O(N) backfill of missing imageUrl fields across state.inventory and state.sales
 function syncInventoryArtworkWithCatalog(saveToStorage = true) {
   if (typeof state === "undefined" || !Array.isArray(state.inventory)) return 0;
-  
+
+  // Build high-speed O(1) lookup index of all known artwork in a single O(N) pass
+  const artIndex = new Map();
+  const catalog = getCatalogArtworkMap();
+  if (catalog && typeof catalog === "object") {
+    for (const [k, url] of Object.entries(catalog)) {
+      if (k && url && typeof url === "string" && url.trim() !== "") {
+        const lowerKey = k.trim().toLowerCase();
+        artIndex.set(lowerKey, url.trim());
+        const cleaned = cleanTitleForArtwork(lowerKey);
+        if (cleaned && !artIndex.has(cleaned)) artIndex.set(cleaned, url.trim());
+        const prefix = lowerKey.split(/[:\-\/]/)[0].trim();
+        if (prefix.length > 2 && !artIndex.has(prefix)) artIndex.set(prefix, url.trim());
+      }
+    }
+  }
+
+  if (Array.isArray(state.inventory)) {
+    for (let i = 0; i < state.inventory.length; i++) {
+      const it = state.inventory[i];
+      if (it && it.imageUrl && typeof it.imageUrl === "string" && it.imageUrl.trim() !== "" && it.title) {
+        const lowerKey = it.title.trim().toLowerCase();
+        if (!artIndex.has(lowerKey)) artIndex.set(lowerKey, it.imageUrl.trim());
+      }
+    }
+  }
+
+  if (Array.isArray(state.sales)) {
+    for (let i = 0; i < state.sales.length; i++) {
+      const sl = state.sales[i];
+      if (sl && sl.imageUrl && typeof sl.imageUrl === "string" && sl.imageUrl.trim() !== "" && sl.title) {
+        const lowerKey = sl.title.trim().toLowerCase();
+        if (!artIndex.has(lowerKey)) artIndex.set(lowerKey, sl.imageUrl.trim());
+      }
+    }
+  }
+
+  const resolveFromIndex = (title) => {
+    if (!title || typeof title !== "string") return null;
+    const lower = title.trim().toLowerCase();
+    if (artIndex.has(lower)) return artIndex.get(lower);
+    const clean = cleanTitleForArtwork(title);
+    if (clean && artIndex.has(clean)) return artIndex.get(clean);
+    const prefix = lower.split(/[:\-\/]/)[0].trim();
+    if (prefix.length > 2 && artIndex.has(prefix)) return artIndex.get(prefix);
+    return null;
+  };
+
   let updatedCount = 0;
 
-  state.inventory.forEach(item => {
+  for (let i = 0; i < state.inventory.length; i++) {
+    const item = state.inventory[i];
     if (item && item.title && (!item.imageUrl || item.imageUrl.trim() === "")) {
-      const resolved = resolveGameArtwork(item);
-      if (resolved) {
-        item.imageUrl = resolved;
+      const found = resolveFromIndex(item.title);
+      if (found) {
+        item.imageUrl = found;
+        _resolvedArtCache.set(item.title.trim().toLowerCase(), found);
         updatedCount++;
       }
     }
-  });
+  }
 
   if (Array.isArray(state.sales)) {
-    state.sales.forEach(sale => {
+    for (let i = 0; i < state.sales.length; i++) {
+      const sale = state.sales[i];
       if (sale && sale.title && (!sale.imageUrl || sale.imageUrl.trim() === "")) {
-        const resolved = resolveGameArtwork(sale);
-        if (resolved) {
-          sale.imageUrl = resolved;
+        const found = resolveFromIndex(sale.title);
+        if (found) {
+          sale.imageUrl = found;
+          _resolvedArtCache.set(sale.title.trim().toLowerCase(), found);
           updatedCount++;
         }
       }
-    });
+    }
   }
 
   if (updatedCount > 0 && saveToStorage && typeof saveStateToStorage === "function") {
     saveStateToStorage();
-    console.log(`[Artwork Sync] Backfilled artwork covers for ${updatedCount} inventory/sales records.`);
+    console.log(`[Artwork Sync] Backfilled artwork covers for ${updatedCount} inventory/sales records in O(N) time.`);
   }
 
   return updatedCount;
@@ -7954,9 +8049,6 @@ window.syncInventoryArtworkWithCatalog = syncInventoryArtworkWithCatalog;
 function renderInventoryTable(itemsList) {
   try {
     state._activeRenderedItems = itemsList;
-    if (typeof syncInventoryArtworkWithCatalog === "function") {
-      syncInventoryArtworkWithCatalog(false);
-    }
     console.log("renderInventoryTable called with items count:", itemsList.length, "layout mode:", state.inventoryLayout);
     // Update inventory layout containers visibility
     const tableContainer = document.getElementById("inventory-table-container");
@@ -8110,9 +8202,12 @@ function formatToDDMMYYYY(dateVal) {
 }
 
 // Render layout format A: List (Table)
-function buildInventoryRowHTML(item, salesMap, dupMap) {
+function buildInventoryRowHTML(item, salesMap, dupMap, supplierMap) {
   if (!dupMap && typeof window.getDuplicateKeyMap === "function") {
     dupMap = window.getDuplicateKeyMap();
+  }
+  if (!supplierMap && state.suppliers) {
+    supplierMap = new Map(state.suppliers.map(s => [s.name, s]));
   }
   // Mask key structure safely
   const keyStr = String(item.key || "");
@@ -8177,7 +8272,7 @@ function buildInventoryRowHTML(item, salesMap, dupMap) {
   }
 
   const sourceStr = String(item.source || "Direct");
-  const supplierObj = state.suppliers.find(s => s.name === sourceStr);
+  const supplierObj = (supplierMap && supplierMap.get(sourceStr)) || (state.suppliers && state.suppliers.find(s => s.name === sourceStr));
   const colorName = supplierObj ? (supplierObj.color || getSupplierColorName(sourceStr)) : getSupplierColorName(sourceStr);
   const colorPreset = SUPPLIER_COLORS.find(c => c.name === colorName) || SUPPLIER_COLORS[0];
   
@@ -8264,6 +8359,7 @@ function renderInventoryListLayout(itemsList) {
     });
 
     const dupMap = typeof window.getDuplicateKeyMap === "function" ? window.getDuplicateKeyMap() : new Map();
+    const supplierMap = new Map((state.suppliers || []).map(s => [s.name, s]));
 
     if (tableContainer && tableContainer._scrollListener) {
       tableContainer.removeEventListener("scroll", tableContainer._scrollListener);
@@ -8299,7 +8395,7 @@ function renderInventoryListLayout(itemsList) {
         const slicedItems = itemsList.slice(startIndex, endIndex);
         slicedItems.forEach(item => {
           if (!item) return;
-          tbodyContent += buildInventoryRowHTML(item, salesMap, dupMap);
+          tbodyContent += buildInventoryRowHTML(item, salesMap, dupMap, supplierMap);
         });
 
         if (bottomSpacerHeight > 0) {
@@ -8331,7 +8427,7 @@ function renderInventoryListLayout(itemsList) {
       let tbodyContent = "";
       itemsList.forEach(item => {
         if (!item) return;
-        tbodyContent += buildInventoryRowHTML(item, salesMap, dupMap);
+        tbodyContent += buildInventoryRowHTML(item, salesMap, dupMap, supplierMap);
       });
       tbody.innerHTML = tbodyContent;
 
@@ -8365,6 +8461,7 @@ function renderInventoryGridLayout(itemsList) {
     });
 
     const dupMap = typeof window.getDuplicateKeyMap === "function" ? window.getDuplicateKeyMap() : new Map();
+    const gridSupplierMap = new Map((state.suppliers || []).map(s => [s.name, s]));
 
     itemsList.forEach(item => {
       if (!item) return;
@@ -8372,7 +8469,7 @@ function renderInventoryGridLayout(itemsList) {
       card.className = "grid-card";
 
       const sourceStr = String(item.source || "Direct");
-      const supplierObj = state.suppliers.find(s => s.name === sourceStr);
+      const supplierObj = gridSupplierMap.get(sourceStr) || (state.suppliers && state.suppliers.find(s => s.name === sourceStr));
       const colorName = supplierObj ? (supplierObj.color || getSupplierColorName(sourceStr)) : getSupplierColorName(sourceStr);
       const colorPreset = SUPPLIER_COLORS.find(c => c.name === colorName) || SUPPLIER_COLORS[0];
       
@@ -13343,14 +13440,7 @@ window.deleteDuplicateGameItem = function(id, key) {
 // ==========================================================================
 // CATALOG ARTWORK UTILITIES - CACHE & STATE HELPERS
 // ==========================================================================
-window.getCatalogArtworkMap = function() {
-  try {
-    const raw = localStorage.getItem("gv_catalog_artwork");
-    return raw ? JSON.parse(raw) : (state.catalogArtwork || {});
-  } catch (e) {
-    return state.catalogArtwork || {};
-  }
-};
+window.getCatalogArtworkMap = getCatalogArtworkMap;
 
 window.setCatalogArtwork = function(title, imageUrl) {
   if (!title) return;
@@ -13361,10 +13451,14 @@ window.setCatalogArtwork = function(title, imageUrl) {
   } else {
     delete state.catalogArtwork[t];
   }
+  if (typeof window.clearResolvedArtworkCache === "function") {
+    window.clearResolvedArtworkCache();
+  }
   try {
-    localStorage.setItem("gv_catalog_artwork", JSON.stringify(state.catalogArtwork));
+    const storage = window.safeStorage || window.localStorage;
+    storage.setItem("gv_catalog_artwork", JSON.stringify(state.catalogArtwork));
   } catch (e) {
-    console.warn("Could not save catalog artwork to localStorage:", e);
+    console.warn("Could not save catalog artwork to storage:", e);
   }
   if (window.supabaseClient && typeof dbSaveSettings === "function") {
     dbSaveSettings("catalogArtwork", state.catalogArtwork).catch(() => {});

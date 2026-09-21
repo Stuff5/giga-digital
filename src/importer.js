@@ -1591,25 +1591,42 @@ async function synchronizeCloudDatabase() {
   }
 }
 
+let _sheetJSLoadingPromise = null;
 function ensureSheetJS(onSuccess, onError) {
   if (window.XLSX) {
-    onSuccess();
-    return;
+    if (typeof onSuccess === "function") onSuccess(window.XLSX);
+    return Promise.resolve(window.XLSX);
   }
   
-  showToast("Loading Excel parsing engine...", "info");
-  const script = document.createElement("script");
-  script.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
-  script.onload = () => {
-    showToast("Excel engine loaded successfully!", "success");
-    onSuccess();
-  };
-  script.onerror = () => {
-    showToast("Failed to load Excel parsing engine. Please check your internet connection.", "danger");
-    if (onError) onError();
-  };
-  document.head.appendChild(script);
+  if (!_sheetJSLoadingPromise) {
+    showToast("Loading Excel parsing engine...", "info");
+    _sheetJSLoadingPromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
+      script.onload = () => {
+        showToast("Excel engine loaded successfully!", "success");
+        resolve(window.XLSX);
+      };
+      script.onerror = (err) => {
+        _sheetJSLoadingPromise = null;
+        showToast("Failed to load Excel parsing engine. Please check your internet connection.", "danger");
+        reject(err || new Error("Failed to load SheetJS"));
+      };
+      document.head.appendChild(script);
+    });
+  }
+  
+  return _sheetJSLoadingPromise
+    .then(xlsx => {
+      if (typeof onSuccess === "function") onSuccess(xlsx);
+      return xlsx;
+    })
+    .catch(err => {
+      if (typeof onError === "function") onError(err);
+      throw err;
+    });
 }
+window.ensureSheetJS = ensureSheetJS;
 
 async function importStateFromSpreadsheet(file) {
   const progressContainer = document.getElementById("import-progress-container");

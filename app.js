@@ -4,7 +4,7 @@
  */
 
 document.addEventListener("DOMContentLoaded", async () => {
-  const currentVersion = window.APP_VERSION || "v2.1.6";
+  const currentVersion = window.APP_VERSION || "v2.2.0";
   console.log(`[GameVault] DOMContentLoaded - Booting ${currentVersion}...`);
   console.log("[GameVault] Native gv_active_user:", window.localStorage.getItem("gv_active_user"));
 
@@ -238,7 +238,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     applyMenuIcons();
     applyMenuTitles();
     renderSidebarCustomizationSettings();
-    await initSupabaseConnection();
+    // Initialize Cloud Sync asynchronously in the background (Stale-While-Revalidate)
+    initSupabaseConnection();
     bindSupabaseSettingsControls();
     initFirebaseConnection();
     bindFirebaseSettingsControls();
@@ -260,15 +261,81 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }
 
-    // Bind Help Modal Elements
-    const btnOpenHelp = document.getElementById("btn-open-help");
-    const helpModal = document.getElementById("help-modal");
-    const helpSearchInput = document.getElementById("help-search-input");
-    const helpTabs = document.querySelectorAll(".help-tab-btn");
-    const helpPanes = document.querySelectorAll(".help-tab-pane");
+    // Bind Help Modal Event Handlers
+    function bindHelpModalEvents() {
+      const helpSearchInput = document.getElementById("help-search-input");
+      const helpTabs = document.querySelectorAll(".help-tab-btn");
+      const helpPanes = document.querySelectorAll(".help-tab-pane");
 
+      if (helpTabs && helpTabs.length > 0) {
+        helpTabs.forEach(tab => {
+          if (tab._boundHelpClick) return;
+          tab._boundHelpClick = true;
+          tab.addEventListener("click", () => {
+            const targetPaneId = tab.getAttribute("data-help-tab");
+            helpTabs.forEach(t => {
+              t.classList.remove("active");
+              t.style.backgroundColor = "transparent";
+              t.style.color = "var(--text-secondary)";
+            });
+            helpPanes.forEach(p => {
+              p.classList.add("hidden");
+            });
+            
+            tab.classList.add("active");
+            tab.style.backgroundColor = "var(--bg-input)";
+            tab.style.color = "var(--text-main)";
+            
+            const targetPane = document.getElementById(targetPaneId);
+            if (targetPane) {
+              targetPane.classList.remove("hidden");
+            }
+          });
+        });
+      }
+
+      if (helpSearchInput && !helpSearchInput._boundHelpSearch) {
+        helpSearchInput._boundHelpSearch = true;
+        helpSearchInput.addEventListener("input", (e) => {
+          const query = e.target.value.toLowerCase().trim();
+          let firstVisibleTab = null;
+          let activeTabVisible = false;
+
+          helpTabs.forEach(tab => {
+            const targetPaneId = tab.getAttribute("data-help-tab");
+            const pane = document.getElementById(targetPaneId);
+            if (!pane) return;
+
+            const tabText = tab.textContent.toLowerCase();
+            const paneText = pane.textContent.toLowerCase();
+
+            const isMatch = tabText.includes(query) || paneText.includes(query);
+            if (isMatch) {
+              tab.style.display = "";
+              if (!firstVisibleTab) firstVisibleTab = tab;
+              if (tab.classList.contains("active")) activeTabVisible = true;
+            } else {
+              tab.style.display = "none";
+            }
+          });
+
+          if (!activeTabVisible && firstVisibleTab) {
+            firstVisibleTab.click();
+          }
+        });
+      }
+    }
+    window.bindHelpModalEvents = bindHelpModalEvents;
+
+    // Bind Help Modal Trigger
+    const btnOpenHelp = document.getElementById("btn-open-help");
     if (btnOpenHelp) {
-      btnOpenHelp.addEventListener("click", () => {
+      btnOpenHelp.addEventListener("click", async () => {
+        if (typeof window.ensureHelpModalLoaded === "function") {
+          await window.ensureHelpModalLoaded();
+        }
+        const helpSearchInput = document.getElementById("help-search-input");
+        const helpTabs = document.querySelectorAll(".help-tab-btn");
         if (helpSearchInput) {
           helpSearchInput.value = "";
           helpTabs.forEach(t => t.style.display = "");
@@ -280,8 +347,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Bind Changelog Link in Sidebar Footer
     const linkChangelog = document.getElementById("link-show-changelog");
     if (linkChangelog) {
-      linkChangelog.addEventListener("click", (e) => {
+      linkChangelog.addEventListener("click", async (e) => {
         e.preventDefault();
+        if (typeof window.ensureHelpModalLoaded === "function") {
+          await window.ensureHelpModalLoaded();
+        }
+        const helpSearchInput = document.getElementById("help-search-input");
+        const helpTabs = document.querySelectorAll(".help-tab-btn");
+        const helpPanes = document.querySelectorAll(".help-tab-pane");
+
         // Clear search
         if (helpSearchInput) {
           helpSearchInput.value = "";
@@ -331,67 +405,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     }
 
-    // Tab switcher in help modal
-    helpTabs.forEach(tab => {
-      tab.addEventListener("click", () => {
-        const targetPaneId = tab.getAttribute("data-help-tab");
-        helpTabs.forEach(t => {
-          t.classList.remove("active");
-          t.style.backgroundColor = "transparent";
-          t.style.color = "var(--text-secondary)";
-        });
-        helpPanes.forEach(p => {
-          p.classList.add("hidden");
-        });
-        
-        tab.classList.add("active");
-        tab.style.backgroundColor = "var(--bg-input)";
-        tab.style.color = "var(--text-main)";
-        
-        const targetPane = document.getElementById(targetPaneId);
-        if (targetPane) {
-          targetPane.classList.remove("hidden");
-        }
-      });
-    });
-
-    // Interactive search query filtering in help modal
-    if (helpSearchInput) {
-      helpSearchInput.addEventListener("input", (e) => {
-        const query = e.target.value.toLowerCase().trim();
-        let firstVisibleTab = null;
-        let activeTabVisible = false;
-
-        helpTabs.forEach(tab => {
-          const targetPaneId = tab.getAttribute("data-help-tab");
-          const pane = document.getElementById(targetPaneId);
-          if (!pane) return;
-
-          const tabText = tab.textContent.toLowerCase();
-          const paneText = pane.textContent.toLowerCase();
-
-          const isMatch = tabText.includes(query) || paneText.includes(query);
-          if (isMatch) {
-            tab.style.display = "";
-            if (!firstVisibleTab) firstVisibleTab = tab;
-            if (tab.classList.contains("active")) activeTabVisible = true;
-          } else {
-            tab.style.display = "none";
-          }
-        });
-
-        // Switch active tab if current active tab button is hidden
-        if (!activeTabVisible && firstVisibleTab) {
-          firstVisibleTab.click();
-        }
-      });
-    }
-
     // Keyboard Shortcuts (F1, ?, Escape)
-    window.addEventListener("keydown", (e) => {
+    window.addEventListener("keydown", async (e) => {
       // Avoid triggering when user is typing inside text inputs or textareas
       const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : "";
       if (activeTag === "input" || activeTag === "textarea" || (document.activeElement && document.activeElement.isContentEditable)) {
+        const helpModal = document.getElementById("help-modal");
         if (e.key === "Escape" && helpModal && helpModal.classList.contains("active")) {
           closeModal("help-modal");
         }
@@ -400,18 +419,23 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       if (e.key === "F1" || e.key === "?") {
         e.preventDefault();
-        if (helpModal) {
-          if (helpModal.classList.contains("active")) {
-            closeModal("help-modal");
-          } else {
-            if (helpSearchInput) {
-              helpSearchInput.value = "";
-              helpTabs.forEach(t => t.style.display = "");
-            }
-            openModal("help-modal");
+        const helpModal = document.getElementById("help-modal");
+        if (helpModal && helpModal.classList.contains("active")) {
+          closeModal("help-modal");
+        } else {
+          if (typeof window.ensureHelpModalLoaded === "function") {
+            await window.ensureHelpModalLoaded();
           }
+          const helpSearchInput = document.getElementById("help-search-input");
+          const helpTabs = document.querySelectorAll(".help-tab-btn");
+          if (helpSearchInput) {
+            helpSearchInput.value = "";
+            helpTabs.forEach(t => t.style.display = "");
+          }
+          openModal("help-modal");
         }
       } else if (e.key === "Escape") {
+        const helpModal = document.getElementById("help-modal");
         if (helpModal && helpModal.classList.contains("active")) {
           closeModal("help-modal");
         }
@@ -429,6 +453,17 @@ document.addEventListener("DOMContentLoaded", async () => {
           dbSaveSettings("showSalesLedger", state.showSalesLedger);
         }
       });
+    }
+
+    // Asynchronously pre-fetch heavy documentation modal in idle time
+    if ("requestIdleCallback" in window) {
+      window.requestIdleCallback(() => {
+        if (typeof window.ensureHelpModalLoaded === "function") window.ensureHelpModalLoaded();
+      });
+    } else {
+      setTimeout(() => {
+        if (typeof window.ensureHelpModalLoaded === "function") window.ensureHelpModalLoaded();
+      }, 2000);
     }
 
     window.appInitialized = true;
