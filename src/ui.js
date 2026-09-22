@@ -5,7 +5,7 @@
 // Asynchronously loads critical HTML templates (modals.html) on application boot
 window.loadHTMLTemplates = async () => {
   try {
-    const ver = window.APP_VERSION || "v2.2.3";
+    const ver = window.APP_VERSION || "v2.2.4";
     const res = await fetch(`templates/modals.html?v=${ver}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const html = await res.text();
@@ -33,7 +33,7 @@ window.ensureHelpModalLoaded = async () => {
 
   _helpModalLoadingPromise = (async () => {
     try {
-      const ver = window.APP_VERSION || "v2.2.3";
+      const ver = window.APP_VERSION || "v2.2.4";
       const res = await fetch(`templates/help-modal.html?v=${ver}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -2183,7 +2183,10 @@ function initEventHandlers() {
   // Suppliers view Filter Event Listeners
   const supSupplierSelect = document.getElementById("sup-filter-supplier");
   if (supSupplierSelect) {
-    supSupplierSelect.addEventListener("change", updateUI);
+    supSupplierSelect.addEventListener("change", (e) => {
+      state.supFilterSupplier = e.target.value;
+      updateUI();
+    });
   }
 
   const leaderboardSelect = document.getElementById("leaderboard-metric-select");
@@ -5277,6 +5280,8 @@ function updateUI() {
     renderSalesTable(filteredSales);
   } 
   else if (activeViewId === "suppliers-view") {
+    calculateSupplierMetrics();
+    applySupplierMetricsVisibility();
     if (state.suppliersActiveTab === "publisher") {
       document.getElementById("suppliers-tab-content")?.classList.add("hidden");
       document.getElementById("publishers-tab-content")?.classList.remove("hidden");
@@ -5428,12 +5433,14 @@ function populateSupplierDropdowns() {
   }
 
   if (supFilterSelect) {
-    const prevSupFilterVal = supFilterSelect.value;
+    const prevSupFilterVal = state.supFilterSupplier || supFilterSelect.value || "all";
     supFilterSelect.innerHTML = optionsHTML;
     if (prevSupFilterVal && (prevSupFilterVal === "all" || dropdownSuppliers.some(s => s.name === prevSupFilterVal))) {
       supFilterSelect.value = prevSupFilterVal;
+      state.supFilterSupplier = prevSupFilterVal;
     } else {
       supFilterSelect.value = "all";
+      state.supFilterSupplier = "all";
     }
   }
 }
@@ -5497,6 +5504,8 @@ function populatePlatformDropdowns() {
 window.populatePlatformDropdowns = populatePlatformDropdowns;
 
 function renderSuppliers() {
+  calculateSupplierMetrics();
+
   const tbody = DOM["suppliers-table-body"] || document.getElementById("suppliers-table-body");
   if (!tbody) return;
   tbody.innerHTML = "";
@@ -5508,6 +5517,20 @@ function renderSuppliers() {
     const sortVal = document.getElementById("suppliers-sort")?.value || "date-desc";
     let sortedSuppliers = [...state.suppliers];
     
+    // Filter by selected supplier if active
+    const supSupplierSelect = document.getElementById("sup-filter-supplier");
+    const selectedSupplier = supSupplierSelect ? supSupplierSelect.value : (state.supFilterSupplier || "all");
+    if (selectedSupplier !== "all") {
+      sortedSuppliers = sortedSuppliers.filter(s => (s.name || "").trim().toLowerCase() === selectedSupplier.trim().toLowerCase());
+    }
+
+    if (sortedSuppliers.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 20px;">No suppliers matching "${escapeHTML(selectedSupplier)}".</td></tr>`;
+      if (typeof window.populateSupplierDropdowns === "function") window.populateSupplierDropdowns();
+      renderSupplierAnalytics();
+      return;
+    }
+
     if (sortVal === "date-desc") {
       sortedSuppliers.sort((a, b) => b.dateAdded - a.dateAdded);
     } else if (sortVal === "date-asc") {
@@ -5656,6 +5679,28 @@ function renderSuppliers() {
   renderSupplierAnalytics();
 }
 
+// Helper to parse date strings safely at midnight without timezone offsets
+function parseDateMidnight(dateStr) {
+  if (!dateStr) return null;
+  if (dateStr instanceof Date) {
+    const d = new Date(dateStr);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+  const parts = String(dateStr).split("T")[0].split("-");
+  if (parts.length === 3) {
+    const y = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10) - 1;
+    const day = parseInt(parts[2], 10);
+    if (!isNaN(y) && !isNaN(m) && !isNaN(day)) {
+      return new Date(y, m, day, 0, 0, 0, 0);
+    }
+  }
+  const d = new Date(dateStr);
+  d.setHours(0, 0, 0, 0);
+  return isNaN(d.getTime()) ? null : d;
+}
+
 // Render Supplier Analytics: Leaderboard & ROI Matrix Scatter Chart
 function renderSupplierAnalytics() {
   const container = document.getElementById("supplier-leaderboard-container");
@@ -5676,20 +5721,34 @@ function renderSupplierAnalytics() {
 
   if (activePeriod !== "all") {
     if (activePeriod === "month") {
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      filteredSales = filteredSales.filter(item => new Date(item.saleDate) >= startOfMonth);
-      filteredInventory = filteredInventory.filter(item => item.purchaseDate && new Date(item.purchaseDate) >= startOfMonth);
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+      filteredSales = filteredSales.filter(item => {
+        const d = parseDateMidnight(item.saleDate);
+        return d && d >= startOfMonth;
+      });
+      filteredInventory = filteredInventory.filter(item => {
+        const d = parseDateMidnight(item.purchaseDate);
+        return d && d >= startOfMonth;
+      });
     } else if (activePeriod === "week") {
-      const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay())); // Sunday
-      filteredSales = filteredSales.filter(item => new Date(item.saleDate) >= startOfWeek);
-      filteredInventory = filteredInventory.filter(item => item.purchaseDate && new Date(item.purchaseDate) >= startOfWeek);
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
+      startOfWeek.setHours(0, 0, 0, 0);
+      filteredSales = filteredSales.filter(item => {
+        const d = parseDateMidnight(item.saleDate);
+        return d && d >= startOfWeek;
+      });
+      filteredInventory = filteredInventory.filter(item => {
+        const d = parseDateMidnight(item.purchaseDate);
+        return d && d >= startOfWeek;
+      });
     } else if (activePeriod === "today") {
       const year = now.getFullYear();
       const month = String(now.getMonth() + 1).padStart(2, '0');
       const day = String(now.getDate()).padStart(2, '0');
       const todayStr = `${year}-${month}-${day}`;
-      filteredSales = filteredSales.filter(item => item.saleDate === todayStr);
-      filteredInventory = filteredInventory.filter(item => item.purchaseDate && item.purchaseDate.startsWith(todayStr));
+      filteredSales = filteredSales.filter(item => item.saleDate && String(item.saleDate).startsWith(todayStr));
+      filteredInventory = filteredInventory.filter(item => item.purchaseDate && String(item.purchaseDate).startsWith(todayStr));
     }
   }
 
@@ -7995,11 +8054,20 @@ function calculateMetrics(filteredSalesList, filteredInventoryList) {
   }
 }
 
-// Renders the dashboard active period summary card (Option A)
+// Renders the supplier metrics cards according to active filters (Supplier and Date Period)
 function calculateSupplierMetrics() {
   const supSupplierSelect = document.getElementById("sup-filter-supplier");
-  const selectedSupplier = supSupplierSelect ? supSupplierSelect.value : "all";
+  const selectedSupplier = supSupplierSelect ? supSupplierSelect.value : (state.supFilterSupplier || "all");
   
+  // Sync the active class on the supplier period buttons
+  const activePeriod = state.supActivePeriod || "all";
+  const supPeriodButtons = document.querySelectorAll("#sup-date-filter-group button");
+  if (supPeriodButtons && supPeriodButtons.length > 0) {
+    supPeriodButtons.forEach(b => {
+      b.classList.toggle("active", b.getAttribute("data-sup-period") === activePeriod);
+    });
+  }
+
   const now = new Date();
   
   // Pre-index state.inventory by ID for O(1) lookups
@@ -8012,33 +8080,46 @@ function calculateSupplierMetrics() {
   let filteredSales = [...state.sales];
   
   // A. Date Filter
-  const activePeriod = state.supActivePeriod || "all";
   if (activePeriod === "month") {
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    filteredSales = filteredSales.filter(item => new Date(item.saleDate) >= startOfMonth);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    filteredSales = filteredSales.filter(item => {
+      if (!item.saleDate) return false;
+      const d = parseDateMidnight(item.saleDate);
+      return d && d >= startOfMonth;
+    });
   } else if (activePeriod === "week") {
-    const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay())); // Sunday
-    filteredSales = filteredSales.filter(item => new Date(item.saleDate) >= startOfWeek);
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
+    startOfWeek.setHours(0, 0, 0, 0);
+    filteredSales = filteredSales.filter(item => {
+      if (!item.saleDate) return false;
+      const d = parseDateMidnight(item.saleDate);
+      return d && d >= startOfWeek;
+    });
   } else if (activePeriod === "today") {
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const day = String(now.getDate()).padStart(2, '0');
     const todayStr = `${year}-${month}-${day}`;
-    filteredSales = filteredSales.filter(item => item.saleDate === todayStr);
+    filteredSales = filteredSales.filter(item => item.saleDate && String(item.saleDate).startsWith(todayStr));
   }
   
   // B. Supplier Filter
   if (selectedSupplier !== "all") {
     filteredSales = filteredSales.filter(sale => {
       const game = inventoryMap.get(sale.inventoryId);
-      return game && game.source === selectedSupplier;
+      const sup = (game && game.source) || sale.source || "";
+      return sup.trim().toLowerCase() === selectedSupplier.trim().toLowerCase();
     });
   }
   
   // 2. Filter Inventory by Supplier
   let filteredInventory = [...state.inventory];
   if (selectedSupplier !== "all") {
-    filteredInventory = filteredInventory.filter(item => item.source === selectedSupplier);
+    filteredInventory = filteredInventory.filter(item => {
+      const sup = item.source || "";
+      return sup.trim().toLowerCase() === selectedSupplier.trim().toLowerCase();
+    });
   }
   
   // 3. Compute Metrics
@@ -8050,22 +8131,30 @@ function calculateSupplierMetrics() {
   let soldWithDurationCount = 0;
 
   filteredSales.forEach(sale => {
-    totalRevenue += sale.sellPrice;
-    totalCostOfSales += sale.cost;
-    totalFees += sale.fees;
-    totalNetProfit += sale.profit;
+    if (sale.disputed === true) {
+      if (sale.supplierRefunded === true) {
+        return;
+      }
+      totalCostOfSales += (sale.cost || 0);
+      totalNetProfit -= (sale.cost || 0);
+      return;
+    }
+    totalRevenue += (sale.sellPrice || 0);
+    totalCostOfSales += (sale.cost || 0);
+    totalFees += (sale.fees || 0);
+    totalNetProfit += (sale.profit || 0);
 
     // Retrieve corresponding inventory purchaseDate
     const invItem = inventoryMap.get(sale.inventoryId);
     if (invItem && invItem.purchaseDate && sale.saleDate) {
-      const start = new Date(invItem.purchaseDate);
-      const end = new Date(sale.saleDate);
-      start.setHours(0, 0, 0, 0);
-      end.setHours(0, 0, 0, 0);
-      const diffTime = Math.max(0, end - start);
-      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-      totalSellDays += diffDays;
-      soldWithDurationCount++;
+      const start = parseDateMidnight(invItem.purchaseDate);
+      const end = parseDateMidnight(sale.saleDate);
+      if (start && end) {
+        const diffTime = Math.max(0, end - start);
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+        totalSellDays += diffDays;
+        soldWithDurationCount++;
+      }
     }
   });
 
@@ -8073,8 +8162,8 @@ function calculateSupplierMetrics() {
   let totalUnsoldCost = 0;
   let totalUnsoldCount = 0;
   filteredInventory.forEach(item => {
-    if (item.status !== "Sold") {
-      totalUnsoldCost += item.cost;
+    if (item.status !== "Sold" && item.status !== "Rejected") {
+      totalUnsoldCost += (item.cost || 0);
       totalUnsoldCount++;
     }
   });
@@ -8093,11 +8182,12 @@ function calculateSupplierMetrics() {
   
   const profitChangeEl = document.getElementById("sup-metric-profit-change");
   if (profitChangeEl) {
+    const isPos = marginPercentage >= 0;
     profitChangeEl.innerHTML = `
-      <i class="fa-solid ${marginPercentage >= 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down'}"></i> 
-      ${marginPercentage.toFixed(1)}% margin
+      <i class="fa-solid ${isPos ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down'}"></i> 
+      ${isPos ? '+' : ''}${marginPercentage.toFixed(1)}% margin
     `;
-    profitChangeEl.className = `metric-subtext ${marginPercentage >= 0 ? 'positive' : 'negative'}`;
+    profitChangeEl.className = `metric-subtext ${isPos ? 'positive' : 'negative'}`;
   }
 
   const costEl = document.getElementById("sup-metric-cost");
@@ -8139,6 +8229,7 @@ function calculateSupplierMetrics() {
   const avgProfitSubtextEl = document.getElementById("sup-metric-avg-profit-subtext");
   if (avgProfitSubtextEl) avgProfitSubtextEl.textContent = `Based on ${filteredSales.length} sales`;
 }
+window.calculateSupplierMetrics = calculateSupplierMetrics;
 
 // Memoized in-memory cache for catalog artwork
 let _cachedCatalogArtMap = null;
@@ -13313,6 +13404,8 @@ window.triggerPurgeGame = async function(gameId) {
 let activeExpandedPublishers = new Set();
 
 function renderPublishersTab() {
+  calculateSupplierMetrics();
+
   if (typeof initRetrievePublisherLogoHandlers === "function") {
     initRetrievePublisherLogoHandlers();
   }
@@ -13320,6 +13413,9 @@ function renderPublishersTab() {
   const tbody = DOM["publishers-table-body"] || document.getElementById("publishers-table-body");
   if (!tbody) return;
   tbody.innerHTML = "";
+
+  const supSupplierSelect = document.getElementById("sup-filter-supplier");
+  const selectedSupplier = supSupplierSelect ? supSupplierSelect.value : (state.supFilterSupplier || "all");
 
   // Pre-index sales by inventoryId for O(1) lookups
   const salesMap = new Map();
@@ -13329,7 +13425,11 @@ function renderPublishersTab() {
 
   // Group inventory by publisher
   const publishersMap = {};
-  state.inventory.forEach(item => {
+  let pubInventory = state.inventory;
+  if (selectedSupplier !== "all") {
+    pubInventory = pubInventory.filter(item => (item.source || "").trim().toLowerCase() === selectedSupplier.trim().toLowerCase());
+  }
+  pubInventory.forEach(item => {
     const pub = String(item.publisher || "").trim() || "No Publisher";
     if (!publishersMap[pub]) {
       publishersMap[pub] = {

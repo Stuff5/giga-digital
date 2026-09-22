@@ -447,11 +447,24 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
-                <!-- v2.2.3 -->
+                <!-- v2.2.4 -->
                 <div style="border-left: 3px solid var(--accent-emerald); padding-left: 12px;">
                   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.2.3 — Changelog &amp; Help Modal Dismissal &amp; Cover Banners</strong>
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.2.4 — Dynamic Supplier &amp; Period Filtered Metrics</strong>
                     <span style="font-size: 0.75rem; color: var(--accent-emerald); font-weight: bold;">Current Version</span>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
+                    <li><strong>Dynamic Supplier Metrics Cards:</strong> All 8 top-level metrics cards in the Suppliers menu (Net Profit, Inventory Cost, Total Revenue, ROI %, Available Stock, Sales Velocity, Sell-Through Rate, and Avg Profit/Key) now dynamically recalculate in real time based on active supplier dropdown selection and date period filters (All Time, This Month, This Week, Today).</li>
+                    <li><strong>Synchronized Supplier Filtering:</strong> Selecting a specific supplier immediately filters both the metrics summary cards, the Supplier Directory table, and Publisher inventory breakdowns.</li>
+                    <li><strong>Robust Date Calculations:</strong> Implemented midnight-aligned date boundary parsing to eliminate timezone shifts and date object mutation during period filtering.</li>
+                  </ul>
+                </div>
+
+                <!-- v2.2.3 -->
+                <div style="border-left: 3px solid var(--border-color); padding-left: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.2.3 — Changelog &amp; Help Modal Dismissal &amp; Cover Banners</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Previous Version</span>
                   </div>
                   <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
                     <li><strong>Modal Close Fix:</strong> Resolved an issue where lazy-loaded Help and Changelog modals could not be closed. Added multi-layered event delegation, dedicated close bindings in <code>bindHelpModalEvents()</code>, and direct inline handlers on modal close buttons and backdrops.</li>

@@ -5,6 +5,17 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.4] - 2026-09-22
+
+### Added & Improved
+- **Dynamic Supplier Metrics Cards**:
+  - Wired all 8 top-level metrics cards in the Suppliers menu (`#suppliers-metrics-grid`: Net Profit, Inventory Cost Value, Total Revenue, ROI %, Available Stock, Sales Velocity, Sell-Through Rate, and Avg Profit per Key) to dynamically recalculate and re-render in real time according to active filters.
+  - Added full support for the Date Period Filter button group (`#sup-date-filter-group`: "All Time", "This Month", "This Week", "Today") with robust midnight-aligned date boundary parsing (`parseDateMidnight`) avoiding timezone skew and date object mutations.
+  - Added dynamic supplier filtering (`#sup-filter-supplier`) across metrics, the active supplier directory table, and publisher inventory tab breakdowns.
+  - Correctly wired `updateUI()` and routing lifecycle hooks so switching to or refreshing the Suppliers view automatically triggers `calculateSupplierMetrics()`.
+
+---
+
 ## [v2.2.3] - 2026-09-21
 
 ### Fixed
