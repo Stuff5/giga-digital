@@ -5,6 +5,22 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.5] - 2026-09-23
+
+### Added & Improved
+- **Dashboard Top Bestsellers Cover Banner Display**:
+  - Upgraded game artwork display across all Top Bestselling games widgets (Net Profit, Revenue, and Sales Volume) from small 64px square crops to high-resolution horizontal cover banners (matching Steam's official 460&times;215 aspect ratio, 150px&times;70px desktop).
+  - Preserved complete game logos and titles without edge-clipping or distortion.
+  - Added artwork resolution cascade checking sales, inventory, and catalog caches so every game with available artwork renders its cover banner.
+  - Added smooth interactive hover zoom on cover images and unique hashed gradient fallback placeholders.
+- **Configurable Artwork Style Option**:
+  - Added an "Artwork Display" configuration selector in the card-back flip settings of each top bestsellers widget, allowing users to toggle between "Cover Banner (Wide & Clear)" and "Compact Thumbnail (Square 56px)".
+  - Added a "Toggle Cover / Thumbnail" action in the 3-dots card actions dropdown menu for immediate 1-click toggling.
+- **Direct Catalog Keys Access**:
+  - Clicking any bestseller leaderboard item now opens the game's Catalog Keys modal directly from the Dashboard.
+
+---
+
 ## [v2.2.4] - 2026-09-22
 
 ### Added & Improved

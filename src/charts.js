@@ -725,7 +725,8 @@ function renderTopBestsellersChart(widgetKey, listId, titleId, filteredSalesList
   // Get current configurations
   const cfg = state.widgetSettings ? state.widgetSettings[widgetKey] : null;
   const metric = widgetKey === "topBestsellersRevenue" ? "revenue" : (widgetKey === "topBestsellersSales" ? "sales" : "profit");
-  const limit = cfg ? cfg.limit : 5;
+  const limit = cfg ? (parseInt(cfg.limit) || 5) : 5;
+  const isCover = !cfg || cfg.coverStyle !== "compact";
 
   const wSales = getWidgetFilteredSales(widgetKey, filteredSalesList);
 
@@ -754,7 +755,9 @@ function renderTopBestsellersChart(widgetKey, listId, titleId, filteredSalesList
 
     // Assign imageUrl if not already set
     if (!gameMetrics[title].imageUrl) {
-      if (sale.inventoryId && imgUrlById[sale.inventoryId]) {
+      if (sale.imageUrl) {
+        gameMetrics[title].imageUrl = sale.imageUrl;
+      } else if (sale.inventoryId && imgUrlById[sale.inventoryId]) {
         gameMetrics[title].imageUrl = imgUrlById[sale.inventoryId];
       } else if (imgUrlByTitle[title.trim().toLowerCase()]) {
         gameMetrics[title].imageUrl = imgUrlByTitle[title.trim().toLowerCase()];
@@ -787,6 +790,13 @@ function renderTopBestsellersChart(widgetKey, listId, titleId, filteredSalesList
   // Apply limit
   const sortedGames = gamesArray.slice(0, limit);
 
+  // Ensure all sorted games have artwork resolved from catalog if available
+  sortedGames.forEach(game => {
+    if (!game.imageUrl && typeof window !== "undefined" && typeof window.resolveGameArtwork === "function") {
+      game.imageUrl = window.resolveGameArtwork(game.title);
+    }
+  });
+
   // Update card header title dynamically
   const cardTitle = document.getElementById(titleId);
   if (cardTitle) {
@@ -813,7 +823,18 @@ function renderTopBestsellersChart(widgetKey, listId, titleId, filteredSalesList
     valueFormatter = (val) => `${val} unit${val === 1 ? '' : 's'}`;
   }
 
-
+  const safeEscape = (str) => {
+    if (typeof window !== "undefined" && typeof window.escapeHTML === "function") {
+      return window.escapeHTML(str);
+    }
+    return String(str || "").replace(/[&<>"']/g, m => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    })[m]);
+  };
 
   let html = '';
   sortedGames.forEach((game, index) => {
@@ -828,20 +849,49 @@ function renderTopBestsellersChart(widgetKey, listId, titleId, filteredSalesList
 
     // Generate initials for placeholder
     const initials = game.title.split(" ").map(w => w[0]).join("").slice(0, 3).toUpperCase();
-    const imageHTML = game.imageUrl 
-      ? `<img src="${game.imageUrl}" class="game-thumbnail" alt="${game.title}" style="width: 64px; height: 64px; min-width: 64px; border-radius: var(--radius-sm); object-fit: cover; border: 1px solid var(--border-color); background-color: var(--bg-input);">`
-      : `<div class="game-thumbnail-placeholder" style="width: 64px; height: 64px; min-width: 64px; border-radius: var(--radius-sm); font-size: 1.25rem; background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan)); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff;">${initials}</div>`;
+    const titleSafe = safeEscape(game.title);
+    const hashGrad = (typeof window !== "undefined" && typeof window.getHashGradient === "function")
+      ? window.getHashGradient(game.title)
+      : "linear-gradient(135deg, var(--accent-purple), var(--accent-cyan))";
+
+    let imageHTML = "";
+    if (isCover) {
+      if (game.imageUrl) {
+        imageHTML = `
+          <div class="bestseller-cover-wrap" title="${titleSafe}">
+            <img src="${safeEscape(game.imageUrl)}" class="bestseller-cover-img" alt="${titleSafe}" loading="lazy" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+            <div class="bestseller-cover-placeholder" style="display: none; background: ${hashGrad};">${safeEscape(initials)}</div>
+          </div>`;
+      } else {
+        imageHTML = `
+          <div class="bestseller-cover-wrap" title="${titleSafe}">
+            <div class="bestseller-cover-placeholder" style="background: ${hashGrad};">${safeEscape(initials)}</div>
+          </div>`;
+      }
+    } else {
+      if (game.imageUrl) {
+        imageHTML = `
+          <div class="bestseller-thumb-wrap" title="${titleSafe}">
+            <img src="${safeEscape(game.imageUrl)}" class="game-thumbnail" alt="${titleSafe}" loading="lazy" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';" style="width: 56px; height: 56px; min-width: 56px; border-radius: var(--radius-sm); object-fit: cover; border: 1px solid var(--border-color); background-color: var(--bg-input);">
+            <div class="game-thumbnail-placeholder" style="display: none; width: 56px; height: 56px; min-width: 56px; border-radius: var(--radius-sm); font-size: 1.1rem; background: ${hashGrad};">${safeEscape(initials)}</div>
+          </div>`;
+      } else {
+        imageHTML = `<div class="game-thumbnail-placeholder" style="width: 56px; height: 56px; min-width: 56px; border-radius: var(--radius-sm); font-size: 1.1rem; background: ${hashGrad}; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff;">${safeEscape(initials)}</div>`;
+      }
+    }
+
+    const clickAction = `if(typeof window.triggerViewCatalogKeys==='function'){window.triggerViewCatalogKeys('${game.title.replace(/'/g, "\\'")}', true, '${(game.imageUrl || '').replace(/'/g, "\\'")}');}`;
 
     html += `
-      <div class="bestseller-item">
-        <!-- Left Side: Rank, Logo/Placeholder, and Title -->
-        <div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1;">
+      <div class="bestseller-item ${isCover ? 'has-cover' : ''}" onclick="${clickAction}" title="Click to view catalog keys for ${titleSafe}">
+        <!-- Left Side: Rank, Logo/Cover, and Title -->
+        <div style="display: flex; align-items: center; gap: 14px; min-width: 0; flex: 1;">
           <div class="bestseller-rank-badge ${rankClass}">
             ${rank <= 3 ? `<i class="fa-solid fa-trophy" style="font-size: 0.75rem;"></i>` : rank}
           </div>
           ${imageHTML}
-          <div class="bestseller-title-wrap" style="min-width: 0; display: flex; flex-direction: column; gap: 2px;">
-            <span class="bestseller-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;" title="${game.title}">${game.title}</span>
+          <div class="bestseller-title-wrap" style="min-width: 0; display: flex; flex-direction: column; gap: 3px; flex: 1;">
+            <span class="bestseller-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;" title="${titleSafe}">${titleSafe}</span>
             <div class="bestseller-labels-container">
               <span class="bestseller-label bestseller-label-sales">
                 <i class="fa-solid fa-cart-shopping" style="font-size: 0.65rem;"></i>
@@ -860,7 +910,7 @@ function renderTopBestsellersChart(widgetKey, listId, titleId, filteredSalesList
         </div>
 
         <!-- Right Side: Progress Bar and Value -->
-        <div class="bestseller-progress-container" style="flex-shrink: 0; display: flex; align-items: center; gap: 12px;">
+        <div class="bestseller-progress-container" style="flex-shrink: 0; display: flex; align-items: center; gap: 14px;">
           <div class="bestseller-progress-bg">
             <div class="bestseller-progress-fill" style="width: ${pct}%; background-color: ${barColor};"></div>
           </div>
@@ -1833,6 +1883,8 @@ function bindWidgetControls() {
     if (widgetKey === "topBestsellers" || widgetKey === "topBestsellersRevenue" || widgetKey === "topBestsellersSales") {
       const selectLimit = document.getElementById(`config-${widgetKey}-limit`);
       if (selectLimit) selectLimit.value = cfg.limit || 5;
+      const selectCover = document.getElementById(`config-${widgetKey}-coverStyle`);
+      if (selectCover) selectCover.value = (cfg && cfg.coverStyle === "compact") ? "compact" : "cover";
     } else if (widgetKey === "salesFeed") {
       const selectLimit = document.getElementById("config-salesFeed-limit");
       if (selectLimit) selectLimit.value = cfg.limit || 5;
@@ -1914,6 +1966,27 @@ function bindWidgetControls() {
       return;
     }
     
+    const btnToggleCover = e.target.closest(".btn-widget-toggle-cover");
+    if (btnToggleCover) {
+      e.stopPropagation();
+      const card = btnToggleCover.closest(".chart-card");
+      const key = card ? card.getAttribute("data-figure") : null;
+      if (key && state.widgetSettings[key]) {
+        const cfg = state.widgetSettings[key];
+        const isCurrentlyCover = !cfg.coverStyle || cfg.coverStyle === "cover";
+        cfg.coverStyle = isCurrentlyCover ? "compact" : "cover";
+        saveStateToStorage();
+        if (window.supabaseClient) {
+          dbSaveSettings("widgetSettings", state.widgetSettings);
+        }
+        const menu = btnToggleCover.closest(".card-actions-menu");
+        if (menu) menu.classList.remove("active");
+        updateUI();
+        showToast(cfg.coverStyle === "cover" ? "Cover Banner style enabled" : "Compact Thumbnail style enabled", "info");
+      }
+      return;
+    }
+    
     const btnCancelFlip = e.target.closest(".btn-widget-flip-cancel");
     if (btnCancelFlip) {
       e.stopPropagation();
@@ -1970,6 +2043,8 @@ function bindWidgetControls() {
         if (widgetKey === "topBestsellers" || widgetKey === "topBestsellersRevenue" || widgetKey === "topBestsellersSales") {
           const selectLimit = document.getElementById(`config-${widgetKey}-limit`);
           if (selectLimit) cfg.limit = parseInt(selectLimit.value);
+          const selectCover = document.getElementById(`config-${widgetKey}-coverStyle`);
+          if (selectCover) cfg.coverStyle = selectCover.value;
         } else if (widgetKey === "salesFeed") {
           const selectLimit = document.getElementById("config-salesFeed-limit");
           if (selectLimit) cfg.limit = parseInt(selectLimit.value);
