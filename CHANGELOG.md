@@ -5,6 +5,22 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.10] - 2026-09-23
+
+### Added & Improved
+- **High-Visibility Steam Ratings in Entries & Catalog Views**:
+  - Replaced the low-contrast teal/cyan color (`#38bdf8` on `rgba(6, 182, 212, 0.15)`) in Steam review sentiment pills with a vibrant, high-contrast royal Steam blue (`#60a5fa` on `rgba(37, 99, 235, 0.2)` in Dark mode; `#1d4ed8` on `rgba(37, 99, 235, 0.12)` in Light mode) for Mostly Positive games (70%–79%).
+  - Enhanced Overwhelmingly/Very Positive tier (≥80%) with rich, vibrant emerald green (`#34d399` in Dark mode; `#047857` in Light mode).
+- **Dedicated Light Theme Mode Overrides for Steam Rating Badges**:
+  - Added full `[data-theme-mode="light"] .steam-rating-pill` rules across all sentiment tiers (Positive, Mostly Positive, Mixed, Negative, Neutral) to achieve WCAG AA/AAA-compliant contrast ratios (> 5.5:1 to 7:1) on white/light backgrounds.
+  - Increased typography boldness (`font-weight: 700` pill, `800` percentage, `600` review count) and badge border definition across both Dark and Light appearance modes.
+- **Synchronized Versioning & Documentation**:
+  - Bumped version to `v2.2.10` in `config.js`, `app.js`, `src/ui.js`, `index.html`, and `README.md`.
+  - Cachebusters incremented (`styles.css?v=37`, scripts `?v=70`).
+  - Added `v2.2.10` release overview to Help & Documentation modal (`templates/help-modal.html`).
+
+---
+
 ## [v2.2.9] - 2026-09-23
 
 ### Added & Improved

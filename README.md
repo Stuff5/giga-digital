@@ -2,7 +2,7 @@
 
 > High-performance digital game license inventory pipeline, sales ledger, and financial analytics platform designed for digital key merchants, distributors, and online publishers.
 
-![Version](https://img.shields.io/badge/version-v2.2.9-cyan.svg)
+![Version](https://img.shields.io/badge/version-v2.2.10-cyan.svg)
 ![Status](https://img.shields.io/badge/status-active-emerald.svg)
 ![Platform](https://img.shields.io/badge/platform-Web%20SPA-purple.svg)
 
@@ -21,8 +21,8 @@ From bulk spreadsheet imports and real-time inventory tracking to financial marg
 ### 1. Steam Rating Intelligence & Sentiment Metrics
 - **Interactive Rating Pills**: Real-time Steam review scores and sentiment classification embedded directly in game cards and catalog tables.
 - **Color-Coded Sentiment Tiers**:
-  - `Overwhelmingly / Very Positive` (≥ 80%): Emerald highlight
-  - `Mostly Positive` (70% - 79%): Cyan highlight
+  - `Overwhelmingly / Very Positive` (≥ 80%): Vivid Emerald highlight
+  - `Mostly Positive` (70% - 79%): Royal Steam Blue highlight
   - `Mixed` (40% - 69%): Amber highlight
   - `Negative` (< 40%): Coral highlight
 - **Click-to-Store Navigation**: Direct one-click lookup to the official Steam Store for quick price/edition comparisons.
