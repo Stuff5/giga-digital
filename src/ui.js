@@ -5,7 +5,7 @@
 // Asynchronously loads critical HTML templates (modals.html) on application boot
 window.loadHTMLTemplates = async () => {
   try {
-    const ver = window.APP_VERSION || "v2.2.7";
+    const ver = window.APP_VERSION || "v2.2.8";
     const res = await fetch(`templates/modals.html?v=${ver}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const html = await res.text();
@@ -33,7 +33,7 @@ window.ensureHelpModalLoaded = async () => {
 
   _helpModalLoadingPromise = (async () => {
     try {
-      const ver = window.APP_VERSION || "v2.2.7";
+      const ver = window.APP_VERSION || "v2.2.8";
       const res = await fetch(`templates/help-modal.html?v=${ver}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -11713,6 +11713,8 @@ function renderFinanceView() {
   const textSecondaryColor = rootStyle.getPropertyValue('--text-secondary').trim() || 'hsl(220, 12%, 65%)';
   const borderColor = rootStyle.getPropertyValue('--border-color').trim() || 'hsla(224, 20%, 25%, 0.15)';
   const tooltipBg = rootStyle.getPropertyValue('--bg-sidebar').trim() || 'hsl(224, 25%, 10%)';
+  const accentTeal = rootStyle.getPropertyValue('--accent-teal').trim() || 'hsl(175, 90%, 48%)';
+  const accentCyan = rootStyle.getPropertyValue('--accent-cyan').trim() || 'hsl(195, 90%, 50%)';
 
   financeMonthlyChartInstance = new Chart(ctx, {
     type: 'line',
@@ -11745,12 +11747,12 @@ function renderFinanceView() {
         {
           label: `Profit (${activeBaseYear})`,
           data: profitData,
-          borderColor: 'hsl(175, 90%, 48%)', // Solid Teal
+          borderColor: accentTeal,
           backgroundColor: 'transparent',
           borderWidth: 3,
           fill: false,
           tension: 0.35,
-          pointBackgroundColor: 'hsl(175, 90%, 48%)',
+          pointBackgroundColor: accentTeal,
           pointHoverRadius: 6
         },
         {
@@ -11780,23 +11782,23 @@ function renderFinanceView() {
         {
           label: `Cost (Expenses)`,
           data: costData,
-          borderColor: 'hsl(195, 90%, 50%)', // Cyan
+          borderColor: accentCyan,
           backgroundColor: 'hsla(195, 90%, 50%, 0.05)',
           borderWidth: 3,
           fill: true,
           tension: 0.35,
-          pointBackgroundColor: 'hsl(195, 90%, 50%)',
+          pointBackgroundColor: accentCyan,
           pointHoverRadius: 6
         },
         {
           label: `Net Profit`,
           data: profitData,
-          borderColor: 'hsl(175, 90%, 48%)', // Teal
+          borderColor: accentTeal,
           backgroundColor: 'hsla(175, 90%, 48%, 0.05)',
           borderWidth: 3,
           fill: true,
           tension: 0.35,
-          pointBackgroundColor: 'hsl(175, 90%, 48%)',
+          pointBackgroundColor: accentTeal,
           pointHoverRadius: 6
         }
       ]
@@ -11951,12 +11953,12 @@ function renderFinanceView() {
         {
           label: `Avg Profit Margin (%)`,
           data: avgMarginData,
-          borderColor: 'hsl(175, 90%, 48%)',
+          borderColor: accentTeal,
           backgroundColor: 'hsla(175, 90%, 48%, 0.05)',
           borderWidth: 3,
           fill: true,
           tension: 0.35,
-          pointBackgroundColor: 'hsl(175, 90%, 48%)',
+          pointBackgroundColor: accentTeal,
           pointHoverRadius: 6
         }
       ];
@@ -12077,12 +12079,12 @@ function renderFinanceView() {
     // Modern color palette for categories
     const outflowPalette = [
       'hsl(330, 95%, 60%)', // Key purchases (Pink/Rose)
-      'hsl(195, 90%, 50%)', // Cyan
+      accentCyan,           // Cyan
       'hsl(260, 85%, 65%)', // Purple
       'hsl(35, 90%, 55%)',  // Amber
       'hsl(145, 80%, 45%)', // Green
       'hsl(350, 85%, 55%)', // Red
-      'hsl(175, 90%, 48%)', // Teal
+      accentTeal,           // Teal
       'hsl(220, 12%, 65%)'  // Gray
     ];
 
