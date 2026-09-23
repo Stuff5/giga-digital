@@ -5,6 +5,21 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.6] - 2026-09-23
+
+### Added & Improved
+- **Live Keys Stock Indicator on Top Bestsellers Widgets**:
+  - Added real-time remaining key stock counting and badge indicators to all items in the Dashboard Top 20 Bestselling widgets (Net Profit, Revenue, and Sales Volume).
+  - Inspects live inventory state for all available/reserved (unsold and unrejected) keys.
+  - Formatted badge indicators with `<i class="fa-solid fa-key"></i>`:
+    - Depleted / Zero Stock: highlighted with soft red alert styling (`0 keys in stock`).
+    - Low Stock Warning: highlighted with amber warning styling (`X key(s) left (Low)`) when at or below the user-configured low-stock threshold (`state.lowStockThreshold`).
+    - Available Stock: formatted with cyan/blue styling (`X key(s) in stock`).
+  - Implemented multi-tier smart title matching (exact normalized match, platform/edition tag stripping like `[Steam]` and `(PC)`, and clean prefix matching).
+  - High-contrast color overrides added for both Light and Dark theme modes.
+
+---
+
 ## [v2.2.5] - 2026-09-23
 
 ### Added & Improved

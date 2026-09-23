@@ -730,17 +730,60 @@ function renderTopBestsellersChart(widgetKey, listId, titleId, filteredSalesList
 
   const wSales = getWidgetFilteredSales(widgetKey, filteredSalesList);
 
-  // Build lookup maps for images from inventory
+  // Build lookup maps for images and available stock keys from live inventory
   const imgUrlByTitle = {};
   const imgUrlById = {};
+  const stockByTitle = {};
   if (state.inventory && Array.isArray(state.inventory)) {
     state.inventory.forEach(item => {
+      if (!item) return;
       if (item.imageUrl) {
         if (item.id) imgUrlById[item.id] = item.imageUrl;
         if (item.title) imgUrlByTitle[item.title.trim().toLowerCase()] = item.imageUrl;
       }
+      if (item.title) {
+        const isUnsold = (item.status === "Available" || item.status === "Reserved" || !item.status) 
+          && item.status !== "Sold" 
+          && item.status !== "Rejected";
+        if (isUnsold) {
+          const lower = item.title.trim().toLowerCase();
+          stockByTitle[lower] = (stockByTitle[lower] || 0) + 1;
+        }
+      }
     });
   }
+
+  const getStockForGame = (rawTitle) => {
+    if (!rawTitle) return 0;
+    const lower = rawTitle.trim().toLowerCase();
+    if (stockByTitle[lower] !== undefined) return stockByTitle[lower];
+
+    // Check if stripped title matches (without [Steam], (PC), etc.)
+    const clean = lower.replace(/\s*[\(\[][^\)\]]*[\)\]]\s*/g, ' ').replace(/\s+/g, ' ').trim();
+    let count = 0;
+    let found = false;
+    for (const [key, qty] of Object.entries(stockByTitle)) {
+      const keyClean = key.replace(/\s*[\(\[][^\)\]]*[\)\]]\s*/g, ' ').replace(/\s+/g, ' ').trim();
+      if (keyClean === clean) {
+        count += qty;
+        found = true;
+      }
+    }
+    if (found) return count;
+
+    // Check prefix match before ':' or '-'
+    const prefix = clean.split(/[:\-]/)[0].trim();
+    if (prefix && prefix.length > 3) {
+      for (const [key, qty] of Object.entries(stockByTitle)) {
+        if (key.startsWith(prefix)) {
+          count += qty;
+          found = true;
+        }
+      }
+      if (found) return count;
+    }
+    return 0;
+  };
 
   // Calculate metrics per game title
   const gameMetrics = {};
@@ -780,7 +823,8 @@ function renderTopBestsellersChart(widgetKey, listId, titleId, filteredSalesList
       salesCount: metrics.sales,
       avgProfit: metrics.sales > 0 ? (metrics.profit / metrics.sales) : 0,
       avgMargin: metrics.revenue > 0 ? ((metrics.profit / metrics.revenue) * 100) : 0,
-      imageUrl: metrics.imageUrl
+      imageUrl: metrics.imageUrl,
+      stockCount: getStockForGame(title)
     };
   });
 
@@ -882,6 +926,19 @@ function renderTopBestsellersChart(widgetKey, listId, titleId, filteredSalesList
 
     const clickAction = `if(typeof window.triggerViewCatalogKeys==='function'){window.triggerViewCatalogKeys('${game.title.replace(/'/g, "\\'")}', true, '${(game.imageUrl || '').replace(/'/g, "\\'")}');}`;
 
+    const lowThresh = (state && state.lowStockThreshold) ? state.lowStockThreshold : 5;
+    let stockClass = "";
+    let stockText = "";
+    if (game.stockCount === 0) {
+      stockClass = "stock-zero";
+      stockText = "0 keys in stock";
+    } else if (game.stockCount <= lowThresh) {
+      stockClass = "stock-low";
+      stockText = `${game.stockCount} key${game.stockCount === 1 ? '' : 's'} left (Low)`;
+    } else {
+      stockText = `${game.stockCount} key${game.stockCount === 1 ? '' : 's'} in stock`;
+    }
+
     html += `
       <div class="bestseller-item ${isCover ? 'has-cover' : ''}" onclick="${clickAction}" title="Click to view catalog keys for ${titleSafe}">
         <!-- Left Side: Rank, Logo/Cover, and Title -->
@@ -896,6 +953,10 @@ function renderTopBestsellersChart(widgetKey, listId, titleId, filteredSalesList
               <span class="bestseller-label bestseller-label-sales">
                 <i class="fa-solid fa-cart-shopping" style="font-size: 0.65rem;"></i>
                 ${game.salesCount} sold
+              </span>
+              <span class="bestseller-label bestseller-label-stock ${stockClass}">
+                <i class="fa-solid fa-key" style="font-size: 0.65rem;"></i>
+                ${stockText}
               </span>
               <span class="bestseller-label bestseller-label-profit">
                 <i class="fa-solid fa-coins" style="font-size: 0.65rem;"></i>

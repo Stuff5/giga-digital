@@ -4477,6 +4477,17 @@ textarea.form-control {
 .bestseller-label-margin {
   color: hsl(195, 60%, 70%);
 }
+.bestseller-label-stock {
+  color: hsl(205, 75%, 70%);
+}
+.bestseller-label-stock.stock-zero {
+  color: hsl(0, 75%, 68%);
+  font-weight: 600;
+}
+.bestseller-label-stock.stock-low {
+  color: hsl(38, 95%, 65%);
+  font-weight: 600;
+}
 
 /* Light Theme Color Overrides (Darker, high-contrast colors for white backgrounds) */
 [data-theme-mode="light"] .bestseller-label-sales {
@@ -4487,6 +4498,15 @@ textarea.form-control {
 }
 [data-theme-mode="light"] .bestseller-label-margin {
   color: hsl(195, 80%, 35%);
+}
+[data-theme-mode="light"] .bestseller-label-stock {
+  color: hsl(205, 80%, 35%);
+}
+[data-theme-mode="light"] .bestseller-label-stock.stock-zero {
+  color: hsl(0, 75%, 45%);
+}
+[data-theme-mode="light"] .bestseller-label-stock.stock-low {
+  color: hsl(38, 95%, 35%);
 }
 
 /* Bestsellers Cover Banner Display Styles */
