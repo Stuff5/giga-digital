@@ -1795,6 +1795,7 @@ function exitWidgetFullscreen() {
 }
 
 function applyWidgetVisibility() {
+  if (!state.widgetSettings) return;
   Object.keys(state.widgetSettings).forEach(key => {
     const card = document.getElementById(`card-chart-${key}`);
     if (card) {
@@ -1803,9 +1804,17 @@ function applyWidgetVisibility() {
         card.style.display = "";
       } else {
         card.style.setProperty("display", "none", "important");
+        if (key === "platformSplit" && platformSplitChartInstance) {
+          try {
+            platformSplitChartInstance.destroy();
+            platformSplitChartInstance = null;
+          } catch (e) {
+            console.error("Error destroying platformSplitChartInstance:", e);
+          }
+        }
       }
       
-      // Synchronize checkbox state (Removed - replaced by Widget Gallery)
+      // Synchronize legacy visibleFigures state
       if (state.visibleFigures) {
         state.visibleFigures[key] = !!cfg.visible;
       }
@@ -1899,14 +1908,18 @@ function bindWidgetControls() {
         const widgetKey = item.getAttribute("data-widget");
         if (widgetKey && state.widgetSettings[widgetKey]) {
           state.widgetSettings[widgetKey].visible = true;
-          saveStateToStorage();
+          if (state.visibleFigures) {
+            state.visibleFigures[widgetKey] = true;
+          }
           applyWidgetVisibility();
+          saveStateToStorage();
           renderWidgetGallery();
           updateUI();
           showToast("Added widget to dashboard.", "success");
           
           if (window.supabaseClient) {
             dbSaveSettings("widgetSettings", state.widgetSettings);
+            dbSaveSettings("visibleFigures", state.visibleFigures);
           }
         }
       }
@@ -2067,8 +2080,15 @@ function bindWidgetControls() {
         }
         
         state.widgetSettings[key].visible = false;
-        saveStateToStorage();
+        if (state.visibleFigures) {
+          state.visibleFigures[key] = false;
+        }
         applyWidgetVisibility();
+        saveStateToStorage();
+        if (typeof renderWidgetGallery === "function") {
+          renderWidgetGallery();
+        }
+        updateUI();
         showToast("Removed widget from dashboard.", "info");
         
         const menu = btnRemove.closest(".card-actions-menu");
@@ -2076,6 +2096,7 @@ function bindWidgetControls() {
         
         if (window.supabaseClient) {
           dbSaveSettings("widgetSettings", state.widgetSettings);
+          dbSaveSettings("visibleFigures", state.visibleFigures);
         }
       }
       return;

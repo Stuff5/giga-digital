@@ -5,7 +5,7 @@
 // Asynchronously loads critical HTML templates (modals.html) on application boot
 window.loadHTMLTemplates = async () => {
   try {
-    const ver = window.APP_VERSION || "v2.2.11";
+    const ver = window.APP_VERSION || "v2.2.12";
     const res = await fetch(`templates/modals.html?v=${ver}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const html = await res.text();
@@ -33,7 +33,7 @@ window.ensureHelpModalLoaded = async () => {
 
   _helpModalLoadingPromise = (async () => {
     try {
-      const ver = window.APP_VERSION || "v2.2.11";
+      const ver = window.APP_VERSION || "v2.2.12";
       const res = await fetch(`templates/help-modal.html?v=${ver}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -5263,6 +5263,7 @@ function updateUI() {
     renderPeriodSummary(dbFilteredSales, dbFilteredInventory);
 
     renderDashboardCardsOrder();
+    applyWidgetVisibility();
     applyFiguresVisibility();
     applyDashboardSpans();
 
@@ -10337,6 +10338,10 @@ function applySupplierMetricsVisibility() {
 }
 
 function applyFiguresVisibility() {
+  if (typeof applyWidgetVisibility === "function") {
+    applyWidgetVisibility();
+    return;
+  }
   const cards = {
     salesProfit: document.getElementById("card-chart-salesProfit"),
     platformSplit: document.getElementById("card-chart-platformSplit"),
@@ -10351,14 +10356,15 @@ function applyFiguresVisibility() {
   Object.keys(cards).forEach(key => {
     const cardEl = cards[key];
     if (cardEl) {
-      if (state.visibleFigures && state.visibleFigures[key]) {
+      const isVisible = (state.widgetSettings && state.widgetSettings[key])
+        ? state.widgetSettings[key].visible !== false
+        : (state.visibleFigures ? !!state.visibleFigures[key] : true);
+      if (isVisible) {
         cardEl.style.display = "";
       } else {
-        cardEl.style.display = "none";
+        cardEl.style.setProperty("display", "none", "important");
       }
     }
-    
-    // Also update checkbox state (Removed - replaced by Widget Gallery)
   });
 }
 

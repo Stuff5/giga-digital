@@ -1807,6 +1807,16 @@ function loadStateFromStorage() {
       }
     }
 
+    if (state.widgetSettings && state.visibleFigures) {
+      Object.keys(state.widgetSettings).forEach(key => {
+        if (state.widgetSettings[key] && state.widgetSettings[key].visible === false) {
+          state.visibleFigures[key] = false;
+        } else if (state.visibleFigures[key] === false && state.widgetSettings[key]) {
+          state.widgetSettings[key].visible = false;
+        }
+      });
+    }
+
     const storedAiSettings = localStorage.getItem("gv_ai_settings");
     if (storedAiSettings) {
       try {
@@ -1937,6 +1947,13 @@ function loadStateFromStorage() {
 // Automatically cleans up empty/invalid items from database state
 function saveStateToStorage() {
   const userSuffix = (state.currentUser && state.currentUser !== "guest") ? `_${state.currentUser}` : "";
+  if (state.widgetSettings && state.visibleFigures) {
+    Object.keys(state.widgetSettings).forEach(key => {
+      if (state.widgetSettings[key]) {
+        state.visibleFigures[key] = state.widgetSettings[key].visible !== false;
+      }
+    });
+  }
   localStorage.setItem("gv_inventory" + userSuffix, JSON.stringify(state.inventory));
   localStorage.setItem("gv_catalog_artwork", JSON.stringify(state.catalogArtwork || {}));
   localStorage.setItem("gv_catalog_reviews", JSON.stringify(state.catalogReviews || {}));

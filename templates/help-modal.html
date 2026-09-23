@@ -447,11 +447,24 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
-                <!-- v2.2.11 -->
+                <!-- v2.2.12 -->
                 <div style="border-left: 3px solid var(--accent-emerald); padding-left: 12px;">
                   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.2.11 — Dedicated Available Stock Filter in Entries</strong>
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.2.12 — Dashboard Widget Visibility &amp; State Synchronization Fix</strong>
                     <span style="font-size: 0.75rem; color: var(--accent-emerald); font-weight: bold;">Current Version</span>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
+                    <li><strong>Widget Visibility Synchronization:</strong> Resolved an issue where removing or disabling dashboard widgets (such as the <em>Platform Sales Split</em> chart) failed to persist or caused widgets to reappear upon filter changes, period switching, or page reloads.</li>
+                    <li><strong>Unified State Reconciliation:</strong> Reconciled legacy figure visibility flags (<code>state.visibleFigures</code>) with modern widget settings (<code>state.widgetSettings</code>) during storage load and save cycles, ensuring disabled widgets are never inadvertently unhidden by background re-renders.</li>
+                    <li><strong>Lifecycle Cleanup &amp; Gallery Integration:</strong> Cleanly destroyed chart canvas instances upon widget removal to free memory, and automatically refreshed the Widget Gallery drawer so removed cards can be seamlessly restored on demand.</li>
+                  </ul>
+                </div>
+
+                <!-- v2.2.11 -->
+                <div style="border-left: 3px solid var(--border-color); padding-left: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.2.11 — Dedicated Available Stock Filter in Entries</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Previous Version</span>
                   </div>
                   <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
                     <li><strong>Dedicated Available Stock Filter:</strong> Added a standalone stock filter dropdown to the Entries catalog toolbar with instant multi-tier options: <em>All Stock</em>, <em>In Stock (&gt; 0)</em>, <em>Low Stock (&le; threshold)</em>, <em>Out of Stock (0)</em>, and <em>High Stock (&gt; threshold)</em>.</li>

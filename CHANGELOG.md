@@ -5,6 +5,21 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.12] - 2026-09-23
+
+### Fixed & Improved
+- **Dashboard Widget Visibility Synchronization & Persistence**:
+  - Resolved an issue where removing or disabling dashboard widgets (such as the *Platform Sales Split* chart) failed to remain hidden or was revived whenever period filters, suppliers, or views changed.
+  - Replaced legacy figure display overrides in `updateUI()` with modern `applyWidgetVisibility()` enforcement (`display: none !important`).
+  - Added bidirectional state reconciliation between `state.visibleFigures` and `state.widgetSettings` across storage loader, saver, and cloud synchronization logic to permanently prevent stale `localStorage` flags from reviving removed widgets.
+  - Automatically destroy inactive Chart.js canvas instances (including `platformSplitChartInstance`) upon widget removal to free memory and prevent empty card layout artifacts.
+  - Implemented automatic re-rendering of the Widget Gallery drawer upon widget removal/addition so merchants can toggle dashboard cards fluidly without reloading.
+- **Synchronized Versioning & Documentation**:
+  - Bumped application version to `v2.2.12` across `config.js`, `app.js`, `src/ui.js`, `index.html`, `templates/help-modal.html`, and `README.md`.
+  - Incremented stylesheet and script cachebusters (`styles.css?v=39`, scripts `?v=72`).
+
+---
+
 ## [v2.2.11] - 2026-09-23
 
 ### Added & Improved

@@ -1171,7 +1171,15 @@ async function dbLoadState() {
             console.error("Error parsing visibleFigures:", e);
             state.visibleFigures = s.value;
           }
+          if (state.widgetSettings && state.visibleFigures) {
+            Object.keys(state.visibleFigures).forEach(key => {
+              if (state.visibleFigures[key] === false && state.widgetSettings[key]) {
+                state.widgetSettings[key].visible = false;
+              }
+            });
+          }
           applyFiguresVisibility();
+          applyWidgetVisibility();
         } else if (s.key === "metricOrder") {
           try {
             state.metricOrder = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
@@ -1230,6 +1238,13 @@ async function dbLoadState() {
         } else if (s.key === "widgetSettings") {
           try {
             state.widgetSettings = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+            if (state.widgetSettings && state.visibleFigures) {
+              Object.keys(state.widgetSettings).forEach(key => {
+                if (state.widgetSettings[key] && state.widgetSettings[key].visible === false) {
+                  state.visibleFigures[key] = false;
+                }
+              });
+            }
             applyWidgetVisibility();
             applyDashboardSpans();
           } catch(e) {
