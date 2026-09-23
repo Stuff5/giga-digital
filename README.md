@@ -2,7 +2,7 @@
 
 > High-performance digital game license inventory pipeline, sales ledger, and financial analytics platform designed for digital key merchants, distributors, and online publishers.
 
-![Version](https://img.shields.io/badge/version-v2.2.10-cyan.svg)
+![Version](https://img.shields.io/badge/version-v2.2.11-cyan.svg)
 ![Status](https://img.shields.io/badge/status-active-emerald.svg)
 ![Platform](https://img.shields.io/badge/platform-Web%20SPA-purple.svg)
 
@@ -33,9 +33,10 @@ From bulk spreadsheet imports and real-time inventory tracking to financial marg
 - **Circuit Breaker Rate Limiting**: Enforces a safe 1,300ms inter-request interval (safely below CheapShark's 60 req/min limit) and automatically pauses for 65 seconds with live UI countdowns upon encountering HTTP 429 throttling.
 - **Self-Healing Cache**: Automatic purge of empty/rate-limited placeholder records, plus a manual "Clean Cache" utility.
 
-### 3. Multi-Metric Percentage Sorting & Filtering
-- **Restock Decision Sorting**: Sort catalog listings by **Steam Rating %** (highest to lowest), **Profit Margin %**, or **ROI %**.
-- **Percentage Range Filters**: Isolate high-yielding or top-rated games with minimum and maximum percentage thresholds.
+### 3. Multi-Metric Catalog Filtering & Sorting
+- **Dedicated Available Stock Filter**: Filter catalog titles instantly by **All Stock**, **In Stock (> 0)**, **Low Stock (≤ threshold)**, **Out of Stock (0)**, or **High Stock (> threshold)** with live alert threshold synchronization.
+- **Steam Rating Sentiment Filter**: Isolate games by rating tiers (&ge; 80% Positive, &ge; 70% Mostly Positive, 40%–69% Mixed, &lt; 40% Negative, or Unrated).
+- **Restock Decision Sorting**: Sort catalog listings by **Steam Rating %** (highest to lowest), **Profit Margin %**, **ROI %**, **Available Stock** (low restock priority or highest), or **Total Sold**.
 
 ### 4. Inventory & Sales Pipeline
 - **Clean Sale Registration**: Dedicated "Record Key Sale" modal with blank price entry for rapid, error-free transaction logging.

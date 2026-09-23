@@ -5,7 +5,7 @@
 // Asynchronously loads critical HTML templates (modals.html) on application boot
 window.loadHTMLTemplates = async () => {
   try {
-    const ver = window.APP_VERSION || "v2.2.10";
+    const ver = window.APP_VERSION || "v2.2.11";
     const res = await fetch(`templates/modals.html?v=${ver}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const html = await res.text();
@@ -33,7 +33,7 @@ window.ensureHelpModalLoaded = async () => {
 
   _helpModalLoadingPromise = (async () => {
     try {
-      const ver = window.APP_VERSION || "v2.2.10";
+      const ver = window.APP_VERSION || "v2.2.11";
       const res = await fetch(`templates/help-modal.html?v=${ver}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -2289,6 +2289,18 @@ function initEventHandlers() {
     entriesRatingFilter.addEventListener("change", (e) => {
       state.entriesRatingFilter = e.target.value;
       localStorage.setItem("gv_entries_rating_filter", state.entriesRatingFilter);
+      state.entriesCurrentPage = 1;
+      renderEntries();
+    });
+  }
+
+  // Entries Available Stock Filter Listener
+  const entriesStockFilter = document.getElementById("entries-stock-filter");
+  if (entriesStockFilter) {
+    entriesStockFilter.value = state.entriesStockFilter || "all";
+    entriesStockFilter.addEventListener("change", (e) => {
+      state.entriesStockFilter = e.target.value;
+      localStorage.setItem("gv_entries_stock_filter", state.entriesStockFilter);
       state.entriesCurrentPage = 1;
       renderEntries();
     });
@@ -9798,7 +9810,7 @@ function renderEntries() {
     }
   }
 
-  // Sync Sort and Rating filter select states
+  // Sync Sort, Rating, and Stock filter select states
   const sortSelect = document.getElementById("entries-sort-by");
   if (sortSelect && sortSelect.value !== (state.entriesSortBy || "rating-desc")) {
     sortSelect.value = state.entriesSortBy || "rating-desc";
@@ -9806,6 +9818,17 @@ function renderEntries() {
   const ratingSelect = document.getElementById("entries-rating-filter");
   if (ratingSelect && ratingSelect.value !== (state.entriesRatingFilter || "all")) {
     ratingSelect.value = state.entriesRatingFilter || "all";
+  }
+  const stockSelect = document.getElementById("entries-stock-filter");
+  if (stockSelect) {
+    if (stockSelect.value !== (state.entriesStockFilter || "all")) {
+      stockSelect.value = state.entriesStockFilter || "all";
+    }
+    const threshold = state.lowStockThreshold || 5;
+    const optLow = stockSelect.querySelector('option[value="low-stock"]');
+    if (optLow) optLow.textContent = `Low Stock (1 \u2013 ${threshold})`;
+    const optHigh = stockSelect.querySelector('option[value="high-stock"]');
+    if (optHigh) optHigh.textContent = `High Stock (> ${threshold})`;
   }
   if (typeof window.updateEntriesHeaderIcons === "function") {
     window.updateEntriesHeaderIcons(state.entriesSortBy || "rating-desc");
@@ -9955,6 +9978,21 @@ function renderEntries() {
     }
   }
 
+  // Available Stock Filter
+  const stockFilter = state.entriesStockFilter || "all";
+  if (stockFilter !== "all") {
+    const threshold = state.lowStockThreshold || 5;
+    if (stockFilter === "in-stock") {
+      entriesList = entriesList.filter(entry => (entry.availableStock || 0) > 0);
+    } else if (stockFilter === "low-stock") {
+      entriesList = entriesList.filter(entry => (entry.availableStock || 0) > 0 && (entry.availableStock || 0) <= threshold);
+    } else if (stockFilter === "out-of-stock") {
+      entriesList = entriesList.filter(entry => (entry.availableStock || 0) <= 0);
+    } else if (stockFilter === "high-stock") {
+      entriesList = entriesList.filter(entry => (entry.availableStock || 0) > threshold);
+    }
+  }
+
   // Sorting (Percentage & Performance metrics)
   const sortBy = state.entriesSortBy || "rating-desc";
   entriesList.sort((a, b) => {
@@ -10016,6 +10054,9 @@ function renderEntries() {
 
   if (state.entriesLayout === "table") {
     if (tableContainer) tableContainer.style.display = "block";
+    if (paginatedEntriesList.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; padding: 40px; color: var(--text-muted);"><i class="fa-solid fa-boxes-stacked" style="font-size: 1.5rem; opacity: 0.4; margin-bottom: 8px; display: block;"></i>No matching game entries in catalog.</td></tr>`;
+    }
     // Draw entries rows
     paginatedEntriesList.forEach(entry => {
       const tr = document.createElement("tr");

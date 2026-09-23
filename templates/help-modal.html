@@ -447,11 +447,24 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
-                <!-- v2.2.10 -->
+                <!-- v2.2.11 -->
                 <div style="border-left: 3px solid var(--accent-emerald); padding-left: 12px;">
                   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.2.10 — High-Visibility Steam Rating Pills</strong>
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.2.11 — Dedicated Available Stock Filter in Entries</strong>
                     <span style="font-size: 0.75rem; color: var(--accent-emerald); font-weight: bold;">Current Version</span>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
+                    <li><strong>Dedicated Available Stock Filter:</strong> Added a standalone stock filter dropdown to the Entries catalog toolbar with instant multi-tier options: <em>All Stock</em>, <em>In Stock (&gt; 0)</em>, <em>Low Stock (&le; threshold)</em>, <em>Out of Stock (0)</em>, and <em>High Stock (&gt; threshold)</em>.</li>
+                    <li><strong>Dynamic Threshold Synchronization:</strong> Low and High Stock filter labels dynamically update to reflect the user's custom low stock alert threshold configured in Settings.</li>
+                    <li><strong>State Persistence &amp; Empty State:</strong> Selected stock filter preferences persist across sessions in local storage, with an informative empty state illustration when filters return zero catalog matches.</li>
+                  </ul>
+                </div>
+
+                <!-- v2.2.10 -->
+                <div style="border-left: 3px solid var(--border-color); padding-left: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.2.10 — High-Visibility Steam Rating Pills</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Previous Version</span>
                   </div>
                   <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
                     <li><strong>High-Visibility Steam Ratings:</strong> Replaced low-contrast teal styling in the Steam rating pill for mostly-positive games with high-visibility royal Steam blue (<code>#60a5fa</code> in Dark mode, <code>#1d4ed8</code> in Light mode) and strengthened positive ratings with vivid emerald green.</li>

@@ -1058,7 +1058,7 @@ function getBackupPayloadJSON() {
   const backupData = {};
   const keys = [
     "gv_inventory", "gv_sales", "gv_suppliers", "gv_platforms",
-    "gv_inv_layout", "gv_supplier_display_mode", "gv_platform_display_mode", "gv_inventory_sort_by", "gv_inv_page_size", "gv_entries_page_size", "gv_catalog_keys_page_size", "gv_theme", "gv_theme_mode", "gv_theme_color", "gv_currency", "gv_date_format",
+    "gv_inv_layout", "gv_supplier_display_mode", "gv_platform_display_mode", "gv_inventory_sort_by", "gv_inv_page_size", "gv_entries_page_size", "gv_entries_stock_filter", "gv_catalog_keys_page_size", "gv_theme", "gv_theme_mode", "gv_theme_color", "gv_currency", "gv_date_format",
     "gv_sidebar_collapsed", "gv_show_sales_ledger",
     "gv_visible_metrics", "gv_sup_visible_metrics", "gv_visible_figures", "gv_metric_order", "gv_sup_metric_order", "gv_menu_order", "gv_font_size", "gv_menu_icons",
     "gv_menu_titles", "gv_menu_visibility", "gv_dashboard_order", "gv_dashboard_spans", "gv_widget_settings", "gv_custom_logo", "gv_low_stock_threshold",

@@ -977,6 +977,7 @@ let state = {
   entriesLayout: "table", // "table", "gallery"
   entriesSortBy: "rating-desc", // "rating-desc", "rating-asc", "margin-desc", "margin-asc", "roi-desc", "roi-asc", "title-asc", "title-desc", "stock-asc", "stock-desc", "sold-desc", "profit-desc"
   entriesRatingFilter: "all", // "all", "80plus", "70plus", "40to69", "under40", "unrated"
+  entriesStockFilter: "all", // "all", "in-stock", "low-stock", "out-of-stock", "high-stock"
   supplierDisplayMode: "name", // "name", "logo"
   platformDisplayMode: "name", // "name", "logo"
   supplierLogos: { ...DEFAULT_SUPPLIER_LOGOS }, // Key-value map: supplierName -> logoUrl
@@ -1696,6 +1697,7 @@ function loadStateFromStorage() {
     state.syncMode = localStorage.getItem("gv_sync_mode") || "realtime";
     state.entriesSortBy = localStorage.getItem("gv_entries_sort_by") || "rating-desc";
     state.entriesRatingFilter = localStorage.getItem("gv_entries_rating_filter") || "all";
+    state.entriesStockFilter = localStorage.getItem("gv_entries_stock_filter") || "all";
 
     const storedFeePresets = localStorage.getItem("gv_platform_fee_presets");
     if (storedFeePresets) {
@@ -1957,6 +1959,7 @@ function saveStateToStorage() {
   localStorage.setItem("gv_entries_layout", state.entriesLayout);
   localStorage.setItem("gv_entries_sort_by", state.entriesSortBy || "rating-desc");
   localStorage.setItem("gv_entries_rating_filter", state.entriesRatingFilter || "all");
+  localStorage.setItem("gv_entries_stock_filter", state.entriesStockFilter || "all");
   localStorage.setItem("gv_supplier_display_mode", state.supplierDisplayMode);
   localStorage.setItem("gv_platform_display_mode", state.platformDisplayMode);
   localStorage.setItem("gv_inventory_sort_by", state.inventorySortBy);

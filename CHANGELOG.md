@@ -5,6 +5,25 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.11] - 2026-09-23
+
+### Added & Improved
+- **Dedicated Available Stock Filter for Entries**:
+  - Implemented a standalone stock filter dropdown in the **Game Catalog Entries** toolbar (`#entries-stock-filter`) allowing merchants to filter catalog items instantly:
+    - **All Stock**: Shows all unique catalog entries.
+    - **In Stock (> 0)**: Displays games that currently have active or reserved activation keys ready for delivery.
+    - **Low Stock (≤ threshold)**: Isolates inventory titles running low on stock to prioritize restocks (dynamically syncs with the configurable `state.lowStockThreshold`, e.g. 1–5 keys).
+    - **Out of Stock (0)**: Pinpoints sold-out catalog items requiring supplier order replenishment.
+    - **High Stock (> threshold)**: Filters games with robust key stockpiles.
+  - Added dynamic option text synchronization so that changes to the user's custom low stock threshold in Settings immediately update the dropdown label.
+  - Added session persistence via `localStorage` (`gv_entries_stock_filter`) and included in JSON backup payloads.
+  - Added an informative empty state illustration for table and gallery views when filter combinations yield zero results.
+- **Synchronized Versioning & Documentation**:
+  - Bumped version to `v2.2.11` across all application modules, config files, and documentation.
+  - Incremented stylesheet and script cachebusters (`styles.css?v=38`, scripts `?v=71`).
+
+---
+
 ## [v2.2.10] - 2026-09-23
 
 ### Added & Improved
