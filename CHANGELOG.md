@@ -5,6 +5,23 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.16] - 2026-09-23
+
+### Added & Improved
+- **Key Reassignment Option Inside the Edit Popup of an Entry**:
+  - Embedded a dedicated **Reassign Key to Another Entry** section directly inside the catalog entry edit modal (`#edit-catalog-entry-modal`).
+  - Added a key selection dropdown (`#edit-entry-reassign-key-select`) that dynamically populates with all keys belonging to the active entry, displaying masked key codes, platform, acquisition cost, and stock/sold status, along with an option to reassign all keys at once.
+  - Implemented real-time autocomplete suggestions (`#edit-entry-reassign-suggestions`) for the destination entry input with visual cover artwork thumbnails and key counts.
+  - Added an option to automatically adopt destination cover artwork and publisher metadata upon reassignment.
+  - Included a **Full Dialog** shortcut button (`#btn-edit-entry-reassign-wizard`) allowing merchants to jump straight to the comprehensive `#reassign-key-modal` with platform override and administrative notes pre-filled.
+  - Automatically synchronizes `state.inventory`, sold key records in `state.sales`, undo history snapshots (`pushToUndoStack()`), local storage, and cloud persistence (Supabase `dbSaveInventory` & `dbSaveSale`).
+  - Gracefully detects when all keys have been transferred out of an entry, automatically closing the edit modal and updating catalog metrics.
+- **Synchronized Versioning & Documentation**:
+  - Bumped version to `v2.2.16` across `config.js`, `app.js`, `src/ui.js`, `index.html`, `templates/help-modal.html`, and `README.md`.
+  - Incremented stylesheet and script cachebusters (`styles.css?v=43`, scripts `?v=76`).
+
+---
+
 ## [v2.2.15] - 2026-09-23
 
 ### Added & Improved

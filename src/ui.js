@@ -5,7 +5,7 @@
 // Asynchronously loads critical HTML templates (modals.html) on application boot
 window.loadHTMLTemplates = async () => {
   try {
-    const ver = window.APP_VERSION || "v2.2.15";
+    const ver = window.APP_VERSION || "v2.2.16";
     const res = await fetch(`templates/modals.html?v=${ver}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const html = await res.text();
@@ -33,7 +33,7 @@ window.ensureHelpModalLoaded = async () => {
 
   _helpModalLoadingPromise = (async () => {
     try {
-      const ver = window.APP_VERSION || "v2.2.15";
+      const ver = window.APP_VERSION || "v2.2.16";
       const res = await fetch(`templates/help-modal.html?v=${ver}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -1917,6 +1917,18 @@ function initEventHandlers() {
   }
   if (typeof initEditGameTitleAutocomplete === "function") {
     initEditGameTitleAutocomplete();
+  }
+
+  const btnEditEntryReassign = document.getElementById("btn-edit-entry-reassign-submit");
+  if (btnEditEntryReassign) {
+    btnEditEntryReassign.addEventListener("click", handleEditEntryReassignSubmit);
+  }
+  const btnEditEntryWizard = document.getElementById("btn-edit-entry-reassign-wizard");
+  if (btnEditEntryWizard) {
+    btnEditEntryWizard.addEventListener("click", handleEditEntryReassignWizard);
+  }
+  if (typeof initEditEntryReassignAutocomplete === "function") {
+    initEditEntryReassignAutocomplete();
   }
 
   // Add Supplier Form Submission
@@ -5039,8 +5051,338 @@ window.triggerEditCatalogEntry = function(title) {
   document.getElementById("edit-entry-image-url").value = currentImgUrl || "";
   document.getElementById("edit-entry-image-file").value = "";
 
+  populateEditEntryReassignKeys(currentTitle);
+
   openModal("edit-catalog-entry-modal");
 };
+
+function populateEditEntryReassignKeys(title) {
+  const keySelect = document.getElementById("edit-entry-reassign-key-select");
+  const countBadge = document.getElementById("edit-entry-keys-count-badge");
+  const submitBtn = document.getElementById("btn-edit-entry-reassign-submit");
+  const wizardBtn = document.getElementById("btn-edit-entry-reassign-wizard");
+  const targetInput = document.getElementById("edit-entry-reassign-target-title");
+  const suggestionsBox = document.getElementById("edit-entry-reassign-suggestions");
+
+  if (!keySelect) return;
+
+  if (targetInput) targetInput.value = "";
+  if (suggestionsBox) {
+    suggestionsBox.innerHTML = "";
+    suggestionsBox.style.display = "none";
+  }
+
+  const titleLower = (title || "").trim().toLowerCase();
+  const matchingKeys = state.inventory.filter(item => item && item.title && item.title.trim().toLowerCase() === titleLower);
+
+  if (countBadge) {
+    countBadge.textContent = `${matchingKeys.length} Key${matchingKeys.length === 1 ? '' : 's'} in Stock`;
+  }
+
+  if (matchingKeys.length === 0) {
+    keySelect.innerHTML = `<option value="" disabled selected>No keys in inventory for this entry</option>`;
+    keySelect.disabled = true;
+    if (submitBtn) submitBtn.disabled = true;
+    if (wizardBtn) wizardBtn.disabled = true;
+    return;
+  }
+
+  keySelect.disabled = false;
+  if (submitBtn) submitBtn.disabled = false;
+  if (wizardBtn) wizardBtn.disabled = false;
+
+  let optionsHtml = "";
+  if (matchingKeys.length > 1) {
+    optionsHtml += `<option value="all">-- All Keys in this Entry (${matchingKeys.length} keys) --</option>`;
+  }
+
+  optionsHtml += matchingKeys.map(k => {
+    const rawKey = String(k.key || "");
+    const masked = rawKey && rawKey !== "NO-KEY" 
+      ? (rawKey.length >= 8 ? `${rawKey.slice(0, 4)}-****-****-${rawKey.slice(-4)}` : rawKey)
+      : "(No Key Code)";
+    const costStr = typeof formatCurrency === "function" ? formatCurrency(k.cost) : `€${k.cost}`;
+    return `<option value="${k.id}">Key: ${masked} • ${k.platform || 'PC'} • ${costStr} • [${k.status}]</option>`;
+  }).join("");
+
+  keySelect.innerHTML = optionsHtml;
+}
+
+async function handleEditEntryReassignSubmit() {
+  const oldTitleInput = document.getElementById("edit-entry-old-title");
+  const currentTitle = oldTitleInput ? oldTitleInput.value.trim() : "";
+  const keySelect = document.getElementById("edit-entry-reassign-key-select");
+  const targetInput = document.getElementById("edit-entry-reassign-target-title");
+  const adoptMetaCheckbox = document.getElementById("edit-entry-reassign-adopt-meta");
+
+  if (!keySelect || !targetInput) return;
+
+  const selectedVal = keySelect.value;
+  if (!selectedVal) {
+    showToast("Please select a key to reassign.", "warning");
+    return;
+  }
+
+  const targetTitle = targetInput.value.trim();
+  if (!targetTitle) {
+    showToast("Please specify destination game title.", "warning");
+    targetInput.focus();
+    return;
+  }
+
+  if (targetTitle.toLowerCase() === currentTitle.toLowerCase()) {
+    showToast("Target entry must be different from current entry.", "warning");
+    return;
+  }
+
+  const titleLower = currentTitle.toLowerCase();
+  const keysToMove = (selectedVal === "all")
+    ? state.inventory.filter(i => i && i.title && i.title.trim().toLowerCase() === titleLower)
+    : [state.inventory.find(i => i.id === selectedVal)].filter(Boolean);
+
+  if (keysToMove.length === 0) {
+    showToast("No matching keys found to reassign.", "error");
+    return;
+  }
+
+  const adoptMeta = adoptMetaCheckbox ? adoptMetaCheckbox.checked : true;
+  let destArtwork = null;
+  let destPublisher = null;
+
+  if (adoptMeta) {
+    const targetLower = targetTitle.toLowerCase();
+    const existingInvItem = state.inventory.find(i => i.title.trim().toLowerCase() === targetLower && (i.imageUrl || i.publisher));
+    if (existingInvItem) {
+      if (existingInvItem.imageUrl) destArtwork = existingInvItem.imageUrl;
+      if (existingInvItem.publisher) destPublisher = existingInvItem.publisher;
+    }
+    if (!destArtwork) {
+      const existingSale = state.sales.find(s => s.title && s.title.trim().toLowerCase() === targetLower && (s.imageUrl || s.publisher));
+      if (existingSale) {
+        if (existingSale.imageUrl) destArtwork = existingSale.imageUrl;
+        if (existingSale.publisher) destPublisher = existingSale.publisher;
+      }
+    }
+    if (!destArtwork && state.catalogArtwork && state.catalogArtwork[targetLower]) {
+      destArtwork = state.catalogArtwork[targetLower];
+    }
+    if (!destArtwork && typeof window.resolveGameArtwork === "function") {
+      destArtwork = window.resolveGameArtwork(targetTitle);
+    }
+  }
+
+  pushToUndoStack();
+
+  const affectedSales = [];
+  keysToMove.forEach(item => {
+    item.title = targetTitle;
+    if (destArtwork) item.imageUrl = destArtwork;
+    if (destPublisher) item.publisher = destPublisher;
+
+    const sale = state.sales.find(s => s.inventoryId === item.id);
+    if (sale) {
+      sale.title = targetTitle;
+      if (destArtwork) sale.imageUrl = destArtwork;
+      if (destPublisher) sale.publisher = destPublisher;
+      affectedSales.push(sale);
+    }
+  });
+
+  saveStateToStorage();
+
+  if (window.supabaseClient) {
+    try {
+      for (const item of keysToMove) {
+        await dbSaveInventory(item);
+      }
+      for (const sale of affectedSales) {
+        await dbSaveSale(sale);
+      }
+    } catch (err) {
+      console.error("Error syncing reassigned keys in Supabase:", err);
+    }
+  } else if (state.syncMode === "manual") {
+    setUnsyncedChanges(true);
+  }
+
+  const count = keysToMove.length;
+  if (count === 1) {
+    showToast(`Key reassigned from "${currentTitle}" to "${targetTitle}".`, "success");
+    logActionNotification(`Reassigned key: "${currentTitle}" -> "${targetTitle}"`);
+  } else {
+    showToast(`Reassigned ${count} keys to "${targetTitle}".`, "success");
+    logActionNotification(`Bulk reassigned ${count} keys to "${targetTitle}"`);
+  }
+
+  updateUI();
+
+  // Check remaining keys in this entry
+  const remainingKeys = state.inventory.filter(i => i && i.title && i.title.trim().toLowerCase() === titleLower);
+  if (remainingKeys.length === 0) {
+    closeModal("edit-catalog-entry-modal");
+    showToast(`All keys transferred. Catalog entry "${currentTitle}" is now empty.`, "info");
+  } else {
+    populateEditEntryReassignKeys(currentTitle);
+  }
+}
+
+function handleEditEntryReassignWizard() {
+  const keySelect = document.getElementById("edit-entry-reassign-key-select");
+  if (!keySelect) return;
+
+  const selectedVal = keySelect.value;
+  if (!selectedVal) {
+    showToast("Please select a key first.", "warning");
+    return;
+  }
+
+  const oldTitleInput = document.getElementById("edit-entry-old-title");
+  const currentTitle = oldTitleInput ? oldTitleInput.value.trim() : "";
+
+  closeModal("edit-catalog-entry-modal");
+
+  if (selectedVal === "all") {
+    const titleLower = currentTitle.toLowerCase();
+    const allIds = state.inventory.filter(i => i.title.trim().toLowerCase() === titleLower).map(i => i.id);
+    triggerReassignKey(allIds);
+  } else {
+    triggerReassignKey(selectedVal);
+  }
+}
+
+function initEditEntryReassignAutocomplete() {
+  const input = document.getElementById("edit-entry-reassign-target-title");
+  const suggestions = document.getElementById("edit-entry-reassign-suggestions");
+  if (!input || !suggestions) return;
+
+  let activeIndex = -1;
+
+  const renderSuggestions = (query) => {
+    const q = (query || "").trim().toLowerCase();
+    const oldTitle = (document.getElementById("edit-entry-old-title")?.value || "").trim().toLowerCase();
+    activeIndex = -1;
+
+    const entriesMap = new Map();
+    state.inventory.forEach(item => {
+      const title = (item.title || "").trim();
+      if (!title) return;
+      const lower = title.toLowerCase();
+      if (lower === oldTitle) return; // Don't suggest current entry
+      if (!q || lower.includes(q)) {
+        if (!entriesMap.has(lower)) {
+          entriesMap.set(lower, {
+            title: title,
+            imageUrl: item.imageUrl || (typeof resolveGameArtwork === "function" ? resolveGameArtwork(item) : ""),
+            platform: item.platform || "Steam",
+            count: 1
+          });
+        } else {
+          entriesMap.get(lower).count++;
+          if (!entriesMap.get(lower).imageUrl && item.imageUrl) {
+            entriesMap.get(lower).imageUrl = item.imageUrl;
+          }
+        }
+      }
+    });
+
+    state.sales.forEach(sale => {
+      const title = (sale.title || "").trim();
+      if (!title) return;
+      const lower = title.toLowerCase();
+      if (lower === oldTitle) return;
+      if (!q || lower.includes(q)) {
+        if (!entriesMap.has(lower)) {
+          entriesMap.set(lower, {
+            title: title,
+            imageUrl: sale.imageUrl || "",
+            platform: sale.platform || "Steam",
+            count: 1
+          });
+        }
+      }
+    });
+
+    const matches = Array.from(entriesMap.values()).slice(0, 8);
+    if (matches.length === 0) {
+      suggestions.innerHTML = "";
+      suggestions.style.display = "none";
+      return;
+    }
+
+    suggestions.innerHTML = "";
+    matches.forEach((match, idx) => {
+      const itemDiv = document.createElement("div");
+      itemDiv.className = "autocomplete-suggestion-item";
+      itemDiv.dataset.index = idx;
+      itemDiv.style.cssText = "display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.15s ease;";
+
+      const imgHtml = match.imageUrl 
+        ? `<img src="${match.imageUrl}" alt="" style="width: 28px; height: 28px; object-fit: cover; border-radius: 4px;">`
+        : `<div style="width: 28px; height: 28px; border-radius: 4px; background: var(--bg-card); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; color: var(--text-muted);"><i class="fa-solid fa-gamepad"></i></div>`;
+
+      itemDiv.innerHTML = `
+        ${imgHtml}
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-weight: 600; font-size: 0.85rem; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHTML(match.title)}</div>
+          <div style="font-size: 0.72rem; color: var(--text-muted);">${match.count} key(s) in catalog &bull; ${escapeHTML(match.platform)}</div>
+        </div>
+      `;
+
+      itemDiv.addEventListener("mouseenter", () => {
+        suggestions.querySelectorAll(".autocomplete-suggestion-item").forEach(el => el.classList.remove("selected"));
+        itemDiv.classList.add("selected");
+        activeIndex = idx;
+      });
+
+      itemDiv.addEventListener("click", () => {
+        input.value = match.title;
+        suggestions.innerHTML = "";
+        suggestions.style.display = "none";
+        activeIndex = -1;
+      });
+
+      suggestions.appendChild(itemDiv);
+    });
+
+    suggestions.style.display = "block";
+  };
+
+  input.addEventListener("input", (e) => {
+    renderSuggestions(e.target.value);
+  });
+
+  input.addEventListener("focus", () => {
+    renderSuggestions(input.value);
+  });
+
+  input.addEventListener("keydown", (e) => {
+    const items = suggestions.querySelectorAll(".autocomplete-suggestion-item");
+    if (items.length === 0 || suggestions.style.display === "none") return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      activeIndex = (activeIndex + 1) % items.length;
+      items.forEach((item, idx) => item.classList.toggle("selected", idx === activeIndex));
+      if (items[activeIndex]) items[activeIndex].scrollIntoView({ block: "nearest" });
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      activeIndex = (activeIndex - 1 + items.length) % items.length;
+      items.forEach((item, idx) => item.classList.toggle("selected", idx === activeIndex));
+      if (items[activeIndex]) items[activeIndex].scrollIntoView({ block: "nearest" });
+    } else if (e.key === "Enter" && activeIndex >= 0 && items[activeIndex]) {
+      e.preventDefault();
+      items[activeIndex].click();
+    } else if (e.key === "Escape") {
+      suggestions.style.display = "none";
+    }
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest("#edit-catalog-entry-modal")) {
+      suggestions.style.display = "none";
+    }
+  });
+}
 
 window.triggerDeleteCatalogEntry = async function(title) {
   const titleLower = title.trim().toLowerCase();

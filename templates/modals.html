@@ -146,6 +146,51 @@
             </div>
             <small class="form-help">Updating this will update the cover artwork for all matching keys in inventory.</small>
           </div>
+
+          <!-- KEY REASSIGNMENT SECTION -->
+          <div class="form-group" style="margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border-color);">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <label style="font-weight: 700; font-size: 0.9rem; color: var(--text-main); margin-bottom: 0;">
+                <i class="fa-solid fa-right-left text-cyan" style="margin-right: 6px;"></i> Reassign Key to Another Entry
+              </label>
+              <span id="edit-entry-keys-count-badge" class="badge" style="background: rgba(255,255,255,0.08); font-size: 0.72rem; color: var(--text-secondary);">0 Keys in Entry</span>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;">
+              If a key was added under this entry by mistake, select the key below and choose the destination entry to transfer it.
+            </p>
+
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <div>
+                <label for="edit-entry-reassign-key-select" style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 4px; display: block;">Select Key to Move:</label>
+                <select id="edit-entry-reassign-key-select" class="form-control" style="font-family: monospace; font-size: 0.82rem;">
+                  <!-- Dynamically populated with keys of this entry -->
+                </select>
+              </div>
+
+              <div>
+                <label for="edit-entry-reassign-target-title" style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 4px; display: block;">Destination Entry (Game Title):</label>
+                <div class="autocomplete-wrapper" style="position: relative;">
+                  <input type="text" id="edit-entry-reassign-target-title" class="form-control" placeholder="Select or type destination game title..." autocomplete="off">
+                  <div id="edit-entry-reassign-suggestions" class="autocomplete-suggestions glass-panel" style="position: absolute; top: 100%; left: 0; right: 0; max-height: 180px; overflow-y: auto; z-index: 1050; border: 1px solid var(--border-color); border-radius: 6px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); display: none; background: var(--bg-card); padding: 4px 0;"></div>
+                </div>
+              </div>
+
+              <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: 4px;">
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer; margin-bottom: 0;">
+                  <input type="checkbox" id="edit-entry-reassign-adopt-meta" checked style="width: 14px; height: 14px; cursor: pointer;">
+                  <span>Adopt destination artwork &amp; publisher</span>
+                </label>
+                <div style="display: flex; gap: 6px;">
+                  <button type="button" class="btn btn-outline btn-sm" id="btn-edit-entry-reassign-wizard" title="Open full reassignment dialog with platform and notes" style="font-size: 0.75rem; padding: 4px 8px; height: 30px;">
+                    <i class="fa-solid fa-up-right-from-square"></i> Full Dialog
+                  </button>
+                  <button type="button" class="btn btn-primary btn-sm" id="btn-edit-entry-reassign-submit" style="font-size: 0.75rem; padding: 4px 10px; height: 30px; display: inline-flex; align-items: center; gap: 4px;">
+                    <i class="fa-solid fa-right-left"></i> Reassign Key
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline" data-close-modal="edit-catalog-entry-modal">Cancel</button>
