@@ -1582,6 +1582,16 @@ a {
   border-color: var(--accent-teal);
   background-color: hsla(175, 90%, 48%, 0.12);
 }
+.btn-action.btn-action-reassign:hover {
+  color: var(--accent-cyan);
+  border-color: var(--accent-cyan);
+  background-color: hsla(195, 90%, 50%, 0.12);
+}
+.btn-action.btn-action-copy:hover {
+  color: var(--accent-emerald);
+  border-color: var(--accent-emerald);
+  background-color: hsla(160, 84%, 39%, 0.12);
+}
 
 /* Logo retrieval modal candidate cards */
 .logo-candidate-card {

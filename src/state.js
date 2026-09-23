@@ -1355,7 +1355,7 @@ function initDOMCache() {
     // Views
     "dashboard-view", "inventory-view", "sales-view", "finance-view", "suppliers-view", "settings-view", "recycle-view", "entries-view",
     // Modals
-    "add-game-modal", "edit-game-modal", "sell-game-modal", "help-modal", "view-key-modal", "catalog-keys-modal", "payout-categories-modal",
+    "add-game-modal", "edit-game-modal", "sell-game-modal", "help-modal", "view-key-modal", "reassign-key-modal", "catalog-keys-modal", "payout-categories-modal",
     // Main UI tables & ledger containers
     "publishers-table-body", "suppliers-table-body", "platforms-table-body", "entries-table-body", "recycle-table-body", "payouts-ledger-body",
     // Toolbars & Action Bars

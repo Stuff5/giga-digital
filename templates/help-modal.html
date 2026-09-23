@@ -447,11 +447,25 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
-                <!-- v2.2.14 -->
+                <!-- v2.2.15 -->
                 <div style="border-left: 3px solid var(--accent-emerald); padding-left: 12px;">
                   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.2.14 — Entries Gallery View Card Cleanup</strong>
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.2.15 — Key Reassignment to Another Catalog Entry</strong>
                     <span style="font-size: 0.75rem; color: var(--accent-emerald); font-weight: bold;">Current Version</span>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
+                    <li><strong>Reassign Key to Another Entry:</strong> Merchants can now easily reassign individual or bulk keys that were added or imported under the wrong game title to another catalog entry using the dedicated <code>Reassign Key</code> dialog.</li>
+                    <li><strong>Direct Access in Catalog Keys &amp; Inventory:</strong> Added a direct <code>Reassign Key</code> action button (<i class="fa-solid fa-right-left"></i>) on each row in the <em>Catalog Keys List</em> modal, the <em>Inventory</em> table, and <em>Inventory</em> cards.</li>
+                    <li><strong>Bulk Reassignment Support:</strong> Added a <em>Reassign Entry</em> button to the bulk actions bar to move multiple misfiled keys at once.</li>
+                    <li><strong>Intelligent Metadata Inheritance &amp; Ledger Sync:</strong> Reassignment supports adopting destination artwork and publisher automatically, and synchronizes associated sales records and undo history seamlessly.</li>
+                  </ul>
+                </div>
+
+                <!-- v2.2.14 -->
+                <div style="border-left: 3px solid var(--border-color); padding-left: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.2.14 — Entries Gallery View Card Cleanup</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Previous Version</span>
                   </div>
                   <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
                     <li><strong>Removed Redundant Steam Rating Line in Gallery Hover View:</strong> Removed the duplicate <code>Steam Rating:</code> row from the hover metadata list (<code>.gallery-card-hover-meta</code>) on catalog entries. The interactive Steam Rating pill is already prominently displayed at the top of each card header and overlay next to the status badge, keeping hover cards concise and uncluttered.</li>

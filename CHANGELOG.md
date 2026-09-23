@@ -5,6 +5,24 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.15] - 2026-09-23
+
+### Added & Improved
+- **Key Reassignment to Another Catalog Entry**:
+  - Added the ability to reassign individual or bulk digital keys from one catalog entry (game title) to another, solving scenarios where keys were misfiled, imported under the wrong game, or belonged to a different edition.
+  - Implemented the dedicated **Reassign Key to Another Entry** modal (`#reassign-key-modal`) featuring active key details (masked code, cost, platform, supplier), autocomplete destination selection with visual thumbnail previews, platform selector, and optional notes.
+  - Added a direct **Reassign Key** action button (`fa-solid fa-right-left`) to each key's row inside the **Catalog Keys List** modal (`#catalog-keys-modal`), allowing immediate correction directly from the Entries view.
+  - Added an **Edit Game** action button (`fa-solid fa-pen`) directly to rows in the Catalog Keys List modal so merchants can adjust key details without leaving the catalog view.
+  - Added **Reassign Key** action buttons to the **Inventory** table and **Inventory** grid cards.
+  - Added a **Reassign Entry** button to the `#bulk-actions-bar` allowing batch reassignment of multiple selected keys simultaneously.
+  - Added autocomplete suggestions to `#edit-game-title` inside `#edit-game-modal` to seamlessly pick existing catalog games.
+  - Reassignment automatically handles metadata inheritance (adopting destination cover artwork and publisher), synchronizes corresponding sales records (`state.sales`) if the key was sold, records an undo snapshot, and syncs changes to Supabase.
+- **Synchronized Versioning & Documentation**:
+  - Bumped version to `v2.2.15` across `config.js`, `app.js`, `src/ui.js`, `index.html`, `templates/help-modal.html`, and `README.md`.
+  - Incremented stylesheet and script cachebusters (`styles.css?v=42`, scripts `?v=75`).
+
+---
+
 ## [v2.2.14] - 2026-09-23
 
 ### Fixed & Improved

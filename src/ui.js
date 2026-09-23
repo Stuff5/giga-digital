@@ -5,7 +5,7 @@
 // Asynchronously loads critical HTML templates (modals.html) on application boot
 window.loadHTMLTemplates = async () => {
   try {
-    const ver = window.APP_VERSION || "v2.2.14";
+    const ver = window.APP_VERSION || "v2.2.15";
     const res = await fetch(`templates/modals.html?v=${ver}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const html = await res.text();
@@ -33,7 +33,7 @@ window.ensureHelpModalLoaded = async () => {
 
   _helpModalLoadingPromise = (async () => {
     try {
-      const ver = window.APP_VERSION || "v2.2.14";
+      const ver = window.APP_VERSION || "v2.2.15";
       const res = await fetch(`templates/help-modal.html?v=${ver}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -1907,6 +1907,18 @@ function initEventHandlers() {
     editCatalogForm.addEventListener("submit", handleEditCatalogEntrySubmit);
   }
 
+  // Reassign Key Form Submission
+  const reassignKeyForm = document.getElementById("reassign-key-form");
+  if (reassignKeyForm) {
+    reassignKeyForm.addEventListener("submit", handleReassignKeySubmit);
+  }
+  if (typeof initReassignKeyAutocomplete === "function") {
+    initReassignKeyAutocomplete();
+  }
+  if (typeof initEditGameTitleAutocomplete === "function") {
+    initEditGameTitleAutocomplete();
+  }
+
   // Add Supplier Form Submission
   document.getElementById("add-supplier-form").addEventListener("submit", handleAddSupplierSubmit);
 
@@ -3574,6 +3586,18 @@ function initBulkActionsToolbar() {
     });
   });
 
+  const btnBulkReassign = document.getElementById("btn-bulk-reassign");
+  if (btnBulkReassign) {
+    btnBulkReassign.addEventListener("click", () => {
+      const selected = state.selectedInventoryIds || [];
+      if (selected.length === 0) {
+        showToast("No keys selected for reassignment.", "warning");
+        return;
+      }
+      triggerReassignKey(selected);
+    });
+  }
+
   const btnBulkPrice = document.getElementById("btn-bulk-price");
   if (btnBulkPrice) {
     btnBulkPrice.addEventListener("click", () => {
@@ -4522,6 +4546,442 @@ async function handleEditGameSubmit(e) {
   logActionNotification(`Edited game: "${title}"`);
 }
 
+// ==========================================================================
+// REASSIGN KEY TO ANOTHER ENTRY CONTROLLERS
+// ==========================================================================
+window.triggerReassignKey = function(itemIdOrIds) {
+  const ids = Array.isArray(itemIdOrIds) 
+    ? itemIdOrIds 
+    : String(itemIdOrIds).split(",").map(s => s.trim()).filter(Boolean);
+  
+  if (ids.length === 0) {
+    showToast("No key selected for reassignment.", "warning");
+    return;
+  }
+
+  const items = ids.map(id => state.inventory.find(i => i.id === id)).filter(Boolean);
+  if (items.length === 0) {
+    showToast("Selected key(s) not found in inventory.", "error");
+    return;
+  }
+
+  // Populate hidden input
+  const hiddenInput = document.getElementById("reassign-key-inventory-ids");
+  if (hiddenInput) hiddenInput.value = items.map(i => i.id).join(",");
+
+  const statusBadge = document.getElementById("reassign-key-status-badge");
+  const titleEl = document.getElementById("reassign-key-current-title");
+  const platformEl = document.getElementById("reassign-key-current-platform");
+  const costEl = document.getElementById("reassign-key-current-cost");
+  const sourceEl = document.getElementById("reassign-key-current-source");
+  const codeRow = document.getElementById("reassign-key-code-row");
+  const codeDisplay = document.getElementById("reassign-key-code-display");
+  const targetTitleInput = document.getElementById("reassign-key-target-title");
+  const platformSelect = document.getElementById("reassign-key-platform");
+  const adoptMetaCheckbox = document.getElementById("reassign-key-adopt-metadata");
+  const noteInput = document.getElementById("reassign-key-note");
+  const suggestionsBox = document.getElementById("reassign-key-suggestions");
+
+  if (suggestionsBox) {
+    suggestionsBox.innerHTML = "";
+    suggestionsBox.style.display = "none";
+  }
+
+  if (items.length === 1) {
+    const item = items[0];
+    const keyStr = String(item.key || "");
+    const maskedKey = keyStr.length >= 8 
+      ? `${keyStr.slice(0, 4)}-****-****-${keyStr.slice(-4)}`
+      : keyStr || "NO-KEY";
+
+    let badgeClass = "badge-available";
+    if (item.status === "Sold") badgeClass = "badge-sold";
+    else if (item.status === "Reserved") badgeClass = "badge-reserved";
+    else if (item.status === "Rejected") badgeClass = "badge-rejected";
+    else if (item.status === "Disputed") badgeClass = "badge-disputed";
+
+    if (statusBadge) {
+      statusBadge.className = `badge ${badgeClass}`;
+      statusBadge.textContent = item.status;
+    }
+    if (titleEl) titleEl.textContent = item.title;
+    if (platformEl) platformEl.textContent = item.platform || "PC";
+    if (costEl) costEl.textContent = formatCurrency(item.cost);
+    if (sourceEl) sourceEl.textContent = item.source || "Direct";
+    if (codeRow) codeRow.style.display = "flex";
+    if (codeDisplay) codeDisplay.textContent = maskedKey;
+    if (platformSelect) platformSelect.value = item.platform || "Steam";
+  } else {
+    if (statusBadge) {
+      statusBadge.className = "badge";
+      statusBadge.textContent = `${items.length} Keys`;
+    }
+    if (titleEl) titleEl.textContent = `${items.length} Selected Keys`;
+    if (platformEl) platformEl.textContent = "Various";
+    if (costEl) costEl.textContent = formatCurrency(items.reduce((sum, i) => sum + (parseFloat(i.cost) || 0), 0));
+    if (sourceEl) sourceEl.textContent = "Various";
+    if (codeRow) codeRow.style.display = "none";
+    if (platformSelect) platformSelect.value = items[0].platform || "Steam";
+  }
+
+  if (targetTitleInput) targetTitleInput.value = "";
+  if (adoptMetaCheckbox) adoptMetaCheckbox.checked = true;
+  if (noteInput) noteInput.value = "";
+
+  // Track if we came from catalog-keys-modal so we can smoothly return or refresh
+  const catalogModal = document.getElementById("catalog-keys-modal");
+  if (catalogModal && catalogModal.classList.contains("active")) {
+    state._returnToCatalogKeysTitle = state.activeCatalogKeysTitle || (items.length === 1 ? items[0].title : null);
+    closeModal("catalog-keys-modal");
+  } else {
+    state._returnToCatalogKeysTitle = null;
+  }
+
+  openModal("reassign-key-modal");
+  if (targetTitleInput) {
+    setTimeout(() => targetTitleInput.focus(), 120);
+  }
+};
+
+async function handleReassignKeySubmit(e) {
+  e.preventDefault();
+
+  const hiddenInput = document.getElementById("reassign-key-inventory-ids");
+  const rawIds = hiddenInput ? hiddenInput.value : "";
+  const ids = rawIds.split(",").map(s => s.trim()).filter(Boolean);
+
+  if (ids.length === 0) {
+    showToast("No keys specified for reassignment.", "error");
+    return;
+  }
+
+  const targetTitleInput = document.getElementById("reassign-key-target-title");
+  const newTitle = targetTitleInput ? targetTitleInput.value.trim() : "";
+  if (!newTitle) {
+    showToast("Please specify a target game title.", "warning");
+    if (targetTitleInput) targetTitleInput.focus();
+    return;
+  }
+
+  const targetPlatformSelect = document.getElementById("reassign-key-platform");
+  const newPlatform = targetPlatformSelect ? targetPlatformSelect.value : "Steam";
+
+  const adoptMetadata = document.getElementById("reassign-key-adopt-metadata")?.checked ?? true;
+  const note = document.getElementById("reassign-key-note")?.value.trim() || "";
+
+  const itemsToReassign = ids.map(id => state.inventory.find(i => i.id === id)).filter(Boolean);
+  if (itemsToReassign.length === 0) {
+    showToast("No valid inventory items found.", "error");
+    return;
+  }
+
+  // Check if target title is identical to all items
+  const allSame = itemsToReassign.every(i => i.title.trim().toLowerCase() === newTitle.toLowerCase());
+  if (allSame) {
+    const proceed = confirm(`The selected key(s) are already assigned to "${newTitle}".\n\nDo you want to continue and update the platform/metadata?`);
+    if (!proceed) return;
+  }
+
+  // Find destination artwork & publisher if adoptMetadata is true
+  let destArtwork = null;
+  let destPublisher = null;
+  if (adoptMetadata) {
+    const targetLower = newTitle.toLowerCase();
+    const existingInvItem = state.inventory.find(i => i.title.trim().toLowerCase() === targetLower && (i.imageUrl || i.publisher));
+    if (existingInvItem) {
+      if (existingInvItem.imageUrl) destArtwork = existingInvItem.imageUrl;
+      if (existingInvItem.publisher) destPublisher = existingInvItem.publisher;
+    }
+    if (!destArtwork) {
+      const existingSale = state.sales.find(s => s.title && s.title.trim().toLowerCase() === targetLower && (s.imageUrl || s.publisher));
+      if (existingSale) {
+        if (existingSale.imageUrl) destArtwork = existingSale.imageUrl;
+        if (existingSale.publisher) destPublisher = existingSale.publisher;
+      }
+    }
+    if (!destArtwork && state.catalogArtwork && state.catalogArtwork[targetLower]) {
+      destArtwork = state.catalogArtwork[targetLower];
+    }
+    if (!destArtwork && typeof window.resolveGameArtwork === "function") {
+      destArtwork = window.resolveGameArtwork(newTitle);
+    }
+  }
+
+  pushToUndoStack();
+
+  const oldTitles = new Set();
+  const affectedSales = [];
+
+  itemsToReassign.forEach(item => {
+    oldTitles.add(item.title);
+    item.title = newTitle;
+    if (newPlatform) item.platform = newPlatform;
+    if (destArtwork) item.imageUrl = destArtwork;
+    if (destPublisher) item.publisher = destPublisher;
+    if (note) {
+      item.notes = item.notes ? `${item.notes} | [Reassigned: ${note}]` : `[Reassigned: ${note}]`;
+    }
+
+    // Check if this key was sold and synchronize sale record
+    const sale = state.sales.find(s => s.inventoryId === item.id);
+    if (sale) {
+      sale.title = newTitle;
+      if (newPlatform) sale.platform = newPlatform;
+      if (destArtwork) sale.imageUrl = destArtwork;
+      if (destPublisher) sale.publisher = destPublisher;
+      affectedSales.push(sale);
+    }
+  });
+
+  saveStateToStorage();
+
+  // Cloud sync if active
+  if (window.supabaseClient) {
+    try {
+      for (const item of itemsToReassign) {
+        await dbSaveInventory(item);
+      }
+      for (const sale of affectedSales) {
+        await dbSaveSale(sale);
+      }
+    } catch (err) {
+      console.error("Error syncing reassigned keys to Supabase:", err);
+    }
+  } else if (state.syncMode === "manual") {
+    setUnsyncedChanges(true);
+  }
+
+  closeModal("reassign-key-modal");
+
+  const count = itemsToReassign.length;
+  const oldTitleStr = Array.from(oldTitles).join(", ");
+  if (count === 1) {
+    showToast(`Key reassigned from "${oldTitleStr}" to "${newTitle}".`, "success");
+    logActionNotification(`Reassigned key: "${oldTitleStr}" -> "${newTitle}"`);
+  } else {
+    showToast(`Reassigned ${count} keys to "${newTitle}".`, "success");
+    logActionNotification(`Bulk reassigned ${count} keys to "${newTitle}"`);
+  }
+
+  updateUI();
+
+  // If user was viewing catalog-keys-modal, gracefully return and refresh
+  if (state._returnToCatalogKeysTitle) {
+    const returnTitle = state._returnToCatalogKeysTitle;
+    state._returnToCatalogKeysTitle = null;
+    const remainingKeys = state.inventory.filter(i => i.title.trim().toLowerCase() === returnTitle.toLowerCase());
+    if (remainingKeys.length > 0) {
+      triggerViewCatalogKeys(returnTitle, true);
+    }
+  }
+}
+
+function initReassignKeyAutocomplete() {
+  const input = document.getElementById("reassign-key-target-title");
+  const suggestions = document.getElementById("reassign-key-suggestions");
+  if (!input || !suggestions) return;
+
+  let activeIndex = -1;
+
+  const renderSuggestions = (query) => {
+    const q = (query || "").trim().toLowerCase();
+    activeIndex = -1;
+
+    // Collect all unique game entries from inventory and sales
+    const entriesMap = new Map();
+    state.inventory.forEach(item => {
+      const title = (item.title || "").trim();
+      if (!title) return;
+      const lower = title.toLowerCase();
+      if (!q || lower.includes(q)) {
+        if (!entriesMap.has(lower)) {
+          entriesMap.set(lower, {
+            title: title,
+            imageUrl: item.imageUrl || (typeof resolveGameArtwork === "function" ? resolveGameArtwork(item) : ""),
+            platform: item.platform || "Steam",
+            count: 1
+          });
+        } else {
+          entriesMap.get(lower).count++;
+          if (!entriesMap.get(lower).imageUrl && item.imageUrl) {
+            entriesMap.get(lower).imageUrl = item.imageUrl;
+          }
+        }
+      }
+    });
+
+    state.sales.forEach(sale => {
+      const title = (sale.title || "").trim();
+      if (!title) return;
+      const lower = title.toLowerCase();
+      if (!q || lower.includes(q)) {
+        if (!entriesMap.has(lower)) {
+          entriesMap.set(lower, {
+            title: title,
+            imageUrl: sale.imageUrl || "",
+            platform: sale.platform || "Steam",
+            count: 1
+          });
+        }
+      }
+    });
+
+    const matches = Array.from(entriesMap.values()).slice(0, 8);
+    if (matches.length === 0) {
+      suggestions.innerHTML = "";
+      suggestions.style.display = "none";
+      return;
+    }
+
+    suggestions.innerHTML = "";
+    matches.forEach((match, idx) => {
+      const itemDiv = document.createElement("div");
+      itemDiv.className = "autocomplete-suggestion-item";
+      itemDiv.dataset.index = idx;
+      itemDiv.style.cssText = "display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.15s ease;";
+
+      const imgHtml = match.imageUrl 
+        ? `<img src="${match.imageUrl}" alt="" style="width: 28px; height: 28px; object-fit: cover; border-radius: 4px;">`
+        : `<div style="width: 28px; height: 28px; border-radius: 4px; background: var(--bg-card); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; color: var(--text-muted);"><i class="fa-solid fa-gamepad"></i></div>`;
+
+      itemDiv.innerHTML = `
+        ${imgHtml}
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-weight: 600; font-size: 0.85rem; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHTML(match.title)}</div>
+          <div style="font-size: 0.72rem; color: var(--text-muted);">${match.count} key(s) in catalog &bull; ${escapeHTML(match.platform)}</div>
+        </div>
+      `;
+
+      itemDiv.addEventListener("mouseenter", () => {
+        suggestions.querySelectorAll(".autocomplete-suggestion-item").forEach(el => el.classList.remove("selected"));
+        itemDiv.classList.add("selected");
+        activeIndex = idx;
+      });
+
+      itemDiv.addEventListener("click", () => {
+        selectSuggestion(match);
+      });
+
+      suggestions.appendChild(itemDiv);
+    });
+
+    suggestions.style.display = "block";
+  };
+
+  const selectSuggestion = (match) => {
+    input.value = match.title;
+    const platformSelect = document.getElementById("reassign-key-platform");
+    if (platformSelect && match.platform) {
+      platformSelect.value = match.platform;
+    }
+    suggestions.innerHTML = "";
+    suggestions.style.display = "none";
+    activeIndex = -1;
+  };
+
+  input.addEventListener("input", (e) => {
+    renderSuggestions(e.target.value);
+  });
+
+  input.addEventListener("focus", () => {
+    renderSuggestions(input.value);
+  });
+
+  input.addEventListener("keydown", (e) => {
+    const items = suggestions.querySelectorAll(".autocomplete-suggestion-item");
+    if (items.length === 0 || suggestions.style.display === "none") return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      activeIndex = (activeIndex + 1) % items.length;
+      items.forEach((item, idx) => item.classList.toggle("selected", idx === activeIndex));
+      if (items[activeIndex]) items[activeIndex].scrollIntoView({ block: "nearest" });
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      activeIndex = (activeIndex - 1 + items.length) % items.length;
+      items.forEach((item, idx) => item.classList.toggle("selected", idx === activeIndex));
+      if (items[activeIndex]) items[activeIndex].scrollIntoView({ block: "nearest" });
+    } else if (e.key === "Enter" && activeIndex >= 0 && items[activeIndex]) {
+      e.preventDefault();
+      items[activeIndex].click();
+    } else if (e.key === "Escape") {
+      suggestions.style.display = "none";
+    }
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest("#reassign-key-modal .form-group")) {
+      suggestions.style.display = "none";
+    }
+  });
+}
+
+function initEditGameTitleAutocomplete() {
+  const input = document.getElementById("edit-game-title");
+  const suggestions = document.getElementById("edit-game-title-suggestions");
+  if (!input || !suggestions) return;
+
+  input.addEventListener("input", (e) => {
+    const q = e.target.value.trim().toLowerCase();
+    if (!q) {
+      suggestions.innerHTML = "";
+      suggestions.style.display = "none";
+      return;
+    }
+
+    const matchesMap = new Map();
+    state.inventory.forEach(item => {
+      const t = (item.title || "").trim();
+      if (t.toLowerCase().includes(q) && !matchesMap.has(t.toLowerCase())) {
+        matchesMap.set(t.toLowerCase(), {
+          title: t,
+          imageUrl: item.imageUrl || "",
+          publisher: item.publisher || ""
+        });
+      }
+    });
+
+    const matches = Array.from(matchesMap.values()).slice(0, 6);
+    if (matches.length === 0) {
+      suggestions.innerHTML = "";
+      suggestions.style.display = "none";
+      return;
+    }
+
+    suggestions.innerHTML = "";
+    matches.forEach(match => {
+      const div = document.createElement("div");
+      div.className = "autocomplete-suggestion-item";
+      div.style.cssText = "display: flex; align-items: center; gap: 8px; padding: 6px 10px; cursor: pointer;";
+      const img = match.imageUrl 
+        ? `<img src="${match.imageUrl}" style="width: 24px; height: 24px; object-fit: cover; border-radius: 4px;">`
+        : `<div style="width: 24px; height: 24px; border-radius: 4px; background: var(--bg-card); display: flex; align-items: center; justify-content: center; font-size: 0.65rem;"><i class="fa-solid fa-gamepad"></i></div>`;
+      div.innerHTML = `${img}<span style="font-size: 0.85rem; font-weight: 500;">${escapeHTML(match.title)}</span>`;
+      div.addEventListener("click", () => {
+        input.value = match.title;
+        if (match.imageUrl) {
+          const imgInput = document.getElementById("edit-game-image-url");
+          if (imgInput) imgInput.value = match.imageUrl;
+        }
+        if (match.publisher) {
+          const pubInput = document.getElementById("edit-game-publisher");
+          if (pubInput) pubInput.value = match.publisher;
+        }
+        suggestions.innerHTML = "";
+        suggestions.style.display = "none";
+      });
+      suggestions.appendChild(div);
+    });
+    suggestions.style.display = "block";
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest("#edit-game-modal .form-group")) {
+      suggestions.style.display = "none";
+    }
+  });
+}
+
 window.toggleFavoriteGame = function(gameTitle) {
   if (!state.favoriteGames) state.favoriteGames = [];
   const idx = state.favoriteGames.indexOf(gameTitle);
@@ -4990,8 +5450,14 @@ window.triggerViewCatalogKeys = function(title, openModalFlag = true, explicitIm
         <button class="btn-action btn-action-view" onclick="closeModal('catalog-keys-modal'); triggerViewKey('${item.id}')" title="View Secure Key Details">
           <i class="fa-solid fa-eye"></i>
         </button>
-        <button class="btn-action btn-action-edit" onclick="closeModal('catalog-keys-modal'); copyTextToClipboard('${escapeHTML(keyStr).replace(/'/g, "\\'")}', 'Key copied to clipboard!')" title="Copy Key">
+        <button class="btn-action btn-action-copy" onclick="copyTextToClipboard('${escapeHTML(keyStr).replace(/'/g, "\\'")}', 'Key copied to clipboard!')" title="Copy Key">
           <i class="fa-solid fa-copy"></i>
+        </button>
+        <button class="btn-action btn-action-reassign" onclick="triggerReassignKey('${item.id}')" title="Reassign Key to Another Entry">
+          <i class="fa-solid fa-right-left"></i>
+        </button>
+        <button class="btn-action btn-action-edit" onclick="closeModal('catalog-keys-modal'); triggerEditGame('${item.id}')" title="Edit Game">
+          <i class="fa-solid fa-pen"></i>
         </button>
     `;
     
@@ -8625,6 +9091,7 @@ function buildInventoryRowHTML(item, salesMap, dupMap, supplierMap) {
     `;
   }
   actionButtons += `
+    <button class="btn-action btn-action-reassign" onclick="triggerReassignKey('${item.id}')" title="Reassign to Another Entry"><i class="fa-solid fa-right-left"></i></button>
     <button class="btn-action btn-action-edit" onclick="triggerEditGame('${item.id}')" title="Edit Game"><i class="fa-solid fa-pen"></i></button>
     <button class="btn-action btn-action-view" onclick="triggerViewKey('${item.id}')" title="Secure View"><i class="fa-solid fa-eye"></i></button>
     <button class="btn-action btn-action-delete" onclick="triggerDeleteGame('${item.id}')" title="Delete"><i class="fa-solid fa-trash"></i></button>
@@ -9017,6 +9484,7 @@ function renderInventoryGridLayout(itemsList) {
             </div>
             <div class="table-actions">
               ${actionButton}
+              <button class="btn-action btn-action-reassign" onclick="triggerReassignKey('${item.id}')" title="Reassign to Another Entry"><i class="fa-solid fa-right-left"></i></button>
               <button class="btn-action btn-action-edit" onclick="triggerEditGame('${item.id}')" title="Edit Game"><i class="fa-solid fa-pen"></i></button>
               <button class="btn-action btn-action-view" onclick="triggerViewKey('${item.id}')" title="Secure View"><i class="fa-solid fa-eye"></i></button>
               <button class="btn-action btn-action-delete" onclick="triggerDeleteGame('${item.id}')" title="Delete"><i class="fa-solid fa-trash"></i></button>
