@@ -5,6 +5,20 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.9] - 2026-09-23
+
+### Added & Improved
+- **Platform Documentation & Architectural Synchronization**:
+  - Comprehensive overhaul and synchronization of `README.md` and repository documentation reflecting recent milestones:
+    - High-resolution Steam cover banner display mode (`460×215` aspect ratio).
+    - Real-time unsold keys stock counter badges and low/out-of-stock color alerts.
+    - Dynamic supplier metrics cards and date period filtering with timezone-resilient parsing.
+    - Full WCAG AA/AAA high-contrast color systems for Light theme mode.
+  - Aligned all live application version badges, deployment metadata, and cachebuster parameters (`styles.css?v=36`, scripts `?v=69`).
+  - Synchronized in-app interactive Help & Documentation modal (`templates/help-modal.html`).
+
+---
+
 ## [v2.2.8] - 2026-09-23
 
 ### Added & Improved

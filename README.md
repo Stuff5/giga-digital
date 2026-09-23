@@ -2,7 +2,7 @@
 
 > High-performance digital game license inventory pipeline, sales ledger, and financial analytics platform designed for digital key merchants, distributors, and online publishers.
 
-![Version](https://img.shields.io/badge/version-v2.2.0-cyan.svg)
+![Version](https://img.shields.io/badge/version-v2.2.9-cyan.svg)
 ![Status](https://img.shields.io/badge/status-active-emerald.svg)
 ![Platform](https://img.shields.io/badge/platform-Web%20SPA-purple.svg)
 
@@ -50,12 +50,25 @@ From bulk spreadsheet imports and real-time inventory tracking to financial marg
 - **Ending Inventory Valuation**: Automatic asset valuation of unsold keys on period closing dates.
 
 ### 6. Supplier, Publisher & Platform Management
+- **Dynamic Supplier & Period Metrics**: All 8 top-level supplier metrics cards (Net Profit, Inventory Cost, Total Revenue, ROI %, Available Stock, Sales Velocity, Sell-Through Rate, and Avg Profit/Key) dynamically recalculate based on active supplier dropdown selection and date period filters ("All Time", "This Month", "This Week", "Today").
+- **Timezone-Resilient Date Engine**: Midnight-aligned date boundary parsing (`parseDateMidnight`) eliminates timezone skew and date object mutations.
 - **Key Reassignment on Deletion**: Seamlessly transfer existing inventory keys and sales records to another designated supplier or platform when deleting a supplier or platform from your catalog.
 - **Automated Logo Retrieval**: Automatically retrieve high-resolution company branding logos for both suppliers and publishers with a single click.
 - **Dynamic Dropdown Synchronization**: Global alphabetical synchronization of supplier and platform dropdowns across all inventory modals and view filters.
 - **Platform Analytics**: Summary metrics tracking channel counts, active inventory, top platform by volume, and top platform by profit.
 
-### 7. AI Merchant Assistant (Gemini & OpenAI)
+### 7. Dashboard Bestsellers Intelligence & Cover Banners
+- **Steam Header Aspect Ratio Display**: Top Bestselling games widgets (Net Profit, Revenue, and Sales Volume) display high-resolution horizontal cover banners (`460×215` aspect ratio) ensuring full logo visibility without edge cropping.
+- **Artwork Display Modes**: Toggle between wide "Cover Banner" and "Compact Thumbnail (56px)" display via card-back configuration or the 3-dots card actions dropdown menu.
+- **Live Key Inventory Counter**: Direct remaining unsold keys stock badges (`X keys in stock`) with color-coded alerts for depleted items (`0 keys in stock` in soft red) and low stock (`X keys left (Low)` in amber).
+- **Interactive Catalog Keys Drill-Down**: 1-click inspection from any bestseller item directly to the Catalog Keys modal.
+
+### 8. WCAG High-Contrast Theme System
+- **Optimized Light & Dark Themes**: High-contrast typography featuring deep, rich teal (`hsl(180, 100%, 25%)`) and azure cyan (`hsl(198, 100%, 32%)`) on light mode surfaces (delivering 6:1+ contrast ratios conforming to WCAG AA/AAA standards).
+- **Dynamic Chart Adaptation**: Chart.js financial and outflow visualizations adapt their stroke and fill colors dynamically to the active appearance mode.
+- **5 Theme Color Palettes**: Classic, Ocean, Cyberpunk, Emerald, and Amber.
+
+### 9. AI Merchant Assistant (Gemini & OpenAI)
 - **Built-in Strategic AI Advisor**: Slide-over drawer powered by Google Gemini 2.5 Flash and OpenAI for margin audits, restock prioritization, and inventory analytics.
 - **Live Business Context**: Feeds real-time sales and stock metrics into queries for contextual guidance.
 
@@ -106,4 +119,4 @@ game-sales-tracker/
 
 See [CHANGELOG.md](CHANGELOG.md) for full release notes and development milestones.
 
-Current Release: **v2.1.6** (2026-09-21)
+Current Release: **v2.2.9** (2026-09-23)
