@@ -20,7 +20,7 @@
   --text-muted: hsl(220, 10%, 45%);
   
   /* Hardcoded overlays made dynamic */
-  --bg-topbar: hsla(224, 25%, 8%, 0.85);
+  --bg-topbar: hsla(224, 25%, 8%, 0.98);
   --bg-sidebar-footer: hsla(224, 25%, 4%, 0.5);
   --bg-hero-overlay-start: hsla(224, 25%, 8%, 0.95);
   --bg-hero-overlay-end: hsla(224, 25%, 8%, 0.2);
@@ -104,7 +104,7 @@
   --accent-cyan-glow: hsla(198, 100%, 32%, 0.15);
   
   /* Hardcoded overlays for Light mode */
-  --bg-topbar: hsla(220, 30%, 96%, 0.85);
+  --bg-topbar: hsla(220, 30%, 96%, 0.98);
   --bg-sidebar-footer: hsla(220, 30%, 87%, 0.7);
   --bg-hero-overlay-start: hsla(220, 30%, 96%, 0.95);
   --bg-hero-overlay-end: hsla(220, 30%, 96%, 0.25);
@@ -214,7 +214,7 @@
   --text-main: hsl(195, 20%, 95%);
   --text-secondary: hsl(195, 12%, 70%);
   --text-muted: hsl(195, 10%, 50%);
-  --bg-topbar: hsla(205, 55%, 8%, 0.85);
+  --bg-topbar: hsla(205, 55%, 8%, 0.98);
   --bg-sidebar-footer: hsla(205, 55%, 4%, 0.5);
   --bg-hero-overlay-start: hsla(205, 55%, 8%, 0.95);
   --bg-hero-overlay-end: hsla(205, 55%, 8%, 0.2);
@@ -242,7 +242,7 @@
   --text-main: hsl(0, 0%, 95%);
   --text-secondary: hsl(0, 0%, 70%);
   --text-muted: hsl(0, 0%, 50%);
-  --bg-topbar: hsla(0, 0%, 7%, 0.85);
+  --bg-topbar: hsla(0, 0%, 7%, 0.98);
   --bg-sidebar-footer: hsla(0, 0%, 4%, 0.5);
   --bg-hero-overlay-start: hsla(0, 0%, 7%, 0.95);
   --bg-hero-overlay-end: hsla(0, 0%, 7%, 0.2);
@@ -270,7 +270,7 @@
   --text-main: hsl(145, 15%, 95%);
   --text-secondary: hsl(145, 10%, 70%);
   --text-muted: hsl(145, 8%, 50%);
-  --bg-topbar: hsla(145, 30%, 7%, 0.85);
+  --bg-topbar: hsla(145, 30%, 7%, 0.98);
   --bg-sidebar-footer: hsla(145, 30%, 4%, 0.5);
   --bg-hero-overlay-start: hsla(145, 30%, 7%, 0.95);
   --bg-hero-overlay-end: hsla(145, 30%, 7%, 0.2);
@@ -298,7 +298,7 @@
   --text-main: hsl(45, 10%, 95%);
   --text-secondary: hsl(45, 8%, 68%);
   --text-muted: hsl(45, 6%, 48%);
-  --bg-topbar: hsla(40, 15%, 6%, 0.85);
+  --bg-topbar: hsla(40, 15%, 6%, 0.98);
   --bg-sidebar-footer: hsla(40, 15%, 3%, 0.5);
   --bg-hero-overlay-start: hsla(40, 15%, 6%, 0.95);
   --bg-hero-overlay-end: hsla(40, 15%, 6%, 0.2);
@@ -337,7 +337,7 @@
   --bg-input-focus: hsl(205, 20%, 84%);
   --border-color: hsla(205, 20%, 75%, 0.4);
   --border-focus: hsla(195, 95%, 50%, 0.6);
-  --bg-topbar: hsla(205, 30%, 96%, 0.85);
+  --bg-topbar: hsla(205, 30%, 96%, 0.98);
   --bg-sidebar-footer: hsla(205, 30%, 87%, 0.7);
   --bg-hero-overlay-start: hsla(205, 30%, 96%, 0.95);
   --bg-hero-overlay-end: hsla(205, 30%, 96%, 0.25);
@@ -364,7 +364,7 @@
   --bg-input-focus: hsl(0, 0%, 84%);
   --border-color: hsla(0, 0%, 75%, 0.4);
   --border-focus: hsla(355, 95%, 55%, 0.6);
-  --bg-topbar: hsla(0, 0%, 96%, 0.85);
+  --bg-topbar: hsla(0, 0%, 96%, 0.98);
   --bg-sidebar-footer: hsla(0, 0%, 87%, 0.7);
   --bg-hero-overlay-start: hsla(0, 0%, 96%, 0.95);
   --bg-hero-overlay-end: hsla(0, 0%, 96%, 0.25);
@@ -391,7 +391,7 @@
   --bg-input-focus: hsl(145, 15%, 84%);
   --border-color: hsla(145, 15%, 75%, 0.4);
   --border-focus: hsla(145, 85%, 48%, 0.6);
-  --bg-topbar: hsla(145, 20%, 96%, 0.85);
+  --bg-topbar: hsla(145, 20%, 96%, 0.98);
   --bg-sidebar-footer: hsla(145, 20%, 87%, 0.7);
   --bg-hero-overlay-start: hsla(145, 20%, 96%, 0.95);
   --bg-hero-overlay-end: hsla(145, 20%, 96%, 0.25);
@@ -418,7 +418,7 @@
   --bg-input-focus: hsl(40, 15%, 85%);
   --border-color: hsla(40, 15%, 76%, 0.4);
   --border-focus: hsla(45, 95%, 50%, 0.6);
-  --bg-topbar: hsla(40, 25%, 96%, 0.85);
+  --bg-topbar: hsla(40, 25%, 96%, 0.98);
   --bg-sidebar-footer: hsla(40, 25%, 88%, 0.7);
   --bg-hero-overlay-start: hsla(40, 25%, 96%, 0.95);
   --bg-hero-overlay-end: hsla(40, 25%, 96%, 0.25);
@@ -650,8 +650,6 @@ a {
   top: 0;
   right: 0;
   background-color: var(--bg-topbar);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
   border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
@@ -938,8 +936,6 @@ a {
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-color);
   background-color: var(--bg-card);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1118,7 +1114,6 @@ a {
   box-shadow: var(--shadow-lg);
   display: none;
   width: 170px;
-  backdrop-filter: blur(10px);
   text-align: left;
 }
 
@@ -1905,7 +1900,6 @@ a {
   overflow-y: auto;
   box-shadow: var(--shadow-lg);
   display: none;
-  backdrop-filter: blur(10px);
 }
 .autocomplete-suggestion-item {
   padding: 10px 14px;
@@ -2143,9 +2137,7 @@ textarea.form-control {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(6, 8, 14, 0.75);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background-color: rgba(6, 8, 14, 0.85);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2785,9 +2777,7 @@ textarea.form-control {
   position: absolute;
   top: 12px;
   left: 12px;
-  background-color: rgba(6, 8, 14, 0.75);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background-color: rgba(6, 8, 14, 0.88);
   padding: 4px 10px;
   border-radius: 50px;
   font-size: 0.7rem;
@@ -2969,9 +2959,7 @@ textarea.form-control {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(8, 11, 20, 0.93);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(8, 11, 20, 0.96);
   display: flex;
   flex-direction: column;
   padding: 18px;
@@ -3064,8 +3052,6 @@ textarea.form-control {
   border-radius: var(--radius-lg);
   padding: 40px;
   box-shadow: var(--shadow-md), var(--shadow-glow);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   transition: var(--transition-smooth);
 }
 
@@ -3490,8 +3476,6 @@ textarea.form-control {
   right: 0;
   width: 220px;
   background-color: var(--bg-card);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 16px;
@@ -3687,7 +3671,6 @@ textarea.form-control {
   grid-template-columns: repeat(6, 1fr);
   gap: 6px;
   width: 220px;
-  backdrop-filter: blur(10px);
 }
 
 .icon-picker-menu.active {
@@ -4119,8 +4102,6 @@ textarea.form-control {
   z-index: 9998;
   min-width: 350px;
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 
 .bulk-actions-bar:not(.hidden) {
@@ -4344,8 +4325,6 @@ textarea.form-control {
   opacity: 0;
   pointer-events: none;
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
 }
 
 .bulk-dropdown-menu::after {
@@ -4906,8 +4885,7 @@ textarea.form-control {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(10, 12, 18, 0.75);
-  backdrop-filter: blur(16px);
+  background-color: rgba(10, 12, 18, 0.92);
   z-index: 1000;
   display: none;
   align-items: center;
@@ -4939,14 +4917,13 @@ textarea.form-control {
   right: -380px;
   width: 380px;
   height: 100vh;
-  background: var(--bg-card);
+  background: var(--bg-sidebar);
   border-left: 1px solid var(--border-color);
   box-shadow: var(--shadow-lg);
   z-index: 999;
   transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
-  backdrop-filter: blur(20px);
 }
 
 .widget-gallery-drawer.open {
@@ -5606,9 +5583,15 @@ textarea.form-control {
   bottom: -4px;
   border-radius: 50%;
   border: 2px solid var(--accent-cyan);
-  opacity: 0.8;
-  animation: ai-fab-ping 2.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+  opacity: 0;
   pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.btn-floating-ai:hover .ai-fab-pulse,
+.btn-floating-ai:focus-visible .ai-fab-pulse {
+  opacity: 0.8;
+  animation: ai-fab-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 
 @keyframes ai-fab-ping {
@@ -5629,9 +5612,7 @@ textarea.form-control {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.65);
   opacity: 0;
   pointer-events: none;
   z-index: 999;
@@ -5651,14 +5632,12 @@ textarea.form-control {
   width: 480px;
   max-width: 100vw;
   height: 100vh;
-  background: var(--bg-card);
+  background: var(--bg-sidebar);
   border-left: 1px solid var(--border-color);
   box-shadow: -8px 0 32px rgba(0, 0, 0, 0.36);
   z-index: 1000;
   display: flex;
   flex-direction: column;
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
   transform: translateX(100%);
   visibility: hidden;
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.35s;
@@ -6288,9 +6267,7 @@ textarea.form-control {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.75);
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: #fff;
   font-size: 1.35rem;

@@ -5,6 +5,19 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.13] - 2026-09-23
+
+### Fixed & Improved
+- **Hardware & GPU Performance Optimization**:
+  - Eliminated 29 high-cost `backdrop-filter: blur(...)` and `-webkit-backdrop-filter: blur(...)` shader passes across topbars, metric cards, action dropdowns, modal backdrops, and slide-over drawers.
+  - Replaced GPU Gaussian blur passes with high-contrast, opaque background color styles (`rgba`/`hsla`) across dark and light themes, completely preventing GPU clock throttling, excess heat generation, and cooling fan spin-ups upon visiting the app.
+  - Removed the continuous infinite `ai-fab-ping` animation from the floating AI assistant trigger button (`.ai-fab-pulse`), configuring it to pulse exclusively on `:hover` or `:focus-visible` so that browser compositor threads drop to zero utilization when idle.
+- **Synchronized Versioning & Documentation**:
+  - Bumped version to `v2.2.13` across `config.js`, `app.js`, `src/ui.js`, `index.html`, `templates/help-modal.html`, and `README.md`.
+  - Incremented stylesheet and script cachebusters (`styles.css?v=40`, scripts `?v=73`).
+
+---
+
 ## [v2.2.12] - 2026-09-23
 
 ### Fixed & Improved
