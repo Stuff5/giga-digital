@@ -5,7 +5,7 @@
 // Asynchronously loads critical HTML templates (modals.html) on application boot
 window.loadHTMLTemplates = async () => {
   try {
-    const ver = window.APP_VERSION || "v2.2.13";
+    const ver = window.APP_VERSION || "v2.2.14";
     const res = await fetch(`templates/modals.html?v=${ver}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const html = await res.text();
@@ -33,7 +33,7 @@ window.ensureHelpModalLoaded = async () => {
 
   _helpModalLoadingPromise = (async () => {
     try {
-      const ver = window.APP_VERSION || "v2.2.13";
+      const ver = window.APP_VERSION || "v2.2.14";
       const res = await fetch(`templates/help-modal.html?v=${ver}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -9131,10 +9131,6 @@ function renderEntriesGalleryLayout(entriesList) {
             </div>
           </div>
           <div class="gallery-card-hover-meta" style="flex: 1; display: flex; flex-direction: column; gap: 8px; margin-top: 12px; font-size: 0.8rem;">
-            <div class="gallery-card-hover-meta-item">
-              <span>Steam Rating:</span>
-              <div style="display: flex; align-items: center; justify-content: flex-end;">${pillSlot || '<span style="color: var(--text-muted); font-size: 0.8rem;">—</span>'}</div>
-            </div>
             <div class="gallery-card-hover-meta-item">
               <span>Added Keys:</span>
               <strong>${entry.totalAdded} keys</strong>

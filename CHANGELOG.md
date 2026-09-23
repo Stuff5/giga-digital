@@ -5,6 +5,19 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.14] - 2026-09-23
+
+### Fixed & Improved
+- **Entries Gallery View Card Optimization**:
+  - Removed redundant `Steam Rating:` item from the hover metadata details list (`.gallery-card-hover-meta`) on catalog game cards in Entries gallery layout.
+  - The live, color-coded Steam Rating badge pill is already featured prominently at the top of the card overlay and hover header alongside the catalog status badge, making the duplicate line item unnecessary.
+  - Improved vertical spacing within hover card metadata, allowing critical financial metrics (Added Keys, Sold Keys, Revenue, Profit, ROI, Margin, Lowest Sold, Avg Speed) to fit more comfortably without crowding.
+- **Synchronized Versioning & Documentation**:
+  - Bumped version to `v2.2.14` across `config.js`, `app.js`, `src/ui.js`, `index.html`, `templates/help-modal.html`, and `README.md`.
+  - Incremented stylesheet and script cachebusters (`styles.css?v=41`, scripts `?v=74`).
+
+---
+
 ## [v2.2.13] - 2026-09-23
 
 ### Fixed & Improved
