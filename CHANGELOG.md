@@ -5,6 +5,16 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.7] - 2026-09-23
+
+### Added & Improved
+- **Streamlined Top Bestseller Metrics Layout**:
+  - Removed duplicate sold unit count badge from the leaderboard metrics row in Dashboard Top 20 widgets (Net Profit, Revenue, and Sales Volume) since units sold are already clearly displayed in the progress bar metric column.
+  - Promoted the live remaining keys stock indicator to the leading position in the metrics row for improved scanning speed.
+  - Improved responsive spacing across wide cover banners and compact thumbnails.
+
+---
+
 ## [v2.2.6] - 2026-09-23
 
 ### Added & Improved

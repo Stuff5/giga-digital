@@ -950,10 +950,6 @@ function renderTopBestsellersChart(widgetKey, listId, titleId, filteredSalesList
           <div class="bestseller-title-wrap" style="min-width: 0; display: flex; flex-direction: column; gap: 3px; flex: 1;">
             <span class="bestseller-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;" title="${titleSafe}">${titleSafe}</span>
             <div class="bestseller-labels-container">
-              <span class="bestseller-label bestseller-label-sales">
-                <i class="fa-solid fa-cart-shopping" style="font-size: 0.65rem;"></i>
-                ${game.salesCount} sold
-              </span>
               <span class="bestseller-label bestseller-label-stock ${stockClass}">
                 <i class="fa-solid fa-key" style="font-size: 0.65rem;"></i>
                 ${stockText}
