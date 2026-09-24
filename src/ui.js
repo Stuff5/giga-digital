@@ -5969,7 +5969,7 @@ async function handleEditCatalogEntrySubmit(e) {
     for (const item of updatedInventory) {
       await dbSaveInventory(item);
     }
-    if (oldTitle.toLowerCase() !== newTitle.toLowerCase()) {
+    if (oldTitle !== newTitle) {
       const updatedSales = state.sales.filter(sale => sale.title === newTitle);
       for (const sale of updatedSales) {
         await dbSaveSale(sale);

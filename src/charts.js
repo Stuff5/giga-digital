@@ -785,46 +785,59 @@ function renderTopBestsellersChart(widgetKey, listId, titleId, filteredSalesList
     return 0;
   };
 
-  // Calculate metrics per game title
+  // Calculate metrics per game title (case-insensitive grouping)
   const gameMetrics = {};
   wSales.forEach(sale => {
-    const title = sale.title || "Unknown Game";
-    if (!gameMetrics[title]) {
-      gameMetrics[title] = { profit: 0, revenue: 0, sales: 0, imageUrl: null };
+    const rawTitle = (sale.title || "Unknown Game").trim();
+    const titleKey = rawTitle.toLowerCase();
+    if (!gameMetrics[titleKey]) {
+      gameMetrics[titleKey] = {
+        title: rawTitle,
+        profit: 0,
+        revenue: 0,
+        sales: 0,
+        imageUrl: null
+      };
+    } else {
+      // Prefer cleaner Title Case / mixed case over ALL CAPS for display
+      if (gameMetrics[titleKey].title === gameMetrics[titleKey].title.toUpperCase() && rawTitle !== rawTitle.toUpperCase()) {
+        gameMetrics[titleKey].title = rawTitle;
+      }
     }
-    gameMetrics[title].profit += sale.profit || 0;
-    gameMetrics[title].revenue += sale.sellPrice || 0;
-    gameMetrics[title].sales += 1;
+    gameMetrics[titleKey].profit += sale.profit || 0;
+    gameMetrics[titleKey].revenue += sale.sellPrice || 0;
+    gameMetrics[titleKey].sales += 1;
 
     // Assign imageUrl if not already set
-    if (!gameMetrics[title].imageUrl) {
+    if (!gameMetrics[titleKey].imageUrl) {
       if (sale.imageUrl) {
-        gameMetrics[title].imageUrl = sale.imageUrl;
+        gameMetrics[titleKey].imageUrl = sale.imageUrl;
       } else if (sale.inventoryId && imgUrlById[sale.inventoryId]) {
-        gameMetrics[title].imageUrl = imgUrlById[sale.inventoryId];
-      } else if (imgUrlByTitle[title.trim().toLowerCase()]) {
-        gameMetrics[title].imageUrl = imgUrlByTitle[title.trim().toLowerCase()];
+        gameMetrics[titleKey].imageUrl = imgUrlById[sale.inventoryId];
+      } else if (imgUrlByTitle[titleKey]) {
+        gameMetrics[titleKey].imageUrl = imgUrlByTitle[titleKey];
       } else if (typeof window !== "undefined" && typeof window.resolveGameArtwork === "function") {
-        gameMetrics[title].imageUrl = window.resolveGameArtwork(title);
+        gameMetrics[titleKey].imageUrl = window.resolveGameArtwork(rawTitle);
       }
     }
   });
 
   // Convert to array
-  const gamesArray = Object.keys(gameMetrics).map(title => {
-    const metrics = gameMetrics[title];
+  const gamesArray = Object.keys(gameMetrics).map(key => {
+    const metrics = gameMetrics[key];
+    const displayTitle = metrics.title || key;
     let val = metrics.profit;
     if (metric === 'revenue') val = metrics.revenue;
     else if (metric === 'sales') val = metrics.sales;
 
     return {
-      title: title,
+      title: displayTitle,
       value: val,
       salesCount: metrics.sales,
       avgProfit: metrics.sales > 0 ? (metrics.profit / metrics.sales) : 0,
       avgMargin: metrics.revenue > 0 ? ((metrics.profit / metrics.revenue) * 100) : 0,
       imageUrl: metrics.imageUrl,
-      stockCount: getStockForGame(title)
+      stockCount: getStockForGame(displayTitle)
     };
   });
 
