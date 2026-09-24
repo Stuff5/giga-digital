@@ -8534,36 +8534,39 @@ function getFilteredSales() {
 
   // A. Date Range Period Filter
   if (state.activePeriod === "month") {
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    list = list.filter(item => new Date(item.saleDate) >= startOfMonth);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    list = list.filter(item => {
+      const d = parseDateMidnight(item.saleDate);
+      return d && d >= startOfMonth;
+    });
   } else if (state.activePeriod === "week") {
-    const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay())); // Sunday
-    list = list.filter(item => new Date(item.saleDate) >= startOfWeek);
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
+    startOfWeek.setHours(0, 0, 0, 0);
+    list = list.filter(item => {
+      const d = parseDateMidnight(item.saleDate);
+      return d && d >= startOfWeek;
+    });
   } else if (state.activePeriod === "today") {
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const day = String(now.getDate()).padStart(2, '0');
     const todayStr = `${year}-${month}-${day}`;
-    list = list.filter(item => item.saleDate === todayStr);
+    list = list.filter(item => (item.saleDate || "").startsWith(todayStr));
   } else if (state.activePeriod === "custom") {
     if (state.customStartDate) {
-      const start = new Date(state.customStartDate);
-      start.setHours(0, 0, 0, 0);
+      const start = parseDateMidnight(state.customStartDate);
       list = list.filter(item => {
-        if (!item.saleDate) return false;
-        const d = new Date(item.saleDate);
-        d.setHours(0, 0, 0, 0);
-        return d >= start;
+        const d = parseDateMidnight(item.saleDate);
+        return d && d >= start;
       });
     }
     if (state.customEndDate) {
-      const end = new Date(state.customEndDate);
-      end.setHours(23, 59, 59, 999);
+      const end = parseDateMidnight(state.customEndDate);
+      if (end) end.setHours(23, 59, 59, 999);
       list = list.filter(item => {
-        if (!item.saleDate) return false;
-        const d = new Date(item.saleDate);
-        d.setHours(0, 0, 0, 0);
-        return d <= end;
+        const d = parseDateMidnight(item.saleDate);
+        return d && d <= end;
       });
     }
   }
