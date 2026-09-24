@@ -724,7 +724,13 @@ function renderTopBestsellersChart(widgetKey, listId, titleId, filteredSalesList
 
   // Get current configurations
   const cfg = state.widgetSettings ? state.widgetSettings[widgetKey] : null;
-  const metric = widgetKey === "topBestsellersRevenue" ? "revenue" : (widgetKey === "topBestsellersSales" ? "sales" : "profit");
+  let metric = "profit";
+  if (widgetKey === "topBestsellersRevenue") metric = "revenue";
+  else if (widgetKey === "topBestsellersSales") metric = "sales";
+  else if (widgetKey === "topPeakProfit") metric = "peakProfit";
+  else if (widgetKey === "topAverageProfit") metric = "avgProfit";
+  else if (cfg && cfg.metric) metric = cfg.metric;
+
   const limit = cfg ? (parseInt(cfg.limit) || 5) : 5;
   const isCover = !cfg || cfg.coverStyle !== "compact";
 
@@ -796,6 +802,7 @@ function renderTopBestsellersChart(widgetKey, listId, titleId, filteredSalesList
         profit: 0,
         revenue: 0,
         sales: 0,
+        peakProfit: -Infinity,
         imageUrl: null
       };
     } else {
@@ -804,9 +811,14 @@ function renderTopBestsellersChart(widgetKey, listId, titleId, filteredSalesList
         gameMetrics[titleKey].title = rawTitle;
       }
     }
-    gameMetrics[titleKey].profit += sale.profit || 0;
-    gameMetrics[titleKey].revenue += sale.sellPrice || 0;
+    const saleProfit = (sale.profit !== undefined && sale.profit !== null) ? Number(sale.profit) : 0;
+    const salePrice = (sale.sellPrice !== undefined && sale.sellPrice !== null) ? Number(sale.sellPrice) : 0;
+    gameMetrics[titleKey].profit += saleProfit;
+    gameMetrics[titleKey].revenue += salePrice;
     gameMetrics[titleKey].sales += 1;
+    if (saleProfit > gameMetrics[titleKey].peakProfit) {
+      gameMetrics[titleKey].peakProfit = saleProfit;
+    }
 
     // Assign imageUrl if not already set
     if (!gameMetrics[titleKey].imageUrl) {
@@ -823,23 +835,37 @@ function renderTopBestsellersChart(widgetKey, listId, titleId, filteredSalesList
   });
 
   // Convert to array
-  const gamesArray = Object.keys(gameMetrics).map(key => {
+  let gamesArray = Object.keys(gameMetrics).map(key => {
     const metrics = gameMetrics[key];
     const displayTitle = metrics.title || key;
+    const peakProfit = metrics.peakProfit === -Infinity ? 0 : metrics.peakProfit;
+    const avgProfit = metrics.sales > 0 ? (metrics.profit / metrics.sales) : 0;
     let val = metrics.profit;
     if (metric === 'revenue') val = metrics.revenue;
     else if (metric === 'sales') val = metrics.sales;
+    else if (metric === 'peakProfit') val = peakProfit;
+    else if (metric === 'avgProfit') val = avgProfit;
 
     return {
       title: displayTitle,
       value: val,
       salesCount: metrics.sales,
-      avgProfit: metrics.sales > 0 ? (metrics.profit / metrics.sales) : 0,
+      totalProfit: metrics.profit,
+      totalRevenue: metrics.revenue,
+      peakProfit: peakProfit,
+      avgProfit: avgProfit,
       avgMargin: metrics.revenue > 0 ? ((metrics.profit / metrics.revenue) * 100) : 0,
       imageUrl: metrics.imageUrl,
       stockCount: getStockForGame(displayTitle)
     };
   });
+
+  if (metric === 'avgProfit' && cfg && cfg.minSales) {
+    const minSales = parseInt(cfg.minSales) || 1;
+    if (minSales > 1) {
+      gamesArray = gamesArray.filter(g => g.salesCount >= minSales);
+    }
+  }
 
   // Sort descending
   gamesArray.sort((a, b) => b.value - a.value);
@@ -857,8 +883,16 @@ function renderTopBestsellersChart(widgetKey, listId, titleId, filteredSalesList
   // Update card header title dynamically
   const cardTitle = document.getElementById(titleId);
   if (cardTitle) {
-    const metricLabel = metric === 'profit' ? 'Net Profit' : (metric === 'revenue' ? 'Revenue' : 'Sales Volume');
-    cardTitle.textContent = `Top ${limit} Bestselling Games by ${metricLabel}`;
+    let metricLabel = 'Net Profit';
+    let entityLabel = 'Games';
+    if (metric === 'revenue') metricLabel = 'Revenue';
+    else if (metric === 'sales') metricLabel = 'Sales Volume';
+    else if (metric === 'peakProfit') metricLabel = 'Highest Profit Achieved';
+    else if (metric === 'avgProfit') {
+      metricLabel = 'Highest Average Profit';
+      entityLabel = 'Entries';
+    }
+    cardTitle.textContent = `Top ${limit} ${entityLabel} by ${metricLabel}`;
   }
 
   if (sortedGames.length === 0) {
@@ -878,6 +912,10 @@ function renderTopBestsellersChart(widgetKey, listId, titleId, filteredSalesList
   } else if (metric === 'sales') {
     barColor = 'var(--accent-emerald)';
     valueFormatter = (val) => `${val} unit${val === 1 ? '' : 's'}`;
+  } else if (metric === 'peakProfit') {
+    barColor = 'var(--accent-amber, #f59e0b)';
+  } else if (metric === 'avgProfit') {
+    barColor = 'var(--accent-blue, #3b82f6)';
   }
 
   const safeEscape = (str) => {
@@ -952,6 +990,58 @@ function renderTopBestsellersChart(widgetKey, listId, titleId, filteredSalesList
       stockText = `${game.stockCount} key${game.stockCount === 1 ? '' : 's'} in stock`;
     }
 
+    let labelsHTML = '';
+    if (metric === 'peakProfit') {
+      labelsHTML = `
+        <span class="bestseller-label bestseller-label-stock ${stockClass}">
+          <i class="fa-solid fa-key" style="font-size: 0.65rem;"></i>
+          ${stockText}
+        </span>
+        <span class="bestseller-label" style="color: var(--accent-amber, #f59e0b); font-weight: 600;">
+          <i class="fa-solid fa-award" style="font-size: 0.65rem;"></i>
+          Peak: ${currSym}${game.peakProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </span>
+        <span class="bestseller-label bestseller-label-margin">
+          <i class="fa-solid fa-receipt" style="font-size: 0.65rem;"></i>
+          ${game.salesCount} sold (Avg: ${currSym}${game.avgProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+        </span>
+      `;
+    } else if (metric === 'avgProfit') {
+      labelsHTML = `
+        <span class="bestseller-label bestseller-label-stock ${stockClass}">
+          <i class="fa-solid fa-key" style="font-size: 0.65rem;"></i>
+          ${stockText}
+        </span>
+        <span class="bestseller-label" style="color: var(--accent-blue, #3b82f6); font-weight: 600;">
+          <i class="fa-solid fa-scale-balanced" style="font-size: 0.65rem;"></i>
+          Avg. Profit: ${currSym}${game.avgProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </span>
+        <span class="bestseller-label bestseller-label-profit">
+          <i class="fa-solid fa-coins" style="font-size: 0.65rem;"></i>
+          Total: ${currSym}${game.totalProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${game.salesCount} sold)
+        </span>
+        <span class="bestseller-label bestseller-label-margin">
+          <i class="fa-solid fa-chart-line" style="font-size: 0.65rem;"></i>
+          Margin: ${game.avgMargin.toFixed(1)}%
+        </span>
+      `;
+    } else {
+      labelsHTML = `
+        <span class="bestseller-label bestseller-label-stock ${stockClass}">
+          <i class="fa-solid fa-key" style="font-size: 0.65rem;"></i>
+          ${stockText}
+        </span>
+        <span class="bestseller-label bestseller-label-profit">
+          <i class="fa-solid fa-coins" style="font-size: 0.65rem;"></i>
+          Avg. Profit: ${currSym}${game.avgProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </span>
+        <span class="bestseller-label bestseller-label-margin">
+          <i class="fa-solid fa-chart-line" style="font-size: 0.65rem;"></i>
+          Margin: ${game.avgMargin.toFixed(1)}%
+        </span>
+      `;
+    }
+
     html += `
       <div class="bestseller-item ${isCover ? 'has-cover' : ''}" onclick="${clickAction}" title="Click to view catalog keys for ${titleSafe}">
         <!-- Left Side: Rank, Logo/Cover, and Title -->
@@ -963,18 +1053,7 @@ function renderTopBestsellersChart(widgetKey, listId, titleId, filteredSalesList
           <div class="bestseller-title-wrap" style="min-width: 0; display: flex; flex-direction: column; gap: 3px; flex: 1;">
             <span class="bestseller-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;" title="${titleSafe}">${titleSafe}</span>
             <div class="bestseller-labels-container">
-              <span class="bestseller-label bestseller-label-stock ${stockClass}">
-                <i class="fa-solid fa-key" style="font-size: 0.65rem;"></i>
-                ${stockText}
-              </span>
-              <span class="bestseller-label bestseller-label-profit">
-                <i class="fa-solid fa-coins" style="font-size: 0.65rem;"></i>
-                Avg. Profit: ${currSym}${game.avgProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-              <span class="bestseller-label bestseller-label-margin">
-                <i class="fa-solid fa-chart-line" style="font-size: 0.65rem;"></i>
-                Margin: ${game.avgMargin.toFixed(1)}%
-              </span>
+              ${labelsHTML}
             </div>
           </div>
         </div>
@@ -1862,6 +1941,8 @@ function renderWidgetGallery() {
     topBestsellers: { title: "Top Bestselling Games (Profit)", desc: "Leaderboard listing top grossing games by net profit." },
     topBestsellersRevenue: { title: "Top Bestselling Games (Revenue)", desc: "Leaderboard listing top grossing games by revenue." },
     topBestsellersSales: { title: "Top Bestselling Games (Sales Volume)", desc: "Leaderboard listing top grossing games by sales volume." },
+    topPeakProfit: { title: "Highest Profit Achieved by Title", desc: "Leaderboard of games with the highest single-sale profit achieved." },
+    topAverageProfit: { title: "Highest Average Profit (Entries)", desc: "Leaderboard of catalog entries with the highest average profit per unit sold." },
     dailyProfitMonth: { title: "Daily Profit of the Month", desc: "Daily net profit tracking bar chart for active month." },
     stockSpeed: { title: "Stock Speed & Aging Analytics", desc: "Doughnut/Pie/Bar chart tracking shelf-life of sold keys." },
     salesFeed: { title: "Recent Sales Activity Feed", desc: "Visual feed of the latest game key sales transactions." },
@@ -1963,11 +2044,15 @@ function bindWidgetControls() {
     const selectTime = document.getElementById(`config-${widgetKey}-timeframe`);
     if (selectTime) selectTime.value = cfg.timeframe || "global";
     
-    if (widgetKey === "topBestsellers" || widgetKey === "topBestsellersRevenue" || widgetKey === "topBestsellersSales") {
+    if (widgetKey === "topBestsellers" || widgetKey === "topBestsellersRevenue" || widgetKey === "topBestsellersSales" || widgetKey === "topPeakProfit" || widgetKey === "topAverageProfit") {
       const selectLimit = document.getElementById(`config-${widgetKey}-limit`);
       if (selectLimit) selectLimit.value = cfg.limit || 5;
       const selectCover = document.getElementById(`config-${widgetKey}-coverStyle`);
       if (selectCover) selectCover.value = (cfg && cfg.coverStyle === "compact") ? "compact" : "cover";
+      if (widgetKey === "topAverageProfit") {
+        const selectMinSales = document.getElementById(`config-${widgetKey}-minSales`);
+        if (selectMinSales) selectMinSales.value = cfg.minSales || 1;
+      }
     } else if (widgetKey === "salesFeed") {
       const selectLimit = document.getElementById("config-salesFeed-limit");
       if (selectLimit) selectLimit.value = cfg.limit || 5;
@@ -2131,11 +2216,15 @@ function bindWidgetControls() {
         const selectTime = document.getElementById(`config-${widgetKey}-timeframe`);
         if (selectTime) cfg.timeframe = selectTime.value;
         
-        if (widgetKey === "topBestsellers" || widgetKey === "topBestsellersRevenue" || widgetKey === "topBestsellersSales") {
+        if (widgetKey === "topBestsellers" || widgetKey === "topBestsellersRevenue" || widgetKey === "topBestsellersSales" || widgetKey === "topPeakProfit" || widgetKey === "topAverageProfit") {
           const selectLimit = document.getElementById(`config-${widgetKey}-limit`);
           if (selectLimit) cfg.limit = parseInt(selectLimit.value);
           const selectCover = document.getElementById(`config-${widgetKey}-coverStyle`);
           if (selectCover) cfg.coverStyle = selectCover.value;
+          if (widgetKey === "topAverageProfit") {
+            const selectMinSales = document.getElementById(`config-${widgetKey}-minSales`);
+            if (selectMinSales) cfg.minSales = parseInt(selectMinSales.value);
+          }
         } else if (widgetKey === "salesFeed") {
           const selectLimit = document.getElementById("config-salesFeed-limit");
           if (selectLimit) cfg.limit = parseInt(selectLimit.value);

@@ -1032,6 +1032,8 @@ let state = {
     topBestsellers: true,
     topBestsellersRevenue: true,
     topBestsellersSales: true,
+    topPeakProfit: true,
+    topAverageProfit: true,
     dailyProfitMonth: true
   },
   metricOrder: [],
@@ -1077,7 +1079,7 @@ let state = {
   payouts: [],
   menuOrder: ["dashboard", "inventory", "sales", "finance", "suppliers", "platforms", "entries", "recycle", "settings"],
   dashboardOrder: [
-    "salesProfit", "platformSplit", "supplierSplit", "topBestsellers", "topBestsellersRevenue", "topBestsellersSales", "dailyProfitMonth",
+    "salesProfit", "platformSplit", "supplierSplit", "topBestsellers", "topBestsellersRevenue", "topBestsellersSales", "topPeakProfit", "topAverageProfit", "dailyProfitMonth",
     "stockSpeed", "salesFeed", "stockTurnover", "stockAging"
   ],
   financeOrder: [
@@ -1090,6 +1092,8 @@ let state = {
     topBestsellers: 3,
     topBestsellersRevenue: 3,
     topBestsellersSales: 3,
+    topPeakProfit: 3,
+    topAverageProfit: 3,
     dailyProfitMonth: 3,
     stockSpeed: 1,
     salesFeed: 2,
@@ -1104,6 +1108,8 @@ let state = {
     topBestsellers: { visible: true, collapsed: false, limit: 5, metric: 'profit', timeframe: 'global', coverStyle: 'cover' },
     topBestsellersRevenue: { visible: true, collapsed: false, limit: 5, metric: 'revenue', timeframe: 'global', coverStyle: 'cover' },
     topBestsellersSales: { visible: true, collapsed: false, limit: 5, metric: 'sales', timeframe: 'global', coverStyle: 'cover' },
+    topPeakProfit: { visible: true, collapsed: false, limit: 5, metric: 'peakProfit', timeframe: 'global', coverStyle: 'cover' },
+    topAverageProfit: { visible: true, collapsed: false, limit: 5, metric: 'avgProfit', minSales: 1, timeframe: 'global', coverStyle: 'cover' },
     dailyProfitMonth: { visible: true, collapsed: false, chartType: 'bar', timeframe: 'global' },
     stockSpeed: { visible: true, collapsed: false, chartType: 'doughnut', timeframe: 'global' },
     salesFeed: { visible: true, collapsed: false, limit: 5, timeframe: 'global' },
@@ -1477,6 +1483,8 @@ function loadStateFromStorage() {
           topBestsellers: true,
           topBestsellersRevenue: true,
           topBestsellersSales: true,
+          topPeakProfit: true,
+          topAverageProfit: true,
           dailyProfitMonth: true,
           ...parsed
         };
@@ -1492,6 +1500,8 @@ function loadStateFromStorage() {
         topBestsellers: true,
         topBestsellersRevenue: true,
         topBestsellersSales: true,
+        topPeakProfit: true,
+        topAverageProfit: true,
         dailyProfitMonth: true
       };
     }
@@ -1748,7 +1758,7 @@ function loadStateFromStorage() {
       try {
         state.dashboardOrder = JSON.parse(storedDashboardOrder);
         const expectedKeys = [
-          "salesProfit", "platformSplit", "supplierSplit", "topBestsellers", "topBestsellersRevenue", "topBestsellersSales", "dailyProfitMonth",
+          "salesProfit", "platformSplit", "supplierSplit", "topBestsellers", "topBestsellersRevenue", "topBestsellersSales", "topPeakProfit", "topAverageProfit", "dailyProfitMonth",
           "stockSpeed", "salesFeed", "stockTurnover", "stockAging"
         ];
         state.dashboardOrder = state.dashboardOrder.filter(k => expectedKeys.includes(k));

@@ -6086,6 +6086,8 @@ function updateUI() {
     if (isWidgetVisible("topBestsellers")) renderTopBestsellersChart("topBestsellers", "top-bestsellers-list", "bestsellers-chart-title", dbFilteredSales);
     if (isWidgetVisible("topBestsellersRevenue")) renderTopBestsellersChart("topBestsellersRevenue", "top-bestsellers-revenue-list", "bestsellers-revenue-chart-title", dbFilteredSales);
     if (isWidgetVisible("topBestsellersSales")) renderTopBestsellersChart("topBestsellersSales", "top-bestsellers-sales-list", "bestsellers-sales-chart-title", dbFilteredSales);
+    if (isWidgetVisible("topPeakProfit")) renderTopBestsellersChart("topPeakProfit", "top-peak-profit-list", "peak-profit-chart-title", dbFilteredSales);
+    if (isWidgetVisible("topAverageProfit")) renderTopBestsellersChart("topAverageProfit", "top-average-profit-list", "average-profit-chart-title", dbFilteredSales);
     if (isWidgetVisible("dailyProfitMonth")) renderDailyProfitMonthChart(dbFilteredSales);
     if (isWidgetVisible("stockSpeed")) renderStockSpeedChart(dbFilteredInventory, dbFilteredSales);
     if (isWidgetVisible("salesFeed")) renderSalesFeedWidget(dbFilteredSales);
@@ -11157,6 +11159,8 @@ function applyFiguresVisibility() {
     topBestsellers: document.getElementById("card-chart-topBestsellers"),
     topBestsellersRevenue: document.getElementById("card-chart-topBestsellersRevenue"),
     topBestsellersSales: document.getElementById("card-chart-topBestsellersSales"),
+    topPeakProfit: document.getElementById("card-chart-topPeakProfit"),
+    topAverageProfit: document.getElementById("card-chart-topAverageProfit"),
     dailyProfitMonth: document.getElementById("card-chart-dailyProfitMonth")
   };
   

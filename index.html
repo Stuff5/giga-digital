@@ -880,6 +880,175 @@
               </div>
             </div>
 
+            <div class="chart-card" id="card-chart-topPeakProfit" data-figure="topPeakProfit" style="min-height: 580px;">
+              <div class="card-inner">
+                <div class="card-front">
+                  <div class="chart-card-header">
+                    <h4 id="peak-profit-chart-title">Games with Highest Profit Achieved</h4>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                      <div class="card-actions-dropdown">
+                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
+                        <div class="card-actions-menu">
+                          <button type="button" class="card-actions-item btn-widget-configure">
+                            <i class="fa-solid fa-sliders"></i> Configure
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-toggle-cover">
+                            <i class="fa-solid fa-image"></i> Toggle Cover / Thumbnail
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-remove">
+                            <i class="fa-solid fa-trash-can"></i> Remove Widget
+                          </button>
+                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                          <button type="button" class="card-actions-item" data-span="1">
+                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="2">
+                            <i class="fa-solid fa-table-columns"></i> 2 Columns
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="3">
+                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chart-body" style="min-height: auto; max-height: none; overflow-y: auto;">
+                    <div id="top-peak-profit-list" class="bestsellers-list"></div>
+                  </div>
+                </div>
+                <div class="card-back">
+                  <form class="widget-config-form" data-widget="topPeakProfit">
+                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
+                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
+                    </div>
+                    <div class="config-form-body">
+                      <div class="config-field-group">
+                        <label for="config-topPeakProfit-limit">Show Quantity</label>
+                        <select id="config-topPeakProfit-limit" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="5">Top 5 Games</option>
+                          <option value="10">Top 10 Games</option>
+                          <option value="20">Top 20 Games</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-topPeakProfit-coverStyle">Artwork Display</label>
+                        <select id="config-topPeakProfit-coverStyle" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="cover">Cover Banner (Wide &amp; Clear)</option>
+                          <option value="compact">Compact Thumbnail (Square)</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-topPeakProfit-timeframe">Time Period</label>
+                        <select id="config-topPeakProfit-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="global">Global Dashboard Filter</option>
+                          <option value="month">This Month</option>
+                          <option value="30">Last 30 Days</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="year">This Year</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="config-form-actions">
+                      <button type="submit" class="btn-widget-save">Save Changes</button>
+                      <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <div class="chart-card" id="card-chart-topAverageProfit" data-figure="topAverageProfit" style="min-height: 580px;">
+              <div class="card-inner">
+                <div class="card-front">
+                  <div class="chart-card-header">
+                    <h4 id="average-profit-chart-title">Entries with Highest Average Profit</h4>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                      <div class="card-actions-dropdown">
+                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
+                        <div class="card-actions-menu">
+                          <button type="button" class="card-actions-item btn-widget-configure">
+                            <i class="fa-solid fa-sliders"></i> Configure
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-toggle-cover">
+                            <i class="fa-solid fa-image"></i> Toggle Cover / Thumbnail
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-remove">
+                            <i class="fa-solid fa-trash-can"></i> Remove Widget
+                          </button>
+                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                          <button type="button" class="card-actions-item" data-span="1">
+                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="2">
+                            <i class="fa-solid fa-table-columns"></i> 2 Columns
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="3">
+                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chart-body" style="min-height: auto; max-height: none; overflow-y: auto;">
+                    <div id="top-average-profit-list" class="bestsellers-list"></div>
+                  </div>
+                </div>
+                <div class="card-back">
+                  <form class="widget-config-form" data-widget="topAverageProfit">
+                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
+                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
+                    </div>
+                    <div class="config-form-body">
+                      <div class="config-field-group">
+                        <label for="config-topAverageProfit-limit">Show Quantity</label>
+                        <select id="config-topAverageProfit-limit" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="5">Top 5 Entries</option>
+                          <option value="10">Top 10 Entries</option>
+                          <option value="20">Top 20 Entries</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-topAverageProfit-minSales">Minimum Sales Volume</label>
+                        <select id="config-topAverageProfit-minSales" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="1">All Entries (Min 1 sale)</option>
+                          <option value="2">Min 2 sales</option>
+                          <option value="3">Min 3 sales</option>
+                          <option value="5">Min 5 sales</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-topAverageProfit-coverStyle">Artwork Display</label>
+                        <select id="config-topAverageProfit-coverStyle" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="cover">Cover Banner (Wide &amp; Clear)</option>
+                          <option value="compact">Compact Thumbnail (Square)</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-topAverageProfit-timeframe">Time Period</label>
+                        <select id="config-topAverageProfit-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="global">Global Dashboard Filter</option>
+                          <option value="month">This Month</option>
+                          <option value="30">Last 30 Days</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="year">This Year</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="config-form-actions">
+                      <button type="submit" class="btn-widget-save">Save Changes</button>
+                      <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
             <div class="chart-card" id="card-chart-dailyProfitMonth" data-figure="dailyProfitMonth">
               <div class="card-inner">
                 <div class="card-front">
@@ -3743,13 +3912,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=79"></script>
-  <script src="src/state.js?v=79"></script>
-  <script src="src/api.js?v=79"></script>
-  <script src="src/charts.js?v=79"></script>
-  <script src="src/ui.js?v=79"></script>
-  <script src="src/ai.js?v=79"></script>
-  <script src="src/importer.js?v=79"></script>
-  <script src="app.js?v=79"></script>
+  <script src="config.js?v=80"></script>
+  <script src="src/state.js?v=80"></script>
+  <script src="src/api.js?v=80"></script>
+  <script src="src/charts.js?v=80"></script>
+  <script src="src/ui.js?v=80"></script>
+  <script src="src/ai.js?v=80"></script>
+  <script src="src/importer.js?v=80"></script>
+  <script src="app.js?v=80"></script>
 </body>
 </html>
