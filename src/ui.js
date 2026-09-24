@@ -5,7 +5,7 @@
 // Asynchronously loads critical HTML templates (modals.html) on application boot
 window.loadHTMLTemplates = async () => {
   try {
-    const ver = window.APP_VERSION || "v2.2.16";
+    const ver = window.APP_VERSION || "v2.2.17";
     const res = await fetch(`templates/modals.html?v=${ver}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const html = await res.text();
@@ -33,7 +33,7 @@ window.ensureHelpModalLoaded = async () => {
 
   _helpModalLoadingPromise = (async () => {
     try {
-      const ver = window.APP_VERSION || "v2.2.16";
+      const ver = window.APP_VERSION || "v2.2.17";
       const res = await fetch(`templates/help-modal.html?v=${ver}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -9433,7 +9433,6 @@ function buildInventoryRowHTML(item, salesMap, dupMap, supplierMap) {
     `;
   }
   actionButtons += `
-    <button class="btn-action btn-action-reassign" onclick="triggerReassignKey('${item.id}')" title="Reassign to Another Entry"><i class="fa-solid fa-right-left"></i></button>
     <button class="btn-action btn-action-edit" onclick="triggerEditGame('${item.id}')" title="Edit Game"><i class="fa-solid fa-pen"></i></button>
     <button class="btn-action btn-action-view" onclick="triggerViewKey('${item.id}')" title="Secure View"><i class="fa-solid fa-eye"></i></button>
     <button class="btn-action btn-action-delete" onclick="triggerDeleteGame('${item.id}')" title="Delete"><i class="fa-solid fa-trash"></i></button>
@@ -9826,7 +9825,6 @@ function renderInventoryGridLayout(itemsList) {
             </div>
             <div class="table-actions">
               ${actionButton}
-              <button class="btn-action btn-action-reassign" onclick="triggerReassignKey('${item.id}')" title="Reassign to Another Entry"><i class="fa-solid fa-right-left"></i></button>
               <button class="btn-action btn-action-edit" onclick="triggerEditGame('${item.id}')" title="Edit Game"><i class="fa-solid fa-pen"></i></button>
               <button class="btn-action btn-action-view" onclick="triggerViewKey('${item.id}')" title="Secure View"><i class="fa-solid fa-eye"></i></button>
               <button class="btn-action btn-action-delete" onclick="triggerDeleteGame('${item.id}')" title="Delete"><i class="fa-solid fa-trash"></i></button>

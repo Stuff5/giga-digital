@@ -5,6 +5,19 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.17] - 2026-09-24
+
+### Fixed & Improved
+- **Streamlined Inventory Menu Key Actions**:
+  - Removed the individual key reassignment button (`.btn-action-reassign`) from the key actions column in the **Inventory table** and from the action bar of **Inventory grid cards**.
+  - Streamlines row and card interactions by eliminating visual clutter and redundant action buttons, keeping key actions focused on immediate inventory tasks (Sell, Edit, View, Delete).
+  - Key reassignments are now cleanly managed through the **Edit Entry** popup in the Entries catalog view, where title, artwork, publisher, and keys can be audited and transferred in context.
+- **Synchronized Versioning & Documentation**:
+  - Bumped version to `v2.2.17` across `config.js`, `app.js`, `src/ui.js`, `index.html`, `templates/help-modal.html`, and `README.md`.
+  - Incremented stylesheet and script cachebusters (`styles.css?v=44`, scripts `?v=77`).
+
+---
+
 ## [v2.2.16] - 2026-09-23
 
 ### Added & Improved
