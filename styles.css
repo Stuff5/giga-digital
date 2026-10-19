@@ -2832,19 +2832,19 @@ textarea.form-control {
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
 }
-.grid-card-cost, .grid-card-sold, .grid-card-supplier, .grid-card-profit, .grid-card-roi {
+.grid-card-cost, .grid-card-sold, .grid-card-supplier, .grid-card-profit, .grid-card-roi, .grid-card-duration {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
-.grid-card-cost span, .grid-card-sold span, .grid-card-supplier span, .grid-card-profit span, .grid-card-roi span {
+.grid-card-cost span, .grid-card-sold span, .grid-card-supplier span, .grid-card-profit span, .grid-card-roi span, .grid-card-duration span {
   font-size: 0.65rem;
   color: var(--text-muted);
   text-transform: uppercase;
   font-weight: 700;
   letter-spacing: 0.05em;
 }
-.grid-card-cost strong, .grid-card-sold strong, .grid-card-profit strong, .grid-card-roi strong {
+.grid-card-cost strong, .grid-card-sold strong, .grid-card-profit strong, .grid-card-roi strong, .grid-card-duration strong {
   font-size: 1.1rem;
   color: var(--accent-teal);
   font-family: var(--font-display);
@@ -4579,7 +4579,8 @@ textarea.form-control {
 [data-theme-mode="light"] .grid-card-cost strong,
 [data-theme-mode="light"] .grid-card-sold strong,
 [data-theme-mode="light"] .grid-card-profit strong,
-[data-theme-mode="light"] .grid-card-roi strong {
+[data-theme-mode="light"] .grid-card-roi strong,
+[data-theme-mode="light"] .grid-card-duration strong {
   color: hsl(180, 100%, 25%) !important;
 }
 

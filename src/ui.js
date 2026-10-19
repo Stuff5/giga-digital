@@ -9730,16 +9730,15 @@ function renderInventoryGridLayout(itemsList) {
         : "";
 
       let durationRow = "";
+      let diffDays = null;
       if (item.purchaseDate) {
         const start = new Date(item.purchaseDate);
         const end = saleItem ? new Date(saleItem.saleDate) : new Date();
         start.setHours(0, 0, 0, 0);
         end.setHours(0, 0, 0, 0);
         const diffTime = Math.max(0, end - start);
-        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-        if (saleItem) {
-          durationRow = `<span style="color: var(--accent-cyan); font-weight: 500;">Duration: ${diffDays} day${diffDays === 1 ? '' : 's'}</span>`;
-        } else {
+        diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+        if (!saleItem) {
           const agingCat = getAgingCategory(item.purchaseDate);
           durationRow = `
             <div style="display: flex; align-items: center; gap: 8px;">
@@ -9752,11 +9751,10 @@ function renderInventoryGridLayout(itemsList) {
       
       let metaBlockHtml = "";
       if (item.status === "Sold" && saleItem) {
-        const roi = item.cost > 0 ? (saleItem.profit / item.cost) * 100 : 0;
         const margin = saleItem.sellPrice > 0 ? (saleItem.profit / saleItem.sellPrice) * 100 : 0;
         const profitClass = saleItem.profit >= 0 ? "text-success-neon" : "text-danger-soft";
         const profitSign = saleItem.profit > 0 ? "+" : "";
-        const roiSign = roi > 0 ? "+" : "";
+        const durationText = diffDays !== null ? `${diffDays} day${diffDays === 1 ? '' : 's'}` : "—";
         
         metaBlockHtml = `
           <div class="grid-card-meta" style="display: flex; flex-direction: column; gap: 10px; align-items: stretch;">
@@ -9773,9 +9771,9 @@ function renderInventoryGridLayout(itemsList) {
                 <span>Sold</span>
                 <strong class="text-revenue-pink" style="font-size: 1.1rem;">${formatCurrency(saleItem.sellPrice)}</strong>
               </div>
-              <div class="grid-card-roi">
-                <span>% Diff</span>
-                <strong class="${profitClass}">${roiSign}${roi.toFixed(1)}%</strong>
+              <div class="grid-card-duration">
+                <span>Duration</span>
+                <strong style="color: var(--accent-cyan); font-size: 1.05rem;">${durationText}</strong>
               </div>
             </div>
             <div style="border-top: 1px solid var(--border-color); padding-top: 8px; margin-top: 2px; display: flex; justify-content: space-between; align-items: center; width: 100%;">
