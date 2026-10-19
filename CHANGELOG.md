@@ -5,6 +5,34 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.18] - 2026-10-19
+
+### Added & Improved
+- **Quick Status Filter Pills for Inventory**:
+  - Replaced the redundant status select dropdown in the inventory filter bar with modern, interactive Quick Status Pills (`All`, `Available`, `Sold`, `Reserved`, `Rejected`) positioned right above the inventory controls.
+  - Implemented dynamic, real-time count badges per status that compute live item counts matching active platform, supplier, aging, and text search filters.
+  - Added polished responsive visual styling with status color dot indicators, hover elevation, and distinct active highlights for dark and light themes.
+  - Cleaned up inventory filtering by managing status state directly in global memory (`state.inventoryFilterStatus`) and synchronizing with filter reset actions.
+- **Smart Base-Title Grouping for Dashboard Bestseller Widgets**:
+  - Added an optional **"Group Region & Edition Variants"** configuration toggle to all 5 top game widgets:
+    - *Top Bestselling Games by Net Profit*
+    - *Top Bestselling Games by Revenue*
+    - *Top Bestselling Games by Sales Volume*
+    - *Games with Highest Profit Achieved*
+    - *Entries with Highest Average Profit*
+  - Added [`getBaseTitleForGrouping()`](file:///src/charts.js) to normalize bracketed regional tags (`[EU]`, `(ROW)`), platforms, and edition identifiers (`Deluxe Edition`, `Total Conflict Edition`, etc.) into a unified canonical game title.
+  - Aggregates sales volume, revenue, net profit, and available unsold stock counts across variants, displaying `(Combined)` on widget card header titles when grouping is active.
+- **Global Cover Artwork Repository Backfill**:
+  - Backfilled official Steam App IDs and high-resolution banner header images for 21 top game titles across sales volume, net profit, and revenue.
+  - Expanded the global `catalogArtwork` map in Supabase `app_settings` from 875 to 917 verified titles, eliminating missing artwork covers among all top selling games.
+- **Inventory Grid Card Holding Duration**:
+  - Replaced the legacy "% Diff" statistic with holding duration (days from acquisition to sale / time-in-stock) on sold inventory grid cards.
+- **Synchronized Versioning & Documentation**:
+  - Bumped version to `v2.2.18` across `config.js`, `app.js`, `src/ui.js`, `index.html`, `templates/help-modal.html`, and `README.md`.
+  - Incremented stylesheet and script cachebusters (`styles.css?v=45`, scripts `?v=85`).
+
+---
+
 ## [v2.2.17] - 2026-09-24
 
 ### Fixed & Improved

@@ -2,7 +2,7 @@
 
 > High-performance digital game license inventory pipeline, sales ledger, and financial analytics platform designed for digital key merchants, distributors, and online publishers.
 
-![Version](https://img.shields.io/badge/version-v2.2.17-cyan.svg)
+![Version](https://img.shields.io/badge/version-v2.2.18-cyan.svg)
 ![Status](https://img.shields.io/badge/status-active-emerald.svg)
 ![Platform](https://img.shields.io/badge/platform-Web%20SPA-purple.svg)
 
@@ -39,9 +39,10 @@ From bulk spreadsheet imports and real-time inventory tracking to financial marg
 - **Restock Decision Sorting**: Sort catalog listings by **Steam Rating %** (highest to lowest), **Profit Margin %**, **ROI %**, **Available Stock** (low restock priority or highest), or **Total Sold**.
 
 ### 4. Inventory & Sales Pipeline
+- **Quick Status Filter Pills**: Interactive status pills (`All`, `Available`, `Sold`, `Reserved`, `Rejected`) positioned right above the inventory controls with dynamic count badges recalculating in real-time across active platform, supplier, aging, and search filters.
 - **Clean Sale Registration**: Dedicated "Record Key Sale" modal with blank price entry for rapid, error-free transaction logging.
 - **Activation State Tracking**: Available, Sold, Reserved, and Rejected keys.
-- **Inventory Stock Aging Alerts**: Fresh (<30d), Aging (30-90d), Stale (90-180d), and Very Stale (180d+).
+- **Holding Duration & Stock Aging**: Automatic holding duration (days from acquisition to sale) on sold grid cards, plus aging badges: Fresh (<30d), Aging (30-90d), Stale (90-180d), and Very Stale (180d+).
 - **Dispute & Refund Reconciliation**: Amber dispute flagging, revenue recalculation, supplier refund tracking, and pulsing sidebar alert counters.
 
 ### 5. Financial Ledger & Outflow Allocation
@@ -59,7 +60,9 @@ From bulk spreadsheet imports and real-time inventory tracking to financial marg
 - **Platform Analytics**: Summary metrics tracking channel counts, active inventory, top platform by volume, and top platform by profit.
 
 ### 7. Dashboard Bestsellers Intelligence & Cover Banners
-- **Steam Header Aspect Ratio Display**: Top Bestselling games widgets (Net Profit, Revenue, and Sales Volume) display high-resolution horizontal cover banners (`460×215` aspect ratio) ensuring full logo visibility without edge cropping.
+- **Smart Base-Title Grouping**: Optional "Group Region & Edition Variants" toggle consolidates regional variants (`[EU]`, `(ROW)`) and edition releases (`Deluxe Edition`, `Total Conflict Edition`, etc.) into a single canonical base title, aggregating metrics and live unsold stock.
+- **High-Resolution Cover Artwork**: Complete cover banner repository with 917+ verified Steam header images (`460×215` aspect ratio) ensuring full logo visibility without edge cropping.
+- **Extended Analytics Widgets**: Includes dedicated widgets for Net Profit, Revenue, Sales Volume, Highest Profit Achieved (peak profit per title), and Entries with Highest Average Profit.
 - **Artwork Display Modes**: Toggle between wide "Cover Banner" and "Compact Thumbnail (56px)" display via card-back configuration or the 3-dots card actions dropdown menu.
 - **Live Key Inventory Counter**: Direct remaining unsold keys stock badges (`X keys in stock`) with color-coded alerts for depleted items (`0 keys in stock` in soft red) and low stock (`X keys left (Low)` in amber).
 - **Interactive Catalog Keys Drill-Down**: 1-click inspection from any bestseller item directly to the Catalog Keys modal.
@@ -120,4 +123,4 @@ game-sales-tracker/
 
 See [CHANGELOG.md](CHANGELOG.md) for full release notes and development milestones.
 
-Current Release: **v2.2.9** (2026-09-23)
+Current Release: **v2.2.18** (2026-10-19)
