@@ -2012,6 +2012,22 @@ function initEventHandlers() {
 
   document.getElementById("inv-filter-platform").addEventListener("change", handleInventoryFilterChange);
   document.getElementById("inv-filter-status").addEventListener("change", handleInventoryFilterChange);
+  
+  // Status Pills Click Delegation
+  const invPillsContainer = document.getElementById("inventory-status-pills");
+  if (invPillsContainer) {
+    invPillsContainer.addEventListener("click", (e) => {
+      const pill = e.target.closest(".inv-status-pill");
+      if (!pill) return;
+      const targetStatus = pill.getAttribute("data-status");
+      const statusSelect = document.getElementById("inv-filter-status");
+      if (statusSelect && targetStatus) {
+        statusSelect.value = targetStatus;
+        handleInventoryFilterChange();
+      }
+    });
+  }
+
   document.getElementById("inv-filter-supplier").addEventListener("change", handleInventoryFilterChange);
   const invFilterAging = document.getElementById("inv-filter-aging");
   if (invFilterAging) {
@@ -9253,10 +9269,88 @@ function syncInventoryArtworkWithCatalog(saveToStorage = true) {
 }
 window.syncInventoryArtworkWithCatalog = syncInventoryArtworkWithCatalog;
 
+// Dynamic status pill counters and state synchronizer for inventory view
+function updateInventoryStatusPills() {
+  try {
+    const pillsContainer = document.getElementById("inventory-status-pills");
+    if (!pillsContainer || !state.inventory) return;
+
+    // Filter items matching all non-status filters to calculate live counts per status
+    let list = [...state.inventory];
+    const platformEl = document.getElementById("inv-filter-platform");
+    if (platformEl && platformEl.value !== "all") {
+      list = list.filter(item => item.platform === platformEl.value);
+    }
+
+    const supplierEl = document.getElementById("inv-filter-supplier");
+    if (supplierEl && supplierEl.value !== "all") {
+      list = list.filter(item => item.source === supplierEl.value);
+    }
+
+    const agingEl = document.getElementById("inv-filter-aging");
+    if (agingEl && agingEl.value !== "all") {
+      list = list.filter(item => {
+        const cat = typeof getAgingCategory === "function" ? getAgingCategory(item.purchaseDate) : null;
+        return cat && cat.name === agingEl.value;
+      });
+    }
+
+    const searchInput = document.getElementById("inv-search-input");
+    const search = searchInput ? searchInput.value.toLowerCase().trim() : "";
+    if (search) {
+      list = list.filter(item => 
+        (item.title && item.title.toLowerCase().includes(search)) ||
+        (item.key && item.key.toLowerCase().includes(search)) ||
+        (item.source && item.source.toLowerCase().includes(search)) ||
+        (item.notes && item.notes.toLowerCase().includes(search))
+      );
+    }
+
+    if (state.filterDuplicatesOnly && typeof window.getDuplicateKeyMap === "function") {
+      const dupMap = window.getDuplicateKeyMap();
+      list = list.filter(item => {
+        if (!item.key) return false;
+        const k = item.key.trim().toLowerCase();
+        return dupMap.has(k) && dupMap.get(k).length > 1;
+      });
+    }
+
+    const counts = { all: list.length, Available: 0, Sold: 0, Reserved: 0, Rejected: 0 };
+    for (let i = 0; i < list.length; i++) {
+      const s = list[i].status || "Available";
+      if (counts[s] !== undefined) {
+        counts[s]++;
+      }
+    }
+
+    const elAll = document.getElementById("inv-pill-count-all");
+    const elAvail = document.getElementById("inv-pill-count-available");
+    const elSold = document.getElementById("inv-pill-count-sold");
+    const elRes = document.getElementById("inv-pill-count-reserved");
+    const elRej = document.getElementById("inv-pill-count-rejected");
+
+    if (elAll) elAll.textContent = counts.all.toLocaleString();
+    if (elAvail) elAvail.textContent = counts.Available.toLocaleString();
+    if (elSold) elSold.textContent = counts.Sold.toLocaleString();
+    if (elRes) elRes.textContent = counts.Reserved.toLocaleString();
+    if (elRej) elRej.textContent = counts.Rejected.toLocaleString();
+
+    // Sync active state on pills with current status filter dropdown
+    const currentStatus = (document.getElementById("inv-filter-status")?.value || "all");
+    pillsContainer.querySelectorAll(".inv-status-pill").forEach(pill => {
+      pill.classList.toggle("active", (pill.dataset.status || "").toLowerCase() === currentStatus.toLowerCase());
+    });
+  } catch (err) {
+    console.warn("Error in updateInventoryStatusPills:", err);
+  }
+}
+window.updateInventoryStatusPills = updateInventoryStatusPills;
+
 // Render Table: Inventory Stock List Router
 function renderInventoryTable(itemsList) {
   try {
     state._activeRenderedItems = itemsList;
+    updateInventoryStatusPills();
     console.log("renderInventoryTable called with items count:", itemsList.length, "layout mode:", state.inventoryLayout);
     // Update inventory layout containers visibility
     const tableContainer = document.getElementById("inventory-table-container");
@@ -9777,8 +9871,14 @@ function renderInventoryGridLayout(itemsList) {
               </div>
             </div>
             <div style="border-top: 1px solid var(--border-color); padding-top: 8px; margin-top: 2px; display: flex; justify-content: space-between; align-items: center; width: 100%;">
-              <span style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Supplier</span>
-              ${supplierBadge}
+              <div style="display: flex; align-items: center; gap: 6px; min-width: 0;">
+                <span style="font-size: 0.62rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Source:</span>
+                ${supplierBadge}
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 0.62rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Sold On:</span>
+                <span class="badge" style="background: hsla(270, 85%, 60%, 0.12); border: 1px solid hsla(270, 85%, 60%, 0.25); color: var(--accent-purple); font-size: 0.68rem; padding: 2px 7px; font-weight: 600;"><i class="fa-solid fa-shop" style="font-size: 0.6rem; margin-right: 3px;"></i>${escapeHTML(saleItem.platformSold || "Store")}</span>
+              </div>
             </div>
           </div>
         `;

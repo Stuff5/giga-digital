@@ -714,6 +714,24 @@ function renderSupplierSplitChart(filteredInventoryList) {
   });
 }
 
+// Base-title normalizer for grouping region and edition variants
+function getBaseTitleForGrouping(rawTitle) {
+  if (!rawTitle) return "Unknown Game";
+  let t = rawTitle.trim();
+  // 1. Remove bracketed / parenthesized region, platform, or edition tags e.g. [Steam], (PC), [EU], (ROW), [GLOBAL], (TR/ARG), [Deluxe Edition]
+  t = t.replace(/\s*[\(\[][^\)\]]*[\)\]]\s*/g, " ");
+  // 2. Remove trailing / standalone region words
+  t = t.replace(/\b(eu|row|na|us|asia|latam|ru|cis|tr|arg|global|ww|emea|pc|steam|cd-?key|key)\b/gi, " ");
+  // 3. Remove edition identifiers if they are variants of the same title
+  t = t.replace(/\b(total conflict edition|deluxe edition|gold edition|standard edition|ultimate edition|special edition|day one edition|collector'?s? edition|goty edition|game of the year edition|enhanced edition|director'?s? cut|legendary edition|definitive edition|complete edition|anniversary edition)\b/gi, " ");
+  // 4. Clean up any trailing dashes, colons, or punctuation leftover
+  t = t.replace(/[\-:\s]+$/g, "").replace(/^[\-:\s]+/g, "");
+  // 5. Collapse whitespace
+  t = t.replace(/\s+/g, " ").trim();
+  return t || rawTitle.trim();
+}
+window.getBaseTitleForGrouping = getBaseTitleForGrouping;
+
 // Render top bestselling games horizontal bar chart
 function renderTopBestsellersChart(widgetKey, listId, titleId, filteredSalesList) {
   const container = document.getElementById(listId);
@@ -724,6 +742,7 @@ function renderTopBestsellersChart(widgetKey, listId, titleId, filteredSalesList
 
   // Get current configurations
   const cfg = state.widgetSettings ? state.widgetSettings[widgetKey] : null;
+  const shouldGroupVariants = !!(cfg && cfg.groupVariants);
   let metric = "profit";
   if (widgetKey === "topBestsellersRevenue") metric = "revenue";
   else if (widgetKey === "topBestsellersSales") metric = "sales";
@@ -761,6 +780,26 @@ function renderTopBestsellersChart(widgetKey, listId, titleId, filteredSalesList
 
   const getStockForGame = (rawTitle) => {
     if (!rawTitle) return 0;
+    if (shouldGroupVariants) {
+      const baseLower = getBaseTitleForGrouping(rawTitle).toLowerCase();
+      let totalStock = 0;
+      let matched = false;
+      if (state.inventory && Array.isArray(state.inventory)) {
+        for (let i = 0; i < state.inventory.length; i++) {
+          const invItem = state.inventory[i];
+          if (!invItem || !invItem.title) continue;
+          const isUnsold = (invItem.status === "Available" || invItem.status === "Reserved" || !invItem.status) 
+            && invItem.status !== "Sold" 
+            && invItem.status !== "Rejected";
+          if (isUnsold && getBaseTitleForGrouping(invItem.title).toLowerCase() === baseLower) {
+            totalStock++;
+            matched = true;
+          }
+        }
+      }
+      if (matched) return totalStock;
+    }
+
     const lower = rawTitle.trim().toLowerCase();
     if (stockByTitle[lower] !== undefined) return stockByTitle[lower];
 
@@ -791,14 +830,15 @@ function renderTopBestsellersChart(widgetKey, listId, titleId, filteredSalesList
     return 0;
   };
 
-  // Calculate metrics per game title (case-insensitive grouping)
+  // Calculate metrics per game title (case-insensitive grouping, with optional base-title grouping)
   const gameMetrics = {};
   wSales.forEach(sale => {
     const rawTitle = (sale.title || "Unknown Game").trim();
-    const titleKey = rawTitle.toLowerCase();
+    const effectiveTitle = shouldGroupVariants ? getBaseTitleForGrouping(rawTitle) : rawTitle;
+    const titleKey = effectiveTitle.toLowerCase();
     if (!gameMetrics[titleKey]) {
       gameMetrics[titleKey] = {
-        title: rawTitle,
+        title: effectiveTitle,
         profit: 0,
         revenue: 0,
         sales: 0,
@@ -807,8 +847,8 @@ function renderTopBestsellersChart(widgetKey, listId, titleId, filteredSalesList
       };
     } else {
       // Prefer cleaner Title Case / mixed case over ALL CAPS for display
-      if (gameMetrics[titleKey].title === gameMetrics[titleKey].title.toUpperCase() && rawTitle !== rawTitle.toUpperCase()) {
-        gameMetrics[titleKey].title = rawTitle;
+      if (gameMetrics[titleKey].title === gameMetrics[titleKey].title.toUpperCase() && effectiveTitle !== effectiveTitle.toUpperCase()) {
+        gameMetrics[titleKey].title = effectiveTitle;
       }
     }
     const saleProfit = (sale.profit !== undefined && sale.profit !== null) ? Number(sale.profit) : 0;
@@ -829,7 +869,7 @@ function renderTopBestsellersChart(widgetKey, listId, titleId, filteredSalesList
       } else if (imgUrlByTitle[titleKey]) {
         gameMetrics[titleKey].imageUrl = imgUrlByTitle[titleKey];
       } else if (typeof window !== "undefined" && typeof window.resolveGameArtwork === "function") {
-        gameMetrics[titleKey].imageUrl = window.resolveGameArtwork(rawTitle);
+        gameMetrics[titleKey].imageUrl = window.resolveGameArtwork(effectiveTitle) || window.resolveGameArtwork(rawTitle);
       }
     }
   });
@@ -892,7 +932,8 @@ function renderTopBestsellersChart(widgetKey, listId, titleId, filteredSalesList
       metricLabel = 'Highest Average Profit';
       entityLabel = 'Entries';
     }
-    cardTitle.textContent = `Top ${limit} ${entityLabel} by ${metricLabel}`;
+    const combinedSuffix = shouldGroupVariants ? ' (Combined)' : '';
+    cardTitle.textContent = `Top ${limit} ${entityLabel} by ${metricLabel}${combinedSuffix}`;
   }
 
   if (sortedGames.length === 0) {
@@ -2049,6 +2090,8 @@ function bindWidgetControls() {
       if (selectLimit) selectLimit.value = cfg.limit || 5;
       const selectCover = document.getElementById(`config-${widgetKey}-coverStyle`);
       if (selectCover) selectCover.value = (cfg && cfg.coverStyle === "compact") ? "compact" : "cover";
+      const checkGroup = document.getElementById(`config-${widgetKey}-groupVariants`);
+      if (checkGroup) checkGroup.checked = !!(cfg && cfg.groupVariants);
       if (widgetKey === "topAverageProfit") {
         const selectMinSales = document.getElementById(`config-${widgetKey}-minSales`);
         if (selectMinSales) selectMinSales.value = cfg.minSales || 1;
@@ -2221,6 +2264,8 @@ function bindWidgetControls() {
           if (selectLimit) cfg.limit = parseInt(selectLimit.value);
           const selectCover = document.getElementById(`config-${widgetKey}-coverStyle`);
           if (selectCover) cfg.coverStyle = selectCover.value;
+          const checkGroup = document.getElementById(`config-${widgetKey}-groupVariants`);
+          if (checkGroup) cfg.groupVariants = !!checkGroup.checked;
           if (widgetKey === "topAverageProfit") {
             const selectMinSales = document.getElementById(`config-${widgetKey}-minSales`);
             if (selectMinSales) cfg.minSales = parseInt(selectMinSales.value);
