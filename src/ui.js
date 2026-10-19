@@ -9871,14 +9871,8 @@ function renderInventoryGridLayout(itemsList) {
               </div>
             </div>
             <div style="border-top: 1px solid var(--border-color); padding-top: 8px; margin-top: 2px; display: flex; justify-content: space-between; align-items: center; width: 100%;">
-              <div style="display: flex; align-items: center; gap: 6px; min-width: 0;">
-                <span style="font-size: 0.62rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Source:</span>
-                ${supplierBadge}
-              </div>
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <span style="font-size: 0.62rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Sold On:</span>
-                <span class="badge" style="background: hsla(270, 85%, 60%, 0.12); border: 1px solid hsla(270, 85%, 60%, 0.25); color: var(--accent-purple); font-size: 0.68rem; padding: 2px 7px; font-weight: 600;"><i class="fa-solid fa-shop" style="font-size: 0.6rem; margin-right: 3px;"></i>${escapeHTML(saleItem.platformSold || "Store")}</span>
-              </div>
+              <span style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Supplier</span>
+              ${supplierBadge}
             </div>
           </div>
         `;
