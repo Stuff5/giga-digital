@@ -2011,18 +2011,16 @@ function initEventHandlers() {
   };
 
   document.getElementById("inv-filter-platform").addEventListener("change", handleInventoryFilterChange);
-  document.getElementById("inv-filter-status").addEventListener("change", handleInventoryFilterChange);
   
-  // Status Pills Click Delegation
+  // Quick Status Filter Pills Click Delegation
   const invPillsContainer = document.getElementById("inventory-status-pills");
   if (invPillsContainer) {
     invPillsContainer.addEventListener("click", (e) => {
       const pill = e.target.closest(".inv-status-pill");
       if (!pill) return;
       const targetStatus = pill.getAttribute("data-status");
-      const statusSelect = document.getElementById("inv-filter-status");
-      if (statusSelect && targetStatus) {
-        statusSelect.value = targetStatus;
+      if (targetStatus) {
+        state.inventoryFilterStatus = targetStatus;
         handleInventoryFilterChange();
       }
     });
@@ -2138,7 +2136,7 @@ function initEventHandlers() {
 
   document.getElementById("btn-reset-inventory-filters").addEventListener("click", () => {
     document.getElementById("inv-filter-platform").value = "all";
-    document.getElementById("inv-filter-status").value = "all";
+    state.inventoryFilterStatus = "all";
     document.getElementById("inv-filter-supplier").value = "all";
     const agingFilterEl = document.getElementById("inv-filter-aging");
     if (agingFilterEl) agingFilterEl.value = "all";
@@ -8626,8 +8624,8 @@ function getFilteredInventory() {
     list = list.filter(item => item.platform === platform);
   }
 
-  // B. Status filter
-  const status = document.getElementById("inv-filter-status").value;
+  // B. Status filter (driven by quick status pills)
+  const status = state.inventoryFilterStatus || "all";
   if (status !== "all") {
     list = list.filter(item => item.status === status);
   }
@@ -9335,8 +9333,8 @@ function updateInventoryStatusPills() {
     if (elRes) elRes.textContent = counts.Reserved.toLocaleString();
     if (elRej) elRej.textContent = counts.Rejected.toLocaleString();
 
-    // Sync active state on pills with current status filter dropdown
-    const currentStatus = (document.getElementById("inv-filter-status")?.value || "all");
+    // Sync active state on pills with current status filter
+    const currentStatus = state.inventoryFilterStatus || "all";
     pillsContainer.querySelectorAll(".inv-status-pill").forEach(pill => {
       pill.classList.toggle("active", (pill.dataset.status || "").toLowerCase() === currentStatus.toLowerCase());
     });

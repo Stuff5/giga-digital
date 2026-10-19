@@ -984,6 +984,7 @@ let state = {
   platformLogos: { ...DEFAULT_PLATFORM_LOGOS }, // Key-value map: platformName -> logoUrl
   publisherLogos: { ...DEFAULT_PUBLISHER_LOGOS }, // Key-value map: publisherName -> logoUrl
   inventorySortBy: "date-desc", // "date-desc", "date-asc", "title-asc", "title-desc", "duration-desc", "duration-asc"
+  inventoryFilterStatus: "all", // "all", "Available", "Sold", "Reserved", "Rejected"
   filterDuplicatesOnly: false,
   inventoryPageSize: 25,
   inventoryCurrentPage: 1,
