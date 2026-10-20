@@ -2239,15 +2239,17 @@ function initEventHandlers() {
     if (state.supLeaderboardLimit) {
       leaderboardLimitSelect.value = String(state.supLeaderboardLimit);
     }
-    leaderboardLimitSelect.addEventListener("change", (e) => {
-      state.supLeaderboardLimit = parseInt(e.target.value, 10) || 5;
-      try {
-        localStorage.setItem("gv_sup_leaderboard_limit", String(state.supLeaderboardLimit));
-      } catch (err) {
-        console.error("Error saving supLeaderboardLimit:", err);
+    const onLimitChange = (e) => {
+      const val = parseInt(e.target.value, 10) || 5;
+      if (typeof window.handleLeaderboardLimitChange === "function") {
+        window.handleLeaderboardLimitChange(val);
+      } else {
+        state.supLeaderboardLimit = val;
+        renderSupplierAnalytics();
       }
-      renderSupplierAnalytics();
-    });
+    };
+    leaderboardLimitSelect.addEventListener("change", onLimitChange);
+    leaderboardLimitSelect.addEventListener("input", onLimitChange);
   }
 
   const supPeriodButtons = document.querySelectorAll("#sup-date-filter-group button");
@@ -6699,13 +6701,29 @@ function renderSupplierAnalytics() {
 
   // Take top N based on selected limit
   const limitSelect = document.getElementById("leaderboard-limit-select");
-  if (limitSelect && state.supLeaderboardLimit && limitSelect.value !== String(state.supLeaderboardLimit)) {
-    limitSelect.value = String(state.supLeaderboardLimit);
+  let limit = 5;
+  if (limitSelect && limitSelect.value) {
+    limit = parseInt(limitSelect.value, 10) || 5;
+    state.supLeaderboardLimit = limit;
+  } else if (state.supLeaderboardLimit) {
+    limit = state.supLeaderboardLimit;
+    if (limitSelect) limitSelect.value = String(limit);
   }
-  const limit = limitSelect ? (parseInt(limitSelect.value, 10) || state.supLeaderboardLimit || 5) : (state.supLeaderboardLimit || 5);
 
   const activeSuppliers = suppliersList.filter(s => s.purchasedCount > 0 || s.soldCount > 0);
   const topSuppliers = activeSuppliers.slice(0, limit);
+
+  // Update dynamic count badge in leaderboard header
+  const countBadge = document.getElementById("leaderboard-count-badge");
+  if (countBadge) {
+    if (activeSuppliers.length === 0) {
+      countBadge.textContent = "0 suppliers";
+    } else if (topSuppliers.length < activeSuppliers.length) {
+      countBadge.textContent = `Showing top ${topSuppliers.length} of ${activeSuppliers.length}`;
+    } else {
+      countBadge.textContent = `${activeSuppliers.length} supplier${activeSuppliers.length === 1 ? '' : 's'}`;
+    }
+  }
 
   if (topSuppliers.length === 0) {
     container.style.justifyContent = "center";
@@ -6791,6 +6809,20 @@ function renderSupplierAnalytics() {
     renderRoiMatrixChart(activeSuppliers);
   }
 }
+window.renderSupplierAnalytics = renderSupplierAnalytics;
+
+window.handleLeaderboardLimitChange = function(val) {
+  const limit = parseInt(val, 10) || 5;
+  state.supLeaderboardLimit = limit;
+  try {
+    localStorage.setItem("gv_sup_leaderboard_limit", String(limit));
+  } catch (err) {
+    console.error("Error saving supLeaderboardLimit:", err);
+  }
+  const el = document.getElementById("leaderboard-limit-select");
+  if (el) el.value = String(limit);
+  renderSupplierAnalytics();
+};
 
 // Render Supplier ROI & Velocity Matrix Scatter Chart
 function initColorPickers() {

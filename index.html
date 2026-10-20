@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=46">
+  <link rel="stylesheet" href="styles.css?v=47">
   
   <!-- Early theme application to prevent FOUC / light theme flicker -->
   <script>
@@ -1869,15 +1869,18 @@
                 <!-- Leaderboard Card -->
                 <div class="calc-card" style="margin-bottom: 0;">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; flex-wrap: wrap; gap: 8px;">
-                    <h3 style="margin-bottom: 0; border: none; padding-bottom: 0; font-size: 1.05rem;">Supplier Performance Leaderboard</h3>
                     <div style="display: flex; align-items: center; gap: 8px;">
-                      <select id="leaderboard-metric-select" class="form-control form-control-sm" style="width: auto; padding: 2px 8px; background-color: var(--bg-input); font-size: 0.8rem; height: 28px;">
+                      <h3 style="margin-bottom: 0; border: none; padding-bottom: 0; font-size: 1.05rem;">Supplier Performance Leaderboard</h3>
+                      <span id="leaderboard-count-badge" style="font-size: 0.72rem; color: var(--text-muted); background: var(--bg-input); padding: 2px 7px; border-radius: 10px; border: 1px solid var(--border-color);"></span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <select id="leaderboard-metric-select" class="form-control form-control-sm" style="width: auto; padding: 2px 8px; background-color: var(--bg-input); font-size: 0.8rem; height: 28px;" onchange="if (typeof renderSupplierAnalytics === 'function') renderSupplierAnalytics();">
                         <option value="profit" selected>Net Profit</option>
                         <option value="roi">ROI %</option>
                         <option value="volume">Keys Sold</option>
                         <option value="sellthrough">Sell-Through %</option>
                       </select>
-                      <select id="leaderboard-limit-select" class="form-control form-control-sm" style="width: auto; padding: 2px 8px; background-color: var(--bg-input); font-size: 0.8rem; height: 28px;" title="Leaderboard size">
+                      <select id="leaderboard-limit-select" class="form-control form-control-sm" style="width: auto; padding: 2px 8px; background-color: var(--bg-input); font-size: 0.8rem; height: 28px;" title="Leaderboard size" onchange="if (typeof window.handleLeaderboardLimitChange === 'function') { window.handleLeaderboardLimitChange(this.value); } else if (typeof renderSupplierAnalytics === 'function') { renderSupplierAnalytics(); }">
                         <option value="5" selected>Top 5</option>
                         <option value="10">Top 10</option>
                         <option value="20">Top 20</option>
@@ -3920,13 +3923,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=86"></script>
-  <script src="src/state.js?v=86"></script>
-  <script src="src/api.js?v=86"></script>
-  <script src="src/charts.js?v=86"></script>
-  <script src="src/ui.js?v=86"></script>
-  <script src="src/ai.js?v=86"></script>
-  <script src="src/importer.js?v=86"></script>
-  <script src="app.js?v=86"></script>
+  <script src="config.js?v=87"></script>
+  <script src="src/state.js?v=87"></script>
+  <script src="src/api.js?v=87"></script>
+  <script src="src/charts.js?v=87"></script>
+  <script src="src/ui.js?v=87"></script>
+  <script src="src/ai.js?v=87"></script>
+  <script src="src/importer.js?v=87"></script>
+  <script src="app.js?v=87"></script>
 </body>
 </html>
