@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=45">
+  <link rel="stylesheet" href="styles.css?v=46">
   
   <!-- Early theme application to prevent FOUC / light theme flicker -->
   <script>
@@ -139,7 +139,7 @@
         </div>
         <div class="version-info" style="text-align: center; font-size: 0.7rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; overflow: hidden; white-space: nowrap;">
           <span class="version-label">GameVault</span>
-          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v2.2.18</a>
+          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v2.2.19</a>
         </div>
 
       </div>
@@ -1754,35 +1754,19 @@
                     <h5>Show/Hide Metrics</h5>
                     <label class="checkbox-container">
                       <input type="checkbox" id="toggle-sup-metric-profit" checked>
-                      <span class="checkbox-label">Net Profit</span>
-                    </label>
-                    <label class="checkbox-container">
-                      <input type="checkbox" id="toggle-sup-metric-cost" checked>
-                      <span class="checkbox-label">Inventory Cost</span>
+                      <span class="checkbox-label">Net Profit &amp; Margins</span>
                     </label>
                     <label class="checkbox-container">
                       <input type="checkbox" id="toggle-sup-metric-revenue" checked>
-                      <span class="checkbox-label">Total Revenue</span>
+                      <span class="checkbox-label">Total Revenue &amp; Volume</span>
+                    </label>
+                    <label class="checkbox-container">
+                      <input type="checkbox" id="toggle-sup-metric-cost" checked>
+                      <span class="checkbox-label">Inventory &amp; Capital</span>
                     </label>
                     <label class="checkbox-container">
                       <input type="checkbox" id="toggle-sup-metric-roi" checked>
-                      <span class="checkbox-label">ROI %</span>
-                    </label>
-                    <label class="checkbox-container">
-                      <input type="checkbox" id="toggle-sup-metric-stock" checked>
-                      <span class="checkbox-label">Available Stock</span>
-                    </label>
-                    <label class="checkbox-container">
-                      <input type="checkbox" id="toggle-sup-metric-velocity" checked>
-                      <span class="checkbox-label">Sales Velocity</span>
-                    </label>
-                    <label class="checkbox-container">
-                      <input type="checkbox" id="toggle-sup-metric-str" checked>
-                      <span class="checkbox-label">Sell-Through Rate</span>
-                    </label>
-                    <label class="checkbox-container">
-                      <input type="checkbox" id="toggle-sup-metric-unitProfit" checked>
-                      <span class="checkbox-label">Avg Profit per Key</span>
+                      <span class="checkbox-label">Efficiency &amp; Velocity (ROI)</span>
                     </label>
                   </div>
                 </div>
@@ -1803,95 +1787,75 @@
               </div>
             </div>
 
-            <!-- Suppliers Metrics Grid -->
+            <!-- Suppliers Metrics Grid (Consolidated 4 Executive KPI Cards) -->
             <div class="metrics-grid" id="suppliers-metrics-grid" style="margin-bottom: 25px;">
+              <!-- 1. Net Profit & Margins -->
               <div class="metric-card bg-gradient-purple" id="sup-card-net-profit">
                 <div class="metric-info">
                   <span class="metric-label">Total Net Profit</span>
                   <h3 class="metric-value" id="sup-metric-profit">€0.00</h3>
-                  <span class="metric-subtext positive" id="sup-metric-profit-change">
-                    <i class="fa-solid fa-arrow-trend-up"></i> +0% margin
-                  </span>
+                  <div class="metric-subtext-group">
+                    <span class="metric-subtext positive" id="sup-metric-profit-change">
+                      <i class="fa-solid fa-arrow-trend-up"></i> +0% margin
+                    </span>
+                    <span class="metric-subtext-sep">•</span>
+                    <span class="metric-subtext"><span id="sup-metric-avg-profit-key">€0.00</span> / key</span>
+                  </div>
+                  <span id="sup-metric-avg-profit-subtext" style="display: none;"></span>
                 </div>
                 <div class="metric-icon">
                   <i class="fa-solid fa-wallet"></i>
                 </div>
               </div>
 
-              <div class="metric-card bg-gradient-cyan" id="sup-card-inventory-cost">
-                <div class="metric-info">
-                  <span class="metric-label">Inventory Cost Value</span>
-                  <h3 class="metric-value" id="sup-metric-cost">€0.00</h3>
-                  <span class="metric-subtext" id="sup-metric-unsold-keys">0 keys in stock</span>
-                </div>
-                <div class="metric-icon">
-                  <i class="fa-solid fa-cubes"></i>
-                </div>
-              </div>
-
+              <!-- 2. Total Revenue & Volume -->
               <div class="metric-card bg-gradient-pink" id="sup-card-total-revenue">
                 <div class="metric-info">
                   <span class="metric-label">Total Revenue</span>
                   <h3 class="metric-value" id="sup-metric-revenue">€0.00</h3>
-                  <span class="metric-subtext" id="sup-metric-sold-keys">0 keys sold</span>
+                  <div class="metric-subtext-group">
+                    <span class="metric-subtext" id="sup-metric-sold-keys">0 keys sold</span>
+                    <span class="metric-subtext-sep">•</span>
+                    <span class="metric-subtext" id="sup-metric-roi-subtext">Cost of sales: €0.00</span>
+                  </div>
                 </div>
                 <div class="metric-icon">
                   <i class="fa-solid fa-receipt"></i>
                 </div>
               </div>
 
+              <!-- 3. Inventory Cost & Capital -->
+              <div class="metric-card bg-gradient-cyan" id="sup-card-inventory-cost">
+                <div class="metric-info">
+                  <span class="metric-label">Inventory Cost Value</span>
+                  <h3 class="metric-value" id="sup-metric-cost">€0.00</h3>
+                  <div class="metric-subtext-group">
+                    <span class="metric-subtext" id="sup-metric-unsold-keys">0 keys in stock</span>
+                    <span class="metric-subtext-sep">•</span>
+                    <span class="metric-subtext">Capital tied up</span>
+                  </div>
+                  <span id="sup-metric-stock-keys-count" style="display: none;">0 keys</span>
+                </div>
+                <div class="metric-icon">
+                  <i class="fa-solid fa-cubes"></i>
+                </div>
+              </div>
+
+              <!-- 4. Efficiency & Velocity -->
               <div class="metric-card bg-gradient-emerald" id="sup-card-roi">
                 <div class="metric-info">
-                  <span class="metric-label">ROI (Return on Inv.)</span>
+                  <span class="metric-label">Efficiency &amp; ROI</span>
                   <h3 class="metric-value" id="sup-metric-roi">0%</h3>
-                  <span class="metric-subtext" id="sup-metric-roi-subtext">Cost of sales: €0.00</span>
-                </div>
-                <div class="metric-icon">
-                  <i class="fa-solid fa-percent"></i>
-                </div>
-              </div>
-
-              <div class="metric-card bg-gradient-blue" id="sup-card-available-stock">
-                <div class="metric-info">
-                  <span class="metric-label">Available Stock</span>
-                  <h3 class="metric-value" id="sup-metric-stock-keys-count">0 keys</h3>
-                  <span class="metric-subtext">Keys remaining in stock</span>
-                </div>
-                <div class="metric-icon">
-                  <i class="fa-solid fa-boxes-stacked"></i>
-                </div>
-              </div>
-
-              <div class="metric-card bg-gradient-amber" id="sup-card-sales-velocity">
-                <div class="metric-info">
-                  <span class="metric-label">Sales Velocity</span>
-                  <h3 class="metric-value" id="sup-metric-sales-velocity">0.0 days</h3>
-                  <span class="metric-subtext" id="sup-metric-velocity-subtext">0 sales tracked</span>
+                  <div class="metric-subtext-group">
+                    <span class="metric-subtext"><span id="sup-metric-sell-through">0.0%</span> STR</span>
+                    <span class="metric-subtext-sep">•</span>
+                    <span class="metric-subtext"><span id="sup-metric-sales-velocity">0.0 days</span> avg</span>
+                  </div>
+                  <span id="sup-metric-velocity-subtext" style="display: none;"></span>
+                  <span id="sup-metric-str-subtext" style="display: none;"></span>
                 </div>
                 <div class="metric-icon">
                   <i class="fa-solid fa-gauge-high"></i>
-                </div>
-              </div>
-
-              <div class="metric-card bg-gradient-teal" id="sup-card-sell-through-rate">
-                <div class="metric-info">
-                  <span class="metric-label">Sell-Through Rate</span>
-                  <h3 class="metric-value" id="sup-metric-sell-through">0.0%</h3>
-                  <span class="metric-subtext" id="sup-metric-str-subtext">0 sold / 0 total</span>
-                </div>
-                <div class="metric-icon">
-                  <i class="fa-solid fa-chart-pie"></i>
-                </div>
-              </div>
-
-              <div class="metric-card bg-gradient-blue" id="sup-card-avg-profit-key">
-                <div class="metric-info">
-                  <span class="metric-label">Avg Profit per Key</span>
-                  <h3 class="metric-value" id="sup-metric-avg-profit-key">€0.00</h3>
-                  <span class="metric-subtext" id="sup-metric-avg-profit-subtext">Based on 0 sales</span>
-                </div>
-                <div class="metric-icon">
-                  <i class="fa-solid fa-tags"></i>
                 </div>
               </div>
             </div>
@@ -1918,14 +1882,14 @@
                   </div>
                 </div>
 
-                <!-- ROI Matrix Scatter Plot Card -->
+                <!-- Supplier Profit Share Donut Chart Card -->
                 <div class="calc-card" style="margin-bottom: 0; display: flex; flex-direction: column;">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
-                    <h3 style="margin-bottom: 0; border: none; padding-bottom: 0; font-size: 1.05rem;">ROI & Sales Velocity Matrix</h3>
-                    <span style="font-size: 0.75rem; color: var(--text-muted);">ROI % vs. Sell-Through %</span>
+                    <h3 style="margin-bottom: 0; border: none; padding-bottom: 0; font-size: 1.05rem;">Supplier Profit Share</h3>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">Net Profit Split (%)</span>
                   </div>
-                  <div style="position: relative; flex-grow: 1; min-height: 200px; height: 100%;">
-                    <canvas id="supplier-roi-matrix-chart"></canvas>
+                  <div style="position: relative; flex-grow: 1; min-height: 220px; height: 100%;">
+                    <canvas id="supplier-profit-share-chart"></canvas>
                   </div>
                 </div>
 
@@ -3949,13 +3913,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=85"></script>
-  <script src="src/state.js?v=85"></script>
-  <script src="src/api.js?v=85"></script>
-  <script src="src/charts.js?v=85"></script>
-  <script src="src/ui.js?v=85"></script>
-  <script src="src/ai.js?v=85"></script>
-  <script src="src/importer.js?v=85"></script>
-  <script src="app.js?v=85"></script>
+  <script src="config.js?v=86"></script>
+  <script src="src/state.js?v=86"></script>
+  <script src="src/api.js?v=86"></script>
+  <script src="src/charts.js?v=86"></script>
+  <script src="src/ui.js?v=86"></script>
+  <script src="src/ai.js?v=86"></script>
+  <script src="src/importer.js?v=86"></script>
+  <script src="app.js?v=86"></script>
 </body>
 </html>

@@ -2,17 +2,17 @@
  * GameVault - Dashboard Widgets & Chart.js Config (charts.js)
  */
 
-function renderRoiMatrixChart(activeSuppliers) {
-  if (supplierRoiMatrixChartInstance) {
+function renderSupplierProfitShareChart(activeSuppliers) {
+  if (supplierProfitShareChartInstance) {
     try {
-      supplierRoiMatrixChartInstance.destroy();
+      supplierProfitShareChartInstance.destroy();
     } catch (e) {
-      console.error("Error destroying supplierRoiMatrixChartInstance:", e);
+      console.error("Error destroying supplierProfitShareChartInstance:", e);
     }
-    supplierRoiMatrixChartInstance = null;
+    supplierProfitShareChartInstance = null;
   }
 
-  const canvas = document.getElementById("supplier-roi-matrix-chart");
+  const canvas = document.getElementById("supplier-profit-share-chart") || document.getElementById("supplier-roi-matrix-chart");
   if (!canvas) return;
 
   const ctx = canvas.getContext("2d");
@@ -21,64 +21,85 @@ function renderRoiMatrixChart(activeSuppliers) {
   const rootStyle = getComputedStyle(document.documentElement);
   const textSecondaryColor = rootStyle.getPropertyValue("--text-secondary").trim() || "hsl(215, 15%, 60%)";
   const borderColor = rootStyle.getPropertyValue("--border-color").trim() || "hsl(215, 15%, 15%)";
+  const bgCardColor = rootStyle.getPropertyValue("--bg-card").trim() || "hsl(224, 22%, 12%)";
+  const tooltipBg = rootStyle.getPropertyValue("--bg-sidebar").trim() || "hsl(224, 25%, 10%)";
 
-  // Prepare scatter datasets
-  const scatterData = activeSuppliers.map(sup => {
-    return {
-      x: parseFloat(sup.sellThrough.toFixed(1)),
-      y: parseFloat(sup.roi.toFixed(1)),
-      label: sup.name,
-      color: (SUPPLIER_COLORS.find(c => c.name === sup.color) || SUPPLIER_COLORS[0]).value
-    };
-  });
+  const list = Array.isArray(activeSuppliers) ? activeSuppliers : [];
+  const profitable = list.filter(s => (s.netProfit || 0) > 0);
+  profitable.sort((a, b) => b.netProfit - a.netProfit);
 
-  supplierRoiMatrixChartInstance = new Chart(ctx, {
-    type: 'scatter',
+  const totalProfit = profitable.reduce((sum, s) => sum + s.netProfit, 0);
+
+  const labels = [];
+  const data = [];
+  const backgroundColors = [];
+
+  const fmt = typeof formatCurrency === "function" ? formatCurrency : (v => `€${Number(v).toFixed(2)}`);
+
+  if (profitable.length === 0 || totalProfit <= 0) {
+    labels.push("No Profit Recorded");
+    data.push(1);
+    backgroundColors.push("rgba(148, 163, 184, 0.2)");
+  } else {
+    const top = profitable.slice(0, 5);
+    const others = profitable.slice(5);
+    const otherProfit = others.reduce((sum, s) => sum + s.netProfit, 0);
+
+    top.forEach(s => {
+      labels.push(s.name);
+      data.push(parseFloat(s.netProfit.toFixed(2)));
+      const colorPreset = SUPPLIER_COLORS.find(c => c.name === s.color) || SUPPLIER_COLORS[0];
+      backgroundColors.push(colorPreset ? colorPreset.value : "#6366f1");
+    });
+
+    if (otherProfit > 0) {
+      labels.push("Other Suppliers");
+      data.push(parseFloat(otherProfit.toFixed(2)));
+      backgroundColors.push("#6b7280");
+    }
+  }
+
+  supplierProfitShareChartInstance = new Chart(ctx, {
+    type: "doughnut",
     data: {
+      labels: labels,
       datasets: [{
-        label: 'Suppliers',
-        data: scatterData,
-        backgroundColor: scatterData.map(d => d.color),
-        borderColor: scatterData.map(d => d.color),
-        pointRadius: 8,
-        pointHoverRadius: 10
+        data: data,
+        backgroundColor: backgroundColors,
+        borderColor: bgCardColor,
+        borderWidth: 2,
+        hoverOffset: 6
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      scales: {
-        x: {
-          min: 0,
-          max: 100,
-          grid: { color: borderColor },
-          ticks: { color: textSecondaryColor, font: { family: 'Inter', size: 10 } },
-          title: {
-            display: true,
-            text: 'Sell-Through Rate (%)',
+      cutout: "62%",
+      plugins: {
+        legend: {
+          display: profitable.length > 0 && totalProfit > 0,
+          position: "bottom",
+          labels: {
             color: textSecondaryColor,
-            font: { family: 'Inter', size: 10, weight: 'bold' }
+            font: { family: "Inter", size: 10.5 },
+            boxWidth: 12,
+            padding: 8
           }
         },
-        y: {
-          min: 0,
-          grid: { color: borderColor },
-          ticks: { color: textSecondaryColor, font: { family: 'Inter', size: 10 } },
-          title: {
-            display: true,
-            text: 'Return on Investment (ROI %)',
-            color: textSecondaryColor,
-            font: { family: 'Inter', size: 10, weight: 'bold' }
-          }
-        }
-      },
-      plugins: {
-        legend: { display: false },
         tooltip: {
+          backgroundColor: tooltipBg,
+          titleColor: (state && state.themeMode !== "light") ? "#fff" : "#000",
+          bodyColor: (state && state.themeMode !== "light") ? "#fff" : "#000",
+          borderColor: borderColor,
+          borderWidth: 1,
           callbacks: {
             label: function(context) {
-              const pt = context.raw;
-              return `${pt.label}: STR = ${pt.x}%, ROI = ${pt.y}%`;
+              if (profitable.length === 0 || totalProfit <= 0) {
+                return " No profit recorded in selected timeframe";
+              }
+              const val = context.raw || 0;
+              const pct = totalProfit > 0 ? ((val / totalProfit) * 100).toFixed(1) : "0.0";
+              return ` ${context.label}: ${fmt(val)} (${pct}%)`;
             }
           }
         }
@@ -86,6 +107,9 @@ function renderRoiMatrixChart(activeSuppliers) {
     }
   });
 }
+window.renderSupplierProfitShareChart = renderSupplierProfitShareChart;
+const renderRoiMatrixChart = renderSupplierProfitShareChart;
+window.renderRoiMatrixChart = renderSupplierProfitShareChart;
 
 // Initialize color swatches in Add and Edit Supplier forms
 function getAgingCategory(purchaseDate) {

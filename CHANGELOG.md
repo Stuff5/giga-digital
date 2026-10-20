@@ -5,6 +5,28 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.19] - 2026-10-20
+
+### Added & Improved
+- **Consolidated Executive KPI Cards for Suppliers**:
+  - Streamlined the 8 disjointed/repetitive supplier metric cards into 4 high-impact executive KPI cards with grouped primary figures and contextual sub-metrics:
+    1. **Total Net Profit & Margins**: Net profit figure, margin percentage trend badge, and average profit per key.
+    2. **Total Revenue & Volume**: Gross revenue, keys sold volume, and total cost of sales.
+    3. **Inventory & Capital**: In-stock inventory valuation, unsold keys count, and capital tied up indicator.
+    4. **Efficiency & Velocity (ROI)**: Overall return on investment percentage, sell-through rate (STR %), and average days to sell velocity.
+  - Retained all existing metric elements and dynamic live DOM bindings without data loss.
+  - Streamlined the Metrics customization dropdown to 4 cohesive toggles (`Net Profit & Margins`, `Total Revenue & Volume`, `Inventory & Capital`, `Efficiency & Velocity`).
+- **Supplier Profit Share Doughnut Chart**:
+  - Replaced the 2D "ROI & Sales Velocity Matrix" scatter chart with a modern, high-clarity **Supplier Profit Share Doughnut Chart**.
+  - Renders profit distribution for Top 5 suppliers plus an aggregated "Other Suppliers" segment using configured brand colors from `SUPPLIER_COLORS`.
+  - Added interactive tooltips featuring exact formatted net profit values and percentage contribution shares (`€X.XX (Y.Y%)`), complete with empty-state handling for timeframes without sales.
+  - Preserved backward compatibility with legacy chart call signatures (`window.renderRoiMatrixChart` alias).
+- **Synchronized Versioning & Documentation**:
+  - Bumped version to `v2.2.19` across `config.js`, `app.js`, `src/ui.js`, `index.html`, `templates/help-modal.html`, and `README.md`.
+  - Incremented stylesheet and script cachebusters (`styles.css?v=46`, scripts `?v=86`).
+
+---
+
 ## [v2.2.18] - 2026-10-19
 
 ### Added & Improved

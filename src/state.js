@@ -1017,13 +1017,9 @@ let state = {
   },
   supVisibleMetrics: {
     profit: true,
-    cost: true,
     revenue: true,
-    roi: true,
-    stock: true,
-    velocity: true,
-    str: true,
-    unitProfit: true
+    cost: true,
+    roi: true
   },
   visibleFigures: {
     salesProfit: true,
@@ -1168,6 +1164,7 @@ let costRevenueChartInstance = null;
 let stockAgingChartInstance = null;
 let supplierSplitChartInstance = null;
 let supplierRoiMatrixChartInstance = null;
+let supplierProfitShareChartInstance = null;
 let dailyProfitMonthChartInstance = null;
 let stockSpeedChartInstance = null;
 let markupAnalysisChartInstance = null;
@@ -1458,13 +1455,9 @@ function loadStateFromStorage() {
         const parsed = JSON.parse(storedSupVisibleMetrics);
         state.supVisibleMetrics = {
           profit: true,
-          cost: true,
           revenue: true,
+          cost: true,
           roi: true,
-          stock: true,
-          velocity: true,
-          str: true,
-          unitProfit: true,
           ...parsed
         };
       } catch (e) {
@@ -1519,7 +1512,13 @@ function loadStateFromStorage() {
     const storedSupMetricOrder = localStorage.getItem("gv_sup_metric_order");
     if (storedSupMetricOrder) {
       try {
-        state.supMetricOrder = JSON.parse(storedSupMetricOrder) || [];
+        const parsed = JSON.parse(storedSupMetricOrder);
+        const validIds = ["sup-card-net-profit", "sup-card-total-revenue", "sup-card-inventory-cost", "sup-card-roi"];
+        if (Array.isArray(parsed) && parsed.length === validIds.length && parsed.every(id => validIds.includes(id))) {
+          state.supMetricOrder = parsed;
+        } else {
+          state.supMetricOrder = validIds;
+        }
       } catch (e) {
         console.error("Error parsing suppliers metric order state, using defaults:", e);
       }

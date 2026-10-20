@@ -989,6 +989,19 @@ a {
   color: var(--accent-danger);
   font-weight: 600;
 }
+.metric-subtext-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+.metric-subtext-sep {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  opacity: 0.4;
+  user-select: none;
+}
 .metric-icon {
   width: 48px;
   height: 48px;

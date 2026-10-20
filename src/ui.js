@@ -5,7 +5,7 @@
 // Asynchronously loads critical HTML templates (modals.html) on application boot
 window.loadHTMLTemplates = async () => {
   try {
-    const ver = window.APP_VERSION || "v2.2.18";
+    const ver = window.APP_VERSION || "v2.2.19";
     const res = await fetch(`templates/modals.html?v=${ver}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const html = await res.text();
@@ -33,7 +33,7 @@ window.ensureHelpModalLoaded = async () => {
 
   _helpModalLoadingPromise = (async () => {
     try {
-      const ver = window.APP_VERSION || "v2.2.18";
+      const ver = window.APP_VERSION || "v2.2.19";
       const res = await fetch(`templates/help-modal.html?v=${ver}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -3095,11 +3095,12 @@ function initEventHandlers() {
     });
     
     // Bind supplier metric checkboxes
-    const supMetricKeys = ["profit", "cost", "revenue", "roi", "stock", "velocity", "str", "unitProfit"];
+    const supMetricKeys = ["profit", "revenue", "cost", "roi"];
     supMetricKeys.forEach(key => {
       const checkbox = document.getElementById(`toggle-sup-metric-${key}`);
       if (checkbox) {
         checkbox.addEventListener("change", (e) => {
+          if (!state.supVisibleMetrics) state.supVisibleMetrics = {};
           state.supVisibleMetrics[key] = e.target.checked;
           saveStateToStorage();
           applySupplierMetricsVisibility();
@@ -6759,8 +6760,12 @@ function renderSupplierAnalytics() {
     });
   }
 
-  // Now, render the ROI matrix chart!
-  renderRoiMatrixChart(activeSuppliers);
+  // Now, render the supplier profit share chart!
+  if (typeof renderSupplierProfitShareChart === "function") {
+    renderSupplierProfitShareChart(activeSuppliers);
+  } else if (typeof renderRoiMatrixChart === "function") {
+    renderRoiMatrixChart(activeSuppliers);
+  }
 }
 
 // Render Supplier ROI & Velocity Matrix Scatter Chart
@@ -11209,19 +11214,15 @@ function applyMetricsVisibility() {
 function applySupplierMetricsVisibility() {
   const cards = {
     profit: document.getElementById("sup-card-net-profit"),
-    cost: document.getElementById("sup-card-inventory-cost"),
     revenue: document.getElementById("sup-card-total-revenue"),
-    roi: document.getElementById("sup-card-roi"),
-    stock: document.getElementById("sup-card-available-stock"),
-    velocity: document.getElementById("sup-card-sales-velocity"),
-    str: document.getElementById("sup-card-sell-through-rate"),
-    unitProfit: document.getElementById("sup-card-avg-profit-key")
+    cost: document.getElementById("sup-card-inventory-cost"),
+    roi: document.getElementById("sup-card-roi")
   };
   
   Object.keys(cards).forEach(key => {
     const cardEl = cards[key];
     if (cardEl) {
-      if (state.supVisibleMetrics && state.supVisibleMetrics[key]) {
+      if (!state.supVisibleMetrics || state.supVisibleMetrics[key] !== false) {
         cardEl.classList.remove("hidden");
       } else {
         cardEl.classList.add("hidden");
@@ -11231,7 +11232,7 @@ function applySupplierMetricsVisibility() {
     // Also update checkbox state in the dropdown panel
     const checkbox = document.getElementById(`toggle-sup-metric-${key}`);
     if (checkbox) {
-      checkbox.checked = !!(state.supVisibleMetrics && state.supVisibleMetrics[key]);
+      checkbox.checked = !state.supVisibleMetrics || state.supVisibleMetrics[key] !== false;
     }
   });
 }
@@ -11578,18 +11579,16 @@ function applySupplierMetricOrder() {
   
   const defaultOrder = [
     "sup-card-net-profit",
-    "sup-card-inventory-cost",
     "sup-card-total-revenue",
-    "sup-card-roi",
-    "sup-card-available-stock",
-    "sup-card-sales-velocity",
-    "sup-card-sell-through-rate",
-    "sup-card-avg-profit-key"
+    "sup-card-inventory-cost",
+    "sup-card-roi"
   ];
   
-  const order = state.supMetricOrder && state.supMetricOrder.length === defaultOrder.length
-    ? state.supMetricOrder
-    : defaultOrder;
+  const order = state.supMetricOrder && Array.isArray(state.supMetricOrder) &&
+    state.supMetricOrder.length === defaultOrder.length &&
+    state.supMetricOrder.every(id => defaultOrder.includes(id))
+      ? state.supMetricOrder
+      : defaultOrder;
     
   order.forEach(id => {
     const card = document.getElementById(id);
