@@ -447,16 +447,34 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
-                <!-- v2.2.19 -->
+                <!-- v2.2.20 -->
                 <div style="border-left: 3px solid var(--accent-emerald); padding-left: 12px;">
                   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.2.19 — Consolidated Supplier KPI Cards &amp; Profit Share Doughnut</strong>
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.2.20 - Multi-View Supplier Analytics Charts &amp; Intelligence</strong>
                     <span style="font-size: 0.75rem; color: var(--accent-emerald); font-weight: bold;">Current Version</span>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
+                    <li><strong>Interactive Multi-View Supplier Analytics Charts:</strong> Implemented an executive chart view switcher supporting 5 high-impact visual perspectives in a compact footprint:
+                      <br>&bull; <strong>Profit Share (%):</strong> Brand-colored doughnut chart of top profit contributors.
+                      <br>&bull; <strong>Capital vs. Realized Profit:</strong> Side-by-side grouped horizontal comparison of in-stock capital tied up vs. realized net profit.
+                      <br>&bull; <strong>Stock Aging &amp; Freshness:</strong> Stacked shelf-life breakdown (Fresh &lt;30d, Mature 30-90d, Aged 90-180d, Deadstock &gt;180d).
+                      <br>&bull; <strong>Quality &amp; Defect Rate:</strong> Rejection percentages and supplier quality reliability scores.
+                      <br>&bull; <strong>Spend vs. Profit Trend:</strong> Monthly acquisition spend vs. realized net profit over time.
+                    </li>
+                    <li><strong>Automatic Preference Persistence:</strong> Remembers the active chart view across sessions in <code>localStorage</code> (<code>gv_sup_chart_view</code>).</li>
+                  </ul>
+                </div>
+
+                <!-- v2.2.19 -->
+                <div style="border-left: 3px solid var(--border-color); padding-left: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.2.19 - Consolidated Supplier KPI Cards &amp; Leaderboard Limit</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Previous Version</span>
                   </div>
                   <ul style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; padding-left: 16px; margin: 0; margin-bottom: 12px;">
                     <li><strong>Consolidated Supplier KPI Cards:</strong> Streamlined 8 disjointed metric cards into 4 high-impact executive cards (Net Profit &amp; Margins, Total Revenue &amp; Volume, Inventory &amp; Capital, and Efficiency &amp; Velocity), grouping primary figures and contextual sub-metrics with zero data loss.</li>
                     <li><strong>Supplier Performance Leaderboard Size Selector:</strong> Added a dropdown choice of Top 5, Top 10, or Top 20 suppliers on the leaderboard card with automatic preference persistence.</li>
-                    <li><strong>Supplier Profit Share Doughnut Chart:</strong> Replaced the ROI matrix scatter plot with a clean, branded doughnut chart displaying percentage profit contribution for Top 5 suppliers plus aggregated others, with live currency tooltips.</li>
+                    <li><strong>Supplier Profit Share Doughnut Chart:</strong> Replaced the ROI matrix scatter plot with a clean, branded doughnut chart displaying percentage profit contribution.</li>
                     <li><strong>Streamlined Metrics Customizer:</strong> Updated the supplier metrics customization dropdown to toggle the 4 unified cards seamlessly.</li>
                   </ul>
                 </div>

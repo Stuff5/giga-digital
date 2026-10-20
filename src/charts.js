@@ -2,7 +2,7 @@
  * GameVault - Dashboard Widgets & Chart.js Config (charts.js)
  */
 
-function renderSupplierProfitShareChart(activeSuppliers) {
+function renderSupplierAnalyticsChart(activeSuppliers, filteredSales, filteredInventory) {
   if (supplierProfitShareChartInstance) {
     try {
       supplierProfitShareChartInstance.destroy();
@@ -25,16 +25,414 @@ function renderSupplierProfitShareChart(activeSuppliers) {
   const tooltipBg = rootStyle.getPropertyValue("--bg-sidebar").trim() || "hsl(224, 25%, 10%)";
 
   const list = Array.isArray(activeSuppliers) ? activeSuppliers : [];
+  const fmt = typeof formatCurrency === "function" ? formatCurrency : (v => `€${Number(v).toFixed(2)}`);
+  const activeView = (state && state.supActiveChartView) || "profit-share";
+
+  // Update card header labels based on view
+  const titleEl = document.getElementById("supplier-chart-title");
+  const subtitleEl = document.getElementById("supplier-chart-subtitle");
+
+  if (activeView === "capital-return") {
+    if (titleEl) titleEl.textContent = "Capital vs. Realized Profit";
+    if (subtitleEl) subtitleEl.textContent = "In-Stock Capital vs. Net Profit Realized";
+  } else if (activeView === "stock-aging") {
+    if (titleEl) titleEl.textContent = "Stock Aging & Freshness Breakdown";
+    if (subtitleEl) subtitleEl.textContent = "Unsold Inventory Shelf-Life by Supplier";
+  } else if (activeView === "quality-defects") {
+    if (titleEl) titleEl.textContent = "Supplier Quality & Defect Rate";
+    if (subtitleEl) subtitleEl.textContent = "Key Rejection & Defect Metrics (%)";
+  } else if (activeView === "spend-trend") {
+    if (titleEl) titleEl.textContent = "Spend vs. Realized Profit Trend";
+    if (subtitleEl) subtitleEl.textContent = "Monthly Acquisition Outflow vs. Net Profit";
+  } else {
+    if (titleEl) titleEl.textContent = "Supplier Profit Share";
+    if (subtitleEl) subtitleEl.textContent = "Net Profit Split (%)";
+  }
+
+  // --- 1. VIEW: CAPITAL VS. REALIZED RETURN ---
+  if (activeView === "capital-return") {
+    const suppliersWithCapital = list
+      .filter(s => (s.inStockCost || 0) > 0 || (s.netProfit || 0) > 0)
+      .sort((a, b) => ((b.inStockCost || 0) + (b.netProfit || 0)) - ((a.inStockCost || 0) + (a.netProfit || 0)))
+      .slice(0, 7);
+
+    if (suppliersWithCapital.length === 0) {
+      renderEmptySupplierChart(ctx, "No Capital or Profit Data Recorded");
+      return;
+    }
+
+    const labels = suppliersWithCapital.map(s => s.name);
+    const stockCapital = suppliersWithCapital.map(s => parseFloat((s.inStockCost || 0).toFixed(2)));
+    const realizedProfit = suppliersWithCapital.map(s => parseFloat((s.netProfit || 0).toFixed(2)));
+
+    supplierProfitShareChartInstance = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: "In-Stock Capital Tied Up",
+            data: stockCapital,
+            backgroundColor: "rgba(6, 182, 212, 0.75)",
+            borderColor: "#06b6d4",
+            borderWidth: 1.5,
+            borderRadius: 4
+          },
+          {
+            label: "Realized Net Profit",
+            data: realizedProfit,
+            backgroundColor: "rgba(16, 185, 129, 0.75)",
+            borderColor: "#10b981",
+            borderWidth: 1.5,
+            borderRadius: 4
+          }
+        ]
+      },
+      options: {
+        indexAxis: "y",
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            grid: { color: borderColor },
+            ticks: {
+              color: textSecondaryColor,
+              callback: v => fmt(v)
+            }
+          },
+          y: {
+            grid: { display: false },
+            ticks: {
+              color: textSecondaryColor,
+              font: { family: "Inter", weight: "600", size: 11 }
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: "bottom",
+            labels: {
+              color: textSecondaryColor,
+              font: { family: "Inter", size: 10.5 },
+              boxWidth: 12,
+              padding: 8
+            }
+          },
+          tooltip: {
+            backgroundColor: tooltipBg,
+            titleColor: (state && state.themeMode !== "light") ? "#fff" : "#000",
+            bodyColor: (state && state.themeMode !== "light") ? "#fff" : "#000",
+            borderColor: borderColor,
+            borderWidth: 1,
+            callbacks: {
+              label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.raw || 0)}`
+            }
+          }
+        }
+      }
+    });
+    return;
+  }
+
+  // --- 2. VIEW: STOCK AGING & FRESHNESS BREAKDOWN ---
+  if (activeView === "stock-aging") {
+    const suppliersWithStock = list
+      .filter(s => (s.inStockCount || 0) > 0)
+      .sort((a, b) => (b.inStockCount || 0) - (a.inStockCount || 0))
+      .slice(0, 7);
+
+    if (suppliersWithStock.length === 0) {
+      renderEmptySupplierChart(ctx, "No Unsold Keys in Stock to Age");
+      return;
+    }
+
+    const labels = suppliersWithStock.map(s => s.name);
+    const freshData = suppliersWithStock.map(s => (s.aging && s.aging.fresh) || 0);
+    const matureData = suppliersWithStock.map(s => (s.aging && s.aging.mature) || 0);
+    const agedData = suppliersWithStock.map(s => (s.aging && s.aging.aged) || 0);
+    const deadstockData = suppliersWithStock.map(s => (s.aging && s.aging.deadstock) || 0);
+
+    supplierProfitShareChartInstance = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: "Fresh (< 30d)",
+            data: freshData,
+            backgroundColor: "rgba(16, 185, 129, 0.85)",
+            borderColor: "#10b981",
+            borderWidth: 1,
+            borderRadius: { topLeft: 4, bottomLeft: 4 }
+          },
+          {
+            label: "Mature (30–90d)",
+            data: matureData,
+            backgroundColor: "rgba(6, 182, 212, 0.85)",
+            borderColor: "#06b6d4",
+            borderWidth: 1
+          },
+          {
+            label: "Aged (90–180d)",
+            data: agedData,
+            backgroundColor: "rgba(245, 158, 11, 0.85)",
+            borderColor: "#f59e0b",
+            borderWidth: 1
+          },
+          {
+            label: "Deadstock (> 180d)",
+            data: deadstockData,
+            backgroundColor: "rgba(239, 68, 68, 0.85)",
+            borderColor: "#ef4444",
+            borderWidth: 1,
+            borderRadius: { topRight: 4, bottomRight: 4 }
+          }
+        ]
+      },
+      options: {
+        indexAxis: "y",
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            stacked: true,
+            grid: { color: borderColor },
+            ticks: {
+              color: textSecondaryColor,
+              precision: 0
+            },
+            title: {
+              display: true,
+              text: "Unsold Inventory Keys",
+              color: textSecondaryColor,
+              font: { size: 10 }
+            }
+          },
+          y: {
+            stacked: true,
+            grid: { display: false },
+            ticks: {
+              color: textSecondaryColor,
+              font: { family: "Inter", weight: "600", size: 11 }
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: "bottom",
+            labels: {
+              color: textSecondaryColor,
+              font: { family: "Inter", size: 10 },
+              boxWidth: 10,
+              padding: 6
+            }
+          },
+          tooltip: {
+            backgroundColor: tooltipBg,
+            titleColor: (state && state.themeMode !== "light") ? "#fff" : "#000",
+            bodyColor: (state && state.themeMode !== "light") ? "#fff" : "#000",
+            borderColor: borderColor,
+            borderWidth: 1,
+            callbacks: {
+              label: function(context) {
+                const val = context.raw || 0;
+                const total = suppliersWithStock[context.dataIndex].inStockCount || 1;
+                const pct = ((val / total) * 100).toFixed(0);
+                return ` ${context.dataset.label}: ${val} keys (${pct}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
+    return;
+  }
+
+  // --- 3. VIEW: SUPPLIER QUALITY & DEFECT RATE ---
+  if (activeView === "quality-defects") {
+    const suppliersWithPurchases = list
+      .filter(s => (s.purchasedCount || 0) > 0)
+      .sort((a, b) => {
+        const rateB = ((b.rejectedCount || 0) / (b.purchasedCount || 1));
+        const rateA = ((a.rejectedCount || 0) / (a.purchasedCount || 1));
+        return rateB - rateA || b.purchasedCount - a.purchasedCount;
+      })
+      .slice(0, 8);
+
+    if (suppliersWithPurchases.length === 0) {
+      renderEmptySupplierChart(ctx, "No Supplier Acquisition Data Recorded");
+      return;
+    }
+
+    const labels = suppliersWithPurchases.map(s => s.name);
+    const defectRates = suppliersWithPurchases.map(s => {
+      const rate = ((s.rejectedCount || 0) / (s.purchasedCount || 1)) * 100;
+      return parseFloat(rate.toFixed(1));
+    });
+
+    const barColors = defectRates.map(rate => {
+      if (rate === 0) return "rgba(16, 185, 129, 0.85)"; // Emerald (Perfect)
+      if (rate <= 3.0) return "rgba(6, 182, 212, 0.85)";  // Cyan (Very Good)
+      if (rate <= 6.0) return "rgba(245, 158, 11, 0.85)";  // Amber (Moderate)
+      return "rgba(239, 68, 68, 0.85)";                    // Red (High Defect)
+    });
+
+    supplierProfitShareChartInstance = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: "Defect / Rejection Rate (%)",
+          data: defectRates,
+          backgroundColor: barColors,
+          borderWidth: 1,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        indexAxis: "y",
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            min: 0,
+            grid: { color: borderColor },
+            ticks: {
+              color: textSecondaryColor,
+              callback: v => `${v}%`
+            },
+            title: {
+              display: true,
+              text: "Defect / Rejection Rate (%)",
+              color: textSecondaryColor,
+              font: { size: 10 }
+            }
+          },
+          y: {
+            grid: { display: false },
+            ticks: {
+              color: textSecondaryColor,
+              font: { family: "Inter", weight: "600", size: 11 }
+            }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: tooltipBg,
+            titleColor: (state && state.themeMode !== "light") ? "#fff" : "#000",
+            bodyColor: (state && state.themeMode !== "light") ? "#fff" : "#000",
+            borderColor: borderColor,
+            borderWidth: 1,
+            callbacks: {
+              label: function(context) {
+                const s = suppliersWithPurchases[context.dataIndex];
+                const rej = s.rejectedCount || 0;
+                const tot = s.purchasedCount || 0;
+                const rate = context.raw;
+                return ` Defect Rate: ${rate}% (${rej} rejected / ${tot} acquired)`;
+              }
+            }
+          }
+        }
+      }
+    });
+    return;
+  }
+
+  // --- 4. VIEW: SPEND VS. PROFIT OVER TIME ---
+  if (activeView === "spend-trend") {
+    const rawSales = Array.isArray(filteredSales) && filteredSales.length > 0 ? filteredSales : (state.sales || []);
+    const rawInventory = Array.isArray(filteredInventory) && filteredInventory.length > 0 ? filteredInventory : (state.inventory || []);
+
+    const monthlyData = getMonthlySpendAndProfit(rawSales, rawInventory);
+    const labels = monthlyData.map(m => m.label);
+    const spendData = monthlyData.map(m => parseFloat(m.spend.toFixed(2)));
+    const profitData = monthlyData.map(m => parseFloat(m.profit.toFixed(2)));
+
+    supplierProfitShareChartInstance = new Chart(ctx, {
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            type: "bar",
+            label: "Acquisition Spend",
+            data: spendData,
+            backgroundColor: "rgba(99, 102, 241, 0.65)",
+            borderColor: "#6366f1",
+            borderWidth: 1.5,
+            borderRadius: 4,
+            order: 2
+          },
+          {
+            type: "line",
+            label: "Realized Net Profit",
+            data: profitData,
+            borderColor: "#10b981",
+            backgroundColor: "rgba(16, 185, 129, 0.15)",
+            borderWidth: 2.5,
+            tension: 0.35,
+            fill: true,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            pointBackgroundColor: "#10b981",
+            order: 1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: textSecondaryColor, font: { family: "Inter", size: 10 } }
+          },
+          y: {
+            grid: { color: borderColor },
+            ticks: {
+              color: textSecondaryColor,
+              callback: v => fmt(v)
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: "bottom",
+            labels: {
+              color: textSecondaryColor,
+              font: { family: "Inter", size: 10.5 },
+              boxWidth: 12,
+              padding: 8
+            }
+          },
+          tooltip: {
+            backgroundColor: tooltipBg,
+            titleColor: (state && state.themeMode !== "light") ? "#fff" : "#000",
+            bodyColor: (state && state.themeMode !== "light") ? "#fff" : "#000",
+            borderColor: borderColor,
+            borderWidth: 1,
+            callbacks: {
+              label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.raw || 0)}`
+            }
+          }
+        }
+      }
+    });
+    return;
+  }
+
+  // --- 5. DEFAULT VIEW: SUPPLIER PROFIT SHARE (DOUGHNUT) ---
   const profitable = list.filter(s => (s.netProfit || 0) > 0);
   profitable.sort((a, b) => b.netProfit - a.netProfit);
-
   const totalProfit = profitable.reduce((sum, s) => sum + s.netProfit, 0);
 
   const labels = [];
   const data = [];
   const backgroundColors = [];
-
-  const fmt = typeof formatCurrency === "function" ? formatCurrency : (v => `€${Number(v).toFixed(2)}`);
 
   if (profitable.length === 0 || totalProfit <= 0) {
     labels.push("No Profit Recorded");
@@ -107,9 +505,77 @@ function renderSupplierProfitShareChart(activeSuppliers) {
     }
   });
 }
-window.renderSupplierProfitShareChart = renderSupplierProfitShareChart;
-const renderRoiMatrixChart = renderSupplierProfitShareChart;
-window.renderRoiMatrixChart = renderSupplierProfitShareChart;
+
+function renderEmptySupplierChart(ctx, message) {
+  const rootStyle = getComputedStyle(document.documentElement);
+  const textSecondaryColor = rootStyle.getPropertyValue("--text-secondary").trim() || "hsl(215, 15%, 60%)";
+  supplierProfitShareChartInstance = new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels: [message],
+      datasets: [{
+        data: [1],
+        backgroundColor: ["rgba(148, 163, 184, 0.15)"],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: "70%",
+      plugins: {
+        legend: {
+          display: true,
+          position: "bottom",
+          labels: { color: textSecondaryColor, font: { family: "Inter", size: 11 }, boxWidth: 0 }
+        },
+        tooltip: { enabled: false }
+      }
+    }
+  });
+}
+
+function getMonthlySpendAndProfit(sales, inventory) {
+  const monthsMap = new Map();
+  const now = new Date();
+  
+  // Last 6 months chronological
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const label = d.toLocaleString('default', { month: 'short', year: '2-digit' });
+    monthsMap.set(key, { key, label, spend: 0, profit: 0 });
+  }
+
+  if (Array.isArray(inventory)) {
+    inventory.forEach(item => {
+      if (item.purchaseDate) {
+        const key = String(item.purchaseDate).substring(0, 7);
+        if (monthsMap.has(key)) {
+          monthsMap.get(key).spend += (item.cost || 0);
+        }
+      }
+    });
+  }
+
+  if (Array.isArray(sales)) {
+    sales.forEach(sale => {
+      if (sale.saleDate) {
+        const key = String(sale.saleDate).substring(0, 7);
+        if (monthsMap.has(key)) {
+          monthsMap.get(key).profit += (sale.profit || 0);
+        }
+      }
+    });
+  }
+
+  return Array.from(monthsMap.values());
+}
+
+window.renderSupplierAnalyticsChart = renderSupplierAnalyticsChart;
+window.renderSupplierProfitShareChart = renderSupplierAnalyticsChart;
+const renderRoiMatrixChart = renderSupplierAnalyticsChart;
+window.renderRoiMatrixChart = renderSupplierAnalyticsChart;
 
 // Initialize color swatches in Add and Edit Supplier forms
 function getAgingCategory(purchaseDate) {

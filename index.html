@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=47">
+  <link rel="stylesheet" href="styles.css?v=48">
   
   <!-- Early theme application to prevent FOUC / light theme flicker -->
   <script>
@@ -139,7 +139,7 @@
         </div>
         <div class="version-info" style="text-align: center; font-size: 0.7rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; overflow: hidden; white-space: nowrap;">
           <span class="version-label">GameVault</span>
-          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v2.2.19</a>
+          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v2.2.20</a>
         </div>
 
       </div>
@@ -1892,13 +1892,24 @@
                   </div>
                 </div>
 
-                <!-- Supplier Profit Share Donut Chart Card -->
+                <!-- Supplier Analytics Chart Card with View Switcher -->
                 <div class="calc-card" style="margin-bottom: 0; display: flex; flex-direction: column;">
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
-                    <h3 style="margin-bottom: 0; border: none; padding-bottom: 0; font-size: 1.05rem;">Supplier Profit Share</h3>
-                    <span style="font-size: 0.75rem; color: var(--text-muted);">Net Profit Split (%)</span>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                    <div>
+                      <h3 style="margin-bottom: 0; border: none; padding-bottom: 0; font-size: 1.05rem;" id="supplier-chart-title">Supplier Profit Share</h3>
+                      <span id="supplier-chart-subtitle" style="font-size: 0.75rem; color: var(--text-muted);">Net Profit Split (%)</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <select id="supplier-chart-view-select" class="form-control form-control-sm" style="width: auto; padding: 2px 8px; background-color: var(--bg-input); font-size: 0.8rem; height: 28px;" title="Select Chart View" onchange="if (typeof window.handleSupplierChartViewChange === 'function') { window.handleSupplierChartViewChange(this.value); } else if (typeof renderSupplierAnalytics === 'function') { renderSupplierAnalytics(); }">
+                        <option value="profit-share" selected>💰 Profit Share (%)</option>
+                        <option value="capital-return">⚖️ Capital vs. Realized Profit</option>
+                        <option value="stock-aging">⏳ Stock Aging &amp; Freshness</option>
+                        <option value="quality-defects">🛡️ Quality &amp; Defect Rate</option>
+                        <option value="spend-trend">📈 Monthly Spend vs. Profit</option>
+                      </select>
+                    </div>
                   </div>
-                  <div style="position: relative; flex-grow: 1; min-height: 220px; height: 100%;">
+                  <div style="position: relative; flex-grow: 1; min-height: 250px; height: 100%;">
                     <canvas id="supplier-profit-share-chart"></canvas>
                   </div>
                 </div>
@@ -3923,13 +3934,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=87"></script>
-  <script src="src/state.js?v=87"></script>
-  <script src="src/api.js?v=87"></script>
-  <script src="src/charts.js?v=87"></script>
-  <script src="src/ui.js?v=87"></script>
-  <script src="src/ai.js?v=87"></script>
-  <script src="src/importer.js?v=87"></script>
-  <script src="app.js?v=87"></script>
+  <script src="config.js?v=88"></script>
+  <script src="src/state.js?v=88"></script>
+  <script src="src/api.js?v=88"></script>
+  <script src="src/charts.js?v=88"></script>
+  <script src="src/ui.js?v=88"></script>
+  <script src="src/ai.js?v=88"></script>
+  <script src="src/importer.js?v=88"></script>
+  <script src="app.js?v=88"></script>
 </body>
 </html>

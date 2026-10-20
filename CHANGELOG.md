@@ -5,6 +5,23 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.20] - 2026-10-20
+
+### Added & Improved
+- **Interactive Multi-View Supplier Analytics Charts**:
+  - Implemented an executive chart view dropdown switcher on the Supplier Analytics card, keeping the dashboard layout compact while providing 5 comprehensive visual perspectives:
+    1. **Profit Share (%)**: Modern doughnut chart illustrating percentage net profit contribution across top suppliers plus an aggregated other segment with custom supplier brand colors.
+    2. **Capital vs. Realized Profit**: Grouped horizontal dual-bar chart comparing in-stock capital tied up in unsold inventory against cumulative realized net profit per supplier to identify cash cows vs. dead capital.
+    3. **Stock Aging & Freshness Breakdown**: Stacked horizontal bar chart detailing shelf-life distribution of unsold keys per supplier across Fresh (< 30d), Mature (30–90d), Aged (90–180d), and Deadstock (> 180d).
+    4. **Supplier Quality & Defect Rate**: Rejection rate bar chart tracking invalid/rejected keys as a percentage of total acquired inventory per supplier with color-coded quality tiers.
+    5. **Spend vs. Profit Trend**: Monthly historical mixed bar and line chart visualizing total acquisition spend vs. realized net profit over time.
+  - Automatically persists the active chart view selection in `localStorage` (`gv_sup_chart_view`) and includes it in JSON backup payloads.
+- **Synchronized Versioning & Documentation**:
+  - Bumped version to `v2.2.20` across `config.js`, `app.js`, `src/ui.js`, `index.html`, `templates/help-modal.html`, and `README.md`.
+  - Incremented stylesheet and script cachebusters (`styles.css?v=48`, scripts `?v=88`).
+
+---
+
 ## [v2.2.19] - 2026-10-20
 
 ### Added & Improved

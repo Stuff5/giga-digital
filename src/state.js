@@ -1036,6 +1036,7 @@ let state = {
   metricOrder: [],
   supMetricOrder: [],
   supLeaderboardLimit: 5,
+  supActiveChartView: "profit-share",
   fontSize: 16,
   menuIcons: {
     dashboard: "fa-chart-line",
@@ -1517,6 +1518,15 @@ function loadStateFromStorage() {
       }
     } catch (e) {
       console.error("Error loading supLeaderboardLimit:", e);
+    }
+
+    try {
+      const storedChartView = localStorage.getItem("gv_sup_chart_view");
+      if (storedChartView) {
+        state.supActiveChartView = storedChartView;
+      }
+    } catch (e) {
+      console.error("Error loading supActiveChartView:", e);
     }
 
     const storedSupMetricOrder = localStorage.getItem("gv_sup_metric_order");

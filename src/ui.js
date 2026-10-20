@@ -2252,6 +2252,24 @@ function initEventHandlers() {
     leaderboardLimitSelect.addEventListener("input", onLimitChange);
   }
 
+  const chartViewSelect = document.getElementById("supplier-chart-view-select");
+  if (chartViewSelect) {
+    if (state.supActiveChartView) {
+      chartViewSelect.value = state.supActiveChartView;
+    }
+    const onChartViewChange = (e) => {
+      const val = e.target.value || "profit-share";
+      if (typeof window.handleSupplierChartViewChange === "function") {
+        window.handleSupplierChartViewChange(val);
+      } else {
+        state.supActiveChartView = val;
+        renderSupplierAnalytics();
+      }
+    };
+    chartViewSelect.addEventListener("change", onChartViewChange);
+    chartViewSelect.addEventListener("input", onChartViewChange);
+  }
+
   const supPeriodButtons = document.querySelectorAll("#sup-date-filter-group button");
   supPeriodButtons.forEach(btn => {
     btn.addEventListener("click", () => {
@@ -6619,6 +6637,9 @@ function renderSupplierAnalytics() {
       color: sup.color || getSupplierColorName(sup.name),
       purchasedCount: 0,
       inStockCount: 0,
+      inStockCost: 0,
+      rejectedCount: 0,
+      aging: { fresh: 0, mature: 0, aged: 0, deadstock: 0 },
       soldCount: 0,
       costOfSold: 0,
       revenue: 0,
@@ -6636,6 +6657,9 @@ function renderSupplierAnalytics() {
         color: getSupplierColorName(sup),
         purchasedCount: 0,
         inStockCount: 0,
+        inStockCost: 0,
+        rejectedCount: 0,
+        aging: { fresh: 0, mature: 0, aged: 0, deadstock: 0 },
         soldCount: 0,
         costOfSold: 0,
         revenue: 0,
@@ -6644,8 +6668,23 @@ function renderSupplierAnalytics() {
     }
     const s = supplierStats[sup];
     s.purchasedCount++;
-    if (item.status !== "Sold") {
+    if (item.status === "Rejected") {
+      s.rejectedCount = (s.rejectedCount || 0) + 1;
+    }
+    if (item.status !== "Sold" && item.status !== "Rejected") {
       s.inStockCount++;
+      s.inStockCost = (s.inStockCost || 0) + (item.cost || 0);
+      if (!s.aging) s.aging = { fresh: 0, mature: 0, aged: 0, deadstock: 0 };
+      const pDate = parseDateMidnight(item.purchaseDate);
+      if (pDate) {
+        const diffDays = Math.round(Math.max(0, now - pDate) / (1000 * 60 * 60 * 24));
+        if (diffDays <= 30) s.aging.fresh++;
+        else if (diffDays <= 90) s.aging.mature++;
+        else if (diffDays <= 180) s.aging.aged++;
+        else s.aging.deadstock++;
+      } else {
+        s.aging.fresh++;
+      }
     }
   });
 
@@ -6802,8 +6841,16 @@ function renderSupplierAnalytics() {
     });
   }
 
-  // Now, render the supplier profit share chart!
-  if (typeof renderSupplierProfitShareChart === "function") {
+  // Update view select element value if needed
+  const chartViewSelect = document.getElementById("supplier-chart-view-select");
+  if (chartViewSelect && state.supActiveChartView && chartViewSelect.value !== state.supActiveChartView) {
+    chartViewSelect.value = state.supActiveChartView;
+  }
+
+  // Now, render the active supplier analytics chart!
+  if (typeof renderSupplierAnalyticsChart === "function") {
+    renderSupplierAnalyticsChart(activeSuppliers, filteredSales, filteredInventory);
+  } else if (typeof renderSupplierProfitShareChart === "function") {
     renderSupplierProfitShareChart(activeSuppliers);
   } else if (typeof renderRoiMatrixChart === "function") {
     renderRoiMatrixChart(activeSuppliers);
@@ -6821,6 +6868,18 @@ window.handleLeaderboardLimitChange = function(val) {
   }
   const el = document.getElementById("leaderboard-limit-select");
   if (el) el.value = String(limit);
+  renderSupplierAnalytics();
+};
+
+window.handleSupplierChartViewChange = function(val) {
+  state.supActiveChartView = val || "profit-share";
+  try {
+    localStorage.setItem("gv_sup_chart_view", state.supActiveChartView);
+  } catch (err) {
+    console.error("Error saving supActiveChartView:", err);
+  }
+  const el = document.getElementById("supplier-chart-view-select");
+  if (el) el.value = state.supActiveChartView;
   renderSupplierAnalytics();
 };
 
