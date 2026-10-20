@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     4. **Efficiency & Velocity (ROI)**: Overall return on investment percentage, sell-through rate (STR %), and average days to sell velocity.
   - Retained all existing metric elements and dynamic live DOM bindings without data loss.
   - Streamlined the Metrics customization dropdown to 4 cohesive toggles (`Net Profit & Margins`, `Total Revenue & Volume`, `Inventory & Capital`, `Efficiency & Velocity`).
+- **Supplier Performance Leaderboard Size Selector (Top 5 / 10 / 20)**:
+  - Added an interactive size dropdown selector (`Top 5`, `Top 10`, `Top 20`) directly in the Leaderboard card header next to the ranking metric picker.
+  - Automatically slices the ranked suppliers list dynamically to the chosen limit with custom scroll handling and persistent user preferences in `localStorage` (`gv_sup_leaderboard_limit`).
 - **Supplier Profit Share Doughnut Chart**:
   - Replaced the 2D "ROI & Sales Velocity Matrix" scatter chart with a modern, high-clarity **Supplier Profit Share Doughnut Chart**.
   - Renders profit distribution for Top 5 suppliers plus an aggregated "Other Suppliers" segment using configured brand colors from `SUPPLIER_COLORS`.

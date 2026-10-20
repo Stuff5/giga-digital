@@ -1035,6 +1035,7 @@ let state = {
   },
   metricOrder: [],
   supMetricOrder: [],
+  supLeaderboardLimit: 5,
   fontSize: 16,
   menuIcons: {
     dashboard: "fa-chart-line",
@@ -1507,6 +1508,15 @@ function loadStateFromStorage() {
       } catch (e) {
         console.error("Error parsing metric order state, using defaults:", e);
       }
+    }
+
+    try {
+      const storedSupLimit = localStorage.getItem("gv_sup_leaderboard_limit");
+      if (storedSupLimit) {
+        state.supLeaderboardLimit = parseInt(storedSupLimit, 10) || 5;
+      }
+    } catch (e) {
+      console.error("Error loading supLeaderboardLimit:", e);
     }
 
     const storedSupMetricOrder = localStorage.getItem("gv_sup_metric_order");

@@ -2234,6 +2234,22 @@ function initEventHandlers() {
     });
   }
 
+  const leaderboardLimitSelect = document.getElementById("leaderboard-limit-select");
+  if (leaderboardLimitSelect) {
+    if (state.supLeaderboardLimit) {
+      leaderboardLimitSelect.value = String(state.supLeaderboardLimit);
+    }
+    leaderboardLimitSelect.addEventListener("change", (e) => {
+      state.supLeaderboardLimit = parseInt(e.target.value, 10) || 5;
+      try {
+        localStorage.setItem("gv_sup_leaderboard_limit", String(state.supLeaderboardLimit));
+      } catch (err) {
+        console.error("Error saving supLeaderboardLimit:", err);
+      }
+      renderSupplierAnalytics();
+    });
+  }
+
   const supPeriodButtons = document.querySelectorAll("#sup-date-filter-group button");
   supPeriodButtons.forEach(btn => {
     btn.addEventListener("click", () => {
@@ -6681,13 +6697,21 @@ function renderSupplierAnalytics() {
     suppliersList.sort((a, b) => b.sellThrough - a.sellThrough);
   }
 
-  // Take top 5 with positive volume/purchases
+  // Take top N based on selected limit
+  const limitSelect = document.getElementById("leaderboard-limit-select");
+  if (limitSelect && state.supLeaderboardLimit && limitSelect.value !== String(state.supLeaderboardLimit)) {
+    limitSelect.value = String(state.supLeaderboardLimit);
+  }
+  const limit = limitSelect ? (parseInt(limitSelect.value, 10) || state.supLeaderboardLimit || 5) : (state.supLeaderboardLimit || 5);
+
   const activeSuppliers = suppliersList.filter(s => s.purchasedCount > 0 || s.soldCount > 0);
-  const topSuppliers = activeSuppliers.slice(0, 5);
+  const topSuppliers = activeSuppliers.slice(0, limit);
 
   if (topSuppliers.length === 0) {
+    container.style.justifyContent = "center";
     container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 40px 0; font-size: 0.9rem;">Add suppliers and keys to view the leaderboard.</div>`;
   } else {
+    container.style.justifyContent = "flex-start";
     // Find max value to scale progress bars
     let maxValue = 1;
     if (selectedMetric === "profit") {
