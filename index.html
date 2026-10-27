@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=50">
+  <link rel="stylesheet" href="styles.css?v=51">
   
   <!-- Early theme application to prevent FOUC / light theme flicker -->
   <script>
@@ -139,7 +139,7 @@
         </div>
         <div class="version-info" style="text-align: center; font-size: 0.7rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; overflow: hidden; white-space: nowrap;">
           <span class="version-label">GameVault</span>
-          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v2.2.22</a>
+          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v2.2.23</a>
         </div>
 
       </div>
@@ -1931,6 +1931,8 @@
                         <option value="date-asc">Date Added (Oldest)</option>
                         <option value="name-asc">Alphabetical (A-Z)</option>
                         <option value="name-desc">Alphabetical (Z-A)</option>
+                      <option value="titles-desc">Titles (High to Low)</option>
+                      <option value="titles-asc">Titles (Ascending / Low to High)</option>
                       </select>
                     </div>
                   </div>
@@ -1997,6 +1999,9 @@
                     <tr>
                       <th onclick="window.togglePublishersSort('name')" style="cursor: pointer; user-select: none;" title="Sort alphabetically by Publisher Name">
                         Publisher Name <i id="publishers-th-name-icon" class="fa-solid fa-sort" style="font-size: 0.75rem; opacity: 0.5; margin-left: 4px;"></i>
+                      </th>
+                      <th onclick="window.togglePublishersSort('titles')" style="cursor: pointer; user-select: none;" title="Sort by Number of Titles">
+                        Titles <i id="publishers-th-titles-icon" class="fa-solid fa-sort" style="font-size: 0.75rem; opacity: 0.5; margin-left: 4px;"></i>
                       </th>
                       <th onclick="window.togglePublishersSort('purchased')" style="cursor: pointer; user-select: none;" title="Sort by Keys Purchased">
                         Keys Purchased <i id="publishers-th-purchased-icon" class="fa-solid fa-sort" style="font-size: 0.75rem; opacity: 0.5; margin-left: 4px;"></i>
@@ -3974,13 +3979,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=90"></script>
-  <script src="src/state.js?v=90"></script>
-  <script src="src/api.js?v=90"></script>
-  <script src="src/charts.js?v=90"></script>
-  <script src="src/ui.js?v=90"></script>
-  <script src="src/ai.js?v=90"></script>
-  <script src="src/importer.js?v=90"></script>
-  <script src="app.js?v=90"></script>
+  <script src="config.js?v=91"></script>
+  <script src="src/state.js?v=91"></script>
+  <script src="src/api.js?v=91"></script>
+  <script src="src/charts.js?v=91"></script>
+  <script src="src/ui.js?v=91"></script>
+  <script src="src/ai.js?v=91"></script>
+  <script src="src/importer.js?v=91"></script>
+  <script src="app.js?v=91"></script>
 </body>
 </html>

@@ -5,6 +5,20 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.23] - 2026-10-27
+
+### Added & Improved
+- **Publisher Catalog Titles Count & Enhanced Analytics**:
+  - Added a dedicated **"Titles"** column to the **"By Publisher"** analytics table in the Suppliers menu (`#publishers-table`).
+  - Displays the exact count of unique game titles cataloged under each publisher.
+  - Added full ascending (`titles-asc`) and descending (`titles-desc`) sorting for the Titles column via both clickable column headers and the header sort dropdown selector.
+  - Enhanced the nested games breakdown header to explicitly show the total titles count for the selected publisher.
+- **Synchronized Versioning & Documentation**:
+  - Bumped version to `v2.2.23` across `config.js`, `app.js`, `src/ui.js`, `index.html`, `templates/help-modal.html`, and `README.md`.
+  - Incremented cachebusters (`styles.css?v=51`, modular scripts `?v=91`).
+
+---
+
 ## [v2.2.22] - 2026-10-27
 
 ### Added & Improved

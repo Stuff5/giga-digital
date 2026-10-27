@@ -5,7 +5,7 @@
 // Asynchronously loads critical HTML templates (modals.html) on application boot
 window.loadHTMLTemplates = async () => {
   try {
-    const ver = window.APP_VERSION || "v2.2.22";
+    const ver = window.APP_VERSION || "v2.2.23";
     const res = await fetch(`templates/modals.html?v=${ver}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const html = await res.text();
@@ -33,7 +33,7 @@ window.ensureHelpModalLoaded = async () => {
 
   _helpModalLoadingPromise = (async () => {
     try {
-      const ver = window.APP_VERSION || "v2.2.22";
+      const ver = window.APP_VERSION || "v2.2.23";
       const res = await fetch(`templates/help-modal.html?v=${ver}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -14359,6 +14359,8 @@ window.togglePublishersSort = function(col) {
   let next = "";
   if (col === "name") {
     next = current === "name-asc" ? "name-desc" : "name-asc";
+  } else if (col === "titles") {
+    next = current === "titles-desc" ? "titles-asc" : "titles-desc";
   } else if (col === "purchased") {
     next = current === "purchased-asc" ? "purchased-desc" : "purchased-asc";
   } else if (col === "sold") {
@@ -14385,6 +14387,7 @@ window.togglePublishersSort = function(col) {
 window.updatePublishersHeaderIcons = function(sortBy) {
   const iconMap = {
     "name": "publishers-th-name-icon",
+    "titles": "publishers-th-titles-icon",
     "purchased": "publishers-th-purchased-icon",
     "sold": "publishers-th-sold-icon",
     "stock": "publishers-th-stock-icon",
@@ -14452,11 +14455,16 @@ function renderPublishersTab() {
         totalCostOfSales: 0,
         totalNetProfit: 0,
         totalDuration: 0,
-        durationCount: 0
+        durationCount: 0,
+        titlesSet: new Set()
       };
     }
     
     const stats = publishersMap[pub];
+    const itemTitle = String(item.title || "").trim();
+    if (itemTitle) {
+      stats.titlesSet.add(itemTitle);
+    }
     stats.purchased++;
     stats.totalSpent += item.cost;
     
@@ -14484,6 +14492,10 @@ function renderPublishersTab() {
     }
   });
 
+  Object.values(publishersMap).forEach(pub => {
+    pub.titlesCount = pub.titlesSet ? pub.titlesSet.size : 0;
+  });
+
   const sortBy = state.publishersSortBy || "purchased-desc";
   const publishersList = Object.values(publishersMap).sort((a, b) => {
     switch (sortBy) {
@@ -14491,6 +14503,10 @@ function renderPublishersTab() {
         return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
       case "name-desc":
         return b.name.localeCompare(a.name, undefined, { sensitivity: 'base' });
+      case "titles-asc":
+        return a.titlesCount - b.titlesCount || a.purchased - b.purchased;
+      case "titles-desc":
+        return b.titlesCount - a.titlesCount || b.purchased - a.purchased;
       case "purchased-asc":
         return a.purchased - b.purchased || a.name.localeCompare(b.name);
       case "purchased-desc":
@@ -14555,7 +14571,7 @@ function renderPublishersTab() {
   }
 
   if (publishersList.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 20px;">No publishers data available.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--text-muted); padding: 20px;">No publishers data available.</td></tr>`;
     return;
   }
 
@@ -14596,6 +14612,7 @@ function renderPublishersTab() {
 
     tr.innerHTML = `
       <td><span style="display: inline-flex; align-items: center;">${chevronIcon}${pubLogoHtml}<strong>${escapeHTML(pub.name)}</strong></span></td>
+      <td><span class="badge" style="background: rgba(168, 85, 247, 0.12); color: var(--accent-purple); font-weight: 600; border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 12px; padding: 2px 8px; font-size: 0.78rem;">${pub.titlesCount}</span></td>
       <td>${pub.purchased}</td>
       <td>${pub.sold}</td>
       <td>${pub.inStock}</td>
@@ -14697,10 +14714,10 @@ function renderPublishersTab() {
       }
 
       trDetail.innerHTML = `
-        <td colspan="10" style="padding: 12px 24px; background: rgba(0, 0, 0, 0.18);">
+        <td colspan="11" style="padding: 12px 24px; background: rgba(0, 0, 0, 0.18);">
           <div style="border-left: 3px solid var(--accent-purple); padding-left: 16px; margin: 4px 0;">
             <h5 style="margin: 0 0 10px 0; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--accent-purple);">
-              <i class="fa-solid fa-gamepad" style="margin-right: 6px;"></i> Games Breakdown for ${escapeHTML(pub.name)}
+              <i class="fa-solid fa-gamepad" style="margin-right: 6px;"></i> Games Breakdown for ${escapeHTML(pub.name)} (${pub.titlesCount} ${pub.titlesCount === 1 ? 'Title' : 'Titles'})
             </h5>
             <div class="table-responsive" style="margin: 0; background: var(--bg-card); border-radius: var(--radius-md); border: 1px solid var(--border-color); box-shadow: inset 0 2px 8px rgba(0,0,0,0.2);">
               <table class="table" style="font-size: 0.8rem; margin: 0; width: 100%;">
