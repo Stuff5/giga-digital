@@ -5,6 +5,24 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.21] - 2026-10-27
+
+### Added & Improved
+- **Streamlined Finance Monthly Ledger Breakdown Layouts**:
+  - Removed the legacy **Tabbed Table View** option from the Monthly Ledger Breakdown container in the Finance menu.
+  - Retained the 4 focused, high-clarity layout modes:
+    1. **Spreadsheet View** (`transposed`): Horizontal matrix format showing all key metrics across periods side-by-side.
+    2. **Grid Cards View** (`grid`): Modular card-per-period layout detailing totals, unit averages, and stock status.
+    3. **Expandable Table View** (`expandable`): Compact master-detail rows with one-click toggles and expand/collapse all capability.
+    4. **Full-Width Table View** (`full`): Comprehensive tabular display spanning all 12 financial indicators.
+  - Deprecated the `tabbed` layout toggle button and removed over 120 lines of redundant sub-tab rendering code and event listeners.
+  - Optimized the breakdown rendering pipeline by consolidating empty-state checks up-front and normalizing legacy `gv_finance_layout_style: "tabbed"` preferences to `"full"` automatically.
+- **Synchronized Versioning & Documentation**:
+  - Bumped version to `v2.2.21` across `config.js`, `app.js`, `src/ui.js`, `index.html`, `templates/help-modal.html`, and `README.md`.
+  - Incremented stylesheet and script cachebusters (`styles.css?v=49`, scripts `?v=89`).
+
+---
+
 ## [v2.2.20] - 2026-10-20
 
 ### Added & Improved
