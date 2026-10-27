@@ -5,7 +5,7 @@
 // Asynchronously loads critical HTML templates (modals.html) on application boot
 window.loadHTMLTemplates = async () => {
   try {
-    const ver = window.APP_VERSION || "v2.2.21";
+    const ver = window.APP_VERSION || "v2.2.22";
     const res = await fetch(`templates/modals.html?v=${ver}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const html = await res.text();
@@ -33,7 +33,7 @@ window.ensureHelpModalLoaded = async () => {
 
   _helpModalLoadingPromise = (async () => {
     try {
-      const ver = window.APP_VERSION || "v2.2.21";
+      const ver = window.APP_VERSION || "v2.2.22";
       const res = await fetch(`templates/help-modal.html?v=${ver}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -2390,6 +2390,14 @@ function initEventHandlers() {
   const platformsSort = document.getElementById("platforms-sort");
   if (platformsSort) {
     platformsSort.addEventListener("change", renderPlatforms);
+  }
+
+  // Publishers Sort Listener
+  const publishersSort = document.getElementById("publishers-sort");
+  if (publishersSort) {
+    publishersSort.addEventListener("change", (e) => {
+      window.handlePublishersSortChange(e.target.value);
+    });
   }
 
   // Inventory Layout Toggle Listeners
@@ -14335,6 +14343,76 @@ window.triggerPurgeGame = async function(gameId) {
 // Module-level variable to persist expanded states
 let activeExpandedPublishers = new Set();
 
+window.renderPublishersTab = renderPublishersTab;
+window.handlePublishersSortChange = function(val) {
+  state.publishersSortBy = val;
+  localStorage.setItem("gv_publishers_sort_by", val);
+  const sortSelect = document.getElementById("publishers-sort");
+  if (sortSelect && sortSelect.value !== val) {
+    sortSelect.value = val;
+  }
+  renderPublishersTab();
+};
+
+window.togglePublishersSort = function(col) {
+  const current = state.publishersSortBy || "purchased-desc";
+  let next = "";
+  if (col === "name") {
+    next = current === "name-asc" ? "name-desc" : "name-asc";
+  } else if (col === "purchased") {
+    next = current === "purchased-asc" ? "purchased-desc" : "purchased-asc";
+  } else if (col === "sold") {
+    next = current === "sold-asc" ? "sold-desc" : "sold-asc";
+  } else if (col === "stock") {
+    next = current === "stock-asc" ? "stock-desc" : "stock-asc";
+  } else if (col === "spent") {
+    next = current === "spent-asc" ? "spent-desc" : "spent-asc";
+  } else if (col === "revenue") {
+    next = current === "revenue-asc" ? "revenue-desc" : "revenue-asc";
+  } else if (col === "profit") {
+    next = current === "profit-asc" ? "profit-desc" : "profit-asc";
+  } else if (col === "roi") {
+    next = current === "roi-asc" ? "roi-desc" : "roi-asc";
+  } else if (col === "avg-duration") {
+    next = current === "avg-duration-asc" ? "avg-duration-desc" : "avg-duration-asc";
+  } else {
+    next = "purchased-desc";
+  }
+
+  window.handlePublishersSortChange(next);
+};
+
+window.updatePublishersHeaderIcons = function(sortBy) {
+  const iconMap = {
+    "name": "publishers-th-name-icon",
+    "purchased": "publishers-th-purchased-icon",
+    "sold": "publishers-th-sold-icon",
+    "stock": "publishers-th-stock-icon",
+    "spent": "publishers-th-spent-icon",
+    "revenue": "publishers-th-revenue-icon",
+    "profit": "publishers-th-profit-icon",
+    "roi": "publishers-th-roi-icon",
+    "avg-duration": "publishers-th-avg-duration-icon"
+  };
+
+  const isAsc = (sortBy || "").endsWith("-asc");
+  const field = (sortBy || "").replace(/-(asc|desc)$/, "");
+
+  Object.entries(iconMap).forEach(([key, id]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (key === field) {
+      el.className = isAsc ? "fa-solid fa-sort-up" : "fa-solid fa-sort-down";
+      el.style.color = "var(--accent-purple)";
+      el.style.opacity = "1";
+    } else {
+      el.className = "fa-solid fa-sort";
+      el.style.color = "";
+      el.style.opacity = "0.4";
+    }
+  });
+};
+
 function renderPublishersTab() {
   calculateSupplierMetrics();
 
@@ -14406,7 +14484,75 @@ function renderPublishersTab() {
     }
   });
 
-  const publishersList = Object.values(publishersMap).sort((a, b) => b.purchased - a.purchased);
+  const sortBy = state.publishersSortBy || "purchased-desc";
+  const publishersList = Object.values(publishersMap).sort((a, b) => {
+    switch (sortBy) {
+      case "name-asc":
+        return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+      case "name-desc":
+        return b.name.localeCompare(a.name, undefined, { sensitivity: 'base' });
+      case "purchased-asc":
+        return a.purchased - b.purchased || a.name.localeCompare(b.name);
+      case "purchased-desc":
+        return b.purchased - a.purchased || a.name.localeCompare(b.name);
+      case "sold-asc":
+        return a.sold - b.sold || a.purchased - b.purchased;
+      case "sold-desc":
+        return b.sold - a.sold || b.purchased - a.purchased;
+      case "stock-asc":
+        return a.inStock - b.inStock || a.purchased - b.purchased;
+      case "stock-desc":
+        return b.inStock - a.inStock || b.purchased - a.purchased;
+      case "spent-asc":
+        return a.totalSpent - b.totalSpent || a.purchased - b.purchased;
+      case "spent-desc":
+        return b.totalSpent - a.totalSpent || b.purchased - a.purchased;
+      case "revenue-asc":
+        return a.totalRevenue - b.totalRevenue || a.purchased - b.purchased;
+      case "revenue-desc":
+        return b.totalRevenue - a.totalRevenue || b.purchased - a.purchased;
+      case "profit-asc":
+        return a.totalNetProfit - b.totalNetProfit || a.purchased - b.purchased;
+      case "profit-desc":
+        return b.totalNetProfit - a.totalNetProfit || b.purchased - a.purchased;
+      case "roi-asc": {
+        const aRoi = a.totalCostOfSales > 0 ? (a.totalNetProfit / a.totalCostOfSales) : -Infinity;
+        const bRoi = b.totalCostOfSales > 0 ? (b.totalNetProfit / b.totalCostOfSales) : -Infinity;
+        return aRoi - bRoi || a.purchased - b.purchased;
+      }
+      case "roi-desc": {
+        const aRoi = a.totalCostOfSales > 0 ? (a.totalNetProfit / a.totalCostOfSales) : -Infinity;
+        const bRoi = b.totalCostOfSales > 0 ? (b.totalNetProfit / b.totalCostOfSales) : -Infinity;
+        return bRoi - aRoi || b.purchased - a.purchased;
+      }
+      case "avg-duration-asc": {
+        const aDur = a.durationCount > 0 ? a.totalDuration / a.durationCount : null;
+        const bDur = b.durationCount > 0 ? b.totalDuration / b.durationCount : null;
+        if (aDur === null && bDur === null) return 0;
+        if (aDur === null) return 1;
+        if (bDur === null) return -1;
+        return aDur - bDur || a.purchased - b.purchased;
+      }
+      case "avg-duration-desc": {
+        const aDur = a.durationCount > 0 ? a.totalDuration / a.durationCount : null;
+        const bDur = b.durationCount > 0 ? b.totalDuration / b.durationCount : null;
+        if (aDur === null && bDur === null) return 0;
+        if (aDur === null) return 1;
+        if (bDur === null) return -1;
+        return bDur - aDur || b.purchased - a.purchased;
+      }
+      default:
+        return b.purchased - a.purchased;
+    }
+  });
+
+  const sortSelect = document.getElementById("publishers-sort");
+  if (sortSelect && sortSelect.value !== sortBy) {
+    sortSelect.value = sortBy;
+  }
+  if (typeof window.updatePublishersHeaderIcons === "function") {
+    window.updatePublishersHeaderIcons(sortBy);
+  }
 
   if (publishersList.length === 0) {
     tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 20px;">No publishers data available.</td></tr>`;

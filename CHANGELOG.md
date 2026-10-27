@@ -5,6 +5,30 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.22] - 2026-10-27
+
+### Added & Improved
+- **Publisher Analytics Multi-Column & Alphabetical Sorting**:
+  - Implemented interactive sorting for the **"By Publisher"** analytics table in the Suppliers menu (`#publishers-table`).
+  - Added full support for sorting:
+    - **Alphabetically by Publisher Name**: Ascending (A-Z) and Descending (Z-A).
+    - **Keys Purchased**: Ascending (Low to High) and Descending (High to Low).
+    - **Keys Sold**: Ascending (Low to High) and Descending (High to Low).
+    - **Net Profit**: Ascending (Low to High) and Descending (High to Low).
+    - **Total Spent**: Ascending (Low to High) and Descending (High to Low).
+    - **Total Revenue**: Ascending (Low to High) and Descending (High to Low).
+    - **Average Days to Sell**: Ascending (Fastest velocity first) and Descending (Slowest first), gracefully handling items without sold durations.
+    - **In Stock & ROI %**: Full ascending and descending toggles across all table metrics.
+  - **Dual Interaction Support**:
+    - **Clickable Column Headers**: Users can click any data column header to toggle sort direction, featuring clear `fa-sort-up` and `fa-sort-down` indicator icons in theme purple.
+    - **Synchronized Sort Dropdown Selector**: Placed directly in the card header next to "Auto-Fetch All Logos", keeping dropdown selections and header states perfectly in sync.
+  - **Preference Persistence**: Saved user preference to `localStorage` (`gv_publishers_sort_by`) and `state.publishersSortBy`.
+- **Synchronized Versioning & Documentation**:
+  - Bumped version to `v2.2.22` across `config.js`, `app.js`, `src/ui.js`, `src/state.js`, `index.html`, `templates/help-modal.html`, and `README.md`.
+  - Incremented cachebusters (`styles.css?v=50`, modular scripts `?v=90`).
+
+---
+
 ## [v2.2.21] - 2026-10-27
 
 ### Added & Improved

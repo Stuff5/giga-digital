@@ -983,6 +983,7 @@ let state = {
   supplierLogos: { ...DEFAULT_SUPPLIER_LOGOS }, // Key-value map: supplierName -> logoUrl
   platformLogos: { ...DEFAULT_PLATFORM_LOGOS }, // Key-value map: platformName -> logoUrl
   publisherLogos: { ...DEFAULT_PUBLISHER_LOGOS }, // Key-value map: publisherName -> logoUrl
+  publishersSortBy: "purchased-desc", // "purchased-desc", "purchased-asc", "name-asc", "name-desc", "sold-desc", "sold-asc", "stock-desc", "stock-asc", "spent-desc", "spent-asc", "revenue-desc", "revenue-asc", "profit-desc", "profit-asc", "roi-desc", "roi-asc", "avg-duration-asc", "avg-duration-desc"
   inventorySortBy: "date-desc", // "date-desc", "date-asc", "title-asc", "title-desc", "duration-desc", "duration-asc"
   inventoryFilterStatus: "all", // "all", "Available", "Sold", "Reserved", "Rejected"
   filterDuplicatesOnly: false,
@@ -1727,6 +1728,7 @@ function loadStateFromStorage() {
     state.defaultMarkupValue = parseFloat(localStorage.getItem("gv_default_markup_value")) || 20;
     state.syncMode = localStorage.getItem("gv_sync_mode") || "realtime";
     state.entriesSortBy = localStorage.getItem("gv_entries_sort_by") || "rating-desc";
+    state.publishersSortBy = localStorage.getItem("gv_publishers_sort_by") || "purchased-desc";
     state.entriesRatingFilter = localStorage.getItem("gv_entries_rating_filter") || "all";
     state.entriesStockFilter = localStorage.getItem("gv_entries_stock_filter") || "all";
 
@@ -2006,6 +2008,7 @@ function saveStateToStorage() {
   localStorage.setItem("gv_inv_layout", state.inventoryLayout);
   localStorage.setItem("gv_entries_layout", state.entriesLayout);
   localStorage.setItem("gv_entries_sort_by", state.entriesSortBy || "rating-desc");
+  localStorage.setItem("gv_publishers_sort_by", state.publishersSortBy || "purchased-desc");
   localStorage.setItem("gv_entries_rating_filter", state.entriesRatingFilter || "all");
   localStorage.setItem("gv_entries_stock_filter", state.entriesStockFilter || "all");
   localStorage.setItem("gv_supplier_display_mode", state.supplierDisplayMode);

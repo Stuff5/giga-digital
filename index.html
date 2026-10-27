@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=49">
+  <link rel="stylesheet" href="styles.css?v=50">
   
   <!-- Early theme application to prevent FOUC / light theme flicker -->
   <script>
@@ -139,7 +139,7 @@
         </div>
         <div class="version-info" style="text-align: center; font-size: 0.7rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; overflow: hidden; white-space: nowrap;">
           <span class="version-label">GameVault</span>
-          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v2.2.21</a>
+          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v2.2.22</a>
         </div>
 
       </div>
@@ -1962,25 +1962,66 @@
             <div id="publishers-tab-content" class="calc-card hidden" style="width: 100%;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; flex-wrap: wrap; gap: 12px;">
                 <h3 style="margin-bottom: 0; border: none; padding-bottom: 0;">Publisher Analytics & Distribution</h3>
-                <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
                   <button class="btn btn-outline btn-sm" id="btn-fetch-all-publisher-logos" style="height: 32px; display: flex; align-items: center; gap: 6px;">
                     <i class="fa-solid fa-wand-magic-sparkles text-purple"></i> Auto-Fetch All Logos
                   </button>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <label for="publishers-sort" style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; margin: 0; letter-spacing: 0.05em;">Sort:</label>
+                    <select id="publishers-sort" onchange="window.handlePublishersSortChange(this.value)" class="form-control form-control-sm" style="width: auto; padding: 4px 10px; background-color: var(--bg-input);">
+                      <option value="purchased-desc" selected>Keys Purchased (High to Low)</option>
+                      <option value="purchased-asc">Keys Purchased (Ascending / Low to High)</option>
+                      <option value="name-asc">Alphabetical (A-Z)</option>
+                      <option value="name-desc">Alphabetical (Z-A)</option>
+                      <option value="sold-desc">Keys Sold (High to Low)</option>
+                      <option value="sold-asc">Keys Sold (Ascending / Low to High)</option>
+                      <option value="profit-desc">Net Profit (High to Low)</option>
+                      <option value="profit-asc">Net Profit (Ascending / Low to High)</option>
+                      <option value="spent-desc">Total Spent (High to Low)</option>
+                      <option value="spent-asc">Total Spent (Ascending / Low to High)</option>
+                      <option value="revenue-desc">Total Revenue (High to Low)</option>
+                      <option value="revenue-asc">Total Revenue (Ascending / Low to High)</option>
+                      <option value="avg-duration-asc">Avg Days to Sell (Ascending / Fastest)</option>
+                      <option value="avg-duration-desc">Avg Days to Sell (Slowest)</option>
+                      <option value="stock-desc">In Stock (High to Low)</option>
+                      <option value="stock-asc">In Stock (Ascending / Low to High)</option>
+                      <option value="roi-desc">ROI % (High to Low)</option>
+                      <option value="roi-asc">ROI % (Ascending / Low to High)</option>
+                    </select>
+                  </div>
                 </div>
               </div>
               <div class="table-responsive">
                 <table class="table" id="publishers-table">
                   <thead>
                     <tr>
-                      <th>Publisher Name</th>
-                      <th>Keys Purchased</th>
-                      <th>Keys Sold</th>
-                      <th>In Stock</th>
-                      <th>Total Spent</th>
-                      <th>Total Revenue</th>
-                      <th>Net Profit</th>
-                      <th>ROI %</th>
-                      <th>Avg Days to Sell</th>
+                      <th onclick="window.togglePublishersSort('name')" style="cursor: pointer; user-select: none;" title="Sort alphabetically by Publisher Name">
+                        Publisher Name <i id="publishers-th-name-icon" class="fa-solid fa-sort" style="font-size: 0.75rem; opacity: 0.5; margin-left: 4px;"></i>
+                      </th>
+                      <th onclick="window.togglePublishersSort('purchased')" style="cursor: pointer; user-select: none;" title="Sort by Keys Purchased">
+                        Keys Purchased <i id="publishers-th-purchased-icon" class="fa-solid fa-sort" style="font-size: 0.75rem; opacity: 0.5; margin-left: 4px;"></i>
+                      </th>
+                      <th onclick="window.togglePublishersSort('sold')" style="cursor: pointer; user-select: none;" title="Sort by Keys Sold">
+                        Keys Sold <i id="publishers-th-sold-icon" class="fa-solid fa-sort" style="font-size: 0.75rem; opacity: 0.5; margin-left: 4px;"></i>
+                      </th>
+                      <th onclick="window.togglePublishersSort('stock')" style="cursor: pointer; user-select: none;" title="Sort by In Stock">
+                        In Stock <i id="publishers-th-stock-icon" class="fa-solid fa-sort" style="font-size: 0.75rem; opacity: 0.5; margin-left: 4px;"></i>
+                      </th>
+                      <th onclick="window.togglePublishersSort('spent')" style="cursor: pointer; user-select: none;" title="Sort by Total Spent">
+                        Total Spent <i id="publishers-th-spent-icon" class="fa-solid fa-sort" style="font-size: 0.75rem; opacity: 0.5; margin-left: 4px;"></i>
+                      </th>
+                      <th onclick="window.togglePublishersSort('revenue')" style="cursor: pointer; user-select: none;" title="Sort by Total Revenue">
+                        Total Revenue <i id="publishers-th-revenue-icon" class="fa-solid fa-sort" style="font-size: 0.75rem; opacity: 0.5; margin-left: 4px;"></i>
+                      </th>
+                      <th onclick="window.togglePublishersSort('profit')" style="cursor: pointer; user-select: none;" title="Sort by Net Profit">
+                        Net Profit <i id="publishers-th-profit-icon" class="fa-solid fa-sort" style="font-size: 0.75rem; opacity: 0.5; margin-left: 4px;"></i>
+                      </th>
+                      <th onclick="window.togglePublishersSort('roi')" style="cursor: pointer; user-select: none;" title="Sort by ROI %">
+                        ROI % <i id="publishers-th-roi-icon" class="fa-solid fa-sort" style="font-size: 0.75rem; opacity: 0.5; margin-left: 4px;"></i>
+                      </th>
+                      <th onclick="window.togglePublishersSort('avg-duration')" style="cursor: pointer; user-select: none;" title="Sort by Avg Days to Sell">
+                        Avg Days to Sell <i id="publishers-th-avg-duration-icon" class="fa-solid fa-sort" style="font-size: 0.75rem; opacity: 0.5; margin-left: 4px;"></i>
+                      </th>
                       <th style="text-align: right;">Actions</th>
                     </tr>
                   </thead>
@@ -3933,13 +3974,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=89"></script>
-  <script src="src/state.js?v=89"></script>
-  <script src="src/api.js?v=89"></script>
-  <script src="src/charts.js?v=89"></script>
-  <script src="src/ui.js?v=89"></script>
-  <script src="src/ai.js?v=89"></script>
-  <script src="src/importer.js?v=89"></script>
-  <script src="app.js?v=89"></script>
+  <script src="config.js?v=90"></script>
+  <script src="src/state.js?v=90"></script>
+  <script src="src/api.js?v=90"></script>
+  <script src="src/charts.js?v=90"></script>
+  <script src="src/ui.js?v=90"></script>
+  <script src="src/ai.js?v=90"></script>
+  <script src="src/importer.js?v=90"></script>
+  <script src="app.js?v=90"></script>
 </body>
 </html>
