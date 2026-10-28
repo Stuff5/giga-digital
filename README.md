@@ -2,7 +2,7 @@
 
 > High-performance digital game license inventory pipeline, sales ledger, and financial analytics platform designed for digital key merchants, distributors, and online publishers.
 
-![Version](https://img.shields.io/badge/version-v2.2.25-cyan.svg)
+![Version](https://img.shields.io/badge/version-v2.2.26-cyan.svg)
 ![Status](https://img.shields.io/badge/status-active-emerald.svg)
 ![Platform](https://img.shields.io/badge/platform-Web%20SPA-purple.svg)
 
@@ -123,4 +123,4 @@ game-sales-tracker/
 
 See [CHANGELOG.md](CHANGELOG.md) for full release notes and development milestones.
 
-Current Release: **v2.2.25** (2026-10-28)
+Current Release: **v2.2.26** (2026-10-28)

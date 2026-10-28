@@ -5,6 +5,19 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.26] - 2026-10-28
+
+### Added & Improved
+- **Decoupled Favorite Pinning in Entries Catalog Menu**:
+  - Marking a catalog entry as favorite no longer overrides active sort criteria to forcefully pin items to the top of the general catalog view.
+  - Chosen sorting criteria (Steam Rating %, Profit Margin %, ROI %, Available Stock, Total Sold, Title A-Z) are now strictly preserved across all entries.
+  - Favorite entries are filtered and displayed on demand when activating the dedicated **Favorites** toolbar filter toggle (`#btn-entries-fav-filter`).
+- **Synchronized Versioning & Documentation**:
+  - Bumped version to `v2.2.26` across `config.js`, `app.js`, `src/ui.js`, `index.html`, `templates/help-modal.html`, and `README.md`.
+  - Incremented cachebusters (`styles.css?v=54`, modular scripts `?v=94`).
+
+---
+
 ## [v2.2.25] - 2026-10-28
 
 ### Added & Improved

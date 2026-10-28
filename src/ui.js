@@ -5,7 +5,7 @@
 // Asynchronously loads critical HTML templates (modals.html) on application boot
 window.loadHTMLTemplates = async () => {
   try {
-    const ver = window.APP_VERSION || "v2.2.25";
+    const ver = window.APP_VERSION || "v2.2.26";
     const res = await fetch(`templates/modals.html?v=${ver}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const html = await res.text();
@@ -33,7 +33,7 @@ window.ensureHelpModalLoaded = async () => {
 
   _helpModalLoadingPromise = (async () => {
     try {
-      const ver = window.APP_VERSION || "v2.2.25";
+      const ver = window.APP_VERSION || "v2.2.26";
       const res = await fetch(`templates/help-modal.html?v=${ver}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -11079,12 +11079,6 @@ function renderEntries() {
   // Sorting (Percentage & Performance metrics)
   const sortBy = state.entriesSortBy || "rating-desc";
   entriesList.sort((a, b) => {
-    // Keep favorites pinned to top
-    const aFav = state.favoriteGames && state.favoriteGames.includes(a.title);
-    const bFav = state.favoriteGames && state.favoriteGames.includes(b.title);
-    if (aFav && !bFav) return -1;
-    if (!aFav && bFav) return 1;
-
     switch (sortBy) {
       case "rating-desc": {
         const aR = a.steamRatingPercent !== null ? a.steamRatingPercent : -1;

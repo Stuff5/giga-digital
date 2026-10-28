@@ -1,7 +1,7 @@
 // GameVault Global Configuration
 // Use this file to define default cloud credentials for your deployment.
 // If the app is hosted on GitHub Pages (github.io) or another server,
-window.APP_VERSION = "v2.2.25";
+window.APP_VERSION = "v2.2.26";
 
 window.GV_CONFIG = {
   // Supabase Configuration
