@@ -5,7 +5,7 @@
 // Asynchronously loads critical HTML templates (modals.html) on application boot
 window.loadHTMLTemplates = async () => {
   try {
-    const ver = window.APP_VERSION || "v2.2.24";
+    const ver = window.APP_VERSION || "v2.2.25";
     const res = await fetch(`templates/modals.html?v=${ver}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const html = await res.text();
@@ -33,7 +33,7 @@ window.ensureHelpModalLoaded = async () => {
 
   _helpModalLoadingPromise = (async () => {
     try {
-      const ver = window.APP_VERSION || "v2.2.24";
+      const ver = window.APP_VERSION || "v2.2.25";
       const res = await fetch(`templates/help-modal.html?v=${ver}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -5914,14 +5914,14 @@ window.triggerViewCatalogKeys = function(title, openModalFlag = true, explicitIm
     let supplierBadge = "";
     if (resolvedSupLogo) {
       supplierBadge = `
-        <img src="${escapeHTML(resolvedSupLogo)}" class="supplier-logo-thumbnail" style="width: 26px; height: 26px; vertical-align: middle; border-radius: 4px; object-fit: contain; background-color: var(--bg-card); border: 1px solid var(--border-color); padding: 1px; display: inline-block;" title="${escapedSrc}" alt="${escapedSrc}" onerror="if(!this.dataset.ddTried){this.dataset.ddTried='1';const d=window.resolveSupplierDomain?window.resolveSupplierDomain('${escapeHTML(escapedSrcForJS)}'):'';if(d){this.src='https://icons.duckduckgo.com/ip3/'+encodeURIComponent(d)+'.ico';return;}}this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-flex';">
-        <div class="supplier-logo-placeholder" style="display: none; width: 26px; height: 26px; border-radius: 4px; background-color: ${colorPreset.value}20; color: ${colorPreset.value}; border: 1px solid ${colorPreset.value}40; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: bold; vertical-align: middle;" title="${escapedSrc}">
+        <img src="${escapeHTML(resolvedSupLogo)}" class="supplier-logo-thumbnail" style="width: 28px; height: 28px; vertical-align: middle; border-radius: 4px; object-fit: contain; background-color: var(--bg-card); border: 1px solid var(--border-color); padding: 1px; display: inline-block;" title="${escapedSrc}" alt="${escapedSrc}" onerror="if(!this.dataset.ddTried){this.dataset.ddTried='1';const d=window.resolveSupplierDomain?window.resolveSupplierDomain('${escapeHTML(escapedSrcForJS)}'):'';if(d){this.src='https://icons.duckduckgo.com/ip3/'+encodeURIComponent(d)+'.ico';return;}}this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-flex';">
+        <div class="supplier-logo-placeholder" style="display: none; width: 28px; height: 28px; border-radius: 4px; background-color: ${colorPreset.value}20; color: ${colorPreset.value}; border: 1px solid ${colorPreset.value}40; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: bold; vertical-align: middle;" title="${escapedSrc}">
           ${escapedSrc.charAt(0).toUpperCase()}
         </div>
       `;
     } else {
       supplierBadge = `
-        <div class="supplier-logo-placeholder" style="width: 26px; height: 26px; border-radius: 4px; background-color: ${colorPreset.value}20; color: ${colorPreset.value}; border: 1px solid ${colorPreset.value}40; display: inline-flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: bold; vertical-align: middle;" title="${escapedSrc}">
+        <div class="supplier-logo-placeholder" style="width: 28px; height: 28px; border-radius: 4px; background-color: ${colorPreset.value}20; color: ${colorPreset.value}; border: 1px solid ${colorPreset.value}40; display: inline-flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: bold; vertical-align: middle;" title="${escapedSrc}">
           ${escapedSrc.charAt(0).toUpperCase()}
         </div>
       `;
@@ -5931,9 +5931,8 @@ window.triggerViewCatalogKeys = function(title, openModalFlag = true, explicitIm
       <td><span style="font-weight: 600;">${item.platform}</span></td>
       <td><div class="secured-key"><code>${maskedKey}</code></div></td>
       <td style="text-align: center; vertical-align: middle;">
-        <div class="catalog-key-supplier-cell" style="display: inline-flex; align-items: center; justify-content: center; gap: 7px;" title="Supplier: ${escapedSrc}">
+        <div class="catalog-key-supplier-cell" style="display: inline-flex; align-items: center; justify-content: center;" title="Supplier: ${escapedSrc}">
           ${supplierBadge}
-          <span class="catalog-keys-supplier-name" style="font-size: 0.8rem; font-weight: 500; color: var(--text-main); white-space: nowrap;">${escapedSrc}</span>
         </div>
       </td>
       <td>${formatCurrency(item.cost)}</td>
