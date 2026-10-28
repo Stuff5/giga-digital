@@ -5,7 +5,7 @@
 // Asynchronously loads critical HTML templates (modals.html) on application boot
 window.loadHTMLTemplates = async () => {
   try {
-    const ver = window.APP_VERSION || "v2.2.23";
+    const ver = window.APP_VERSION || "v2.2.24";
     const res = await fetch(`templates/modals.html?v=${ver}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const html = await res.text();
@@ -33,7 +33,7 @@ window.ensureHelpModalLoaded = async () => {
 
   _helpModalLoadingPromise = (async () => {
     try {
-      const ver = window.APP_VERSION || "v2.2.23";
+      const ver = window.APP_VERSION || "v2.2.24";
       const res = await fetch(`templates/help-modal.html?v=${ver}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -5637,6 +5637,26 @@ window.triggerViewCatalogKeys = function(title, openModalFlag = true, explicitIm
   const titleEl = document.getElementById("catalog-keys-modal-title");
   if (titleEl) titleEl.textContent = title;
   
+  // Ensure Supplier header exists in catalog keys table (self-healing if cached modals.html)
+  const keysTable = document.getElementById("catalog-keys-table");
+  if (keysTable) {
+    const theadRow = keysTable.querySelector("thead tr");
+    if (theadRow) {
+      const ths = Array.from(theadRow.querySelectorAll("th"));
+      const hasSupplierTh = ths.some(th => th.textContent.trim().toLowerCase() === "supplier");
+      if (!hasSupplierTh) {
+        const supTh = document.createElement("th");
+        supTh.textContent = "Supplier";
+        supTh.style.textAlign = "center";
+        if (ths.length >= 2) {
+          theadRow.insertBefore(supTh, ths[2]);
+        } else {
+          theadRow.appendChild(supTh);
+        }
+      }
+    }
+  }
+
   const tbody = document.getElementById("catalog-keys-table-body");
   if (!tbody) {
     if (openModalFlag) openModal("catalog-keys-modal");
@@ -5797,7 +5817,7 @@ window.triggerViewCatalogKeys = function(title, openModalFlag = true, explicitIm
   }
   
   if (matchingKeys.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="text-align: center; padding: 30px; color: var(--text-muted);">No keys found for this game.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="text-center" style="text-align: center; padding: 30px; color: var(--text-muted);">No keys found for this game.</td></tr>`;
     document.getElementById("catalog-keys-count-text").textContent = "Showing 0 keys";
     const paginationContainer = document.getElementById("catalog-keys-pagination");
     if (paginationContainer) paginationContainer.innerHTML = "";
@@ -5878,9 +5898,44 @@ window.triggerViewCatalogKeys = function(title, openModalFlag = true, explicitIm
       </div>
     `;
     
+    // Resolve supplier logo & branding for each key
+    const sourceStr = String(item.source || item.supplier || "Direct").trim() || "Direct";
+    const supplierObj = (state.suppliers && state.suppliers.find(s => s && s.name && s.name.trim().toLowerCase() === sourceStr.toLowerCase()));
+    const colorName = supplierObj ? (supplierObj.color || (typeof getSupplierColorName === "function" ? getSupplierColorName(sourceStr) : "slate")) : (typeof getSupplierColorName === "function" ? getSupplierColorName(sourceStr) : "slate");
+    const colorPreset = (typeof SUPPLIER_COLORS !== "undefined" && SUPPLIER_COLORS.find(c => c.name === colorName)) || (typeof SUPPLIER_COLORS !== "undefined" ? SUPPLIER_COLORS[0] : { name: "slate", value: "#64748b" });
+
+    const resolvedSupLogo = (supplierObj && supplierObj.logo) 
+      || (state.supplierLogos && (state.supplierLogos[sourceStr] || (typeof getSupplierLogoCaseInsensitive === "function" && getSupplierLogoCaseInsensitive(state.supplierLogos, sourceStr)))) 
+      || (typeof getSupplierAutoLogo === "function" ? getSupplierAutoLogo(sourceStr) : null);
+
+    const escapedSrcForJS = sourceStr.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+    const escapedSrc = escapeHTML(sourceStr);
+
+    let supplierBadge = "";
+    if (resolvedSupLogo) {
+      supplierBadge = `
+        <img src="${escapeHTML(resolvedSupLogo)}" class="supplier-logo-thumbnail" style="width: 26px; height: 26px; vertical-align: middle; border-radius: 4px; object-fit: contain; background-color: var(--bg-card); border: 1px solid var(--border-color); padding: 1px; display: inline-block;" title="${escapedSrc}" alt="${escapedSrc}" onerror="if(!this.dataset.ddTried){this.dataset.ddTried='1';const d=window.resolveSupplierDomain?window.resolveSupplierDomain('${escapeHTML(escapedSrcForJS)}'):'';if(d){this.src='https://icons.duckduckgo.com/ip3/'+encodeURIComponent(d)+'.ico';return;}}this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-flex';">
+        <div class="supplier-logo-placeholder" style="display: none; width: 26px; height: 26px; border-radius: 4px; background-color: ${colorPreset.value}20; color: ${colorPreset.value}; border: 1px solid ${colorPreset.value}40; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: bold; vertical-align: middle;" title="${escapedSrc}">
+          ${escapedSrc.charAt(0).toUpperCase()}
+        </div>
+      `;
+    } else {
+      supplierBadge = `
+        <div class="supplier-logo-placeholder" style="width: 26px; height: 26px; border-radius: 4px; background-color: ${colorPreset.value}20; color: ${colorPreset.value}; border: 1px solid ${colorPreset.value}40; display: inline-flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: bold; vertical-align: middle;" title="${escapedSrc}">
+          ${escapedSrc.charAt(0).toUpperCase()}
+        </div>
+      `;
+    }
+
     tr.innerHTML = `
       <td><span style="font-weight: 600;">${item.platform}</span></td>
       <td><div class="secured-key"><code>${maskedKey}</code></div></td>
+      <td style="text-align: center; vertical-align: middle;">
+        <div class="catalog-key-supplier-cell" style="display: inline-flex; align-items: center; justify-content: center; gap: 7px;" title="Supplier: ${escapedSrc}">
+          ${supplierBadge}
+          <span class="catalog-keys-supplier-name" style="font-size: 0.8rem; font-weight: 500; color: var(--text-main); white-space: nowrap;">${escapedSrc}</span>
+        </div>
+      </td>
       <td>${formatCurrency(item.cost)}</td>
       <td>${salePriceText}</td>
       <td>${sellPlatformText}</td>

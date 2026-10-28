@@ -6444,7 +6444,24 @@ textarea.form-control {
   transform: scale(1.08);
 }
 
+/* Catalog Keys Modal - Supplier Column */
+.catalog-key-supplier-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  vertical-align: middle;
+}
 
+.catalog-keys-supplier-name {
+  max-width: 95px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
-
-
+@media (max-width: 720px) {
+  .catalog-keys-supplier-name {
+    display: none;
+  }
+}

@@ -5,6 +5,21 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.24] - 2026-10-28
+
+### Added & Improved
+- **Supplier Logo Column in Entries Catalog Keys Modal**:
+  - When double-clicking any game entry in the **Entries** catalog menu (Table or Gallery view) or clicking the dedicated "Keys" action button, the **Catalog Keys List** modal (`#catalog-keys-modal`) now features a dedicated **Supplier** column.
+  - Displays high-resolution supplier logo thumbnails for each individual key row with dynamic hover tooltips (`title="Supplier: {name}"`).
+  - Seamlessly integrates smart logo resolution cascading through custom supplier records, the persistent logo cache (`state.supplierLogos`), pre-seeded default registries, and automatic favicon domain resolution with graceful fallback to stylized branded initial pills.
+  - Added clean responsive label styling (`.catalog-keys-supplier-name`) with automatic ellipsis truncation and compact viewport optimization.
+  - Expanded modal layout width (`max-width: 920px`) and added self-healing header checks to maintain backward compatibility across cached templates and offline storage.
+- **Synchronized Versioning & Documentation**:
+  - Bumped version to `v2.2.24` across `config.js`, `app.js`, `src/ui.js`, `index.html`, `templates/help-modal.html`, and `README.md`.
+  - Incremented cachebusters (`styles.css?v=52`, modular scripts `?v=92`).
+
+---
+
 ## [v2.2.23] - 2026-10-27
 
 ### Added & Improved
