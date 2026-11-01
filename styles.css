@@ -2049,10 +2049,12 @@ a {
   right: 0;
   z-index: 1050;
   background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   margin-top: 4px;
-  max-height: 200px;
+  max-height: 220px;
   overflow-y: auto;
   box-shadow: var(--shadow-lg);
   display: none;
@@ -2066,11 +2068,26 @@ a {
   display: flex;
   align-items: center;
   gap: 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+.autocomplete-suggestion-item:last-child {
+  border-bottom: none;
+}
+.autocomplete-suggestion-item strong {
+  color: var(--text-main);
+  font-weight: 600;
+  transition: color var(--transition-smooth);
 }
 .autocomplete-suggestion-item:hover,
-.autocomplete-suggestion-item.active {
-  background: var(--accent-gradient);
-  color: #fff;
+.autocomplete-suggestion-item.active,
+.autocomplete-suggestion-item.selected {
+  background: hsla(270, 85%, 60%, 0.18);
+  color: var(--text-main);
+}
+.autocomplete-suggestion-item:hover strong,
+.autocomplete-suggestion-item.active strong,
+.autocomplete-suggestion-item.selected strong {
+  color: var(--accent-purple);
 }
 .autocomplete-suggestion-item img {
   width: 24px;
@@ -2083,10 +2100,53 @@ a {
   font-size: 0.75rem;
   color: var(--text-muted);
   margin-left: auto;
+  transition: color var(--transition-smooth);
 }
 .autocomplete-suggestion-item:hover .suggestion-platform,
-.autocomplete-suggestion-item.active .suggestion-platform {
-  color: rgba(255, 255, 255, 0.8);
+.autocomplete-suggestion-item.active .suggestion-platform,
+.autocomplete-suggestion-item.selected .suggestion-platform {
+  color: var(--accent-purple);
+  font-weight: 600;
+}
+
+/* Light Theme Overrides for Autocomplete Dropdowns */
+[data-theme-mode="light"] .autocomplete-suggestions,
+[data-theme-mode="light"] #sell-autocomplete-list {
+  background: #ffffff !important;
+  border-color: var(--border-color) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.06);
+}
+[data-theme-mode="light"] .autocomplete-suggestion-item {
+  color: var(--text-main) !important;
+  border-bottom: 1px solid hsla(220, 20%, 88%, 0.7);
+}
+[data-theme-mode="light"] .autocomplete-suggestion-item strong {
+  color: var(--text-main) !important;
+}
+[data-theme-mode="light"] .autocomplete-suggestion-item:hover,
+[data-theme-mode="light"] .autocomplete-suggestion-item.active,
+[data-theme-mode="light"] .autocomplete-suggestion-item.selected {
+  background: hsla(270, 85%, 60%, 0.12) !important;
+  color: var(--text-main) !important;
+}
+[data-theme-mode="light"] .autocomplete-suggestion-item:hover strong,
+[data-theme-mode="light"] .autocomplete-suggestion-item.active strong,
+[data-theme-mode="light"] .autocomplete-suggestion-item.selected strong {
+  color: hsl(270, 85%, 45%) !important;
+}
+[data-theme-mode="light"] .autocomplete-suggestion-item .suggestion-platform {
+  color: var(--text-muted);
+}
+[data-theme-mode="light"] .autocomplete-suggestion-item:hover .suggestion-platform,
+[data-theme-mode="light"] .autocomplete-suggestion-item.active .suggestion-platform,
+[data-theme-mode="light"] .autocomplete-suggestion-item.selected .suggestion-platform {
+  color: hsl(270, 85%, 45%) !important;
+}
+[data-theme-mode="light"] .autocomplete-item {
+  color: var(--text-main) !important;
+}
+[data-theme-mode="light"] .autocomplete-item:hover {
+  background: hsla(270, 85%, 60%, 0.12) !important;
 }
 .form-control-sm {
   padding: 8px 12px;

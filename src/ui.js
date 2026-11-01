@@ -5,7 +5,7 @@
 // Asynchronously loads critical HTML templates (modals.html) on application boot
 window.loadHTMLTemplates = async () => {
   try {
-    const ver = window.APP_VERSION || "v2.2.27";
+    const ver = window.APP_VERSION || "v2.2.28";
     const res = await fetch(`templates/modals.html?v=${ver}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const html = await res.text();
@@ -33,7 +33,7 @@ window.ensureHelpModalLoaded = async () => {
 
   _helpModalLoadingPromise = (async () => {
     try {
-      const ver = window.APP_VERSION || "v2.2.27";
+      const ver = window.APP_VERSION || "v2.2.28";
       const res = await fetch(`templates/help-modal.html?v=${ver}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -1856,7 +1856,7 @@ function initEventHandlers() {
         itemEl.style.flexDirection = "column";
         itemEl.style.gap = "2px";
         itemEl.innerHTML = `
-          <div style="font-weight: 600; font-size: 0.85rem; color: #fff;">${escapeHTML(item.title)}</div>
+          <div style="font-weight: 600; font-size: 0.85rem; color: var(--text-main);">${escapeHTML(item.title)}</div>
           <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; gap: 10px;">
             <span>Platform: ${escapeHTML(item.platform)} | Cost: ${formatCurrency(item.cost)}</span>
             <code style="font-size: 0.7rem; color: var(--accent-purple); font-family: monospace;">${escapeHTML((item.key || "").slice(0, 10))}...</code>
@@ -1864,7 +1864,7 @@ function initEventHandlers() {
         `;
         
         itemEl.addEventListener("mouseenter", () => {
-          itemEl.style.background = "var(--border-color)";
+          itemEl.style.background = "hsla(270, 85%, 60%, 0.12)";
         });
         itemEl.addEventListener("mouseleave", () => {
           itemEl.style.background = "";
@@ -4279,7 +4279,7 @@ window.triggerViewKey = function(gameId) {
       <div class="view-modal-thumbnail-placeholder" style="display: none;">${escapeHTML(initials)}</div>
       <div>
         <span class="key-label" style="margin-bottom: 2px;">Game Title</span>
-        <h4 id="view-modal-title" style="font-size: 1.15rem; color: #fff;">${escapeHTML(game.title)}</h4>
+        <h4 id="view-modal-title" style="font-size: 1.15rem; color: var(--text-main);">${escapeHTML(game.title)}</h4>
       </div>
     `;
   } else {
@@ -4287,7 +4287,7 @@ window.triggerViewKey = function(gameId) {
       <div class="view-modal-thumbnail-placeholder">${escapeHTML(initials)}</div>
       <div>
         <span class="key-label" style="margin-bottom: 2px;">Game Title</span>
-        <h4 id="view-modal-title" style="font-size: 1.15rem; color: #fff;">${escapeHTML(game.title)}</h4>
+        <h4 id="view-modal-title" style="font-size: 1.15rem; color: var(--text-main);">${escapeHTML(game.title)}</h4>
       </div>
     `;
   }

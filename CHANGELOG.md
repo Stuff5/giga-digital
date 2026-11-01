@@ -5,6 +5,15 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.28] - 2026-11-01
+### Fixed
+- **Light Theme Autocomplete Hover Visibility in Modals**:
+  - Fixed white-on-white text contrast issue when hovering or selecting game titles in the Add Game modal (`#add-game-modal`) and Edit Game modal (`#edit-game-modal`).
+  - Replaced undefined `var(--accent-gradient)` with themed soft purple tint highlights (`hsla(270, 85%, 60%, 0.12)`) and high-contrast text (`var(--text-main)` / deep purple `hsl(270, 85%, 45%)`).
+  - Added solid white background (`#ffffff`) and clean drop-shadow to autocomplete dropdowns in light theme mode to prevent background bleed-through.
+  - Replaced hardcoded `#fff` text with dynamic `var(--text-main)` in the Sell Game autocomplete list and View Key modal.
+  - Bumped version to `v2.2.28` across all configuration, template, and documentation files.
+
 ## [v2.2.27] - 2026-11-01
 ### Fixed
 - **Purchase Date vs Sale Date Chronology Enforcement**:
