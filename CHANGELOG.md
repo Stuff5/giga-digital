@@ -5,6 +5,15 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.27] - 2026-11-01
+### Fixed
+- **Purchase Date vs Sale Date Chronology Enforcement**:
+  - Implemented strict chronological validation ensuring an item cannot be sold before it is purchased (`purchaseDate <= saleDate`).
+  - In Edit Game modal: Dynamically sets `max` constraint on purchase date picker to the earliest recorded sale date, displays a helpful warning hint, and blocks saving if purchase date exceeds the sale date.
+  - In Record Sale modal (direct & autocomplete): Sets `min` constraint on the sale date picker to the item's purchase date, displays an informative hint, and prevents recording any sale prior to purchase date.
+  - Added native browser HTML5 `setCustomValidity` real-time feedback on date inputs.
+  - Bumped version to `v2.2.27` across `config.js`, `app.js`, `src/ui.js`, `index.html`, `templates/help-modal.html`, and `README.md`.
+
 ## [v2.2.26] - 2026-10-28
 
 ### Added & Improved

@@ -5,7 +5,7 @@
 // Asynchronously loads critical HTML templates (modals.html) on application boot
 window.loadHTMLTemplates = async () => {
   try {
-    const ver = window.APP_VERSION || "v2.2.26";
+    const ver = window.APP_VERSION || "v2.2.27";
     const res = await fetch(`templates/modals.html?v=${ver}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const html = await res.text();
@@ -33,7 +33,7 @@ window.ensureHelpModalLoaded = async () => {
 
   _helpModalLoadingPromise = (async () => {
     try {
-      const ver = window.APP_VERSION || "v2.2.26";
+      const ver = window.APP_VERSION || "v2.2.27";
       const res = await fetch(`templates/help-modal.html?v=${ver}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -1880,6 +1880,25 @@ function initEventHandlers() {
           document.getElementById("sell-modal-key").textContent = item.key || "-";
           document.getElementById("sell-selected-game-card").style.display = "block";
           sellAutocompleteList.style.display = "none";
+
+          // Set min constraint on sale date based on purchase date
+          const saleDateInput = document.getElementById("sale-date");
+          const saleDateHint = document.getElementById("sale-date-hint");
+          if (saleDateInput) {
+            if (item.purchaseDate) {
+              saleDateInput.min = item.purchaseDate;
+              if (saleDateHint) {
+                saleDateHint.textContent = `Earliest sale date: ${formatToDDMMYYYY(item.purchaseDate)} (Purchase date)`;
+                saleDateHint.style.display = "block";
+              }
+              if (saleDateInput.value && saleDateInput.value < item.purchaseDate) {
+                saleDateInput.value = item.purchaseDate;
+              }
+            } else {
+              saleDateInput.removeAttribute("min");
+              if (saleDateHint) saleDateHint.style.display = "none";
+            }
+          }
           
           // Keep sales price field empty for user input
           document.getElementById("sale-price").value = "";
@@ -1900,6 +1919,31 @@ function initEventHandlers() {
 
   // Edit Game Form Submission
   document.getElementById("edit-game-form").addEventListener("submit", handleEditGameSubmit);
+
+  // Real-time date constraint validation
+  const editPurchaseDateInput = document.getElementById("edit-game-purchase-date");
+  if (editPurchaseDateInput) {
+    editPurchaseDateInput.addEventListener("input", () => {
+      const maxVal = editPurchaseDateInput.max;
+      if (maxVal && editPurchaseDateInput.value && editPurchaseDateInput.value > maxVal) {
+        editPurchaseDateInput.setCustomValidity(`Purchase date cannot be later than sale date (${formatToDDMMYYYY(maxVal)}).`);
+      } else {
+        editPurchaseDateInput.setCustomValidity("");
+      }
+    });
+  }
+
+  const saleDateInputEl = document.getElementById("sale-date");
+  if (saleDateInputEl) {
+    saleDateInputEl.addEventListener("input", () => {
+      const minVal = saleDateInputEl.min;
+      if (minVal && saleDateInputEl.value && saleDateInputEl.value < minVal) {
+        saleDateInputEl.setCustomValidity(`Sale date cannot be earlier than purchase date (${formatToDDMMYYYY(minVal)}).`);
+      } else {
+        saleDateInputEl.setCustomValidity("");
+      }
+    });
+  }
 
   // Edit Catalog Entry Form Submission
   const editCatalogForm = document.getElementById("edit-catalog-entry-form");
@@ -4117,6 +4161,12 @@ async function handleSellGameSubmit(e) {
   }
 
   const game = state.inventory[gameIndex];
+
+  // Prevent recording a sale earlier than the game's purchase date
+  if (game.purchaseDate && saleDate && saleDate < game.purchaseDate) {
+    showToast(`Sale date (${formatToDDMMYYYY(saleDate)}) cannot be earlier than purchase date (${formatToDDMMYYYY(game.purchaseDate)}). You cannot sell an item before purchasing it.`, "error");
+    return;
+  }
   
   pushToUndoStack();
   // Update inventory status
@@ -4165,6 +4215,14 @@ window.triggerSellGameManual = function() {
   document.getElementById("sale-price").value = "";
   document.getElementById("sale-fees").value = "0.00";
   document.getElementById("sell-autocomplete-list").style.display = "none";
+
+  const saleDateInput = document.getElementById("sale-date");
+  if (saleDateInput) {
+    saleDateInput.removeAttribute("min");
+    saleDateInput.valueAsDate = new Date();
+  }
+  const saleDateHint = document.getElementById("sale-date-hint");
+  if (saleDateHint) saleDateHint.style.display = "none";
   
   openModal("sell-game-modal");
 };
@@ -4172,6 +4230,24 @@ window.triggerSellGameManual = function() {
 window.triggerSellGame = function(gameId) {
   const game = state.inventory.find(item => item.id === gameId);
   if (!game) return;
+
+  const saleDateInput = document.getElementById("sale-date");
+  const saleDateHint = document.getElementById("sale-date-hint");
+  if (saleDateInput) {
+    if (game.purchaseDate) {
+      saleDateInput.min = game.purchaseDate;
+      if (saleDateHint) {
+        saleDateHint.textContent = `Earliest sale date: ${formatToDDMMYYYY(game.purchaseDate)} (Purchase date)`;
+        saleDateHint.style.display = "block";
+      }
+      if (saleDateInput.value && saleDateInput.value < game.purchaseDate) {
+        saleDateInput.value = game.purchaseDate;
+      }
+    } else {
+      saleDateInput.removeAttribute("min");
+      if (saleDateHint) saleDateHint.style.display = "none";
+    }
+  }
 
   document.getElementById("sell-game-id").value = game.id;
   document.getElementById("sell-game-search").value = game.title;
@@ -4483,6 +4559,28 @@ window.triggerEditGame = function(gameId) {
   document.getElementById("edit-game-key").value = game.key;
   document.getElementById("edit-game-source").value = game.source;
   document.getElementById("edit-game-purchase-date").value = game.purchaseDate;
+
+  // Set max purchase date constraint if this item has an associated sale
+  const purchaseDateInput = document.getElementById("edit-game-purchase-date");
+  const purchaseDateHint = document.getElementById("edit-game-purchase-date-hint");
+  const associatedSales = state.sales.filter(s => s.inventoryId === game.id);
+  const earliestSale = associatedSales.reduce((earliest, s) => {
+    return (!earliest || (s.saleDate && s.saleDate < earliest.saleDate)) ? s : earliest;
+  }, null);
+
+  if (earliestSale && earliestSale.saleDate && purchaseDateInput) {
+    purchaseDateInput.max = earliestSale.saleDate;
+    if (purchaseDateHint) {
+      purchaseDateHint.textContent = `Sold on ${formatToDDMMYYYY(earliestSale.saleDate)}. Purchase date cannot be later than this sale date.`;
+      purchaseDateHint.style.display = "block";
+    }
+  } else if (purchaseDateInput) {
+    purchaseDateInput.removeAttribute("max");
+    if (purchaseDateHint) {
+      purchaseDateHint.style.display = "none";
+    }
+  }
+
   const resolvedImg = game.imageUrl || (typeof window.resolveGameArtwork === "function" ? window.resolveGameArtwork(game) : "");
   document.getElementById("edit-game-image-url").value = resolvedImg || "";
   document.getElementById("edit-game-image-file").value = ""; // Reset file upload
@@ -4514,6 +4612,17 @@ async function handleEditGameSubmit(e) {
   const gameIndex = state.inventory.findIndex(item => item.id === gameId);
   if (gameIndex === -1) {
     showToast("Game not found.", "error");
+    return;
+  }
+
+  // Prevent setting purchase date after sale date if game is or was sold
+  const associatedSales = state.sales.filter(s => s.inventoryId === gameId);
+  const earliestSale = associatedSales.reduce((earliest, s) => {
+    return (!earliest || (s.saleDate && s.saleDate < earliest.saleDate)) ? s : earliest;
+  }, null);
+
+  if (earliestSale && earliestSale.saleDate && purchaseDate && purchaseDate > earliestSale.saleDate) {
+    showToast(`Purchase date (${formatToDDMMYYYY(purchaseDate)}) cannot be later than sale date (${formatToDDMMYYYY(earliestSale.saleDate)}). You cannot sell an item before purchasing it.`, "error");
     return;
   }
 
@@ -4572,6 +4681,11 @@ async function handleEditGameSubmit(e) {
     // Item was transitioned to Sold manually: create a placeholder sale record if none exists
     const existingSale = state.sales.find(s => s.inventoryId === gameId);
     if (!existingSale) {
+      const todayStr = new Date().toISOString().split("T")[0];
+      if (purchaseDate && purchaseDate > todayStr) {
+        showToast(`Purchase date (${formatToDDMMYYYY(purchaseDate)}) cannot be in the future when marking as Sold.`, "error");
+        return;
+      }
       state.sales.push({
         id: "sale_" + Date.now(),
         inventoryId: gameId,

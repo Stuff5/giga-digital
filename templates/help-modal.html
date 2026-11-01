@@ -447,7 +447,18 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
-                <!-- v2.2.26 -->
+                                <!-- v2.2.27 -->
+                <div class="changelog-release-card" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.2.27 - Chronological Date Validation</strong>
+                    <span style="font-size: 0.75rem; color: var(--accent-cyan); background: rgba(0, 229, 255, 0.08); padding: 2px 8px; border-radius: 4px; font-weight: 600;">2026-11-01</span>
+                  </div>
+                  <ul style="margin: 0; padding-left: 18px; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+                    <li><strong>Purchase & Sale Date Chronology Enforcement:</strong> Strictly validates that an item cannot be sold before its acquisition date. When editing a sold key, the purchase date input sets its maximum boundary to the sale date and rejects future dates. When recording a sale, the sale date picker enforces a minimum boundary matching the acquisition date.</li>
+                  </ul>
+                </div>
+
+<!-- v2.2.26 -->
                 <div style="border-left: 3px solid var(--accent-emerald); padding-left: 12px;">
                   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
                     <strong style="color: var(--text-main); font-size: 0.95rem;">v2.2.26 - Decoupled Favorite Pinning in Entries Menu</strong>
