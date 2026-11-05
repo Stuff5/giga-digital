@@ -5,6 +5,19 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.29] - 2026-11-05
+### Added
+- **All-Time Financial Matrix Widget (Finances View)**:
+  - Added an interactive "All-Time Insights" heatmap matrix table in the Finances view (`#card-chart-financeMatrix`) breaking down historical performance across months (Jan–Dec) and years (2020–2026).
+  - Multi-metric toggle pills allowing seamless switching between **Profit**, **Gross Revenue**, and **Sales Items** (volume).
+  - Calculation mode selector toggling between **Monthly Totals** and **Average Per Day** for accurate daily run-rate comparisons.
+  - Sort order toggle for Years: ascending (chronological 2020 → 2026) vs descending (newest first).
+  - Dynamic heatmap cell shading mapping magnitude to soft lavender/purple tints for positive values and gentle red warnings for negative profit months.
+  - Full Light Theme & Dark Theme contrast support, ensuring high legibility and WCAG compliance across all themes.
+  - Interactive hover popover tooltips displaying full details: Net Profit, Gross Revenue, Sales Items sold, Profit Margin %, and Daily Run-Rate.
+  - Row totals per year, column totals per month across all years, grand total summary, and bottom legend gradient bar.
+  - Seamless drag-and-drop reordering and column span controls (1, 2, or 3 columns / full-width default).
+
 ## [v2.2.28] - 2026-11-01
 ### Fixed
 - **Light Theme Autocomplete Hover Visibility in Modals**:

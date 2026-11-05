@@ -6511,3 +6511,290 @@ textarea.form-control {
   justify-content: center;
   vertical-align: middle;
 }
+
+/* ==========================================================================
+   FINANCIAL MATRIX WIDGET (ALL-TIME PERFORMANCE INSIGHTS)
+   ========================================================================== */
+
+.matrix-pill-group {
+  display: inline-flex;
+  background: var(--bg-input);
+  padding: 2px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  gap: 2px;
+}
+
+.btn-matrix-pill {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 4px 11px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.btn-matrix-pill:hover {
+  color: var(--text-main);
+  background: hsla(0, 0%, 100%, 0.05);
+}
+
+.btn-matrix-pill.active {
+  background: var(--accent-purple);
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px var(--accent-purple-glow);
+}
+
+[data-theme-mode="light"] .btn-matrix-pill:hover {
+  background: hsla(220, 20%, 80%, 0.5);
+}
+
+[data-theme-mode="light"] .btn-matrix-pill.active {
+  background: hsl(270, 75%, 55%);
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(124, 58, 237, 0.35);
+}
+
+.finance-matrix-container {
+  width: 100%;
+  overflow-x: auto;
+  position: relative;
+  border-radius: var(--radius-md);
+  margin-top: 6px;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.finance-matrix-table {
+  width: 100%;
+  min-width: 820px;
+  border-collapse: separate;
+  border-spacing: 4px;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+
+.finance-matrix-table th {
+  padding: 8px 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: center;
+}
+
+.finance-matrix-table th.matrix-th-year {
+  text-align: left;
+  padding-left: 8px;
+  width: 65px;
+}
+
+.finance-matrix-table th.matrix-th-total {
+  text-align: right;
+  padding-right: 12px;
+  width: 95px;
+  border-left: 1px solid var(--border-color);
+}
+
+.finance-matrix-table td.matrix-year-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-align: left;
+  padding-left: 8px;
+  white-space: nowrap;
+}
+
+.finance-matrix-table td.matrix-cell {
+  text-align: center;
+  padding: 9px 4px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  border-radius: 6px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, outline 0.15s ease;
+  position: relative;
+  border: 1px solid transparent;
+}
+
+.finance-matrix-table td.matrix-cell.empty {
+  background-color: transparent;
+  color: var(--text-muted);
+  opacity: 0.35;
+}
+
+.finance-matrix-table td.matrix-cell.has-data {
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 600;
+}
+
+.finance-matrix-table td.matrix-cell.has-data:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  outline: 2px solid var(--accent-purple);
+  z-index: 3;
+}
+
+/* Light Theme Contrast for Matrix Cells */
+[data-theme-mode="light"] .finance-matrix-table td.matrix-cell.has-data {
+  color: hsl(224, 25%, 15%);
+  font-weight: 600;
+}
+
+[data-theme-mode="light"] .finance-matrix-table td.matrix-cell.has-data.text-white {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme-mode="light"] .finance-matrix-table td.matrix-cell.has-data:hover {
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+  outline: 2px solid hsl(270, 75%, 55%);
+}
+
+.finance-matrix-table td.matrix-row-total {
+  text-align: right;
+  padding-right: 12px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text-main);
+  border-left: 1px solid var(--border-color);
+  background: hsla(0, 0%, 100%, 0.02);
+}
+
+[data-theme-mode="light"] .finance-matrix-table td.matrix-row-total {
+  background: hsla(220, 20%, 90%, 0.45);
+}
+
+.finance-matrix-table tr.matrix-summary-row th {
+  padding-top: 10px;
+  padding-bottom: 8px;
+  border-top: 1.5px solid var(--border-color);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.finance-matrix-table tr.matrix-summary-row th.matrix-grand-total {
+  text-align: right;
+  padding-right: 12px;
+  color: var(--accent-purple);
+  border-left: 1px solid var(--border-color);
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+[data-theme-mode="light"] .finance-matrix-table tr.matrix-summary-row th.matrix-grand-total {
+  color: hsl(270, 75%, 50%);
+}
+
+/* Matrix Bottom Legend */
+.finance-matrix-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 12px;
+  padding-top: 6px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+
+.matrix-legend-label {
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.matrix-legend-bar {
+  width: 140px;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right, hsla(250, 75%, 62%, 0.12), hsla(250, 75%, 62%, 0.85));
+  border: 1px solid var(--border-color);
+}
+
+[data-theme-mode="light"] .matrix-legend-bar {
+  background: linear-gradient(to right, hsla(250, 75%, 55%, 0.15), hsla(250, 75%, 55%, 0.85));
+}
+
+.matrix-legend-values {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* Floating Matrix Cell Tooltip */
+#finance-matrix-tooltip {
+  position: fixed;
+  z-index: 999999;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  font-size: 0.8rem;
+  min-width: 220px;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+  opacity: 0;
+  transform: translateY(4px);
+  display: none;
+}
+
+[data-theme-mode="light"] #finance-matrix-tooltip {
+  background: #ffffff;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.15);
+  border-color: hsla(220, 20%, 80%, 0.8);
+}
+
+#finance-matrix-tooltip.visible {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.matrix-tooltip-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+  font-weight: 700;
+  color: var(--text-main);
+  font-size: 0.85rem;
+}
+
+.matrix-tooltip-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.matrix-tooltip-stats .stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+
+.matrix-tooltip-stats .stat-row strong {
+  color: var(--text-main);
+  font-weight: 600;
+}
+

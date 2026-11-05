@@ -5,7 +5,7 @@
 // Asynchronously loads critical HTML templates (modals.html) on application boot
 window.loadHTMLTemplates = async () => {
   try {
-    const ver = window.APP_VERSION || "v2.2.28";
+    const ver = window.APP_VERSION || "v2.2.29";
     const res = await fetch(`templates/modals.html?v=${ver}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const html = await res.text();
@@ -33,7 +33,7 @@ window.ensureHelpModalLoaded = async () => {
 
   _helpModalLoadingPromise = (async () => {
     try {
-      const ver = window.APP_VERSION || "v2.2.28";
+      const ver = window.APP_VERSION || "v2.2.29";
       const res = await fetch(`templates/help-modal.html?v=${ver}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -2831,6 +2831,61 @@ function initEventHandlers() {
   if (financeOutflowChartYearFilter) {
     financeOutflowChartYearFilter.addEventListener("change", () => {
       renderFinanceView();
+    });
+  }
+
+  // Financial Matrix Widget Controls (Pills & Sort)
+  const matrixMetricToggles = document.getElementById("finance-matrix-metric-toggles");
+  if (matrixMetricToggles) {
+    matrixMetricToggles.addEventListener("click", (e) => {
+      const btn = e.target.closest(".btn-matrix-pill");
+      if (!btn) return;
+      const metric = btn.getAttribute("data-metric");
+      if (!metric) return;
+      if (!state.widgetSettings.financeMatrix) {
+        state.widgetSettings.financeMatrix = { visible: true, collapsed: false, metric: 'profit', mode: 'totals', sortOrder: 'asc' };
+      }
+      state.widgetSettings.financeMatrix.metric = metric;
+      saveStateToStorage();
+      if (window.supabaseClient) {
+        dbSaveSettings("widgetSettings", state.widgetSettings);
+      }
+      renderFinanceMatrixCard(state.sales);
+    });
+  }
+
+  const matrixModeToggles = document.getElementById("finance-matrix-mode-toggles");
+  if (matrixModeToggles) {
+    matrixModeToggles.addEventListener("click", (e) => {
+      const btn = e.target.closest(".btn-matrix-pill");
+      if (!btn) return;
+      const mode = btn.getAttribute("data-mode");
+      if (!mode) return;
+      if (!state.widgetSettings.financeMatrix) {
+        state.widgetSettings.financeMatrix = { visible: true, collapsed: false, metric: 'profit', mode: 'totals', sortOrder: 'asc' };
+      }
+      state.widgetSettings.financeMatrix.mode = mode;
+      saveStateToStorage();
+      if (window.supabaseClient) {
+        dbSaveSettings("widgetSettings", state.widgetSettings);
+      }
+      renderFinanceMatrixCard(state.sales);
+    });
+  }
+
+  const btnFinanceMatrixSort = document.getElementById("btn-finance-matrix-sort");
+  if (btnFinanceMatrixSort) {
+    btnFinanceMatrixSort.addEventListener("click", () => {
+      if (!state.widgetSettings.financeMatrix) {
+        state.widgetSettings.financeMatrix = { visible: true, collapsed: false, metric: 'profit', mode: 'totals', sortOrder: 'asc' };
+      }
+      const cur = state.widgetSettings.financeMatrix.sortOrder || 'asc';
+      state.widgetSettings.financeMatrix.sortOrder = cur === 'asc' ? 'desc' : 'asc';
+      saveStateToStorage();
+      if (window.supabaseClient) {
+        dbSaveSettings("widgetSettings", state.widgetSettings);
+      }
+      renderFinanceMatrixCard(state.sales);
     });
   }
 
@@ -13267,10 +13322,406 @@ function renderFinanceView() {
   renderCostRevenueChart(state.sales);
   renderMarkupAnalysisChart(state.inventory);
   renderFinanceTrackerWidget(state.sales);
+  renderFinanceMatrixCard(state.sales);
 
   // Apply column spans for all Finance tab chart cards
   applyFinanceSpans();
   renderFinanceBenchmark();
+}
+
+function renderFinanceMatrixCard(salesList) {
+  const container = document.getElementById("finance-matrix-container");
+  if (!container) return;
+
+  if (!state.widgetSettings.financeMatrix) {
+    state.widgetSettings.financeMatrix = { visible: true, collapsed: false, metric: 'profit', mode: 'totals', sortOrder: 'asc' };
+  }
+  const cfg = state.widgetSettings.financeMatrix;
+  const activeMetric = cfg.metric || 'profit'; // 'profit' | 'revenue' | 'items'
+  const activeMode = cfg.mode || 'totals';     // 'totals' | 'daily'
+  const activeSort = cfg.sortOrder || 'asc';   // 'asc' | 'desc'
+
+  // Update pills and sort button active states
+  const metricPills = document.querySelectorAll("#finance-matrix-metric-toggles .btn-matrix-pill");
+  metricPills.forEach(btn => {
+    btn.classList.toggle("active", btn.getAttribute("data-metric") === activeMetric);
+  });
+
+  const modePills = document.querySelectorAll("#finance-matrix-mode-toggles .btn-matrix-pill");
+  modePills.forEach(btn => {
+    btn.classList.toggle("active", btn.getAttribute("data-mode") === activeMode);
+  });
+
+  const sortBtn = document.getElementById("btn-finance-matrix-sort");
+  if (sortBtn) {
+    sortBtn.innerHTML = activeSort === "asc"
+      ? '<i class="fa-solid fa-arrow-down-1-9"></i>'
+      : '<i class="fa-solid fa-arrow-down-9-1"></i>';
+    sortBtn.title = activeSort === "asc"
+      ? "Sort Years: Ascending (Oldest First)"
+      : "Sort Years: Descending (Newest First)";
+  }
+
+  // Aggregate monthly sales & payouts
+  const yearsSet = new Set();
+  const monthData = {}; // key: "YYYY-MM" -> { profit, revenue, cost, items, hasData }
+
+  const effectiveSales = Array.isArray(salesList) ? salesList : (state.sales || []);
+  effectiveSales.forEach(sale => {
+    if (!sale.saleDate || sale.saleDate.length < 7) return;
+    const y = sale.saleDate.substring(0, 4);
+    const m = sale.saleDate.substring(5, 7);
+    if (!/^\d{4}$/.test(y) || !/^\d{2}$/.test(m)) return;
+
+    yearsSet.add(y);
+    const ym = `${y}-${m}`;
+    if (!monthData[ym]) {
+      monthData[ym] = { profit: 0, revenue: 0, cost: 0, items: 0, hasData: true };
+    }
+
+    const isDisputed = sale.disputed === true;
+    const isSupplierRefunded = sale.supplierRefunded === true;
+    const rev = isDisputed ? 0 : Number(sale.sellPrice || 0);
+    const cost = (isDisputed && isSupplierRefunded) ? 0 : Number(sale.cost || 0);
+    let profit = Number(sale.profit || 0);
+    if (isDisputed) {
+      profit = isSupplierRefunded ? 0 : -cost;
+    }
+    const count = isDisputed ? 0 : 1;
+
+    monthData[ym].revenue += rev;
+    monthData[ym].cost += cost;
+    monthData[ym].profit += profit;
+    monthData[ym].items += count;
+  });
+
+  const effectivePayouts = Array.isArray(state.payouts) ? state.payouts : [];
+  effectivePayouts.forEach(p => {
+    if (!p.date || p.date.length < 7) return;
+    const y = p.date.substring(0, 4);
+    const m = p.date.substring(5, 7);
+    if (!/^\d{4}$/.test(y) || !/^\d{2}$/.test(m)) return;
+
+    yearsSet.add(y);
+    const ym = `${y}-${m}`;
+    if (!monthData[ym]) {
+      monthData[ym] = { profit: 0, revenue: 0, cost: 0, items: 0, hasData: true };
+    }
+    const amt = Number(p.amount || 0);
+    monthData[ym].cost += amt;
+    monthData[ym].profit -= amt;
+  });
+
+  if (yearsSet.size === 0) {
+    yearsSet.add(String(new Date().getFullYear()));
+  }
+
+  const sortedYears = Array.from(yearsSet).sort((a, b) => {
+    return activeSort === "asc" ? a.localeCompare(b) : b.localeCompare(a);
+  });
+
+  // Calculate cell values and find min/max
+  let totalAllTimeMetric = 0;
+  let maxPositiveVal = 0;
+  let minPositiveVal = Infinity;
+  let maxNegativeVal = 0;
+
+  sortedYears.forEach(y => {
+    for (let m = 1; m <= 12; m++) {
+      const mm = String(m).padStart(2, "0");
+      const ym = `${y}-${mm}`;
+      const d = monthData[ym];
+      if (d && d.hasData) {
+        let rawVal = 0;
+        if (activeMetric === "profit") rawVal = d.profit;
+        else if (activeMetric === "revenue") rawVal = d.revenue;
+        else if (activeMetric === "items") rawVal = d.items;
+
+        totalAllTimeMetric += rawVal;
+
+        let displayVal = rawVal;
+        if (activeMode === "daily") {
+          const daysInMonth = new Date(parseInt(y, 10), m, 0).getDate();
+          displayVal = rawVal / daysInMonth;
+        }
+
+        if (displayVal > 0) {
+          if (displayVal > maxPositiveVal) maxPositiveVal = displayVal;
+          if (displayVal < minPositiveVal) minPositiveVal = displayVal;
+        } else if (displayVal < 0) {
+          const absVal = Math.abs(displayVal);
+          if (absVal > maxNegativeVal) maxNegativeVal = absVal;
+        }
+      }
+    }
+  });
+
+  if (minPositiveVal === Infinity) minPositiveVal = 0;
+
+  // Header Subtitle Summary
+  const subtitleEl = document.getElementById("finance-matrix-subtitle");
+  if (subtitleEl) {
+    if (activeMetric === "profit") {
+      subtitleEl.textContent = `All-Time Net Profit: ${formatCurrency(totalAllTimeMetric)}`;
+    } else if (activeMetric === "revenue") {
+      subtitleEl.textContent = `All-Time Gross Revenue: ${formatCurrency(totalAllTimeMetric)}`;
+    } else {
+      subtitleEl.textContent = `All-Time Sales Volume: ${Math.round(totalAllTimeMetric).toLocaleString()} keys`;
+    }
+  }
+
+  const monthShorts = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const sym = state.currency === "USD" ? "$" : "€";
+  const isLightMode = document.documentElement.getAttribute("data-theme-mode") === "light" || document.body.getAttribute("data-theme-mode") === "light";
+
+  // Build table HTML
+  let html = `<table class="finance-matrix-table">`;
+  html += `<thead><tr>`;
+  html += `<th class="matrix-th-year">Year</th>`;
+  monthShorts.forEach(mName => {
+    html += `<th>${mName}</th>`;
+  });
+  html += `<th class="matrix-th-total">Total</th>`;
+  html += `</tr></thead>`;
+  html += `<tbody>`;
+
+  // Track column totals
+  const colTotalsRaw = new Array(12).fill(0);
+  const colDaysCount = new Array(12).fill(0);
+  let grandTotalRaw = 0;
+  let grandDaysCount = 0;
+
+  sortedYears.forEach(y => {
+    html += `<tr>`;
+    html += `<td class="matrix-year-label">${y}</td>`;
+
+    let rowTotalRaw = 0;
+    let rowDaysCount = 0;
+
+    for (let m = 1; m <= 12; m++) {
+      const mm = String(m).padStart(2, "0");
+      const ym = `${y}-${mm}`;
+      const d = monthData[ym];
+
+      if (!d || !d.hasData) {
+        html += `<td class="matrix-cell empty">—</td>`;
+      } else {
+        let val = 0;
+        if (activeMetric === "profit") val = d.profit;
+        else if (activeMetric === "revenue") val = d.revenue;
+        else if (activeMetric === "items") val = d.items;
+
+        rowTotalRaw += val;
+        colTotalsRaw[m - 1] += val;
+
+        const daysInMonth = new Date(parseInt(y, 10), m, 0).getDate();
+        rowDaysCount += daysInMonth;
+        colDaysCount[m - 1] += daysInMonth;
+
+        const cellVal = activeMode === "daily" ? (val / daysInMonth) : val;
+
+        let bgStyle = "";
+        let isHighContrast = false;
+
+        if (cellVal > 0 && maxPositiveVal > 0) {
+          const ratio = Math.min(1, Math.max(0, cellVal / maxPositiveVal));
+          const alpha = 0.12 + Math.pow(ratio, 0.72) * 0.73;
+          const hue = isLightMode ? "250, 75%, 58%" : "250, 75%, 62%";
+          bgStyle = `background-color: hsla(${hue}, ${alpha.toFixed(3)});`;
+          if (alpha > 0.46) isHighContrast = true;
+        } else if (cellVal < 0 && maxNegativeVal > 0) {
+          const ratio = Math.min(1, Math.max(0, Math.abs(cellVal) / maxNegativeVal));
+          const alpha = 0.15 + ratio * 0.65;
+          bgStyle = `background-color: hsla(0, 80%, 55%, ${alpha.toFixed(3)});`;
+          if (alpha > 0.46) isHighContrast = true;
+        } else {
+          bgStyle = `background-color: hsla(250, 75%, 62%, 0.08);`;
+        }
+
+        let formattedText = "";
+        if (activeMode === "daily") {
+          formattedText = activeMetric === "items" ? cellVal.toFixed(1) : `${sym}${cellVal.toFixed(1)}`;
+        } else {
+          formattedText = activeMetric === "items" ? Math.round(cellVal).toLocaleString() : `${sym}${Math.round(cellVal).toLocaleString()}`;
+        }
+
+        html += `<td class="matrix-cell has-data ${isHighContrast ? 'text-white' : ''}" style="${bgStyle}" data-year="${y}" data-month="${m}" data-profit="${d.profit}" data-revenue="${d.revenue}" data-items="${d.items}" data-cellval="${cellVal}">${formattedText}</td>`;
+      }
+    }
+
+    grandTotalRaw += rowTotalRaw;
+    grandDaysCount += rowDaysCount;
+
+    let rowTotalDisplay = rowTotalRaw;
+    if (activeMode === "daily" && rowDaysCount > 0) {
+      rowTotalDisplay = rowTotalRaw / rowDaysCount;
+    }
+
+    let rowTotalText = "";
+    if (activeMode === "daily") {
+      rowTotalText = activeMetric === "items" ? rowTotalDisplay.toFixed(1) : `${sym}${rowTotalDisplay.toFixed(1)}`;
+    } else {
+      rowTotalText = activeMetric === "items" ? Math.round(rowTotalDisplay).toLocaleString() : `${sym}${Math.round(rowTotalDisplay).toLocaleString()}`;
+    }
+
+    html += `<td class="matrix-row-total">${rowTotalText}</td>`;
+    html += `</tr>`;
+  });
+
+  html += `</tbody>`;
+
+  // Summary footer row
+  html += `<tfoot><tr class="matrix-summary-row">`;
+  html += `<th>Total</th>`;
+  for (let m = 0; m < 12; m++) {
+    const colVal = activeMode === "daily" && colDaysCount[m] > 0 ? (colTotalsRaw[m] / colDaysCount[m]) : colTotalsRaw[m];
+    let colTotalText = "";
+    if (activeMode === "daily") {
+      colTotalText = activeMetric === "items" ? colVal.toFixed(1) : `${sym}${colVal.toFixed(1)}`;
+    } else {
+      colTotalText = activeMetric === "items" ? Math.round(colVal).toLocaleString() : `${sym}${Math.round(colVal).toLocaleString()}`;
+    }
+    html += `<th>${colTotalText}</th>`;
+  }
+
+  let grandTotalDisplay = grandTotalRaw;
+  if (activeMode === "daily" && grandDaysCount > 0) {
+    grandTotalDisplay = grandTotalRaw / grandDaysCount;
+  }
+  let grandTotalText = "";
+  if (activeMode === "daily") {
+    grandTotalText = activeMetric === "items" ? grandTotalDisplay.toFixed(1) : `${sym}${grandTotalDisplay.toFixed(1)}`;
+  } else {
+    grandTotalText = activeMetric === "items" ? Math.round(grandTotalDisplay).toLocaleString() : `${sym}${Math.round(grandTotalDisplay).toLocaleString()}`;
+  }
+
+  html += `<th class="matrix-grand-total">${grandTotalText}</th>`;
+  html += `</tr></tfoot>`;
+  html += `</table>`;
+
+  container.innerHTML = html;
+
+  // Legend
+  const legendContainer = document.getElementById("finance-matrix-legend");
+  if (legendContainer) {
+    let metricLabel = "Profit";
+    if (activeMetric === "revenue") metricLabel = "Revenue";
+    else if (activeMetric === "items") metricLabel = "Items";
+
+    const formatLegVal = (v) => {
+      if (activeMode === "daily") {
+        return activeMetric === "items" ? v.toFixed(1) : `${sym}${v.toFixed(1)}`;
+      }
+      return activeMetric === "items" ? Math.round(v).toLocaleString() : `${sym}${Math.round(v).toLocaleString()}`;
+    };
+
+    legendContainer.innerHTML = `
+      <span class="matrix-legend-label">Fewer ${metricLabel}</span>
+      <div class="matrix-legend-bar"></div>
+      <span class="matrix-legend-label">More ${metricLabel}</span>
+      <div class="matrix-legend-values">
+        <span>(${formatLegVal(minPositiveVal)}</span>
+        <span>—</span>
+        <span>${formatLegVal(maxPositiveVal)})</span>
+      </div>
+    `;
+  }
+
+  // Bind mouse hover tooltip
+  setupMatrixTooltip(container);
+}
+window.renderFinanceMatrixCard = renderFinanceMatrixCard;
+
+function setupMatrixTooltip(container) {
+  if (container.dataset.tooltipBound) return;
+  container.dataset.tooltipBound = "true";
+
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  let tooltip = document.getElementById("finance-matrix-tooltip");
+  if (!tooltip) {
+    tooltip = document.createElement("div");
+    tooltip.id = "finance-matrix-tooltip";
+    document.body.appendChild(tooltip);
+  }
+
+  container.addEventListener("mouseover", (e) => {
+    const cell = e.target.closest(".matrix-cell.has-data");
+    if (!cell) return;
+
+    const y = cell.getAttribute("data-year");
+    const m = parseInt(cell.getAttribute("data-month"), 10);
+    const profit = parseFloat(cell.getAttribute("data-profit")) || 0;
+    const revenue = parseFloat(cell.getAttribute("data-revenue")) || 0;
+    const items = parseInt(cell.getAttribute("data-items"), 10) || 0;
+
+    const monthName = monthNames[m - 1] || `Month ${m}`;
+    const margin = revenue > 0 ? ((profit / revenue) * 100).toFixed(1) : "0.0";
+    const daysInMonth = new Date(parseInt(y, 10), m, 0).getDate();
+    const dailyProfit = profit / daysInMonth;
+
+    const profitBadge = profit >= 0 
+      ? '<span class="badge" style="font-size: 0.7rem; padding: 2px 6px; background: hsla(145, 80%, 45%, 0.15); color: var(--accent-teal); border: 1px solid hsla(145, 80%, 45%, 0.3);">Profitable</span>'
+      : '<span class="badge" style="font-size: 0.7rem; padding: 2px 6px; background: hsla(0, 80%, 55%, 0.15); color: var(--accent-danger); border: 1px solid hsla(0, 80%, 55%, 0.3);">Net Loss</span>';
+
+    tooltip.innerHTML = `
+      <div class="matrix-tooltip-title">
+        <span>${monthName} ${y}</span>
+        ${profitBadge}
+      </div>
+      <div class="matrix-tooltip-stats">
+        <div class="stat-row">
+          <span>Profit:</span>
+          <strong style="color: ${profit >= 0 ? 'var(--accent-teal)' : 'var(--accent-danger)'};">${formatCurrency(profit)}</strong>
+        </div>
+        <div class="stat-row">
+          <span>Gross Revenue:</span>
+          <strong>${formatCurrency(revenue)}</strong>
+        </div>
+        <div class="stat-row">
+          <span>Sales Items:</span>
+          <strong>${items.toLocaleString()} keys</strong>
+        </div>
+        <div class="stat-row">
+          <span>Profit Margin:</span>
+          <strong>${margin}%</strong>
+        </div>
+        <div class="stat-row">
+          <span>Daily Avg:</span>
+          <strong>${formatCurrency(dailyProfit)}/day</strong>
+        </div>
+      </div>
+    `;
+
+    tooltip.classList.add("visible");
+
+    // Position tooltip safely
+    const rect = cell.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+    let top = rect.top - tooltipRect.height - 10;
+    let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+
+    if (top < 10) {
+      top = rect.bottom + 10;
+    }
+    if (left < 10) left = 10;
+    if (left + tooltipRect.width > window.innerWidth - 10) {
+      left = window.innerWidth - tooltipRect.width - 10;
+    }
+
+    tooltip.style.top = `${top}px`;
+    tooltip.style.left = `${left}px`;
+  });
+
+  container.addEventListener("mouseout", (e) => {
+    const cell = e.target.closest(".matrix-cell.has-data");
+    if (cell) {
+      tooltip.classList.remove("visible");
+    }
+  });
 }
 
 function renderFinanceBenchmark() {

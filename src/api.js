@@ -1209,12 +1209,16 @@ async function dbLoadState() {
           try {
             state.financeOrder = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
             const expectedFinKeys = [
-              "financeMonthly", "financeAverages", "financeOutflow", "costRevenue", "markupAnalysis", "financeBenchmark", "financeTracker"
+              "financeMatrix", "financeMonthly", "financeAverages", "financeOutflow", "costRevenue", "markupAnalysis", "financeBenchmark", "financeTracker"
             ];
             state.financeOrder = state.financeOrder.filter(k => expectedFinKeys.includes(k));
             expectedFinKeys.forEach(k => {
               if (!state.financeOrder.includes(k)) {
-                state.financeOrder.push(k);
+                if (k === "financeMatrix") {
+                  state.financeOrder.unshift(k);
+                } else {
+                  state.financeOrder.push(k);
+                }
               }
             });
             renderFinanceCardsOrder();

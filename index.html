@@ -139,7 +139,7 @@
         </div>
         <div class="version-info" style="text-align: center; font-size: 0.7rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; overflow: hidden; white-space: nowrap;">
           <span class="version-label">GameVault</span>
-          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v2.2.28</a>
+          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v2.2.29</a>
         </div>
 
       </div>
@@ -2266,6 +2266,65 @@
 
             <!-- Financial charts section -->
             <div id="finance-charts-container" class="finance-charts-grid" style="margin-bottom: 24px;">
+              <!-- Matrix Widget: All-Time Financial Matrix -->
+              <div class="chart-card span-3" id="card-chart-financeMatrix" data-figure="financeMatrix" style="margin-bottom: 0;">
+                <div class="card-inner">
+                  <div class="card-front">
+                    <div class="chart-card-header">
+                      <div>
+                        <h4 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                          <i class="fa-solid fa-table-cells" style="color: var(--accent-purple);"></i>
+                          <span>All-Time Insights</span>
+                        </h4>
+                        <span id="finance-matrix-subtitle" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500; margin-top: 2px; display: block;">All-time performance matrix across months and years</span>
+                      </div>
+                      <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                        <!-- Metric switchers: Profit, Revenue, Sales Items -->
+                        <div class="matrix-pill-group" id="finance-matrix-metric-toggles">
+                          <button type="button" class="btn-matrix-pill active" data-metric="profit" title="Show Net Profit">Profit</button>
+                          <button type="button" class="btn-matrix-pill" data-metric="revenue" title="Show Gross Revenue">Revenue</button>
+                          <button type="button" class="btn-matrix-pill" data-metric="items" title="Show Sales Items Quantity">Sales Items</button>
+                        </div>
+                        <!-- Calculation mode switchers: Monthly Totals vs Average per Day -->
+                        <div class="matrix-pill-group" id="finance-matrix-mode-toggles">
+                          <button type="button" class="btn-matrix-pill active" data-mode="totals" title="Monthly Totals">Monthly</button>
+                          <button type="button" class="btn-matrix-pill" data-mode="daily" title="Average Per Day">Avg / Day</button>
+                        </div>
+                        <!-- Year sort order toggle -->
+                        <button type="button" id="btn-finance-matrix-sort" class="btn btn-sm btn-outline" style="padding: 4px 8px; height: 32px; display: inline-flex; align-items: center; justify-content: center;" title="Toggle Year Order (Ascending / Descending)">
+                          <i class="fa-solid fa-arrow-down-1-9"></i>
+                        </button>
+                        <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                        <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                        <div class="card-actions-dropdown">
+                          <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Card options"></i>
+                          <div class="card-actions-menu">
+                            <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                            <button type="button" class="card-actions-item" data-span="1">
+                              <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                            </button>
+                            <button type="button" class="card-actions-item" data-span="2">
+                              <i class="fa-solid fa-table-columns"></i> 2 Columns
+                            </button>
+                            <button type="button" class="card-actions-item" data-span="3">
+                              <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="chart-body" style="padding: 4px 12px 14px 12px; display: flex; flex-direction: column; overflow: visible;">
+                      <div id="finance-matrix-container" class="finance-matrix-container">
+                        <!-- Injected dynamically by JavaScript -->
+                      </div>
+                      <div id="finance-matrix-legend" class="finance-matrix-legend">
+                        <!-- Injected dynamically by JavaScript -->
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <!-- Chart 1: Monthly trend totals -->
               <div class="chart-card" id="card-chart-financeMonthly" data-figure="financeMonthly" style="margin-bottom: 0;">
                 <div class="card-inner">

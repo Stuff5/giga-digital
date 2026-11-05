@@ -1083,7 +1083,7 @@ let state = {
     "stockSpeed", "salesFeed", "stockTurnover", "stockAging"
   ],
   financeOrder: [
-    "financeMonthly", "financeAverages", "financeOutflow", "costRevenue", "markupAnalysis", "financeBenchmark", "financeTracker"
+    "financeMatrix", "financeMonthly", "financeAverages", "financeOutflow", "costRevenue", "markupAnalysis", "financeBenchmark", "financeTracker"
   ],
   dashboardSpans: {
     salesProfit: 2,
@@ -1117,12 +1117,14 @@ let state = {
     markupAnalysis: { visible: true, collapsed: false, chartType: 'bar', groupBy: 'publisher', timeframe: 'global' },
     stockTurnover: { visible: true, collapsed: false, chartType: 'line', timeframe: 'global' },
     stockAging: { visible: true, collapsed: false, chartType: 'bar', supplier: 'all', timeframe: 'global' },
+    financeMatrix: { visible: true, collapsed: false, metric: 'profit', mode: 'totals', sortOrder: 'asc' },
     financeMonthly: { visible: true, collapsed: false },
     financeAverages: { visible: true, collapsed: false, chartType: 'bar', metricType: 'financial', timeframe: 'global' },
     financeOutflow: { visible: true, collapsed: false, timeframe: 'global' },
     financeBenchmark: { visible: true, collapsed: false, yearA: '', yearB: '' }
   },
   financeSpans: {
+    financeMatrix: 3,
     financeMonthly: 2,
     financeAverages: 1,
     financeOutflow: 1,
@@ -1800,12 +1802,16 @@ function loadStateFromStorage() {
       try {
         state.financeOrder = JSON.parse(storedFinanceOrder);
         const expectedFinKeys = [
-          "financeMonthly", "financeAverages", "financeOutflow", "costRevenue", "markupAnalysis", "financeBenchmark", "financeTracker"
+          "financeMatrix", "financeMonthly", "financeAverages", "financeOutflow", "costRevenue", "markupAnalysis", "financeBenchmark", "financeTracker"
         ];
         state.financeOrder = state.financeOrder.filter(k => expectedFinKeys.includes(k));
         expectedFinKeys.forEach(k => {
           if (!state.financeOrder.includes(k)) {
-            state.financeOrder.push(k);
+            if (k === "financeMatrix") {
+              state.financeOrder.unshift(k);
+            } else {
+              state.financeOrder.push(k);
+            }
           }
         });
       } catch (e) {
@@ -1830,6 +1836,9 @@ function loadStateFromStorage() {
         console.error("Error parsing finance spans, using defaults:", e);
       }
     }
+    if (!state.financeSpans.financeMatrix) {
+      state.financeSpans.financeMatrix = 3;
+    }
 
     const storedWidgetSettings = localStorage.getItem("gv_widget_settings");
     if (storedWidgetSettings) {
@@ -1838,6 +1847,9 @@ function loadStateFromStorage() {
       } catch (e) {
         console.error("Error parsing widget settings, using defaults:", e);
       }
+    }
+    if (!state.widgetSettings.financeMatrix) {
+      state.widgetSettings.financeMatrix = { visible: true, collapsed: false, metric: 'profit', mode: 'totals', sortOrder: 'asc' };
     }
 
     if (state.widgetSettings && state.visibleFigures) {
