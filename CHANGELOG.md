@@ -5,6 +5,15 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.30] - 2026-11-06
+### Fixed & Improved
+- **Key Supplier Filter in Sales Ledger**:
+  - Fixed issue where selecting a supplier from the "Key Supplier" filter (`#sales-filter-supplier`) on the Sales Ledger tab displayed an empty table.
+  - Filter logic in `getFilteredSales()` now resolves the acquisition source from the linked inventory item via `sale.inventoryId` (with fallback to direct sale properties) using fast, case-insensitive comparison.
+  - Isolated page-specific filters so that filtering by Key Supplier or platform in the Sales Ledger does not unexpectedly affect global Dashboard figures.
+  - Added color-coded key supplier tags with matching indicator dots to each row under the game title in the Sales Ledger table.
+  - Enhanced sales search bar to index license keys and supplier names alongside game title, platform, and notes.
+
 ## [v2.2.29] - 2026-11-05
 ### Added
 - **All-Time Financial Matrix Widget (Finances View)**:

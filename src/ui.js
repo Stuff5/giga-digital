@@ -5,7 +5,7 @@
 // Asynchronously loads critical HTML templates (modals.html) on application boot
 window.loadHTMLTemplates = async () => {
   try {
-    const ver = window.APP_VERSION || "v2.2.29";
+    const ver = window.APP_VERSION || "v2.2.30";
     const res = await fetch(`templates/modals.html?v=${ver}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const html = await res.text();
@@ -33,7 +33,7 @@ window.ensureHelpModalLoaded = async () => {
 
   _helpModalLoadingPromise = (async () => {
     try {
-      const ver = window.APP_VERSION || "v2.2.29";
+      const ver = window.APP_VERSION || "v2.2.30";
       const res = await fetch(`templates/help-modal.html?v=${ver}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -6332,7 +6332,7 @@ function updateUI() {
   const dbSupplierSelect = document.getElementById("db-filter-supplier");
   const dbSupplier = dbSupplierSelect ? dbSupplierSelect.value : "all";
   
-  let dbFilteredSales = filteredSales;
+  let dbFilteredSales = getFilteredSales({ ignorePageFilters: true });
   let dbFilteredInventory = state.inventory;
   
   if (dbSupplier !== "all") {
@@ -6340,11 +6340,15 @@ function updateUI() {
     state.inventory.forEach(item => {
       inventoryMap.set(item.id, item);
     });
-    dbFilteredSales = filteredSales.filter(sale => {
+    dbFilteredSales = dbFilteredSales.filter(sale => {
       const game = inventoryMap.get(sale.inventoryId);
-      return game && game.source === dbSupplier;
+      const sup = (game && (game.source || game.supplier)) || sale.source || sale.supplier || "";
+      return sup.trim().toLowerCase() === dbSupplier.trim().toLowerCase();
     });
-    dbFilteredInventory = state.inventory.filter(item => item.source === dbSupplier);
+    dbFilteredInventory = state.inventory.filter(item => {
+      const sup = String(item.source || item.supplier || "").trim().toLowerCase();
+      return sup === dbSupplier.trim().toLowerCase();
+    });
   }
 
   // ONLY execute rendering logic relevant to the active view
@@ -6478,6 +6482,18 @@ function populateSupplierDropdowns() {
     if (typeof s === "string") return { name: s, enabled: true };
     return { name: s.name || "", enabled: s.enabled !== false };
   }).filter(s => s.name.trim() !== "");
+
+  // Also ensure any supplier name present in inventory items is available in dropdowns
+  const knownSuppliers = new Set(normalizedSuppliers.map(s => s.name.trim().toLowerCase()));
+  if (Array.isArray(state.inventory)) {
+    state.inventory.forEach(item => {
+      const src = String(item.source || item.supplier || "").trim();
+      if (src && !knownSuppliers.has(src.toLowerCase())) {
+        normalizedSuppliers.push({ name: src, enabled: true });
+        knownSuppliers.add(src.toLowerCase());
+      }
+    });
+  }
 
   // Dropdowns are always sorted alphabetically (A-Z) for clean UX
   const dropdownSuppliers = [...normalizedSuppliers].sort((a, b) => a.name.localeCompare(b.name));
@@ -8896,7 +8912,7 @@ window.triggerTogglePlatform = async function(name) {
 };
 
 // Filters sales database based on date button selection & search inputs
-function getFilteredSales() {
+function getFilteredSales(options = {}) {
   let list = [...state.sales];
   const now = new Date();
 
@@ -8939,28 +8955,70 @@ function getFilteredSales() {
     }
   }
 
-  // B. Specific Page Filter: Platform
-  const platformFilter = document.getElementById("sales-filter-platform").value;
-  if (platformFilter !== "all") {
-    list = list.filter(item => item.platformSold.toLowerCase() === platformFilter.toLowerCase());
+  // If ignorePageFilters is true, return early (used for dashboard calculations)
+  if (options && options.ignorePageFilters) {
+    return list.sort((a, b) => new Date(b.saleDate) - new Date(a.saleDate));
   }
 
-  // B2. Specific Page Filter: Supplier
+  // Pre-index inventory for fast O(1) supplier and key lookups
+  const inventoryMap = new Map();
+  if (state.inventory && Array.isArray(state.inventory)) {
+    state.inventory.forEach(inv => {
+      if (inv && inv.id) inventoryMap.set(inv.id, inv);
+    });
+  }
+  if (state.recycleBin && Array.isArray(state.recycleBin.inventory)) {
+    state.recycleBin.inventory.forEach(inv => {
+      if (inv && inv.id && !inventoryMap.has(inv.id)) inventoryMap.set(inv.id, inv);
+    });
+  }
+
+  // B. Specific Page Filter: Platform
+  const platformFilterEl = document.getElementById("sales-filter-platform");
+  const platformFilter = platformFilterEl ? platformFilterEl.value : "all";
+  if (platformFilter !== "all") {
+    list = list.filter(item => item.platformSold && item.platformSold.toLowerCase() === platformFilter.toLowerCase());
+  }
+
+  // B2. Specific Page Filter: Key Supplier
   const supplierFilterEl = document.getElementById("sales-filter-supplier");
   const supplierFilter = supplierFilterEl ? supplierFilterEl.value : "all";
   if (supplierFilter !== "all") {
-    list = list.filter(item => item.source === supplierFilter);
+    const targetSup = supplierFilter.trim().toLowerCase();
+    list = list.filter(sale => {
+      // 1. Check direct property on sale if present
+      const directSource = String(sale.source || sale.supplier || "").trim().toLowerCase();
+      if (directSource === targetSup) return true;
+
+      // 2. Check linked inventory item
+      if (sale.inventoryId) {
+        const invItem = inventoryMap.get(sale.inventoryId);
+        if (invItem) {
+          const invSource = String(invItem.source || invItem.supplier || "").trim().toLowerCase();
+          if (invSource === targetSup) return true;
+        }
+      }
+      return false;
+    });
   }
 
   // C. Search Input Filter
-  const searchInput = document.getElementById("sales-search-input").value.toLowerCase().trim();
+  const searchInputEl = document.getElementById("sales-search-input");
+  const searchInput = searchInputEl ? searchInputEl.value.toLowerCase().trim() : "";
   if (searchInput) {
-    list = list.filter(item => 
-      item.title.toLowerCase().includes(searchInput) ||
-      item.platform.toLowerCase().includes(searchInput) ||
-      item.platformSold.toLowerCase().includes(searchInput) ||
-      (item.notes && item.notes.toLowerCase().includes(searchInput))
-    );
+    list = list.filter(item => {
+      const invItem = inventoryMap.get(item.inventoryId);
+      const keyStr = invItem ? String(invItem.key || "") : "";
+      const sourceStr = (invItem && (invItem.source || invItem.supplier)) || item.source || item.supplier || "";
+      return (
+        (item.title && item.title.toLowerCase().includes(searchInput)) ||
+        (item.platform && item.platform.toLowerCase().includes(searchInput)) ||
+        (item.platformSold && item.platformSold.toLowerCase().includes(searchInput)) ||
+        (keyStr && keyStr.toLowerCase().includes(searchInput)) ||
+        (sourceStr && String(sourceStr).toLowerCase().includes(searchInput)) ||
+        (item.notes && item.notes.toLowerCase().includes(searchInput))
+      );
+    });
   }
 
   return list.sort((a, b) => new Date(b.saleDate) - new Date(a.saleDate)); // newest sales first
@@ -10456,9 +10514,24 @@ function buildSalesRowHTML(sale, inventoryMap) {
   const saleImgUrl = (gameInInv && gameInInv.imageUrl) 
     || sale.imageUrl 
     || (typeof window.resolveGameArtwork === "function" ? window.resolveGameArtwork(sale) : null);
+
+  const sourceStr = String((gameInInv && (gameInInv.source || gameInInv.supplier)) || sale.source || sale.supplier || "").trim();
+  let supplierBadge = "";
+  if (sourceStr) {
+    const supplierObj = (state.suppliers && state.suppliers.find(s => s && s.name && s.name.trim().toLowerCase() === sourceStr.toLowerCase()));
+    const colorName = supplierObj ? (supplierObj.color || getSupplierColorName(sourceStr)) : getSupplierColorName(sourceStr);
+    const colorPreset = (typeof SUPPLIER_COLORS !== "undefined" && SUPPLIER_COLORS.find(c => c.name === colorName)) || (typeof SUPPLIER_COLORS !== "undefined" ? SUPPLIER_COLORS[0] : { name: "slate", value: "#64748b" });
+    supplierBadge = `
+      <span class="supplier-tag" style="background-color: ${colorPreset.value}15; border-color: ${colorPreset.value}30; color: ${colorPreset.value}; padding: 1px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; width: fit-content; margin-top: 2px;" title="Key Supplier: ${escapeHTML(sourceStr)}">
+        <span class="supplier-dot" style="background-color: ${colorPreset.value}; width: 5px; height: 5px;"></span>
+        ${escapeHTML(sourceStr)}
+      </span>
+    `;
+  }
+
   const titleCell = saleImgUrl 
-    ? `<div class="game-title-cell"><img src="${escapeHTML(saleImgUrl)}" class="game-thumbnail" alt="${escapeHTML(sale.title)}" loading="lazy" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';"><div class="game-thumbnail-placeholder" style="display: none; background: ${getHashGradient(sale.title)};">${escapeHTML(initials)}</div><strong>${escapeHTML(sale.title)}</strong></div>`
-    : `<div class="game-title-cell"><div class="game-thumbnail-placeholder" style="background: ${getHashGradient(sale.title)};">${escapeHTML(initials)}</div><strong>${escapeHTML(sale.title)}</strong></div>`;
+    ? `<div class="game-title-cell"><img src="${escapeHTML(saleImgUrl)}" class="game-thumbnail" alt="${escapeHTML(sale.title)}" loading="lazy" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';"><div class="game-thumbnail-placeholder" style="display: none; background: ${getHashGradient(sale.title)};">${escapeHTML(initials)}</div><div style="display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px;"><strong>${escapeHTML(sale.title)}</strong>${supplierBadge}</div></div>`
+    : `<div class="game-title-cell"><div class="game-thumbnail-placeholder" style="background: ${getHashGradient(sale.title)};">${escapeHTML(initials)}</div><div style="display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px;"><strong>${escapeHTML(sale.title)}</strong>${supplierBadge}</div></div>`;
 
   const isDisputed = sale.disputed === true;
   const isSupplierRefunded = sale.supplierRefunded === true;

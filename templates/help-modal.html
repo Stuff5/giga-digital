@@ -447,6 +447,19 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- v2.2.30 -->
+                <div class="changelog-release-card" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.2.30 - Sales Ledger Key Supplier Filter Fix</strong>
+                    <span style="font-size: 0.75rem; color: var(--accent-cyan); background: rgba(0, 229, 255, 0.08); padding: 2px 8px; border-radius: 4px; font-weight: 600;">2026-11-06</span>
+                  </div>
+                  <ul style="margin: 0; padding-left: 18px; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+                    <li><strong>Key Supplier Filtering in Sales Ledger:</strong> Fixed an issue where selecting a supplier from the Key Supplier filter in the Sales Ledger tab returned no sales. Filtering now properly resolves the acquisition supplier from the associated inventory item via linked IDs.</li>
+                    <li><strong>Supplier Badges in Sales Ledger:</strong> Each sales transaction row now displays a color-coded supplier tag underneath the game title, allowing instant identification of the key's purchase source.</li>
+                    <li><strong>Multi-Field Sales Search:</strong> The sales ledger search bar now searches across license keys and supplier names in addition to title, platform, and notes.</li>
+                  </ul>
+                </div>
+
                 <!-- v2.2.29 -->
                 <div class="changelog-release-card" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
