@@ -5,7 +5,7 @@
 // Asynchronously loads critical HTML templates (modals.html) on application boot
 window.loadHTMLTemplates = async () => {
   try {
-    const ver = window.APP_VERSION || "v2.2.30";
+    const ver = window.APP_VERSION || "v2.2.31";
     const res = await fetch(`templates/modals.html?v=${ver}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const html = await res.text();
@@ -33,7 +33,7 @@ window.ensureHelpModalLoaded = async () => {
 
   _helpModalLoadingPromise = (async () => {
     try {
-      const ver = window.APP_VERSION || "v2.2.30";
+      const ver = window.APP_VERSION || "v2.2.31";
       const res = await fetch(`templates/help-modal.html?v=${ver}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -2086,6 +2086,9 @@ function initEventHandlers() {
         setUnsyncedChanges(true);
       }
       handleInventoryFilterChange();
+      if (typeof getFilteredSales === "function" && typeof renderSalesTable === "function") {
+        renderSalesTable(getFilteredSales());
+      }
     });
   }
 
@@ -10515,23 +10518,52 @@ function buildSalesRowHTML(sale, inventoryMap) {
     || sale.imageUrl 
     || (typeof window.resolveGameArtwork === "function" ? window.resolveGameArtwork(sale) : null);
 
+  const titleCell = saleImgUrl 
+    ? `<div class="game-title-cell"><img src="${escapeHTML(saleImgUrl)}" class="game-thumbnail" alt="${escapeHTML(sale.title)}" loading="lazy" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';"><div class="game-thumbnail-placeholder" style="display: none; background: ${getHashGradient(sale.title)};">${escapeHTML(initials)}</div><strong>${escapeHTML(sale.title)}</strong></div>`
+    : `<div class="game-title-cell"><div class="game-thumbnail-placeholder" style="background: ${getHashGradient(sale.title)};">${escapeHTML(initials)}</div><strong>${escapeHTML(sale.title)}</strong></div>`;
+
   const sourceStr = String((gameInInv && (gameInInv.source || gameInInv.supplier)) || sale.source || sale.supplier || "").trim();
-  let supplierBadge = "";
+  let supplierCell = `<span style="color: var(--text-muted); font-size: 0.8rem;">-</span>`;
   if (sourceStr) {
     const supplierObj = (state.suppliers && state.suppliers.find(s => s && s.name && s.name.trim().toLowerCase() === sourceStr.toLowerCase()));
     const colorName = supplierObj ? (supplierObj.color || getSupplierColorName(sourceStr)) : getSupplierColorName(sourceStr);
     const colorPreset = (typeof SUPPLIER_COLORS !== "undefined" && SUPPLIER_COLORS.find(c => c.name === colorName)) || (typeof SUPPLIER_COLORS !== "undefined" ? SUPPLIER_COLORS[0] : { name: "slate", value: "#64748b" });
-    supplierBadge = `
-      <span class="supplier-tag" style="background-color: ${colorPreset.value}15; border-color: ${colorPreset.value}30; color: ${colorPreset.value}; padding: 1px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; width: fit-content; margin-top: 2px;" title="Key Supplier: ${escapeHTML(sourceStr)}">
-        <span class="supplier-dot" style="background-color: ${colorPreset.value}; width: 5px; height: 5px;"></span>
-        ${escapeHTML(sourceStr)}
-      </span>
-    `;
-  }
+    
+    const resolvedSupLogo = (supplierObj && supplierObj.logo) 
+      || (state.supplierLogos && (state.supplierLogos[sourceStr] || (typeof getSupplierLogoCaseInsensitive === "function" && getSupplierLogoCaseInsensitive(state.supplierLogos, sourceStr)))) 
+      || (typeof getSupplierAutoLogo === "function" ? getSupplierAutoLogo(sourceStr) : null);
 
-  const titleCell = saleImgUrl 
-    ? `<div class="game-title-cell"><img src="${escapeHTML(saleImgUrl)}" class="game-thumbnail" alt="${escapeHTML(sale.title)}" loading="lazy" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';"><div class="game-thumbnail-placeholder" style="display: none; background: ${getHashGradient(sale.title)};">${escapeHTML(initials)}</div><div style="display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px;"><strong>${escapeHTML(sale.title)}</strong>${supplierBadge}</div></div>`
-    : `<div class="game-title-cell"><div class="game-thumbnail-placeholder" style="background: ${getHashGradient(sale.title)};">${escapeHTML(initials)}</div><div style="display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px;"><strong>${escapeHTML(sale.title)}</strong>${supplierBadge}</div></div>`;
+    const escapedSrcForJS = sourceStr.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+    const escapedSrc = escapeHTML(sourceStr);
+
+    if (state.supplierDisplayMode === "logo") {
+      if (resolvedSupLogo) {
+        supplierCell = `
+          <img src="${escapeHTML(resolvedSupLogo)}" class="supplier-logo-thumbnail" style="width: 26px; height: 26px; vertical-align: middle; border-radius: 4px; object-fit: contain; background-color: var(--bg-card); border: 1px solid var(--border-color); padding: 1px;" title="${escapedSrc}" alt="${escapedSrc}" onerror="if(!this.dataset.ddTried){this.dataset.ddTried='1';const d=window.resolveSupplierDomain?window.resolveSupplierDomain('${escapeHTML(escapedSrcForJS)}'):'';if(d){this.src='https://icons.duckduckgo.com/ip3/'+encodeURIComponent(d)+'.ico';return;}}this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-flex';">
+          <div class="supplier-logo-placeholder" style="display: none; width: 26px; height: 26px; border-radius: 4px; background-color: ${colorPreset.value}20; color: ${colorPreset.value}; border: 1px solid ${colorPreset.value}40; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: bold; vertical-align: middle;" title="${escapedSrc}">
+            ${escapedSrc.charAt(0).toUpperCase()}
+          </div>
+        `;
+      } else {
+        supplierCell = `
+          <div class="supplier-logo-placeholder" style="width: 26px; height: 26px; border-radius: 4px; background-color: ${colorPreset.value}20; color: ${colorPreset.value}; border: 1px solid ${colorPreset.value}40; display: inline-flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: bold; vertical-align: middle;" title="${escapedSrc}">
+            ${escapedSrc.charAt(0).toUpperCase()}
+          </div>
+        `;
+      }
+    } else {
+      const logoHtml = resolvedSupLogo
+        ? `<img src="${escapeHTML(resolvedSupLogo)}" class="supplier-logo-thumbnail" style="width: 20px; height: 20px; vertical-align: middle; border-radius: 4px; object-fit: contain; background-color: var(--bg-card); border: 1px solid var(--border-color); padding: 1px; flex-shrink: 0;" title="${escapedSrc}" alt="${escapedSrc}" onerror="if(!this.dataset.ddTried){this.dataset.ddTried='1';const d=window.resolveSupplierDomain?window.resolveSupplierDomain('${escapeHTML(escapedSrcForJS)}'):'';if(d){this.src='https://icons.duckduckgo.com/ip3/'+encodeURIComponent(d)+'.ico';return;}}this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-flex';"><div class="supplier-logo-placeholder" style="display: none; width: 20px; height: 20px; border-radius: 4px; background-color: ${colorPreset.value}20; color: ${colorPreset.value}; border: 1px solid ${colorPreset.value}40; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: bold; vertical-align: middle; flex-shrink: 0;" title="${escapedSrc}">${escapedSrc.charAt(0).toUpperCase()}</div>`
+        : `<span class="supplier-dot" style="background-color: ${colorPreset.value}; width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0;"></span>`;
+
+      supplierCell = `
+        <div style="display: inline-flex; align-items: center; gap: 7px; justify-content: center; vertical-align: middle;">
+          ${logoHtml}
+          <span style="font-size: 0.82rem; font-weight: 500; color: var(--text-main); white-space: nowrap;">${escapedSrc}</span>
+        </div>
+      `;
+    }
+  }
 
   const isDisputed = sale.disputed === true;
   const isSupplierRefunded = sale.supplierRefunded === true;
@@ -10579,6 +10611,7 @@ function buildSalesRowHTML(sale, inventoryMap) {
       <td>${titleCell}</td>
       <td><span class="platform-indicator"><i class="fa-solid fa-gamepad" style="font-size: 0.8rem; margin-right: 6px;"></i> ${escapeHTML(sale.platform)}</span></td>
       <td>${keyCell}</td>
+      <td style="text-align: center;">${supplierCell}</td>
       <td>${costCell}</td>
       <td>${sellPriceCell}</td>
       <td><span class="tag-platform-sold" style="background-color: hsla(270, 85%, 60%, 0.1); border: 1px solid hsla(270, 85%, 60%, 0.2); color: var(--accent-purple); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight:600;">${escapeHTML(sale.platformSold)}</span></td>
@@ -10662,7 +10695,7 @@ function renderSalesTable(salesList) {
   updateSalesLedgerSummary(salesList);
 
   if (salesList.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="10" class="text-center" style="text-align: center; padding: 30px; color: var(--text-muted);">No sales recorded in this period.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11" class="text-center" style="text-align: center; padding: 30px; color: var(--text-muted);">No sales recorded in this period.</td></tr>`;
     document.getElementById("sales-count-text").textContent = `Showing 0 sales`;
     const container = document.getElementById("sales-pagination");
     if (container) container.innerHTML = "";
@@ -10674,6 +10707,13 @@ function renderSalesTable(salesList) {
   state.inventory.forEach(item => {
     inventoryMap.set(item.id, item);
   });
+  if (state.recycleBin && Array.isArray(state.recycleBin.inventory)) {
+    state.recycleBin.inventory.forEach(item => {
+      if (item && item.id && !inventoryMap.has(item.id)) {
+        inventoryMap.set(item.id, item);
+      }
+    });
+  }
 
   const tableContainer = document.getElementById("sales-table-container");
   const isVirtual = state.salesPageSize >= 100000;
@@ -10706,7 +10746,7 @@ function renderSalesTable(salesList) {
       let tbodyContent = "";
 
       if (topSpacerHeight > 0) {
-        tbodyContent += `<tr style="height: ${topSpacerHeight}px; line-height: 0; font-size: 0;"><td colspan="10" style="padding: 0; border: none; height: ${topSpacerHeight}px; line-height: 0; font-size: 0;"></td></tr>`;
+        tbodyContent += `<tr style="height: ${topSpacerHeight}px; line-height: 0; font-size: 0;"><td colspan="11" style="padding: 0; border: none; height: ${topSpacerHeight}px; line-height: 0; font-size: 0;"></td></tr>`;
       }
 
       const slicedItems = salesList.slice(startIndex, endIndex);
@@ -10716,7 +10756,7 @@ function renderSalesTable(salesList) {
       });
 
       if (bottomSpacerHeight > 0) {
-        tbodyContent += `<tr style="height: ${bottomSpacerHeight}px; line-height: 0; font-size: 0;"><td colspan="10" style="padding: 0; border: none; height: ${bottomSpacerHeight}px; line-height: 0; font-size: 0;"></td></tr>`;
+        tbodyContent += `<tr style="height: ${bottomSpacerHeight}px; line-height: 0; font-size: 0;"><td colspan="11" style="padding: 0; border: none; height: ${bottomSpacerHeight}px; line-height: 0; font-size: 0;"></td></tr>`;
       }
 
       tbody.innerHTML = tbodyContent;

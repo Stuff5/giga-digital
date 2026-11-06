@@ -5,6 +5,15 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.31] - 2026-11-06
+### Added & Improved
+- **Dedicated Supplier Column in Sales Ledger**:
+  - Replaced the inline title badge in the Sales Ledger table (`#sales-table`) with a dedicated table column for **Supplier**.
+  - Renders supplier brand logos (with automatic fallback to stylized monogram avatars or colored dot indicators) alongside supplier names.
+  - Supports supplier display preference switching ("Show Name" with logo vs. "Show Logo" only).
+  - Aligned column alignment, spacing, and responsive padding across desktop, tablet, and mobile views.
+  - Updated empty-state and virtual-scrolling spacer row `colspan` values to match the 11-column layout.
+
 ## [v2.2.30] - 2026-11-06
 ### Fixed & Improved
 - **Key Supplier Filter in Sales Ledger**:
