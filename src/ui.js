@@ -5,7 +5,7 @@
 // Asynchronously loads critical HTML templates (modals.html) on application boot
 window.loadHTMLTemplates = async () => {
   try {
-    const ver = window.APP_VERSION || "v2.2.44";
+    const ver = window.APP_VERSION || "v2.2.45";
     const res = await fetch(`templates/modals.html?v=${ver}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const html = await res.text();
@@ -33,7 +33,7 @@ window.ensureHelpModalLoaded = async () => {
 
   _helpModalLoadingPromise = (async () => {
     try {
-      const ver = window.APP_VERSION || "v2.2.44";
+      const ver = window.APP_VERSION || "v2.2.45";
       const res = await fetch(`templates/help-modal.html?v=${ver}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -12269,10 +12269,6 @@ function bindDashboardCardActions() {
     }
   };
 
-  const overviewRow = document.getElementById("dashboard-period-summary-row");
-  if (overviewRow) {
-    overviewRow.addEventListener("click", handleCardActionClick);
-  }
   if (container) {
     container.addEventListener("click", handleCardActionClick);
   }

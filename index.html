@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=68">
+  <link rel="stylesheet" href="styles.css?v=69">
   
   <!-- Early theme application to prevent FOUC / light theme flicker -->
   <script>
@@ -139,7 +139,7 @@
         </div>
         <div class="version-info" style="text-align: center; font-size: 0.7rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; overflow: hidden; white-space: nowrap;">
           <span class="version-label">GameVault</span>
-          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v2.2.44</a>
+          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v2.2.45</a>
         </div>
 
       </div>
@@ -396,52 +396,11 @@
                       <div class="metric-icon" style="position: static; font-size: 1.25rem; opacity: 0.8; width: auto; height: auto; background: none; display: flex; align-items: center; justify-content: center;">
                         <i class="fa-solid fa-calendar-day" style="color: var(--accent-teal);"></i>
                       </div>
-                      <div class="card-actions-dropdown" style="margin-left: 2px;">
-                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options" style="cursor: pointer; opacity: 0.7; font-size: 0.95rem;"></i>
-                        <div class="card-actions-menu">
-                          <button type="button" class="card-actions-item btn-widget-configure">
-                            <i class="fa-solid fa-sliders"></i> Configure
-                          </button>
-                          <button type="button" class="card-actions-item btn-widget-maximize">
-                            <i class="fa-solid fa-expand"></i> Maximize
-                          </button>
-                        </div>
-                      </div>
                     </div>
                   </div>
                   <div class="chart-body" style="flex: 1; min-height: 130px; position: relative;">
                     <canvas id="dailyProfitMonthChart"></canvas>
                   </div>
-                </div>
-                <div class="card-back">
-                  <form class="widget-config-form" data-widget="dailyProfitMonth">
-                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
-                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
-                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
-                    </div>
-                    <div class="config-form-body">
-                      <div class="config-field-group">
-                        <label for="config-dailyProfitMonth-chartType">Chart Type</label>
-                        <select id="config-dailyProfitMonth-chartType" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
-                          <option value="bar">Bar Chart</option>
-                          <option value="line">Line Chart</option>
-                        </select>
-                      </div>
-                      <div class="config-field-group">
-                        <label for="config-dailyProfitMonth-timeframe">Time Period</label>
-                        <select id="config-dailyProfitMonth-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
-                          <option value="global">Global Dashboard Filter</option>
-                          <option value="30">Last 30 Days</option>
-                          <option value="90">Last 90 Days</option>
-                          <option value="year">This Year</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div class="config-form-actions">
-                      <button type="submit" class="btn-widget-save">Save Changes</button>
-                      <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
-                    </div>
-                  </form>
                 </div>
               </div>
             </div>
@@ -4141,13 +4100,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=109"></script>
-  <script src="src/state.js?v=109"></script>
-  <script src="src/api.js?v=109"></script>
-  <script src="src/charts.js?v=109"></script>
-  <script src="src/ui.js?v=109"></script>
-  <script src="src/ai.js?v=109"></script>
-  <script src="src/importer.js?v=109"></script>
-  <script src="app.js?v=109"></script>
+  <script src="config.js?v=110"></script>
+  <script src="src/state.js?v=110"></script>
+  <script src="src/api.js?v=110"></script>
+  <script src="src/charts.js?v=110"></script>
+  <script src="src/ui.js?v=110"></script>
+  <script src="src/ai.js?v=110"></script>
+  <script src="src/importer.js?v=110"></script>
+  <script src="app.js?v=110"></script>
 </body>
 </html>

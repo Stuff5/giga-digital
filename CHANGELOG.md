@@ -5,6 +5,12 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.45] - 2026-11-07
+### Changed
+- **Removed 3-Dots Options Menu from Daily Profit Overview Card**:
+  - Removed the 3-dots action dropdown (`.card-actions-dropdown`) and unneeded configuration flip structure from the **Daily Profit** overview container.
+  - Restored clean visual symmetry across the entire top row: all three overview cards (Performance Summary, Inventory Status, and Daily Profit) now share an identical header layout with drag handle, title, reordering chevrons, and accent metric icon.
+
 ## [v2.2.44] - 2026-11-07
 ### Added
 - **Daily Profit 3-Dots Options Menu & Fullscreen Maximize**:
