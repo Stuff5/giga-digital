@@ -1032,7 +1032,8 @@ let state = {
     topBestsellersSales: true,
     topPeakProfit: true,
     topAverageProfit: true,
-    dailyProfitMonth: true
+    dailyProfitMonth: true,
+    dayOfWeek: true
   },
   metricOrder: [],
   supMetricOrder: [],
@@ -1080,7 +1081,7 @@ let state = {
   menuOrder: ["dashboard", "inventory", "sales", "finance", "suppliers", "platforms", "entries", "recycle", "settings"],
   dashboardOverviewOrder: ["performance", "inventory", "efficiency"],
   dashboardOrder: [
-    "salesProfit", "platformSplit", "supplierSplit", "topBestsellers", "topBestsellersRevenue", "topBestsellersSales", "topPeakProfit", "topAverageProfit", "dailyProfitMonth",
+    "salesProfit", "platformSplit", "supplierSplit", "topBestsellers", "topBestsellersRevenue", "topBestsellersSales", "topPeakProfit", "topAverageProfit", "dailyProfitMonth", "dayOfWeek",
     "stockSpeed", "salesFeed", "stockTurnover", "stockAging"
   ],
   financeOrder: [
@@ -1096,6 +1097,7 @@ let state = {
     topPeakProfit: 3,
     topAverageProfit: 3,
     dailyProfitMonth: 3,
+    dayOfWeek: 3,
     stockSpeed: 1,
     salesFeed: 2,
     stockTurnover: 3,
@@ -1112,6 +1114,7 @@ let state = {
     topPeakProfit: { visible: true, collapsed: false, limit: 5, metric: 'peakProfit', timeframe: 'global', coverStyle: 'cover' },
     topAverageProfit: { visible: true, collapsed: false, limit: 5, metric: 'avgProfit', minSales: 1, timeframe: 'global', coverStyle: 'cover' },
     dailyProfitMonth: { visible: true, collapsed: false, chartType: 'bar', timeframe: 'global' },
+    dayOfWeek: { visible: true, collapsed: false, chartType: 'bar', metric: 'profit', timeframe: 'global' },
     stockSpeed: { visible: true, collapsed: false, chartType: 'doughnut', timeframe: 'global' },
     salesFeed: { visible: true, collapsed: false, limit: 5, timeframe: 'global' },
     financeTracker: { visible: true, collapsed: false, timeframe: 'global' },
@@ -1172,6 +1175,7 @@ let supplierSplitChartInstance = null;
 let supplierRoiMatrixChartInstance = null;
 let supplierProfitShareChartInstance = null;
 let dailyProfitMonthChartInstance = null;
+let dayOfWeekChartInstance = null;
 let stockSpeedChartInstance = null;
 let markupAnalysisChartInstance = null;
 let stockTurnoverChartInstance = null;
@@ -1487,6 +1491,7 @@ function loadStateFromStorage() {
           topPeakProfit: true,
           topAverageProfit: true,
           dailyProfitMonth: true,
+          dayOfWeek: true,
           ...parsed
         };
       } catch (e) {
@@ -1503,7 +1508,8 @@ function loadStateFromStorage() {
         topBestsellersSales: true,
         topPeakProfit: true,
         topAverageProfit: true,
-        dailyProfitMonth: true
+        dailyProfitMonth: true,
+        dayOfWeek: true
       };
     }
 
@@ -1784,7 +1790,7 @@ function loadStateFromStorage() {
       try {
         state.dashboardOrder = JSON.parse(storedDashboardOrder);
         const expectedKeys = [
-          "salesProfit", "platformSplit", "supplierSplit", "topBestsellers", "topBestsellersRevenue", "topBestsellersSales", "topPeakProfit", "topAverageProfit", "dailyProfitMonth",
+          "salesProfit", "platformSplit", "supplierSplit", "topBestsellers", "topBestsellersRevenue", "topBestsellersSales", "topPeakProfit", "topAverageProfit", "dailyProfitMonth", "dayOfWeek",
           "stockSpeed", "salesFeed", "stockTurnover", "stockAging"
         ];
         state.dashboardOrder = state.dashboardOrder.filter(k => expectedKeys.includes(k));
@@ -1861,6 +1867,9 @@ function loadStateFromStorage() {
     if (!state.financeSpans.financeMatrix) {
       state.financeSpans.financeMatrix = 3;
     }
+    if (!state.dashboardSpans.dayOfWeek) {
+      state.dashboardSpans.dayOfWeek = 3;
+    }
 
     const storedWidgetSettings = localStorage.getItem("gv_widget_settings");
     if (storedWidgetSettings) {
@@ -1872,6 +1881,9 @@ function loadStateFromStorage() {
     }
     if (!state.widgetSettings.financeMatrix) {
       state.widgetSettings.financeMatrix = { visible: true, collapsed: false, metric: 'profit', mode: 'totals', sortOrder: 'asc' };
+    }
+    if (!state.widgetSettings.dayOfWeek) {
+      state.widgetSettings.dayOfWeek = { visible: true, collapsed: false, chartType: 'bar', metric: 'profit', timeframe: 'global' };
     }
 
     if (state.widgetSettings && state.visibleFigures) {

@@ -876,6 +876,329 @@ function renderDailyProfitMonthChart(filteredSalesList) {
   });
 }
 
+function renderDayOfWeekChart(filteredSalesList) {
+  if (typeof Chart === 'undefined') {
+    console.warn("Chart.js is not loaded. Skipping day of week chart rendering.");
+    return;
+  }
+  const canvas = document.getElementById("dayOfWeekChart");
+  if (!canvas) {
+    console.warn("dayOfWeekChart canvas not found. Skipping chart rendering.");
+    return;
+  }
+  const ctx = canvas.getContext("2d");
+
+  // Destroy previous instance to avoid hover flickering / canvas re-use errors
+  if (dayOfWeekChartInstance) {
+    try {
+      dayOfWeekChartInstance.destroy();
+      dayOfWeekChartInstance = null;
+    } catch (e) {
+      console.error("Error destroying dayOfWeekChartInstance:", e);
+    }
+  }
+
+  const wSales = getWidgetFilteredSales("dayOfWeek", filteredSalesList);
+  const cfg = (state.widgetSettings && state.widgetSettings.dayOfWeek) || { metric: 'profit', chartType: 'bar', timeframe: 'global' };
+  const currentMetric = cfg.metric || 'profit';
+
+  // Update card title with timeframe indicator if non-global
+  const titleEl = document.querySelector("#card-chart-dayOfWeek h4");
+  if (titleEl) {
+    let periodSuffix = "";
+    if (cfg.timeframe === "30") periodSuffix = " (Last 30 Days)";
+    else if (cfg.timeframe === "90") periodSuffix = " (Last 90 Days)";
+    else if (cfg.timeframe === "year") periodSuffix = " (This Year)";
+    else if (cfg.timeframe === "month") periodSuffix = " (This Month)";
+    titleEl.innerHTML = `<i class="fa-solid fa-calendar-days text-purple" style="margin-right: 6px;"></i> Sales by Day of the Week${periodSuffix}`;
+  }
+
+  // Days of week ordered Monday -> Sunday
+  const daysData = [
+    { dayName: "Monday", shortName: "Mon", count: 0, revenue: 0, profit: 0 },
+    { dayName: "Tuesday", shortName: "Tue", count: 0, revenue: 0, profit: 0 },
+    { dayName: "Wednesday", shortName: "Wed", count: 0, revenue: 0, profit: 0 },
+    { dayName: "Thursday", shortName: "Thu", count: 0, revenue: 0, profit: 0 },
+    { dayName: "Friday", shortName: "Fri", count: 0, revenue: 0, profit: 0 },
+    { dayName: "Saturday", shortName: "Sat", count: 0, revenue: 0, profit: 0 },
+    { dayName: "Sunday", shortName: "Sun", count: 0, revenue: 0, profit: 0 }
+  ];
+
+  let totalProfit = 0;
+  let totalRevenue = 0;
+  let totalVolume = 0;
+
+  wSales.forEach(sale => {
+    if (!sale.saleDate) return;
+    const parts = String(sale.saleDate).split("-");
+    if (parts.length >= 3) {
+      const y = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10) - 1;
+      const d = parseInt(parts[2], 10);
+      const dt = new Date(y, m, d);
+      if (!isNaN(dt.getTime())) {
+        const dayIdx = (dt.getDay() + 6) % 7; // Mon=0, Tue=1, ..., Sun=6
+        const p = (typeof sale.profit === "number") ? sale.profit : (parseFloat(sale.profit) || 0);
+        const r = (typeof sale.sellPrice === "number") ? sale.sellPrice : (parseFloat(sale.sellPrice) || 0);
+        daysData[dayIdx].count += 1;
+        daysData[dayIdx].profit += p;
+        daysData[dayIdx].revenue += r;
+        totalProfit += p;
+        totalRevenue += r;
+        totalVolume += 1;
+      }
+    }
+  });
+
+  const currSymbol = state.currency === 'USD' ? '$' : '€';
+
+  // Calculate Best Day according to selected metric
+  let bestDay = daysData[0];
+  daysData.forEach(d => {
+    const val = currentMetric === "revenue" ? d.revenue : (currentMetric === "volume" ? d.count : d.profit);
+    const bestVal = currentMetric === "revenue" ? bestDay.revenue : (currentMetric === "volume" ? bestDay.count : bestDay.profit);
+    if (val > bestVal) {
+      bestDay = d;
+    }
+  });
+
+  const bestDayEl = document.getElementById("dayofweek-best-day-val");
+  if (bestDayEl) {
+    if (totalVolume === 0) {
+      bestDayEl.textContent = "None";
+    } else if (currentMetric === "volume") {
+      bestDayEl.textContent = `${bestDay.shortName} (${bestDay.count})`;
+    } else if (currentMetric === "revenue") {
+      bestDayEl.textContent = `${bestDay.shortName} (${currSymbol}${Math.round(bestDay.revenue).toLocaleString()})`;
+    } else {
+      bestDayEl.textContent = `${bestDay.shortName} (${currSymbol}${Math.round(bestDay.profit).toLocaleString()})`;
+    }
+  }
+
+  // Calculate Weekend Share (Saturday index 5 + Sunday index 6)
+  const weekendProfit = daysData[5].profit + daysData[6].profit;
+  const weekendRevenue = daysData[5].revenue + daysData[6].revenue;
+  const weekendVolume = daysData[5].count + daysData[6].count;
+
+  let weekendPct = 0;
+  if (currentMetric === "revenue" && totalRevenue > 0) {
+    weekendPct = (weekendRevenue / totalRevenue) * 100;
+  } else if (currentMetric === "volume" && totalVolume > 0) {
+    weekendPct = (weekendVolume / totalVolume) * 100;
+  } else if (totalProfit > 0) {
+    weekendPct = (weekendProfit / totalProfit) * 100;
+  }
+  const weekendEl = document.getElementById("dayofweek-weekend-val");
+  if (weekendEl) {
+    weekendEl.textContent = `${Math.round(weekendPct)}%`;
+  }
+
+  // Update metric pills active state
+  const pillGroup = document.getElementById("dayofweek-metric-pills");
+  if (pillGroup) {
+    const pills = pillGroup.querySelectorAll(".btn-matrix-pill");
+    pills.forEach(pill => {
+      pill.classList.toggle("active", pill.getAttribute("data-metric") === currentMetric);
+    });
+  }
+
+  // Theme-aware colors
+  const rootStyle = getComputedStyle(document.documentElement);
+  const textSecondaryColor = rootStyle.getPropertyValue('--text-secondary').trim() || 'hsl(220, 12%, 65%)';
+  const borderColor = rootStyle.getPropertyValue('--border-color').trim() || 'hsla(224, 20%, 25%, 0.15)';
+  const tooltipBg = rootStyle.getPropertyValue('--bg-sidebar').trim() || 'hsl(224, 25%, 10%)';
+  const isLight = document.documentElement.getAttribute("data-theme-mode") === "light";
+  const tooltipTextColor = isLight ? "#111827" : "#ffffff";
+
+  const accentTeal = rootStyle.getPropertyValue('--accent-teal').trim() || 'hsl(175, 90%, 48%)';
+  const accentTealGlow = isLight ? 'hsla(175, 90%, 35%, 0.25)' : 'hsla(175, 90%, 48%, 0.25)';
+  const accentPurple = rootStyle.getPropertyValue('--accent-purple').trim() || 'hsl(270, 75%, 60%)';
+  const accentPurpleGlow = isLight ? 'hsla(270, 75%, 50%, 0.25)' : 'hsla(270, 75%, 60%, 0.25)';
+  const accentCyan = rootStyle.getPropertyValue('--accent-cyan').trim() || 'hsl(195, 90%, 50%)';
+  const accentCyanGlow = isLight ? 'hsla(195, 90%, 40%, 0.25)' : 'hsla(195, 90%, 50%, 0.25)';
+
+  const labels = daysData.map(d => d.dayName);
+  const wType = cfg.chartType || 'bar';
+
+  let datasets = [];
+  let scalesConfig = {};
+
+  if (currentMetric === "profit") {
+    datasets = [{
+      label: `Net Profit (${currSymbol})`,
+      data: daysData.map(d => Math.round(d.profit * 100) / 100),
+      backgroundColor: accentTealGlow,
+      borderColor: accentTeal,
+      borderWidth: 2,
+      borderRadius: 6,
+      hoverBackgroundColor: accentTeal,
+      fill: wType === 'line',
+      tension: 0.35
+    }];
+    scalesConfig = {
+      x: { grid: { display: false }, ticks: { color: textSecondaryColor } },
+      y: {
+        grid: { color: borderColor },
+        ticks: {
+          color: textSecondaryColor,
+          callback: function(v) { return currSymbol + v.toLocaleString(); }
+        }
+      }
+    };
+  } else if (currentMetric === "revenue") {
+    datasets = [{
+      label: `Gross Revenue (${currSymbol})`,
+      data: daysData.map(d => Math.round(d.revenue * 100) / 100),
+      backgroundColor: accentPurpleGlow,
+      borderColor: accentPurple,
+      borderWidth: 2,
+      borderRadius: 6,
+      hoverBackgroundColor: accentPurple,
+      fill: wType === 'line',
+      tension: 0.35
+    }];
+    scalesConfig = {
+      x: { grid: { display: false }, ticks: { color: textSecondaryColor } },
+      y: {
+        grid: { color: borderColor },
+        ticks: {
+          color: textSecondaryColor,
+          callback: function(v) { return currSymbol + v.toLocaleString(); }
+        }
+      }
+    };
+  } else if (currentMetric === "volume") {
+    datasets = [{
+      label: 'Keys Sold (Units)',
+      data: daysData.map(d => d.count),
+      backgroundColor: accentCyanGlow,
+      borderColor: accentCyan,
+      borderWidth: 2,
+      borderRadius: 6,
+      hoverBackgroundColor: accentCyan,
+      fill: wType === 'line',
+      tension: 0.35
+    }];
+    scalesConfig = {
+      x: { grid: { display: false }, ticks: { color: textSecondaryColor } },
+      y: {
+        grid: { color: borderColor },
+        ticks: {
+          color: textSecondaryColor,
+          stepSize: 1,
+          beginAtZero: true
+        }
+      }
+    };
+  } else {
+    // Combined Multi-Metric (Profit & Revenue bars + Volume line on right axis)
+    datasets = [
+      {
+        type: 'bar',
+        label: `Profit (${currSymbol})`,
+        data: daysData.map(d => Math.round(d.profit * 100) / 100),
+        backgroundColor: accentTealGlow,
+        borderColor: accentTeal,
+        borderWidth: 1.5,
+        borderRadius: 4,
+        yAxisID: 'y'
+      },
+      {
+        type: 'bar',
+        label: `Revenue (${currSymbol})`,
+        data: daysData.map(d => Math.round(d.revenue * 100) / 100),
+        backgroundColor: accentPurpleGlow,
+        borderColor: accentPurple,
+        borderWidth: 1.5,
+        borderRadius: 4,
+        yAxisID: 'y'
+      },
+      {
+        type: 'line',
+        label: 'Volume (Keys)',
+        data: daysData.map(d => d.count),
+        borderColor: accentCyan,
+        backgroundColor: accentCyan,
+        borderWidth: 2.5,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        yAxisID: 'y1',
+        tension: 0.3
+      }
+    ];
+    scalesConfig = {
+      x: { grid: { display: false }, ticks: { color: textSecondaryColor } },
+      y: {
+        type: 'linear',
+        position: 'left',
+        grid: { color: borderColor },
+        ticks: {
+          color: textSecondaryColor,
+          callback: function(v) { return currSymbol + v.toLocaleString(); }
+        }
+      },
+      y1: {
+        type: 'linear',
+        position: 'right',
+        grid: { drawOnChartArea: false },
+        ticks: {
+          color: accentCyan,
+          stepSize: 1,
+          beginAtZero: true
+        }
+      }
+    };
+  }
+
+  dayOfWeekChartInstance = new Chart(ctx, {
+    type: currentMetric === 'combined' ? 'bar' : wType,
+    data: {
+      labels: labels,
+      datasets: datasets
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: currentMetric === 'combined',
+          position: 'bottom',
+          labels: { color: textSecondaryColor, font: { family: 'Inter', size: 10 } }
+        },
+        tooltip: {
+          backgroundColor: tooltipBg,
+          titleColor: tooltipTextColor,
+          bodyColor: tooltipTextColor,
+          borderColor: borderColor,
+          borderWidth: 1,
+          callbacks: {
+            label: function(context) {
+              const val = context.raw;
+              if (context.dataset.label && context.dataset.label.includes("Volume")) {
+                return ` ${context.dataset.label}: ${val} keys`;
+              }
+              return ` ${context.dataset.label}: ${currSymbol}${Number(val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            },
+            afterBody: function(tooltipItems) {
+              if (tooltipItems.length > 0 && currentMetric !== 'combined') {
+                const idx = tooltipItems[0].dataIndex;
+                const day = daysData[idx];
+                const lines = [];
+                if (currentMetric !== 'profit') lines.push(`Profit: ${currSymbol}${day.profit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+                if (currentMetric !== 'revenue') lines.push(`Revenue: ${currSymbol}${day.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+                if (currentMetric !== 'volume') lines.push(`Volume: ${day.count} keys`);
+                return lines;
+              }
+              return [];
+            }
+          }
+        }
+      },
+      scales: scalesConfig
+    }
+  });
+}
+
 function renderPlatformSplitChart(filteredSalesList) {
   if (typeof Chart === 'undefined') {
     console.warn("Chart.js is not loaded. Skipping platform split chart rendering.");
@@ -2434,6 +2757,13 @@ function applyWidgetVisibility() {
           } catch (e) {
             console.error("Error destroying platformSplitChartInstance:", e);
           }
+        } else if (key === "dayOfWeek" && dayOfWeekChartInstance) {
+          try {
+            dayOfWeekChartInstance.destroy();
+            dayOfWeekChartInstance = null;
+          } catch (e) {
+            console.error("Error destroying dayOfWeekChartInstance:", e);
+          }
         }
       }
       
@@ -2475,6 +2805,7 @@ function renderWidgetGallery() {
     topPeakProfit: { title: "Highest Profit Achieved by Title", desc: "Leaderboard of games with the highest single-sale profit achieved." },
     topAverageProfit: { title: "Highest Average Profit (Entries)", desc: "Leaderboard of catalog entries with the highest average profit per unit sold." },
     dailyProfitMonth: { title: "Daily Profit of the Month", desc: "Daily net profit tracking bar chart for active month." },
+    dayOfWeek: { title: "Sales by Day of the Week", desc: "Day-of-week sales volume, revenue, and net profit distribution (Monday to Sunday)." },
     stockSpeed: { title: "Stock Speed & Aging Analytics", desc: "Doughnut/Pie/Bar chart tracking shelf-life of sold keys." },
     salesFeed: { title: "Recent Sales Activity Feed", desc: "Visual feed of the latest game key sales transactions." },
     stockTurnover: { title: "Stock Turnover Timeline", desc: "Dual timeline chart of key purchases vs keys sold over time." },
@@ -2606,10 +2937,28 @@ function bindWidgetControls() {
         selectSupplier.innerHTML = selectHtml;
         selectSupplier.value = cfg.supplier || "all";
       }
+    } else if (widgetKey === "dayOfWeek") {
+      const selectMetric = document.getElementById("config-dayOfWeek-metric");
+      if (selectMetric) selectMetric.value = cfg.metric || "profit";
     }
   };
   
   const handleWidgetClick = (e) => {
+    const btnDayOfWeekMetric = e.target.closest("#dayofweek-metric-pills .btn-matrix-pill");
+    if (btnDayOfWeekMetric) {
+      e.stopPropagation();
+      const metric = btnDayOfWeekMetric.getAttribute("data-metric");
+      if (metric && state.widgetSettings && state.widgetSettings.dayOfWeek) {
+        state.widgetSettings.dayOfWeek.metric = metric;
+        saveStateToStorage();
+        if (window.supabaseClient) {
+          dbSaveSettings("widgetSettings", state.widgetSettings);
+        }
+        updateUI();
+      }
+      return;
+    }
+    
     const btnMinimize = e.target.closest(".btn-widget-minimize");
     if (btnMinimize) {
       e.stopPropagation();
@@ -2769,6 +3118,9 @@ function bindWidgetControls() {
         } else if (widgetKey === "stockAging") {
           const selectSupplier = document.getElementById("config-stockAging-supplier");
           if (selectSupplier) cfg.supplier = selectSupplier.value;
+        } else if (widgetKey === "dayOfWeek") {
+          const selectMetric = document.getElementById("config-dayOfWeek-metric");
+          if (selectMetric) cfg.metric = selectMetric.value;
         }
         
         saveStateToStorage();

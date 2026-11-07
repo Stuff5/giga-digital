@@ -6840,3 +6840,32 @@ textarea.form-control {
   font-weight: 600;
 }
 
+/* Sales by Day of Week Widget Styles */
+#card-chart-dayOfWeek .chart-card-header {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+#dayofweek-kpi-badges .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  letter-spacing: 0.01em;
+  transition: all 0.2s ease;
+}
+
+[data-theme-mode="light"] #dayofweek-badge-best {
+  background: hsla(270, 75%, 45%, 0.12) !important;
+  color: hsl(270, 75%, 40%) !important;
+  border-color: hsla(270, 75%, 45%, 0.25) !important;
+}
+
+[data-theme-mode="light"] #dayofweek-badge-weekend {
+  background: hsla(190, 95%, 35%, 0.12) !important;
+  color: hsl(190, 95%, 30%) !important;
+  border-color: hsla(190, 95%, 35%, 0.25) !important;
+}
+
+

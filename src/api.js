@@ -1209,7 +1209,7 @@ async function dbLoadState() {
           try {
             state.dashboardOrder = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
             const expectedKeys = [
-              "salesProfit", "platformSplit", "supplierSplit", "topBestsellers", "topBestsellersRevenue", "topBestsellersSales", "topPeakProfit", "topAverageProfit", "dailyProfitMonth",
+              "salesProfit", "platformSplit", "supplierSplit", "topBestsellers", "topBestsellersRevenue", "topBestsellersSales", "topPeakProfit", "topAverageProfit", "dailyProfitMonth", "dayOfWeek",
               "stockSpeed", "salesFeed", "stockTurnover", "stockAging"
             ];
             state.dashboardOrder = state.dashboardOrder.filter(k => expectedKeys.includes(k));

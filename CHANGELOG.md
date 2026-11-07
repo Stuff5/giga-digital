@@ -5,6 +5,15 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.33] - 2026-11-07
+### Added
+- **Sales by Day of the Week Dashboard Widget**:
+  - Added a new modular dashboard chart widget tracking key sales metrics across Monday through Sunday.
+  - Interactive header toggle pills allowing users to switch between **Net Profit**, **Gross Revenue**, **Sales Volume (Keys Sold)**, or a **Combined** dual-axis view (Profit & Revenue bars + Volume line).
+  - Included high-level KPI badges displaying the all-time / filtered **Best Day** with earnings and the **Weekend Share %** (Saturday + Sunday) of overall performance.
+  - Full support for column width adjustments (1, 2, or 3 columns), Bar / Line chart styles, and time period filters (Global Dashboard Filter, Last 30 Days, Last 90 Days, This Year).
+  - Added widget metadata to the Widget Gallery Drawer for simple removal and re-addition.
+
 ## [v2.2.32] - 2026-11-07
 ### Added
 - **Rearrangeable Dashboard Overview Containers**:

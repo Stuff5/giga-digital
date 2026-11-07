@@ -5,7 +5,7 @@
 // Asynchronously loads critical HTML templates (modals.html) on application boot
 window.loadHTMLTemplates = async () => {
   try {
-    const ver = window.APP_VERSION || "v2.2.32";
+    const ver = window.APP_VERSION || "v2.2.33";
     const res = await fetch(`templates/modals.html?v=${ver}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const html = await res.text();
@@ -33,7 +33,7 @@ window.ensureHelpModalLoaded = async () => {
 
   _helpModalLoadingPromise = (async () => {
     try {
-      const ver = window.APP_VERSION || "v2.2.32";
+      const ver = window.APP_VERSION || "v2.2.33";
       const res = await fetch(`templates/help-modal.html?v=${ver}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -6380,6 +6380,7 @@ function updateUI() {
     if (isWidgetVisible("topPeakProfit")) renderTopBestsellersChart("topPeakProfit", "top-peak-profit-list", "peak-profit-chart-title", dbFilteredSales);
     if (isWidgetVisible("topAverageProfit")) renderTopBestsellersChart("topAverageProfit", "top-average-profit-list", "average-profit-chart-title", dbFilteredSales);
     if (isWidgetVisible("dailyProfitMonth")) renderDailyProfitMonthChart(dbFilteredSales);
+    if (isWidgetVisible("dayOfWeek")) renderDayOfWeekChart(dbFilteredSales);
     if (isWidgetVisible("stockSpeed")) renderStockSpeedChart(dbFilteredInventory, dbFilteredSales);
     if (isWidgetVisible("salesFeed")) renderSalesFeedWidget(dbFilteredSales);
     if (isWidgetVisible("stockTurnover")) renderStockTurnoverChart(dbFilteredInventory, dbFilteredSales);
@@ -11721,7 +11722,8 @@ function applyFiguresVisibility() {
     topBestsellersSales: document.getElementById("card-chart-topBestsellersSales"),
     topPeakProfit: document.getElementById("card-chart-topPeakProfit"),
     topAverageProfit: document.getElementById("card-chart-topAverageProfit"),
-    dailyProfitMonth: document.getElementById("card-chart-dailyProfitMonth")
+    dailyProfitMonth: document.getElementById("card-chart-dailyProfitMonth"),
+    dayOfWeek: document.getElementById("card-chart-dayOfWeek")
   };
   
   Object.keys(cards).forEach(key => {

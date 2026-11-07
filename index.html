@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=56">
+  <link rel="stylesheet" href="styles.css?v=57">
   
   <!-- Early theme application to prevent FOUC / light theme flicker -->
   <script>
@@ -139,7 +139,7 @@
         </div>
         <div class="version-info" style="text-align: center; font-size: 0.7rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; overflow: hidden; white-space: nowrap;">
           <span class="version-label">GameVault</span>
-          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v2.2.32</a>
+          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v2.2.33</a>
         </div>
 
       </div>
@@ -1158,6 +1158,102 @@
                           <option value="year">This Year</option>
                         </select>
                       </div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <!-- Widget: Sales by Day of the Week -->
+            <div class="chart-card" id="card-chart-dayOfWeek" data-figure="dayOfWeek">
+              <div class="card-inner">
+                <div class="card-front">
+                  <div class="chart-card-header">
+                    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                      <h4 id="dayofweek-chart-title" style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-calendar-days text-purple"></i> Sales by Day of the Week
+                      </h4>
+                      <div class="matrix-pill-group" id="dayofweek-metric-pills">
+                        <button type="button" class="btn-matrix-pill active" data-metric="profit" title="Show Net Profit per Day">Profit</button>
+                        <button type="button" class="btn-matrix-pill" data-metric="revenue" title="Show Gross Revenue per Day">Revenue</button>
+                        <button type="button" class="btn-matrix-pill" data-metric="volume" title="Show Sales Quantity (Keys) per Day">Volume</button>
+                        <button type="button" class="btn-matrix-pill" data-metric="combined" title="Combined Multi-Metric Comparison">Combined</button>
+                      </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                      <div id="dayofweek-kpi-badges" style="display: flex; align-items: center; gap: 8px;">
+                        <span class="badge" id="dayofweek-badge-best" style="background: hsla(270, 75%, 60%, 0.15); color: var(--accent-purple); font-weight: 600; border: 1px solid hsla(270, 75%, 60%, 0.25); font-size: 0.76rem;" title="Most profitable day of the week">
+                          <i class="fa-solid fa-crown" style="color: #f59e0b; margin-right: 4px;"></i> Best: <strong id="dayofweek-best-day-val" style="margin-left: 2px;">-</strong>
+                        </span>
+                        <span class="badge" id="dayofweek-badge-weekend" style="background: hsla(190, 90%, 50%, 0.15); color: var(--accent-cyan); font-weight: 600; border: 1px solid hsla(190, 90%, 50%, 0.25); font-size: 0.76rem;" title="Weekend (Saturday + Sunday) share of total">
+                          <i class="fa-solid fa-calendar-week" style="margin-right: 4px;"></i> Weekend: <strong id="dayofweek-weekend-val" style="margin-left: 2px;">0%</strong>
+                        </span>
+                      </div>
+                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                      <div class="card-actions-dropdown">
+                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
+                        <div class="card-actions-menu">
+                          <button type="button" class="card-actions-item btn-widget-configure">
+                            <i class="fa-solid fa-sliders"></i> Configure
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-remove">
+                            <i class="fa-solid fa-trash-can"></i> Remove Widget
+                          </button>
+                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                          <button type="button" class="card-actions-item" data-span="1">
+                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="2">
+                            <i class="fa-solid fa-table-columns"></i> 2 Columns
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="3">
+                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chart-body">
+                    <canvas id="dayOfWeekChart"></canvas>
+                  </div>
+                </div>
+                <div class="card-back">
+                  <form class="widget-config-form" data-widget="dayOfWeek">
+                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
+                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
+                    </div>
+                    <div class="config-form-body">
+                      <div class="config-field-group">
+                        <label for="config-dayOfWeek-metric">Default Metric</label>
+                        <select id="config-dayOfWeek-metric" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="profit">Net Profit</option>
+                          <option value="revenue">Gross Revenue</option>
+                          <option value="volume">Sales Volume (Keys)</option>
+                          <option value="combined">Combined (Profit, Revenue &amp; Volume)</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-dayOfWeek-chartType">Chart Type</label>
+                        <select id="config-dayOfWeek-chartType" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="bar">Bar Chart</option>
+                          <option value="line">Line Chart</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-dayOfWeek-timeframe">Time Period</label>
+                        <select id="config-dayOfWeek-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="global">Global Dashboard Filter</option>
+                          <option value="30">Last 30 Days</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="year">This Year</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="config-form-actions">
+                      <button type="submit" class="btn-widget-save">Save Changes</button>
+                      <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
                     </div>
                   </form>
                 </div>
@@ -4070,13 +4166,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=96"></script>
-  <script src="src/state.js?v=96"></script>
-  <script src="src/api.js?v=96"></script>
-  <script src="src/charts.js?v=96"></script>
-  <script src="src/ui.js?v=96"></script>
-  <script src="src/ai.js?v=96"></script>
-  <script src="src/importer.js?v=96"></script>
-  <script src="app.js?v=96"></script>
+  <script src="config.js?v=97"></script>
+  <script src="src/state.js?v=97"></script>
+  <script src="src/api.js?v=97"></script>
+  <script src="src/charts.js?v=97"></script>
+  <script src="src/ui.js?v=97"></script>
+  <script src="src/ai.js?v=97"></script>
+  <script src="src/importer.js?v=97"></script>
+  <script src="app.js?v=97"></script>
 </body>
 </html>
