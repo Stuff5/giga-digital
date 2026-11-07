@@ -2636,10 +2636,18 @@ function exportAgingReportToCSV() {
 
 function renderDashboardCardsOrder() {
   const container = document.getElementById("dashboard-charts-container");
-  if (!container) return;
+  if (!container || !Array.isArray(state.dashboardOrder)) return;
   
-  state.dashboardOrder.forEach(key => {
-    if (key === "dailyProfitMonth") return;
+  const targetKeys = state.dashboardOrder.filter(k => k !== "dailyProfitMonth");
+  const currentCards = Array.from(container.children).filter(el => el.classList && el.classList.contains("chart-card"));
+  const currentKeys = currentCards.map(el => (el.id || "").replace("card-chart-", ""));
+  
+  // Avoid re-appending elements if already in correct order to preserve focus, scroll, and layout stability
+  const isMatch = currentKeys.length === targetKeys.length && 
+                  currentKeys.every((key, idx) => key === targetKeys[idx]);
+  if (isMatch) return;
+  
+  targetKeys.forEach(key => {
     const card = document.getElementById(`card-chart-${key}`);
     if (card) {
       container.appendChild(card);
@@ -2649,7 +2657,14 @@ function renderDashboardCardsOrder() {
 
 function renderFinanceCardsOrder() {
   const container = document.getElementById("finance-charts-container");
-  if (!container || !state.financeOrder) return;
+  if (!container || !Array.isArray(state.financeOrder)) return;
+
+  const currentCards = Array.from(container.children).filter(el => el.classList && el.classList.contains("chart-card"));
+  const currentKeys = currentCards.map(el => (el.id || "").replace("card-chart-", ""));
+  const isMatch = currentKeys.length === state.financeOrder.length &&
+                  currentKeys.every((key, idx) => key === state.financeOrder[idx]);
+  if (isMatch) return;
+
   state.financeOrder.forEach(key => {
     const card = document.getElementById(`card-chart-${key}`);
     if (card) {
@@ -3083,6 +3098,9 @@ function bindWidgetControls() {
       e.stopPropagation();
       const card = btnCancelFlip.closest(".chart-card");
       if (card) {
+        if (document.activeElement && card.contains(document.activeElement)) {
+          document.activeElement.blur();
+        }
         card.classList.remove("flipped");
       }
       return;
@@ -3135,6 +3153,14 @@ function bindWidgetControls() {
       const widgetKey = form.getAttribute("data-widget");
       const card = form.closest(".chart-card");
       if (widgetKey && card) {
+        // Blur focused button inside form/card so browser does not reset activeElement to <body> and jump scroll
+        if (document.activeElement && card.contains(document.activeElement)) {
+          document.activeElement.blur();
+        }
+
+        // Capture scroll position before state mutation and DOM flip
+        const scrollPos = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+
         if (!state.widgetSettings) state.widgetSettings = {};
         if (!state.widgetSettings[widgetKey]) {
           state.widgetSettings[widgetKey] = { visible: true, collapsed: false, chartType: 'bar', timeframe: 'global' };
@@ -3177,6 +3203,17 @@ function bindWidgetControls() {
         card.classList.remove("flipped");
         updateUI();
         showToast("Widget settings saved.", "success");
+
+        // Maintain exact scroll position so user does not jump to top
+        if (scrollPos > 0) {
+          window.scrollTo({ top: scrollPos, behavior: 'instant' });
+          requestAnimationFrame(() => {
+            window.scrollTo({ top: scrollPos, behavior: 'instant' });
+          });
+          setTimeout(() => {
+            window.scrollTo({ top: scrollPos, behavior: 'instant' });
+          }, 60);
+        }
         
         if (window.supabaseClient) {
           dbSaveSettings("widgetSettings", state.widgetSettings);
@@ -3185,6 +3222,11 @@ function bindWidgetControls() {
     }
   };
 
+  const overviewRow = document.getElementById("dashboard-period-summary-row");
+  if (overviewRow) {
+    overviewRow.addEventListener("click", handleWidgetClick);
+    overviewRow.addEventListener("submit", handleWidgetSubmit);
+  }
   if (container) {
     container.addEventListener("click", handleWidgetClick);
     container.addEventListener("submit", handleWidgetSubmit);

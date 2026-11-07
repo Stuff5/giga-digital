@@ -5,6 +5,15 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.40] - 2026-11-07
+### Fixed
+- **Dashboard Widget Save Scroll Jump**:
+  - Resolved the issue where saving any widget configuration caused the viewport to jump to the top of the dashboard.
+  - Preserved exact window scroll position across form submissions and UI updates using pre-save scroll capture and post-render frame restoration.
+  - Eliminated unnecessary DOM card re-append operations in `renderDashboardCardsOrder()`, `renderDashboardOverviewCardsOrder()`, and `renderFinanceCardsOrder()` when elements are already in order, preventing focus drop and layout collapse.
+  - Blurred active submit controls before card unflipping to avoid browser focus reset to `<body>`.
+  - Added full widget configuration actions (Save/Cancel) and form delegation for the Daily Profit of the Month card in `#dashboard-period-summary-row`.
+
 ## [v2.2.39] - 2026-11-07
 ### Changed
 - **High-Contrast Colors for Stock Turnover Timeline**:

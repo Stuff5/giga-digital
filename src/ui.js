@@ -5,7 +5,7 @@
 // Asynchronously loads critical HTML templates (modals.html) on application boot
 window.loadHTMLTemplates = async () => {
   try {
-    const ver = window.APP_VERSION || "v2.2.39";
+    const ver = window.APP_VERSION || "v2.2.40";
     const res = await fetch(`templates/modals.html?v=${ver}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const html = await res.text();
@@ -33,7 +33,7 @@ window.ensureHelpModalLoaded = async () => {
 
   _helpModalLoadingPromise = (async () => {
     try {
-      const ver = window.APP_VERSION || "v2.2.39";
+      const ver = window.APP_VERSION || "v2.2.40";
       const res = await fetch(`templates/help-modal.html?v=${ver}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -6278,6 +6278,8 @@ async function handleEditCatalogEntrySubmit(e) {
 function updateUI() {
   const activeView = document.querySelector(".content-view.active");
   const activeViewId = activeView ? activeView.id : "dashboard-view";
+  const isDashboard = activeViewId === "dashboard-view";
+  const dashboardPrevScrollY = isDashboard ? (window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0) : 0;
 
   // Update Storage Status Badge
   const storageBadge = document.getElementById("storage-status-badge");
@@ -6387,6 +6389,13 @@ function updateUI() {
     if (isWidgetVisible("stockAging")) renderStockAgingChart(dbFilteredInventory);
 
     renderDashboardDetails(dbFilteredSales, dbFilteredInventory);
+
+    if (dashboardPrevScrollY > 0) {
+      window.scrollTo({ top: dashboardPrevScrollY, behavior: 'instant' });
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: dashboardPrevScrollY, behavior: 'instant' });
+      });
+    }
   } 
   else if (activeViewId === "inventory-view") {
     renderInventoryTable(filteredInventory);
@@ -11775,15 +11784,27 @@ function renderDashboardOverviewCardsOrder() {
     }
   });
 
-  state.dashboardOverviewOrder.forEach(key => {
-    let card = document.getElementById(`card-overview-${key}`);
-    if (!card && key === "dailyProfitMonth") {
-      card = document.getElementById("card-chart-dailyProfitMonth");
-    }
-    if (card) {
-      container.appendChild(card);
-    }
-  });
+  // Only reorder in DOM if elements are not already in state.dashboardOverviewOrder
+  const currentOverviewCards = Array.from(container.children).filter(el => 
+    el.id && (el.id.startsWith("card-overview-") || el.id === "card-chart-dailyProfitMonth")
+  );
+  const currentOverviewKeys = currentOverviewCards.map(el => 
+    el.id === "card-chart-dailyProfitMonth" ? "dailyProfitMonth" : el.id.replace("card-overview-", "")
+  );
+  const isOverviewMatch = currentOverviewKeys.length === state.dashboardOverviewOrder.length &&
+                          currentOverviewKeys.every((key, idx) => key === state.dashboardOverviewOrder[idx]);
+
+  if (!isOverviewMatch) {
+    state.dashboardOverviewOrder.forEach(key => {
+      let card = document.getElementById(`card-overview-${key}`);
+      if (!card && key === "dailyProfitMonth") {
+        card = document.getElementById("card-chart-dailyProfitMonth");
+      }
+      if (card) {
+        container.appendChild(card);
+      }
+    });
+  }
 
   // Update left/right move button states based on currently visible cards
   state.dashboardOverviewOrder.forEach((key, index) => {
