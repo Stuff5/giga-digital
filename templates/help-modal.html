@@ -338,9 +338,9 @@
                 <code style="font-family: monospace; color: var(--accent-pink);">STR % = (Total Sold Keys / Total Added Keys) * 100</code>
               </p>
 
-              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">5. Stock Speed / Shelf-life Aging</h5>
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">5. Sales Turnaround Speed (Days to Sell)</h5>
               <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 12px;">
-                Calculated per key as the duration between when a key is added and when it is marked sold:
+                Calculated per key as the duration between when a key is purchased and when it is marked sold:
                 <br>
                 <code style="font-family: monospace; color: var(--accent-warning);">Days to Sell = Sale Date - Purchase Date</code>
               </p>
@@ -447,6 +447,17 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- v2.2.38 -->
+                <div class="changelog-release-card" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.2.38 - Renamed to Sales Turnaround Speed</strong>
+                    <span style="font-size: 0.75rem; color: var(--accent-cyan); background: rgba(0, 229, 255, 0.08); padding: 2px 8px; border-radius: 4px; font-weight: 600;">2026-11-07</span>
+                  </div>
+                  <ul style="margin: 0; padding-left: 18px; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+                    <li><strong>Clearer Metric Naming:</strong> Renamed "Stock Speed &amp; Aging Analytics" to "Sales Turnaround Speed" to clearly reflect that it tracks how fast sold keys convert to cash, avoiding confusion with unsold "Stock Aging Analysis".</li>
+                  </ul>
+                </div>
+
                 <!-- v2.2.37 -->
                 <div class="changelog-release-card" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">

@@ -2811,7 +2811,7 @@ function renderWidgetGallery() {
     topAverageProfit: { title: "Highest Average Profit (Entries)", desc: "Leaderboard of catalog entries with the highest average profit per unit sold." },
     dailyProfitMonth: { title: "Daily Profit of the Month", desc: "Daily net profit tracking bar chart for active month." },
     dayOfWeek: { title: "Sales by Day of the Week", desc: "Day-of-week sales volume, revenue, and net profit distribution (Monday to Sunday)." },
-    stockSpeed: { title: "Stock Speed & Aging Analytics", desc: "Doughnut/Pie/Bar chart tracking shelf-life of sold keys." },
+    stockSpeed: { title: "Sales Turnaround Speed", desc: "Doughnut/Pie/Bar chart tracking how fast sold keys took to sell." },
     salesFeed: { title: "Recent Sales Activity Feed", desc: "Visual feed of the latest game key sales transactions." },
     stockTurnover: { title: "Stock Turnover Timeline", desc: "Dual timeline chart of key purchases vs keys sold over time." },
     stockAging: { title: "Stock Aging Distribution", desc: "Segments available stock keys by age brackets." }

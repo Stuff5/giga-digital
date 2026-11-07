@@ -5,6 +5,12 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.38] - 2026-11-07
+### Changed
+- **Renamed to "Sales Turnaround Speed"**:
+  - Renamed the widget previously titled "Stock Speed & Aging Analytics" to **"Sales Turnaround Speed"** across dashboard headers, widget gallery, and documentation.
+  - This clarifies that the widget tracks how fast sold keys took to sell (sales velocity), eliminating confusion with unsold warehouse "Stock Aging Analysis".
+
 ## [v2.2.37] - 2026-11-07
 ### Added
 - **Transferred Daily Profit of the Month Graph to Top Overview Row**:
