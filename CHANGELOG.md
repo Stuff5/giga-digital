@@ -5,6 +5,14 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.39] - 2026-11-07
+### Changed
+- **High-Contrast Colors for Stock Turnover Timeline**:
+  - Replaced previously adjacent cyan/teal tones with high-contrast distinct colors:
+    - **Keys Purchased**: Royal Violet / Purple (`#8b5cf6` / `#7c3aed`) with matching area fill and data points.
+    - **Keys Sold**: Crisp Emerald Green (`#10b981` / `#059669`) with matching area fill and data points.
+  - Enhanced visibility in both line and bar modes, ensuring instant distinction between purchased keys and sold keys across all themes and lighting modes.
+
 ## [v2.2.38] - 2026-11-07
 ### Changed
 - **Renamed to "Sales Turnaround Speed"**:

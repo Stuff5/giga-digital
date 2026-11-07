@@ -2414,10 +2414,17 @@ function renderStockTurnoverChart(filteredInventoryList, filteredSalesList) {
   const borderColor = rootStyle.getPropertyValue('--border-color').trim() || 'hsla(224, 20%, 25%, 0.15)';
   const tooltipBg = rootStyle.getPropertyValue('--bg-sidebar').trim() || 'hsl(224, 25%, 10%)';
 
-  const accentCyan = rootStyle.getPropertyValue('--accent-cyan').trim() || 'hsl(195, 90%, 50%)';
-  const accentTeal = rootStyle.getPropertyValue('--accent-teal').trim() || 'hsl(175, 90%, 48%)';
+  const isLight = Boolean(state && state.themeMode === 'light');
+  const purchasedColor = isLight ? '#7c3aed' : '#8b5cf6';
+  const soldColor = isLight ? '#059669' : '#10b981';
 
   const wType = (state.widgetSettings && state.widgetSettings.stockTurnover && state.widgetSettings.stockTurnover.chartType) || 'line';
+  const purchasedBg = wType === 'bar'
+    ? (isLight ? 'rgba(124, 58, 237, 0.75)' : 'rgba(139, 92, 246, 0.75)')
+    : (isLight ? 'rgba(124, 58, 237, 0.16)' : 'rgba(139, 92, 246, 0.18)');
+  const soldBg = wType === 'bar'
+    ? (isLight ? 'rgba(5, 150, 105, 0.75)' : 'rgba(16, 185, 129, 0.75)')
+    : (isLight ? 'rgba(5, 150, 105, 0.16)' : 'rgba(16, 185, 129, 0.18)');
 
   stockTurnoverChartInstance = new Chart(ctx, {
     type: wType,
@@ -2427,8 +2434,14 @@ function renderStockTurnoverChart(filteredInventoryList, filteredSalesList) {
         {
           label: 'Keys Purchased',
           data: boughtData,
-          borderColor: accentCyan,
-          backgroundColor: 'hsla(195, 90%, 50%, 0.15)',
+          borderColor: purchasedColor,
+          backgroundColor: purchasedBg,
+          pointBackgroundColor: purchasedColor,
+          pointBorderColor: '#ffffff',
+          pointHoverBackgroundColor: '#ffffff',
+          pointHoverBorderColor: purchasedColor,
+          pointRadius: 3,
+          pointHoverRadius: 6,
           borderWidth: 2.5,
           tension: 0.35,
           fill: true
@@ -2436,8 +2449,14 @@ function renderStockTurnoverChart(filteredInventoryList, filteredSalesList) {
         {
           label: 'Keys Sold',
           data: soldData,
-          borderColor: accentTeal,
-          backgroundColor: 'hsla(175, 90%, 48%, 0.15)',
+          borderColor: soldColor,
+          backgroundColor: soldBg,
+          pointBackgroundColor: soldColor,
+          pointBorderColor: '#ffffff',
+          pointHoverBackgroundColor: '#ffffff',
+          pointHoverBorderColor: soldColor,
+          pointRadius: 3,
+          pointHoverRadius: 6,
           borderWidth: 2.5,
           tension: 0.35,
           fill: true
