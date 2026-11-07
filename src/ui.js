@@ -10513,7 +10513,14 @@ function renderEntriesGalleryLayout(entriesList) {
 // Render Table: Sales ledger list
 function buildSalesRowHTML(sale, inventoryMap) {
   const initials = sale.title.split(" ").map(w => w[0]).join("").slice(0, 3);
-  const gameInInv = inventoryMap.get(sale.inventoryId);
+  let gameInInv = null;
+  if (inventoryMap && sale.inventoryId !== undefined && sale.inventoryId !== null) {
+    gameInInv = inventoryMap.get(sale.inventoryId) || inventoryMap.get(String(sale.inventoryId));
+  }
+  if (!gameInInv && state.inventory) {
+    gameInInv = state.inventory.find(i => String(i.id) === String(sale.inventoryId))
+      || (sale.title ? state.inventory.find(i => i.title && i.title.trim().toLowerCase() === String(sale.title).trim().toLowerCase()) : null);
+  }
   const saleImgUrl = (gameInInv && gameInInv.imageUrl) 
     || sale.imageUrl 
     || (typeof window.resolveGameArtwork === "function" ? window.resolveGameArtwork(sale) : null);
@@ -10705,12 +10712,19 @@ function renderSalesTable(salesList) {
   // Pre-index state.inventory by ID for O(1) lookups
   const inventoryMap = new Map();
   state.inventory.forEach(item => {
-    inventoryMap.set(item.id, item);
+    if (item && item.id !== undefined && item.id !== null) {
+      inventoryMap.set(item.id, item);
+      inventoryMap.set(String(item.id), item);
+      if (typeof item.id === "string" && !isNaN(Number(item.id))) {
+        inventoryMap.set(Number(item.id), item);
+      }
+    }
   });
   if (state.recycleBin && Array.isArray(state.recycleBin.inventory)) {
     state.recycleBin.inventory.forEach(item => {
-      if (item && item.id && !inventoryMap.has(item.id)) {
-        inventoryMap.set(item.id, item);
+      if (item && item.id !== undefined && item.id !== null) {
+        if (!inventoryMap.has(item.id)) inventoryMap.set(item.id, item);
+        if (!inventoryMap.has(String(item.id))) inventoryMap.set(String(item.id), item);
       }
     });
   }
