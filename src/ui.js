@@ -5,7 +5,7 @@
 // Asynchronously loads critical HTML templates (modals.html) on application boot
 window.loadHTMLTemplates = async () => {
   try {
-    const ver = window.APP_VERSION || "v2.2.35";
+    const ver = window.APP_VERSION || "v2.2.36";
     const res = await fetch(`templates/modals.html?v=${ver}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const html = await res.text();
@@ -33,7 +33,7 @@ window.ensureHelpModalLoaded = async () => {
 
   _helpModalLoadingPromise = (async () => {
     try {
-      const ver = window.APP_VERSION || "v2.2.35";
+      const ver = window.APP_VERSION || "v2.2.36";
       const res = await fetch(`templates/help-modal.html?v=${ver}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -11814,19 +11814,12 @@ function renderDashboardOverviewCardsOrder() {
   if (resetBtn) {
     const isDefaultOrder = state.dashboardOverviewOrder[0] === "performance" &&
                           state.dashboardOverviewOrder[1] === "inventory";
-    const allVisible = state.dashboardOverviewVisibility.performance !== false &&
-                       state.dashboardOverviewVisibility.inventory !== false;
-    const hiddenCount = validKeys.length - visibleKeys.length;
 
-    if (isDefaultOrder && allVisible) {
+    if (isDefaultOrder) {
       resetBtn.style.display = "none";
     } else {
       resetBtn.style.display = "inline-flex";
-      if (hiddenCount > 0) {
-        resetBtn.innerHTML = `<i class="fa-solid fa-arrow-rotate-left"></i> Reset Overview (${hiddenCount} hidden)`;
-      } else {
-        resetBtn.innerHTML = `<i class="fa-solid fa-arrow-rotate-left"></i> Reset Overview`;
-      }
+      resetBtn.innerHTML = `<i class="fa-solid fa-arrow-rotate-left"></i> Reset Overview`;
     }
   }
 

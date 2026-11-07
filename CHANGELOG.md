@@ -5,6 +5,12 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.36] - 2026-11-07
+### Removed
+- **Removed Dashboard Overview Containers from Settings**:
+  - Removed the `#settings-dashboard-overview-card` preferences card entirely from the Settings page.
+  - Removed obsolete `.btn-overview-hide` buttons from the overview cards, leaving clean drag handles and left/right ordering controls.
+
 ## [v2.2.35] - 2026-11-07
 ### Changed
 - **Removed Efficiency & Potential Overview Container**:
