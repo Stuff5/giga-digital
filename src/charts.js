@@ -899,7 +899,11 @@ function renderDayOfWeekChart(filteredSalesList) {
   }
 
   const wSales = getWidgetFilteredSales("dayOfWeek", filteredSalesList);
-  const cfg = (state.widgetSettings && state.widgetSettings.dayOfWeek) || { metric: 'profit', chartType: 'bar', timeframe: 'global' };
+  if (!state.widgetSettings) state.widgetSettings = {};
+  if (!state.widgetSettings.dayOfWeek) {
+    state.widgetSettings.dayOfWeek = { visible: true, collapsed: false, chartType: 'bar', metric: 'profit', timeframe: 'global' };
+  }
+  const cfg = state.widgetSettings.dayOfWeek;
   const currentMetric = cfg.metric || 'profit';
 
   // Update card title with timeframe indicator if non-global
@@ -2898,31 +2902,36 @@ function bindWidgetControls() {
   const populateFormConfig = (widgetKey) => {
     const card = document.getElementById(`card-chart-${widgetKey}`);
     if (!card) return;
-    const cfg = state.widgetSettings[widgetKey];
+    if (!state.widgetSettings) state.widgetSettings = {};
+    if (!state.widgetSettings[widgetKey]) {
+      state.widgetSettings[widgetKey] = { visible: true, collapsed: false, chartType: 'bar', timeframe: 'global' };
+      if (widgetKey === "dayOfWeek") state.widgetSettings[widgetKey].metric = "profit";
+    }
+    const cfg = state.widgetSettings[widgetKey] || {};
     
     const selectChart = document.getElementById(`config-${widgetKey}-chartType`);
-    if (selectChart) selectChart.value = cfg.chartType || selectChart.options[0].value;
+    if (selectChart) selectChart.value = (cfg && cfg.chartType) || (selectChart.options && selectChart.options[0] ? selectChart.options[0].value : 'bar');
     
     const selectTime = document.getElementById(`config-${widgetKey}-timeframe`);
-    if (selectTime) selectTime.value = cfg.timeframe || "global";
+    if (selectTime) selectTime.value = (cfg && cfg.timeframe) || "global";
     
     if (widgetKey === "topBestsellers" || widgetKey === "topBestsellersRevenue" || widgetKey === "topBestsellersSales" || widgetKey === "topPeakProfit" || widgetKey === "topAverageProfit") {
       const selectLimit = document.getElementById(`config-${widgetKey}-limit`);
-      if (selectLimit) selectLimit.value = cfg.limit || 5;
+      if (selectLimit) selectLimit.value = (cfg && cfg.limit) || 5;
       const selectCover = document.getElementById(`config-${widgetKey}-coverStyle`);
       if (selectCover) selectCover.value = (cfg && cfg.coverStyle === "compact") ? "compact" : "cover";
       const checkGroup = document.getElementById(`config-${widgetKey}-groupVariants`);
       if (checkGroup) checkGroup.checked = !!(cfg && cfg.groupVariants);
       if (widgetKey === "topAverageProfit") {
         const selectMinSales = document.getElementById(`config-${widgetKey}-minSales`);
-        if (selectMinSales) selectMinSales.value = cfg.minSales || 1;
+        if (selectMinSales) selectMinSales.value = (cfg && cfg.minSales) || 1;
       }
     } else if (widgetKey === "salesFeed") {
       const selectLimit = document.getElementById("config-salesFeed-limit");
-      if (selectLimit) selectLimit.value = cfg.limit || 5;
+      if (selectLimit) selectLimit.value = (cfg && cfg.limit) || 5;
     } else if (widgetKey === "markupAnalysis") {
       const selectGroupBy = document.getElementById("config-markupAnalysis-groupBy");
-      if (selectGroupBy) selectGroupBy.value = cfg.groupBy || "publisher";
+      if (selectGroupBy) selectGroupBy.value = (cfg && cfg.groupBy) || "publisher";
     } else if (widgetKey === "stockAging") {
       const selectSupplier = document.getElementById("config-stockAging-supplier");
       if (selectSupplier) {
@@ -2935,11 +2944,11 @@ function bindWidgetControls() {
           selectHtml += `<option value="${s}">${s}</option>`;
         });
         selectSupplier.innerHTML = selectHtml;
-        selectSupplier.value = cfg.supplier || "all";
+        selectSupplier.value = (cfg && cfg.supplier) || "all";
       }
     } else if (widgetKey === "dayOfWeek") {
       const selectMetric = document.getElementById("config-dayOfWeek-metric");
-      if (selectMetric) selectMetric.value = cfg.metric || "profit";
+      if (selectMetric) selectMetric.value = (cfg && cfg.metric) || "profit";
     }
   };
   
@@ -2948,7 +2957,11 @@ function bindWidgetControls() {
     if (btnDayOfWeekMetric) {
       e.stopPropagation();
       const metric = btnDayOfWeekMetric.getAttribute("data-metric");
-      if (metric && state.widgetSettings && state.widgetSettings.dayOfWeek) {
+      if (metric) {
+        if (!state.widgetSettings) state.widgetSettings = {};
+        if (!state.widgetSettings.dayOfWeek) {
+          state.widgetSettings.dayOfWeek = { visible: true, collapsed: false, chartType: 'bar', metric: 'profit', timeframe: 'global' };
+        }
         state.widgetSettings.dayOfWeek.metric = metric;
         saveStateToStorage();
         if (window.supabaseClient) {
@@ -2964,7 +2977,11 @@ function bindWidgetControls() {
       e.stopPropagation();
       const card = btnMinimize.closest(".chart-card");
       const key = card ? card.getAttribute("data-figure") : null;
-      if (key && state.widgetSettings[key]) {
+      if (key) {
+        if (!state.widgetSettings) state.widgetSettings = {};
+        if (!state.widgetSettings[key]) {
+          state.widgetSettings[key] = { visible: true, collapsed: false, chartType: 'bar', timeframe: 'global' };
+        }
         const cfg = state.widgetSettings[key];
         cfg.collapsed = !cfg.collapsed;
         
@@ -3021,7 +3038,11 @@ function bindWidgetControls() {
       e.stopPropagation();
       const card = btnToggleCover.closest(".chart-card");
       const key = card ? card.getAttribute("data-figure") : null;
-      if (key && state.widgetSettings[key]) {
+      if (key) {
+        if (!state.widgetSettings) state.widgetSettings = {};
+        if (!state.widgetSettings[key]) {
+          state.widgetSettings[key] = { visible: true, collapsed: false, chartType: 'bar', timeframe: 'global', coverStyle: 'cover' };
+        }
         const cfg = state.widgetSettings[key];
         const isCurrentlyCover = !cfg.coverStyle || cfg.coverStyle === "cover";
         cfg.coverStyle = isCurrentlyCover ? "compact" : "cover";
@@ -3052,13 +3073,17 @@ function bindWidgetControls() {
       e.stopPropagation();
       const card = btnRemove.closest(".chart-card");
       const key = card ? card.getAttribute("data-figure") : null;
-      if (key && state.widgetSettings[key]) {
+      if (key) {
         // Exit fullscreen if removing from fullscreen
-        const isOverlay = card.parentNode.id === "widget-fullscreen-overlay";
+        const isOverlay = card.parentNode && card.parentNode.id === "widget-fullscreen-overlay";
         if (isOverlay) {
           exitWidgetFullscreen();
         }
         
+        if (!state.widgetSettings) state.widgetSettings = {};
+        if (!state.widgetSettings[key]) {
+          state.widgetSettings[key] = { visible: true, collapsed: false, chartType: 'bar', timeframe: 'global' };
+        }
         state.widgetSettings[key].visible = false;
         if (state.visibleFigures) {
           state.visibleFigures[key] = false;
@@ -3089,7 +3114,12 @@ function bindWidgetControls() {
       e.preventDefault();
       const widgetKey = form.getAttribute("data-widget");
       const card = form.closest(".chart-card");
-      if (widgetKey && state.widgetSettings[widgetKey] && card) {
+      if (widgetKey && card) {
+        if (!state.widgetSettings) state.widgetSettings = {};
+        if (!state.widgetSettings[widgetKey]) {
+          state.widgetSettings[widgetKey] = { visible: true, collapsed: false, chartType: 'bar', timeframe: 'global' };
+          if (widgetKey === "dayOfWeek") state.widgetSettings[widgetKey].metric = "profit";
+        }
         const cfg = state.widgetSettings[widgetKey];
         
         const selectChart = document.getElementById(`config-${widgetKey}-chartType`);

@@ -1244,21 +1244,32 @@ async function dbLoadState() {
           }
         } else if (s.key === "dashboardSpans") {
           try {
-            state.dashboardSpans = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+            const remoteSpans = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+            state.dashboardSpans = { ...state.dashboardSpans, ...remoteSpans };
+            if (!state.dashboardSpans.dayOfWeek) state.dashboardSpans.dayOfWeek = 3;
             applyDashboardSpans();
           } catch(e) {
             console.error("Error parsing dashboardSpans from database sync:", e);
           }
         } else if (s.key === "financeSpans") {
           try {
-            state.financeSpans = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+            const remoteFinSpans = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+            state.financeSpans = { ...state.financeSpans, ...remoteFinSpans };
+            if (!state.financeSpans.financeMatrix) state.financeSpans.financeMatrix = 3;
             applyFinanceSpans();
           } catch(e) {
             console.error("Error parsing financeSpans from database sync:", e);
           }
         } else if (s.key === "widgetSettings") {
           try {
-            state.widgetSettings = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+            const remoteWidgetSettings = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+            state.widgetSettings = { ...state.widgetSettings, ...remoteWidgetSettings };
+            if (!state.widgetSettings.dayOfWeek) {
+              state.widgetSettings.dayOfWeek = { visible: true, collapsed: false, chartType: 'bar', metric: 'profit', timeframe: 'global' };
+            }
+            if (!state.widgetSettings.financeMatrix) {
+              state.widgetSettings.financeMatrix = { visible: true, collapsed: false, metric: 'profit', mode: 'totals', sortOrder: 'asc' };
+            }
             if (state.widgetSettings && state.visibleFigures) {
               Object.keys(state.widgetSettings).forEach(key => {
                 if (state.widgetSettings[key] && state.widgetSettings[key].visible === false) {
