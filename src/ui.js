@@ -5,7 +5,7 @@
 // Asynchronously loads critical HTML templates (modals.html) on application boot
 window.loadHTMLTemplates = async () => {
   try {
-    const ver = window.APP_VERSION || "v2.2.33";
+    const ver = window.APP_VERSION || "v2.2.34";
     const res = await fetch(`templates/modals.html?v=${ver}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const html = await res.text();
@@ -33,7 +33,7 @@ window.ensureHelpModalLoaded = async () => {
 
   _helpModalLoadingPromise = (async () => {
     try {
-      const ver = window.APP_VERSION || "v2.2.33";
+      const ver = window.APP_VERSION || "v2.2.34";
       const res = await fetch(`templates/help-modal.html?v=${ver}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -6427,6 +6427,7 @@ function updateUI() {
   else if (activeViewId === "settings-view") {
     applyRoleBasedAccessControls();
     renderSidebarCustomizationSettings();
+    syncDashboardOverviewSettingsCheckboxes();
     renderAdminUsers();
     renderAuditLogs();
     
@@ -11745,12 +11746,26 @@ function applyFiguresVisibility() {
 // DASHBOARD OVERVIEW CONTAINERS REARRANGE & DRAG-AND-DROP
 // ==========================================================================
 
+function syncDashboardOverviewSettingsCheckboxes() {
+  if (!state.dashboardOverviewVisibility) return;
+  const pCheck = document.getElementById("settings-overview-toggle-performance");
+  if (pCheck) pCheck.checked = state.dashboardOverviewVisibility.performance !== false;
+  const iCheck = document.getElementById("settings-overview-toggle-inventory");
+  if (iCheck) iCheck.checked = state.dashboardOverviewVisibility.inventory !== false;
+  const eCheck = document.getElementById("settings-overview-toggle-efficiency");
+  if (eCheck) eCheck.checked = state.dashboardOverviewVisibility.efficiency !== false;
+}
+window.syncDashboardOverviewSettingsCheckboxes = syncDashboardOverviewSettingsCheckboxes;
+
 function renderDashboardOverviewCardsOrder() {
   const container = document.getElementById("dashboard-period-summary-row");
   if (!container) return;
 
   if (!state.dashboardOverviewOrder || !Array.isArray(state.dashboardOverviewOrder)) {
     state.dashboardOverviewOrder = ["performance", "inventory", "efficiency"];
+  }
+  if (!state.dashboardOverviewVisibility || typeof state.dashboardOverviewVisibility !== "object") {
+    state.dashboardOverviewVisibility = { performance: true, inventory: true, efficiency: true };
   }
 
   // Ensure all 3 keys are present
@@ -11762,11 +11777,24 @@ function renderDashboardOverviewCardsOrder() {
     }
   });
 
-  state.dashboardOverviewOrder.forEach((key, index) => {
+  // Calculate visible keys in current visual order
+  const visibleKeys = state.dashboardOverviewOrder.filter(k => state.dashboardOverviewVisibility[k] !== false);
+
+  state.dashboardOverviewOrder.forEach(key => {
     const card = document.getElementById(`card-overview-${key}`);
     if (card) {
-      container.appendChild(card);
+      const isVisible = state.dashboardOverviewVisibility[key] !== false;
+      card.style.display = isVisible ? "" : "none";
+      if (isVisible) {
+        container.appendChild(card);
+      }
+    }
+  });
 
+  // Update left/right move button states based on currently visible cards
+  visibleKeys.forEach((key, index) => {
+    const card = document.getElementById(`card-overview-${key}`);
+    if (card) {
       const leftBtn = card.querySelector(".btn-overview-move-left");
       const rightBtn = card.querySelector(".btn-overview-move-right");
       if (leftBtn) {
@@ -11776,7 +11804,7 @@ function renderDashboardOverviewCardsOrder() {
         leftBtn.style.cursor = isFirst ? "not-allowed" : "pointer";
       }
       if (rightBtn) {
-        const isLast = (index === state.dashboardOverviewOrder.length - 1);
+        const isLast = (index === visibleKeys.length - 1);
         rightBtn.disabled = isLast;
         rightBtn.style.opacity = isLast ? "0.25" : "0.85";
         rightBtn.style.cursor = isLast ? "not-allowed" : "pointer";
@@ -11786,13 +11814,64 @@ function renderDashboardOverviewCardsOrder() {
 
   const resetBtn = document.getElementById("btn-reset-overview-order");
   if (resetBtn) {
-    const isDefault = state.dashboardOverviewOrder[0] === "performance" &&
-                      state.dashboardOverviewOrder[1] === "inventory" &&
-                      state.dashboardOverviewOrder[2] === "efficiency";
-    resetBtn.style.display = isDefault ? "none" : "inline-flex";
+    const isDefaultOrder = state.dashboardOverviewOrder[0] === "performance" &&
+                          state.dashboardOverviewOrder[1] === "inventory" &&
+                          state.dashboardOverviewOrder[2] === "efficiency";
+    const allVisible = state.dashboardOverviewVisibility.performance !== false &&
+                       state.dashboardOverviewVisibility.inventory !== false &&
+                       state.dashboardOverviewVisibility.efficiency !== false;
+    const hiddenCount = validKeys.length - visibleKeys.length;
+
+    if (isDefaultOrder && allVisible) {
+      resetBtn.style.display = "none";
+    } else {
+      resetBtn.style.display = "inline-flex";
+      if (hiddenCount > 0) {
+        resetBtn.innerHTML = `<i class="fa-solid fa-arrow-rotate-left"></i> Reset Overview (${hiddenCount} hidden)`;
+      } else {
+        resetBtn.innerHTML = `<i class="fa-solid fa-arrow-rotate-left"></i> Reset Overview`;
+      }
+    }
   }
+
+  syncDashboardOverviewSettingsCheckboxes();
 }
 window.renderDashboardOverviewCardsOrder = renderDashboardOverviewCardsOrder;
+
+function toggleDashboardOverviewVisibility(cardKey) {
+  if (!state.dashboardOverviewVisibility) {
+    state.dashboardOverviewVisibility = { performance: true, inventory: true, efficiency: true };
+  }
+  const current = state.dashboardOverviewVisibility[cardKey] !== false;
+  const next = !current;
+
+  // Prevent user from hiding all 3 containers
+  const validKeys = ["performance", "inventory", "efficiency"];
+  const futureVisibleCount = validKeys.filter(k => (k === cardKey ? next : state.dashboardOverviewVisibility[k] !== false)).length;
+  if (futureVisibleCount === 0) {
+    showToast("At least one overview container must remain visible.", "warning");
+    syncDashboardOverviewSettingsCheckboxes();
+    return;
+  }
+
+  state.dashboardOverviewVisibility[cardKey] = next;
+  saveStateToStorage();
+  renderDashboardOverviewCardsOrder();
+
+  const cardLabels = {
+    performance: "Performance Summary",
+    inventory: "Inventory Status",
+    efficiency: "Efficiency & Potential"
+  };
+  const label = cardLabels[cardKey] || "Container";
+  const actionMsg = next ? `Restored ${label} container.` : `Hidden ${label} container. You can restore it anytime in Settings.`;
+  showToast(actionMsg, "info");
+
+  if (window.supabaseClient && typeof dbSaveSettings === "function") {
+    dbSaveSettings("dashboardOverviewVisibility", state.dashboardOverviewVisibility);
+  }
+}
+window.toggleDashboardOverviewVisibility = toggleDashboardOverviewVisibility;
 
 function moveDashboardOverviewCard(cardKey, direction) {
   if (!state.dashboardOverviewOrder || !Array.isArray(state.dashboardOverviewOrder)) {
@@ -11829,12 +11908,14 @@ window.moveDashboardOverviewCard = moveDashboardOverviewCard;
 
 function resetDashboardOverviewCardsOrder() {
   state.dashboardOverviewOrder = ["performance", "inventory", "efficiency"];
+  state.dashboardOverviewVisibility = { performance: true, inventory: true, efficiency: true };
   saveStateToStorage();
   renderDashboardOverviewCardsOrder();
-  showToast("Dashboard overview containers reset to default order.", "info");
+  showToast("Dashboard overview containers reset to default order & visibility.", "info");
 
   if (window.supabaseClient && typeof dbSaveSettings === "function") {
     dbSaveSettings("dashboardOverviewOrder", state.dashboardOverviewOrder);
+    dbSaveSettings("dashboardOverviewVisibility", state.dashboardOverviewVisibility);
   }
 }
 window.resetDashboardOverviewCardsOrder = resetDashboardOverviewCardsOrder;

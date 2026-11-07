@@ -5,6 +5,16 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.34] - 2026-11-07
+### Added
+- **Toggleable Dashboard Overview Containers (Option C)**:
+  - Added visibility controls for the 3 dashboard overview summary containers: **Performance Summary**, **Inventory Status**, and **Efficiency & Potential**.
+  - Added an accessible one-click hide button (`.btn-overview-hide`) to each container header to dismiss unwanted cards directly from the dashboard.
+  - Added a dedicated "Dashboard Overview Containers" card under Settings with checkboxes for granular container toggling.
+  - Remaining overview containers automatically expand across the top row with responsive CSS grid layout (e.g. 50%/50% width when 2 containers are active).
+  - Enhanced the "Reset Overview" button to show the number of hidden containers and restore all containers to default order and visibility with 1 click.
+  - Added persistent storage (`gv_dashboard_overview_visibility`) and bidirectional cloud database synchronization via Supabase `app_settings`.
+
 ## [v2.2.33] - 2026-11-07
 ### Added
 - **Sales by Day of the Week Dashboard Widget**:

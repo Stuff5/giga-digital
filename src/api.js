@@ -1205,6 +1205,16 @@ async function dbLoadState() {
           } catch(e) {
             console.error("Error parsing dashboardOverviewOrder:", e);
           }
+        } else if (s.key === "dashboardOverviewVisibility") {
+          try {
+            const remoteOverviewVis = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+            state.dashboardOverviewVisibility = { ...state.dashboardOverviewVisibility, ...remoteOverviewVis };
+            if (typeof renderDashboardOverviewCardsOrder === "function") {
+              renderDashboardOverviewCardsOrder();
+            }
+          } catch(e) {
+            console.error("Error parsing dashboardOverviewVisibility:", e);
+          }
         } else if (s.key === "dashboardOrder") {
           try {
             state.dashboardOrder = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
@@ -1497,6 +1507,7 @@ async function dbSeedDatabase() {
       { key: "supplierDisplayMode", value: state.supplierDisplayMode },
       { key: "platformDisplayMode", value: state.platformDisplayMode },
       { key: "dashboardOverviewOrder", value: state.dashboardOverviewOrder },
+      { key: "dashboardOverviewVisibility", value: state.dashboardOverviewVisibility },
       { key: "dashboardOrder", value: state.dashboardOrder },
       { key: "financeOrder", value: state.financeOrder },
       { key: "dashboardSpans", value: state.dashboardSpans },
