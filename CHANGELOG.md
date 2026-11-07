@@ -5,6 +5,17 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.43] - 2026-11-07
+### Changed
+- **Overview Row Multi-Row Layout Alignment**:
+  - **Performance Summary**: Organized metrics into 2 balanced rows:
+    - *Row 1*: Revenue, Spending (Cost), and Net Profit.
+    - *Row 2*: Margin and Keys Sold.
+  - **Inventory Status**: Organized metrics into 2 balanced rows:
+    - *Row 1*: Available, Reserved, and Unique Titles in Stock.
+    - *Row 2*: Stock Cost.
+  - Aligned dividers, text sizes, and column spacing to ensure perfect vertical balance across all top executive containers.
+
 ## [v2.2.42] - 2026-11-07
 ### Changed
 - **Updated Metric to "Unique Titles in Stock"**:
