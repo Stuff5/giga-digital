@@ -2,7 +2,7 @@
 
 > High-performance digital game license inventory pipeline, sales ledger, and financial analytics platform designed for digital key merchants, distributors, and online publishers.
 
-![Version](https://img.shields.io/badge/version-v2.2.47-cyan.svg)
+![Version](https://img.shields.io/badge/version-v2.2.48-cyan.svg)
 ![Status](https://img.shields.io/badge/status-active-emerald.svg)
 ![Platform](https://img.shields.io/badge/platform-Web%20SPA-purple.svg)
 
@@ -76,6 +76,23 @@ From bulk spreadsheet imports and real-time inventory tracking to financial marg
 - **Built-in Strategic AI Advisor**: Slide-over drawer powered by Google Gemini 2.5 Flash and OpenAI for margin audits, restock prioritization, and inventory analytics.
 - **Live Business Context**: Feeds real-time sales and stock metrics into queries for contextual guidance.
 
+### 10. Executive Dashboard Overview Row & Drag-and-Drop Reordering
+- **Triple Executive Overview Cards**: Prominently highlights **Performance Summary** (dynamic time period metrics), **Inventory Status** (available, reserved, unique titles, and stock valuation), and **Daily Profit of the Month** (daily tracking bar chart).
+- **Intuitive Reordering**: Integrated drag handles (`overview-drag-handle`) and directional chevron nudge buttons (`←` / `→`) enable effortless visual re-positioning across the top overview row.
+- **Persistent Layout State**: Custom visual order and per-container visibility persist automatically via dedicated local storage and bidirectional Supabase cloud database synchronization (`dashboardOverviewOrder`).
+- **Responsive Symmetry**: Built in standard document-flow layout with single-column responsive collapse on tablets and mobile devices (< 768px).
+
+### 11. High-Performance Persistence & Filter Engine
+- **Granular Storage Layer**: Dedicated writers (`saveSettingsToStorage()`, `saveInventoryToStorage()`, `saveSalesToStorage()`) isolate UI state updates from full data arrays, eliminating CPU overhead and multi-megabyte JSON re-serialization when toggling preferences.
+- **Unified Single-Pass Filtering**: Combined multi-criteria search, date, supplier, platform, status, and aging filters in `getFilteredInventory()` and `getFilteredSales()` into single-pass predicates with early exit, removing intermediate array allocations and garbage collection pressure.
+- **Optimized Sorting**: Direct lexicographical ISO date-string comparison replaces thousands of temporary `Date` object instantiations during transaction sorting.
+- **Lazy View Computation**: Table and ledger filtering executes strictly on-demand for active views inside `updateUI()`.
+
+### 12. Mobile-First Responsive Design System
+- **Viewport-Aware Grid Collapse**: Automatic transition from multi-column executive layouts to clean single-column cards on viewports under 768px.
+- **Container Overflow Protection**: Robust `min-width: 0` constraints, fluid chart height clamping (`160px` mobile target), and text ellipsis (`text-overflow: ellipsis`) prevent card data or axes from spilling beyond screen boundaries on narrow mobile displays (down to 320px).
+- **Touch-Friendly Controls**: Touch-optimized action buttons and navigation menus with hidden labels and enlarged tap targets on mobile viewports.
+
 ---
 
 ## Technical Architecture
@@ -123,4 +140,4 @@ game-sales-tracker/
 
 See [CHANGELOG.md](CHANGELOG.md) for full release notes and development milestones.
 
-Current Release: **v2.2.47** (2026-11-07)
+Current Release: **v2.2.48** (2026-11-07)

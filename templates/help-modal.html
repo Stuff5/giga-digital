@@ -100,6 +100,17 @@
                 Customize your analytical workflow by transforming the charts layout into an interactive grid of modular widgets.
               </p>
               
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Executive Overview Containers (Top Summary Row)</h5>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 8px;">
+                Directly above the modular widget grid sits the high-priority Executive Overview row featuring three key executive cards: <strong>Performance Summary</strong>, <strong>Inventory Status</strong>, and the <strong>Daily Profit of the Month</strong> tracking graph.
+              </p>
+              <ul style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.6; padding-left: 20px; margin-bottom: 16px;">
+                <li><strong>Grip Handle &amp; Drag-and-Drop:</strong> Click and drag the vertical grip icon <i class="fa-solid fa-grip-vertical"></i> on any container to swap positions seamlessly across the top row.</li>
+                <li><strong>Nudge Controls:</strong> Use the left and right directional buttons (<i class="fa-solid fa-chevron-left"></i> / <i class="fa-solid fa-chevron-right"></i>) to nudge overview cards sequentially across the row.</li>
+                <li><strong>Cloud Persistence:</strong> Your customized overview order and container visibility (configured in <em>Settings &rarr; Dashboard Widgets &amp; Layout</em>) automatically synchronize across devices via Supabase.</li>
+                <li><strong>Mobile Viewport Adaptability:</strong> On smartphones and tablets (&le; 768px), overview cards automatically collapse into a fluid single column with adaptive chart sizing, keeping all data enclosed within the container boundary.</li>
+              </ul>
+
               <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 8px; font-weight: 600;">Interactive Features</h5>
               <ul style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.6; padding-left: 20px; margin-bottom: 16px;">
                 <li><strong>Drag-and-Drop Order:</strong> Click and drag any card header to swap visual positions on the grid. Custom positions are saved instantly.</li>
@@ -447,6 +458,19 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- v2.2.48 -->
+                <div class="changelog-release-card" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.2.48 - Documentation Modernization &amp; Architecture Reference</strong>
+                    <span style="font-size: 0.75rem; color: var(--accent-cyan); background: rgba(0, 229, 255, 0.08); padding: 2px 8px; border-radius: 4px; font-weight: 600;">2026-11-07</span>
+                  </div>
+                  <ul style="margin: 0; padding-left: 18px; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+                    <li><strong>Executive Overview Documentation:</strong> Documented the top executive overview row (Performance Summary, Inventory Status, and Daily Profit of the Month), including drag-and-drop handles, directional nudge controls, and cloud state synchronization in the built-in Help Center and project documentation.</li>
+                    <li><strong>Architecture &amp; Engine Reference:</strong> Updated core project manuals to thoroughly cover the granular storage persistence layer (isolated settings, inventory, and sales writers) and unified single-pass filtering engine.</li>
+                    <li><strong>Mobile Design Specifications:</strong> Detailed mobile viewport collapse patterns (&le; 768px), dynamic chart height clamping, and text-overflow truncation rules across documentation guides.</li>
+                  </ul>
+                </div>
+
                 <!-- v2.2.47 -->
                 <div class="changelog-release-card" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">

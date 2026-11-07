@@ -5,6 +5,18 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.48] - 2026-11-07
+### Documentation
+- **Executive Overview Containers Manual**:
+  - Documented the top executive overview row (`Performance Summary`, `Inventory Status`, and `Daily Profit of the Month`) in `README.md` and the built-in Help Center (`templates/help-modal.html`).
+  - Added documentation covering the visual drag-and-drop handles (`overview-drag-handle`), directional nudge controls, and automatic cloud persistence via Supabase (`dashboardOverviewOrder`).
+- **High-Performance Architecture Reference**:
+  - Documented the granular storage persistence engine (`saveSettingsToStorage()`, `saveInventoryToStorage()`, `saveSalesToStorage()`), unified single-pass filtering predicates in `getFilteredInventory()` and `getFilteredSales()`, date string sorting, and on-demand view calculations.
+- **Mobile Responsive Design Specifications**:
+  - Documented mobile-first responsive collapse rules under `@media (max-width: 768px)`, dynamic chart height clamping (`160px`), and `text-overflow: ellipsis` truncation for overview headers across narrow viewports.
+- **Version Synchronization**:
+  - Synchronized application versioning to **v2.2.48** across `config.js`, `app.js`, `src/ui.js`, `index.html` (sidebar and cache busters `styles.css?v=71`, scripts `?v=113`), `README.md`, `CHANGELOG.md`, and `templates/help-modal.html`.
+
 ## [v2.2.47] - 2026-11-07
 ### Fixed
 - **Mobile View Daily Profit Container Data Overflow**:
