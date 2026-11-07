@@ -2910,7 +2910,7 @@ function bindWidgetControls() {
             state.visibleFigures[widgetKey] = true;
           }
           applyWidgetVisibility();
-          saveStateToStorage();
+          saveSettingsToStorage();
           renderWidgetGallery();
           updateUI();
           showToast("Added widget to dashboard.", "success");
@@ -3001,7 +3001,7 @@ function bindWidgetControls() {
           state.widgetSettings.dayOfWeek = { visible: true, collapsed: false, chartType: 'bar', metric: 'profit', timeframe: 'global' };
         }
         state.widgetSettings.dayOfWeek.metric = metric;
-        saveStateToStorage();
+        saveSettingsToStorage();
         if (window.supabaseClient) {
           dbSaveSettings("widgetSettings", state.widgetSettings);
         }
@@ -3029,7 +3029,7 @@ function bindWidgetControls() {
           exitWidgetFullscreen();
         }
         
-        saveStateToStorage();
+        saveSettingsToStorage();
         applyWidgetVisibility();
         if (!cfg.collapsed) {
           window.dispatchEvent(new Event("resize"));
@@ -3084,7 +3084,7 @@ function bindWidgetControls() {
         const cfg = state.widgetSettings[key];
         const isCurrentlyCover = !cfg.coverStyle || cfg.coverStyle === "cover";
         cfg.coverStyle = isCurrentlyCover ? "compact" : "cover";
-        saveStateToStorage();
+        saveSettingsToStorage();
         if (window.supabaseClient) {
           dbSaveSettings("widgetSettings", state.widgetSettings);
         }
@@ -3130,7 +3130,7 @@ function bindWidgetControls() {
           state.visibleFigures[key] = false;
         }
         applyWidgetVisibility();
-        saveStateToStorage();
+        saveSettingsToStorage();
         if (typeof renderWidgetGallery === "function") {
           renderWidgetGallery();
         }
@@ -3202,7 +3202,7 @@ function bindWidgetControls() {
           if (selectMetric) cfg.metric = selectMetric.value;
         }
         
-        saveStateToStorage();
+        saveSettingsToStorage();
         card.classList.remove("flipped");
         updateUI();
         showToast("Widget settings saved.", "success");
@@ -3250,7 +3250,7 @@ function saveMetricOrder() {
   const children = Array.from(grid.children);
   const order = children.map(child => child.id);
   state.metricOrder = order;
-  saveStateToStorage();
+  saveSettingsToStorage();
   if (window.supabaseClient) {
     dbSaveSettings("metricOrder", state.metricOrder);
   }
@@ -3262,7 +3262,7 @@ function saveSupplierMetricOrder() {
   const children = Array.from(grid.children);
   const order = children.map(child => child.id);
   state.supMetricOrder = order;
-  saveStateToStorage();
+  saveSettingsToStorage();
   if (window.supabaseClient) {
     dbSaveSettings("supMetricOrder", state.supMetricOrder);
   }

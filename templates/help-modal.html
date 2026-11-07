@@ -447,6 +447,19 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- v2.2.46 -->
+                <div class="changelog-release-card" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.2.46 - Performance Engine: Granular Storage & Single-Pass Filtering</strong>
+                    <span style="font-size: 0.75rem; color: var(--accent-cyan); background: rgba(0, 229, 255, 0.08); padding: 2px 8px; border-radius: 4px; font-weight: 600;">2026-11-07</span>
+                  </div>
+                  <ul style="margin: 0; padding-left: 18px; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+                    <li><strong>Granular Local Storage Persistence:</strong> Widget settings, drag-and-drop ordering, card spans, and UI preferences now persist via dedicated lightweight storage writers, eliminating redundant serialization of the full inventory and sales database.</li>
+                    <li><strong>Single-Pass Array Filtering:</strong> Optimized <code>getFilteredInventory()</code> and <code>getFilteredSales()</code> to combine date, supplier, platform, status, aging, and search filters into a single evaluation pass, eliminating 4–5 intermediate array allocations per keystroke.</li>
+                    <li><strong>Lazy On-Demand View Data:</strong> Streamlined <code>updateUI()</code> so table filters and sorting are only computed when their respective views are active, drastically speeding up tab navigation.</li>
+                  </ul>
+                </div>
+
                 <!-- v2.2.45 -->
                 <div class="changelog-release-card" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">

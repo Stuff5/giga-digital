@@ -5,7 +5,7 @@
 // Asynchronously loads critical HTML templates (modals.html) on application boot
 window.loadHTMLTemplates = async () => {
   try {
-    const ver = window.APP_VERSION || "v2.2.45";
+    const ver = window.APP_VERSION || "v2.2.46";
     const res = await fetch(`templates/modals.html?v=${ver}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const html = await res.text();
@@ -33,7 +33,7 @@ window.ensureHelpModalLoaded = async () => {
 
   _helpModalLoadingPromise = (async () => {
     try {
-      const ver = window.APP_VERSION || "v2.2.45";
+      const ver = window.APP_VERSION || "v2.2.46";
       const res = await fetch(`templates/help-modal.html?v=${ver}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -6329,35 +6329,32 @@ function updateUI() {
     window.populatePlatformDropdowns();
   }
 
-  // 1. Get filtered data
-  const filteredSales = getFilteredSales();
-  const filteredInventory = getFilteredInventory();
-
-  // 1b. Dashboard specific supplier filtering
-  const dbSupplierSelect = document.getElementById("db-filter-supplier");
-  const dbSupplier = dbSupplierSelect ? dbSupplierSelect.value : "all";
-  
-  let dbFilteredSales = getFilteredSales({ ignorePageFilters: true });
-  let dbFilteredInventory = state.inventory;
-  
-  if (dbSupplier !== "all") {
-    const inventoryMap = new Map();
-    state.inventory.forEach(item => {
-      inventoryMap.set(item.id, item);
-    });
-    dbFilteredSales = dbFilteredSales.filter(sale => {
-      const game = inventoryMap.get(sale.inventoryId);
-      const sup = (game && (game.source || game.supplier)) || sale.source || sale.supplier || "";
-      return sup.trim().toLowerCase() === dbSupplier.trim().toLowerCase();
-    });
-    dbFilteredInventory = state.inventory.filter(item => {
-      const sup = String(item.source || item.supplier || "").trim().toLowerCase();
-      return sup === dbSupplier.trim().toLowerCase();
-    });
-  }
-
   // ONLY execute rendering logic relevant to the active view
   if (activeViewId === "dashboard-view") {
+    // Dashboard specific supplier filtering
+    const dbSupplierSelect = document.getElementById("db-filter-supplier");
+    const dbSupplier = dbSupplierSelect ? dbSupplierSelect.value : "all";
+    
+    let dbFilteredSales = getFilteredSales({ ignorePageFilters: true });
+    let dbFilteredInventory = state.inventory || [];
+    
+    if (dbSupplier !== "all") {
+      const targetSup = dbSupplier.trim().toLowerCase();
+      const inventoryMap = new Map();
+      (state.inventory || []).forEach(item => {
+        if (item && item.id !== undefined) inventoryMap.set(item.id, item);
+      });
+      dbFilteredSales = dbFilteredSales.filter(sale => {
+        const game = inventoryMap.get(sale.inventoryId);
+        const sup = (game && (game.source || game.supplier)) || sale.source || sale.supplier || "";
+        return sup.trim().toLowerCase() === targetSup;
+      });
+      dbFilteredInventory = (state.inventory || []).filter(item => {
+        const sup = String(item.source || item.supplier || "").trim().toLowerCase();
+        return sup === targetSup;
+      });
+    }
+
     calculateMetrics(dbFilteredSales, dbFilteredInventory);
     calculateSupplierMetrics();
     renderPeriodSummary(dbFilteredSales, dbFilteredInventory);
@@ -6398,10 +6395,10 @@ function updateUI() {
     }
   } 
   else if (activeViewId === "inventory-view") {
-    renderInventoryTable(filteredInventory);
+    renderInventoryTable(getFilteredInventory());
   } 
   else if (activeViewId === "sales-view") {
-    renderSalesTable(filteredSales);
+    renderSalesTable(getFilteredSales());
   } 
   else if (activeViewId === "suppliers-view") {
     calculateSupplierMetrics();
@@ -8928,169 +8925,189 @@ window.triggerTogglePlatform = async function(name) {
 
 // Filters sales database based on date button selection & search inputs
 function getFilteredSales(options = {}) {
-  let list = [...state.sales];
+  const sales = state.sales || [];
+  if (sales.length === 0) return [];
   const now = new Date();
 
-  // A. Date Range Period Filter
+  // A. Date Range Period Filter Predicate
+  let dateFilterFn = null;
   if (state.activePeriod === "month") {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
-    list = list.filter(item => {
+    dateFilterFn = (item) => {
       const d = parseDateMidnight(item.saleDate);
       return d && d >= startOfMonth;
-    });
+    };
   } else if (state.activePeriod === "week") {
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
     startOfWeek.setHours(0, 0, 0, 0);
-    list = list.filter(item => {
+    dateFilterFn = (item) => {
       const d = parseDateMidnight(item.saleDate);
       return d && d >= startOfWeek;
-    });
+    };
   } else if (state.activePeriod === "today") {
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const day = String(now.getDate()).padStart(2, '0');
     const todayStr = `${year}-${month}-${day}`;
-    list = list.filter(item => (item.saleDate || "").startsWith(todayStr));
+    dateFilterFn = (item) => (item.saleDate || "").startsWith(todayStr);
   } else if (state.activePeriod === "custom") {
-    if (state.customStartDate) {
-      const start = parseDateMidnight(state.customStartDate);
-      list = list.filter(item => {
-        const d = parseDateMidnight(item.saleDate);
-        return d && d >= start;
-      });
-    }
-    if (state.customEndDate) {
-      const end = parseDateMidnight(state.customEndDate);
-      if (end) end.setHours(23, 59, 59, 999);
-      list = list.filter(item => {
-        const d = parseDateMidnight(item.saleDate);
-        return d && d <= end;
-      });
-    }
+    const start = state.customStartDate ? parseDateMidnight(state.customStartDate) : null;
+    const end = state.customEndDate ? parseDateMidnight(state.customEndDate) : null;
+    if (end) end.setHours(23, 59, 59, 999);
+    dateFilterFn = (item) => {
+      const d = parseDateMidnight(item.saleDate);
+      if (!d) return false;
+      if (start && d < start) return false;
+      if (end && d > end) return false;
+      return true;
+    };
   }
 
   // If ignorePageFilters is true, return early (used for dashboard calculations)
   if (options && options.ignorePageFilters) {
-    return list.sort((a, b) => new Date(b.saleDate) - new Date(a.saleDate));
+    const list = dateFilterFn ? sales.filter(dateFilterFn) : [...sales];
+    return list.sort((a, b) => (b.saleDate || "").localeCompare(a.saleDate || ""));
   }
 
   // Pre-index inventory for fast O(1) supplier and key lookups
   const inventoryMap = new Map();
   if (state.inventory && Array.isArray(state.inventory)) {
     state.inventory.forEach(inv => {
-      if (inv && inv.id) inventoryMap.set(inv.id, inv);
+      if (inv && inv.id !== undefined && inv.id !== null) inventoryMap.set(inv.id, inv);
     });
   }
   if (state.recycleBin && Array.isArray(state.recycleBin.inventory)) {
     state.recycleBin.inventory.forEach(inv => {
-      if (inv && inv.id && !inventoryMap.has(inv.id)) inventoryMap.set(inv.id, inv);
+      if (inv && inv.id !== undefined && inv.id !== null && !inventoryMap.has(inv.id)) inventoryMap.set(inv.id, inv);
     });
   }
 
-  // B. Specific Page Filter: Platform
+  // Specific Page Filter Controls
   const platformFilterEl = document.getElementById("sales-filter-platform");
   const platformFilter = platformFilterEl ? platformFilterEl.value : "all";
-  if (platformFilter !== "all") {
-    list = list.filter(item => item.platformSold && item.platformSold.toLowerCase() === platformFilter.toLowerCase());
-  }
+  const platformFilterLower = platformFilter !== "all" ? platformFilter.toLowerCase() : null;
 
-  // B2. Specific Page Filter: Key Supplier
   const supplierFilterEl = document.getElementById("sales-filter-supplier");
   const supplierFilter = supplierFilterEl ? supplierFilterEl.value : "all";
-  if (supplierFilter !== "all") {
-    const targetSup = supplierFilter.trim().toLowerCase();
-    list = list.filter(sale => {
-      // 1. Check direct property on sale if present
-      const directSource = String(sale.source || sale.supplier || "").trim().toLowerCase();
-      if (directSource === targetSup) return true;
+  const targetSup = supplierFilter !== "all" ? supplierFilter.trim().toLowerCase() : null;
 
-      // 2. Check linked inventory item
-      if (sale.inventoryId) {
+  const searchInputEl = document.getElementById("sales-search-input");
+  const searchInput = searchInputEl ? searchInputEl.value.toLowerCase().trim() : "";
+
+  // Single-pass combined filter
+  const list = sales.filter(sale => {
+    if (!sale) return false;
+
+    // 1. Date filter
+    if (dateFilterFn && !dateFilterFn(sale)) return false;
+
+    // 2. Specific Page Filter: Platform
+    if (platformFilterLower) {
+      if (!sale.platformSold || sale.platformSold.toLowerCase() !== platformFilterLower) {
+        return false;
+      }
+    }
+
+    // 3. Specific Page Filter: Key Supplier
+    if (targetSup) {
+      const directSource = String(sale.source || sale.supplier || "").trim().toLowerCase();
+      let matchSupplier = directSource === targetSup;
+      if (!matchSupplier && sale.inventoryId) {
         const invItem = inventoryMap.get(sale.inventoryId);
         if (invItem) {
           const invSource = String(invItem.source || invItem.supplier || "").trim().toLowerCase();
-          if (invSource === targetSup) return true;
+          matchSupplier = invSource === targetSup;
         }
       }
-      return false;
-    });
-  }
+      if (!matchSupplier) return false;
+    }
 
-  // C. Search Input Filter
-  const searchInputEl = document.getElementById("sales-search-input");
-  const searchInput = searchInputEl ? searchInputEl.value.toLowerCase().trim() : "";
-  if (searchInput) {
-    list = list.filter(item => {
-      const invItem = inventoryMap.get(item.inventoryId);
+    // 4. Search Input Filter
+    if (searchInput) {
+      const invItem = inventoryMap.get(sale.inventoryId);
       const keyStr = invItem ? String(invItem.key || "") : "";
-      const sourceStr = (invItem && (invItem.source || invItem.supplier)) || item.source || item.supplier || "";
-      return (
-        (item.title && item.title.toLowerCase().includes(searchInput)) ||
-        (item.platform && item.platform.toLowerCase().includes(searchInput)) ||
-        (item.platformSold && item.platformSold.toLowerCase().includes(searchInput)) ||
-        (keyStr && keyStr.toLowerCase().includes(searchInput)) ||
-        (sourceStr && String(sourceStr).toLowerCase().includes(searchInput)) ||
-        (item.notes && item.notes.toLowerCase().includes(searchInput))
-      );
-    });
-  }
+      const sourceStr = (invItem && (invItem.source || invItem.supplier)) || sale.source || sale.supplier || "";
+      const matchTitle = sale.title && sale.title.toLowerCase().includes(searchInput);
+      const matchPlatform = sale.platform && sale.platform.toLowerCase().includes(searchInput);
+      const matchPlatformSold = sale.platformSold && sale.platformSold.toLowerCase().includes(searchInput);
+      const matchKey = keyStr && keyStr.toLowerCase().includes(searchInput);
+      const matchSource = sourceStr && String(sourceStr).toLowerCase().includes(searchInput);
+      const matchNotes = sale.notes && sale.notes.toLowerCase().includes(searchInput);
 
-  return list.sort((a, b) => new Date(b.saleDate) - new Date(a.saleDate)); // newest sales first
+      if (!matchTitle && !matchPlatform && !matchPlatformSold && !matchKey && !matchSource && !matchNotes) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
+  return list.sort((a, b) => (b.saleDate || "").localeCompare(a.saleDate || "")); // newest sales first
 }
 
 // Filters inventory database based on filter controls
 function getFilteredInventory() {
-  let list = [...state.inventory];
+  const inventory = state.inventory || [];
+  if (inventory.length === 0) return [];
 
-  // A. Platform filter
-  const platform = document.getElementById("inv-filter-platform").value;
-  if (platform !== "all") {
-    list = list.filter(item => item.platform === platform);
-  }
+  // Pre-read filter controls upfront
+  const platformEl = document.getElementById("inv-filter-platform");
+  const platform = platformEl ? platformEl.value : "all";
 
-  // B. Status filter (driven by quick status pills)
   const status = state.inventoryFilterStatus || "all";
-  if (status !== "all") {
-    list = list.filter(item => item.status === status);
-  }
 
-  // C. Supplier filter
-  const supplierFilter = document.getElementById("inv-filter-supplier").value;
-  if (supplierFilter !== "all") {
-    list = list.filter(item => item.source === supplierFilter);
-  }
+  const supplierFilterEl = document.getElementById("inv-filter-supplier");
+  const supplierFilter = supplierFilterEl ? supplierFilterEl.value : "all";
 
-  // E. Aging category filter
   const agingFilterEl = document.getElementById("inv-filter-aging");
   const agingFilter = agingFilterEl ? agingFilterEl.value : "all";
-  if (agingFilter !== "all") {
-    list = list.filter(item => {
+
+  const searchInputEl = document.getElementById("inv-search-input");
+  const search = searchInputEl ? searchInputEl.value.toLowerCase().trim() : "";
+
+  const checkDuplicates = state.filterDuplicatesOnly && typeof window.getDuplicateKeyMap === "function";
+  const dupMap = checkDuplicates ? window.getDuplicateKeyMap() : null;
+
+  // Single-pass combined filter
+  let list = inventory.filter(item => {
+    if (!item) return false;
+
+    // A. Platform filter
+    if (platform !== "all" && item.platform !== platform) return false;
+
+    // B. Status filter
+    if (status !== "all" && item.status !== status) return false;
+
+    // C. Supplier filter
+    if (supplierFilter !== "all" && item.source !== supplierFilter) return false;
+
+    // D. Aging category filter
+    if (agingFilter !== "all") {
       const category = getAgingCategory(item.purchaseDate).name;
-      return category === agingFilter;
-    });
-  }
+      if (category !== agingFilter) return false;
+    }
 
-  // D. Search input
-  const search = document.getElementById("inv-search-input").value.toLowerCase().trim();
-  if (search) {
-    list = list.filter(item => 
-      item.title.toLowerCase().includes(search) ||
-      item.key.toLowerCase().includes(search) ||
-      item.source.toLowerCase().includes(search) ||
-      (item.notes && item.notes.toLowerCase().includes(search))
-    );
-  }
+    // E. Search input
+    if (search) {
+      const titleLower = item.title ? item.title.toLowerCase() : "";
+      const keyLower = item.key ? item.key.toLowerCase() : "";
+      const sourceLower = item.source ? item.source.toLowerCase() : "";
+      const notesLower = item.notes ? item.notes.toLowerCase() : "";
+      if (!titleLower.includes(search) && !keyLower.includes(search) && !sourceLower.includes(search) && !notesLower.includes(search)) {
+        return false;
+      }
+    }
 
-  // F. Duplicate Keys filter
-  if (state.filterDuplicatesOnly && typeof window.getDuplicateKeyMap === "function") {
-    const dupMap = window.getDuplicateKeyMap();
-    list = list.filter(item => {
+    // F. Duplicate Keys filter
+    if (checkDuplicates) {
       if (!item.key) return false;
       const k = item.key.trim().toLowerCase();
-      return dupMap.has(k) && dupMap.get(k).length > 1;
-    });
-  }
+      if (!dupMap || !dupMap.has(k) || dupMap.get(k).length <= 1) return false;
+    }
+
+    return true;
+  });
 
   // Optimize Sorting
   const sortBy = state.inventorySortBy || "date-desc";
@@ -11865,7 +11882,7 @@ function toggleDashboardOverviewVisibility(cardKey) {
   }
 
   state.dashboardOverviewVisibility[cardKey] = next;
-  saveStateToStorage();
+  saveSettingsToStorage();
   renderDashboardOverviewCardsOrder();
 
   const cardLabels = {
@@ -11898,7 +11915,7 @@ function moveDashboardOverviewCard(cardKey, direction) {
   state.dashboardOverviewOrder[currentIndex] = state.dashboardOverviewOrder[newIndex];
   state.dashboardOverviewOrder[newIndex] = temp;
 
-  saveStateToStorage();
+  saveSettingsToStorage();
   renderDashboardOverviewCardsOrder();
 
   const cardLabels = {
@@ -11919,7 +11936,7 @@ window.moveDashboardOverviewCard = moveDashboardOverviewCard;
 function resetDashboardOverviewCardsOrder() {
   state.dashboardOverviewOrder = ["performance", "inventory", "dailyProfitMonth"];
   state.dashboardOverviewVisibility = { performance: true, inventory: true, dailyProfitMonth: true };
-  saveStateToStorage();
+  saveSettingsToStorage();
   renderDashboardOverviewCardsOrder();
   showToast("Dashboard overview containers reset to default order.", "info");
 
@@ -12065,7 +12082,7 @@ function bindDashboardDragAndDrop() {
         state.dashboardOrder[fromIndex] = toKey;
         state.dashboardOrder[toIndex] = fromKey;
         
-        saveStateToStorage();
+        saveSettingsToStorage();
         renderDashboardCardsOrder();
         
         showToast("Rearranged dashboard figures layout.", "success");
@@ -12136,7 +12153,7 @@ function bindFinanceDragAndDrop() {
         state.financeOrder[fromIndex] = toKey;
         state.financeOrder[toIndex] = fromKey;
         
-        saveStateToStorage();
+        saveSettingsToStorage();
         renderFinanceCardsOrder();
         
         showToast("Rearranged finances layout.", "success");
@@ -12246,14 +12263,14 @@ function bindDashboardCardActions() {
         const isFinance = card.closest(".finance-charts-grid") !== null;
         if (isFinance) {
           state.financeSpans[figureKey] = spanVal;
-          saveStateToStorage();
+          saveSettingsToStorage();
           applyFinanceSpans();
           if (window.supabaseClient) {
             dbSaveSettings("financeSpans", state.financeSpans);
           }
         } else {
           state.dashboardSpans[figureKey] = spanVal;
-          saveStateToStorage();
+          saveSettingsToStorage();
           applyDashboardSpans();
           if (window.supabaseClient) {
             dbSaveSettings("dashboardSpans", state.dashboardSpans);

@@ -2036,92 +2036,132 @@ function loadStateFromStorage() {
   }
 }
 
+// Granular state persistence helpers to avoid full-database re-serialization on minor preference changes
+function saveInventoryToStorage() {
+  try {
+    const userSuffix = (state.currentUser && state.currentUser !== "guest") ? `_${state.currentUser}` : "";
+    localStorage.setItem("gv_inventory" + userSuffix, JSON.stringify(state.inventory || []));
+  } catch (err) {
+    console.warn("[GameVault] Error saving inventory to storage:", err);
+  }
+}
+
+function saveSalesToStorage() {
+  try {
+    const userSuffix = (state.currentUser && state.currentUser !== "guest") ? `_${state.currentUser}` : "";
+    localStorage.setItem("gv_sales" + userSuffix, JSON.stringify(state.sales || []));
+  } catch (err) {
+    console.warn("[GameVault] Error saving sales to storage:", err);
+  }
+}
+
+function saveSecondaryTablesToStorage() {
+  try {
+    const userSuffix = (state.currentUser && state.currentUser !== "guest") ? `_${state.currentUser}` : "";
+    localStorage.setItem("gv_catalog_artwork", JSON.stringify(state.catalogArtwork || {}));
+    localStorage.setItem("gv_catalog_reviews", JSON.stringify(state.catalogReviews || {}));
+    localStorage.setItem("gv_favorite_games" + userSuffix, JSON.stringify(state.favoriteGames || []));
+    localStorage.setItem("gv_suppliers" + userSuffix, JSON.stringify(state.suppliers || []));
+    localStorage.setItem("gv_supplier_logos" + userSuffix, JSON.stringify(state.supplierLogos || {}));
+    localStorage.setItem("gv_supplier_logos", JSON.stringify(state.supplierLogos || {}));
+    localStorage.setItem("gv_platforms" + userSuffix, JSON.stringify(state.platforms || []));
+    localStorage.setItem("gv_platform_logos" + userSuffix, JSON.stringify(state.platformLogos || {}));
+    localStorage.setItem("gv_platform_logos", JSON.stringify(state.platformLogos || {}));
+    localStorage.setItem("gv_publisher_logos" + userSuffix, JSON.stringify(state.publisherLogos || {}));
+    localStorage.setItem("gv_publisher_logos", JSON.stringify(state.publisherLogos || {}));
+    localStorage.setItem("gv_recycle_bin" + userSuffix, JSON.stringify(state.recycleBin || {}));
+    localStorage.setItem("gv_payouts" + userSuffix, JSON.stringify(state.payouts || []));
+    localStorage.setItem("gv_expense_categories" + userSuffix, JSON.stringify(state.expenseCategories || []));
+    localStorage.setItem("gv_pending_deletes" + userSuffix, JSON.stringify(state.pendingDeletes || {}));
+    localStorage.setItem("gv_audit_logs", JSON.stringify(state.auditLogs || []));
+  } catch (err) {
+    console.warn("[GameVault] Error saving secondary tables to storage:", err);
+  }
+}
+
+function saveSettingsToStorage() {
+  try {
+    if (state.widgetSettings && state.visibleFigures) {
+      Object.keys(state.widgetSettings).forEach(key => {
+        if (state.widgetSettings[key]) {
+          state.visibleFigures[key] = state.widgetSettings[key].visible !== false;
+        }
+      });
+    }
+    localStorage.setItem("gv_inv_layout", state.inventoryLayout);
+    localStorage.setItem("gv_entries_layout", state.entriesLayout);
+    localStorage.setItem("gv_entries_sort_by", state.entriesSortBy || "rating-desc");
+    localStorage.setItem("gv_publishers_sort_by", state.publishersSortBy || "purchased-desc");
+    localStorage.setItem("gv_entries_rating_filter", state.entriesRatingFilter || "all");
+    localStorage.setItem("gv_entries_stock_filter", state.entriesStockFilter || "all");
+    localStorage.setItem("gv_supplier_display_mode", state.supplierDisplayMode);
+    localStorage.setItem("gv_platform_display_mode", state.platformDisplayMode);
+    localStorage.setItem("gv_inventory_sort_by", state.inventorySortBy);
+    localStorage.setItem("gv_inv_page_size", state.inventoryPageSize);
+    localStorage.setItem("gv_sales_page_size", state.salesPageSize);
+    localStorage.setItem("gv_entries_page_size", state.entriesPageSize);
+    localStorage.setItem("gv_catalog_keys_page_size", state.catalogKeysPageSize);
+    localStorage.setItem("gv_theme_mode", state.themeMode);
+    localStorage.setItem("gv_theme_color", state.themeColor);
+    // Keep legacy gv_theme synced
+    localStorage.setItem("gv_theme", state.themeMode === "light" ? "light" : state.themeColor);
+    localStorage.setItem("gv_currency", state.currency);
+    localStorage.setItem("gv_date_format", state.dateFormat);
+    localStorage.setItem("gv_benchmark_mode", state.benchmarkMode);
+    localStorage.setItem("gv_sidebar_collapsed", state.sidebarCollapsed);
+    localStorage.setItem("gv_show_sales_ledger", state.showSalesLedger);
+    localStorage.setItem("gv_visible_metrics", JSON.stringify(state.visibleMetrics));
+    localStorage.setItem("gv_sup_visible_metrics", JSON.stringify(state.supVisibleMetrics));
+    localStorage.setItem("gv_visible_figures", JSON.stringify(state.visibleFigures));
+    localStorage.setItem("gv_metric_order", JSON.stringify(state.metricOrder));
+    localStorage.setItem("gv_sup_metric_order", JSON.stringify(state.supMetricOrder));
+    localStorage.setItem("gv_menu_order", JSON.stringify(state.menuOrder));
+    localStorage.setItem("gv_font_size", state.fontSize);
+    localStorage.setItem("gv_low_stock_threshold", state.lowStockThreshold);
+    localStorage.setItem("gv_default_markup_type", state.defaultMarkupType);
+    localStorage.setItem("gv_default_markup_value", state.defaultMarkupValue);
+    localStorage.setItem("gv_sync_mode", state.syncMode);
+    localStorage.setItem("gv_auto_sync_interval", state.autoSyncInterval);
+    localStorage.setItem("gv_auto_push_github", state.autoPushGitHub ? "true" : "false");
+    localStorage.setItem("gv_auto_pull_github", state.autoPullGitHub ? "true" : "false");
+    localStorage.setItem("gv_platform_fee_presets", JSON.stringify(PLATFORM_FEE_PRESETS));
+    localStorage.setItem("gv_menu_icons", JSON.stringify(state.menuIcons));
+    localStorage.setItem("gv_menu_titles", JSON.stringify(state.menuTitles));
+    localStorage.setItem("gv_menu_visibility", JSON.stringify(state.menuVisibility));
+    localStorage.setItem("gv_dashboard_overview_order", JSON.stringify(state.dashboardOverviewOrder));
+    localStorage.setItem("gv_dashboard_overview_visibility", JSON.stringify(state.dashboardOverviewVisibility));
+    localStorage.setItem("gv_dashboard_order", JSON.stringify(state.dashboardOrder));
+    localStorage.setItem("gv_finance_order", JSON.stringify(state.financeOrder));
+    localStorage.setItem("gv_dashboard_spans", JSON.stringify(state.dashboardSpans));
+    localStorage.setItem("gv_finance_spans", JSON.stringify(state.financeSpans));
+    localStorage.setItem("gv_widget_settings", JSON.stringify(state.widgetSettings));
+    localStorage.setItem("gv_ai_settings", JSON.stringify(state.aiSettings));
+    if (state.customLogo) {
+      localStorage.setItem("gv_custom_logo", state.customLogo);
+    } else {
+      localStorage.removeItem("gv_custom_logo");
+    }
+  } catch (err) {
+    console.warn("[GameVault] Error saving settings to storage:", err);
+  }
+}
+
 // Automatically cleans up empty/invalid items from database state
 function saveStateToStorage() {
-  const userSuffix = (state.currentUser && state.currentUser !== "guest") ? `_${state.currentUser}` : "";
-  if (state.widgetSettings && state.visibleFigures) {
-    Object.keys(state.widgetSettings).forEach(key => {
-      if (state.widgetSettings[key]) {
-        state.visibleFigures[key] = state.widgetSettings[key].visible !== false;
-      }
-    });
-  }
-  localStorage.setItem("gv_inventory" + userSuffix, JSON.stringify(state.inventory));
-  localStorage.setItem("gv_catalog_artwork", JSON.stringify(state.catalogArtwork || {}));
-  localStorage.setItem("gv_catalog_reviews", JSON.stringify(state.catalogReviews || {}));
-  localStorage.setItem("gv_favorite_games" + userSuffix, JSON.stringify(state.favoriteGames || []));
-  localStorage.setItem("gv_sales" + userSuffix, JSON.stringify(state.sales));
-  localStorage.setItem("gv_suppliers" + userSuffix, JSON.stringify(state.suppliers));
-  localStorage.setItem("gv_supplier_logos" + userSuffix, JSON.stringify(state.supplierLogos || {}));
-  localStorage.setItem("gv_supplier_logos", JSON.stringify(state.supplierLogos || {}));
-  localStorage.setItem("gv_platforms" + userSuffix, JSON.stringify(state.platforms));
-  localStorage.setItem("gv_platform_logos" + userSuffix, JSON.stringify(state.platformLogos || {}));
-  localStorage.setItem("gv_platform_logos", JSON.stringify(state.platformLogos || {}));
-  localStorage.setItem("gv_publisher_logos" + userSuffix, JSON.stringify(state.publisherLogos || {}));
-  localStorage.setItem("gv_publisher_logos", JSON.stringify(state.publisherLogos || {}));
-  localStorage.setItem("gv_recycle_bin" + userSuffix, JSON.stringify(state.recycleBin));
-  localStorage.setItem("gv_payouts" + userSuffix, JSON.stringify(state.payouts));
-  localStorage.setItem("gv_expense_categories" + userSuffix, JSON.stringify(state.expenseCategories));
-  localStorage.setItem("gv_pending_deletes" + userSuffix, JSON.stringify(state.pendingDeletes));
-  localStorage.setItem("gv_audit_logs", JSON.stringify(state.auditLogs || []));
-  localStorage.setItem("gv_inv_layout", state.inventoryLayout);
-  localStorage.setItem("gv_entries_layout", state.entriesLayout);
-  localStorage.setItem("gv_entries_sort_by", state.entriesSortBy || "rating-desc");
-  localStorage.setItem("gv_publishers_sort_by", state.publishersSortBy || "purchased-desc");
-  localStorage.setItem("gv_entries_rating_filter", state.entriesRatingFilter || "all");
-  localStorage.setItem("gv_entries_stock_filter", state.entriesStockFilter || "all");
-  localStorage.setItem("gv_supplier_display_mode", state.supplierDisplayMode);
-  localStorage.setItem("gv_platform_display_mode", state.platformDisplayMode);
-  localStorage.setItem("gv_inventory_sort_by", state.inventorySortBy);
-  localStorage.setItem("gv_inv_page_size", state.inventoryPageSize);
-  localStorage.setItem("gv_sales_page_size", state.salesPageSize);
-  localStorage.setItem("gv_entries_page_size", state.entriesPageSize);
-  localStorage.setItem("gv_catalog_keys_page_size", state.catalogKeysPageSize);
-  localStorage.setItem("gv_theme_mode", state.themeMode);
-  localStorage.setItem("gv_theme_color", state.themeColor);
-  // Keep legacy gv_theme synced
-  localStorage.setItem("gv_theme", state.themeMode === "light" ? "light" : state.themeColor);
-  localStorage.setItem("gv_currency", state.currency);
-  localStorage.setItem("gv_date_format", state.dateFormat);
-  localStorage.setItem("gv_benchmark_mode", state.benchmarkMode);
-  localStorage.setItem("gv_sidebar_collapsed", state.sidebarCollapsed);
-  localStorage.setItem("gv_show_sales_ledger", state.showSalesLedger);
-  localStorage.setItem("gv_visible_metrics", JSON.stringify(state.visibleMetrics));
-  localStorage.setItem("gv_sup_visible_metrics", JSON.stringify(state.supVisibleMetrics));
-  localStorage.setItem("gv_visible_figures", JSON.stringify(state.visibleFigures));
-  localStorage.setItem("gv_metric_order", JSON.stringify(state.metricOrder));
-  localStorage.setItem("gv_sup_metric_order", JSON.stringify(state.supMetricOrder));
-  localStorage.setItem("gv_menu_order", JSON.stringify(state.menuOrder));
-  localStorage.setItem("gv_font_size", state.fontSize);
-  localStorage.setItem("gv_low_stock_threshold", state.lowStockThreshold);
-  localStorage.setItem("gv_default_markup_type", state.defaultMarkupType);
-  localStorage.setItem("gv_default_markup_value", state.defaultMarkupValue);
-  localStorage.setItem("gv_sync_mode", state.syncMode);
-  localStorage.setItem("gv_auto_sync_interval", state.autoSyncInterval);
-  localStorage.setItem("gv_auto_push_github", state.autoPushGitHub ? "true" : "false");
-  localStorage.setItem("gv_auto_pull_github", state.autoPullGitHub ? "true" : "false");
-  localStorage.setItem("gv_platform_fee_presets", JSON.stringify(PLATFORM_FEE_PRESETS));
-  localStorage.setItem("gv_menu_icons", JSON.stringify(state.menuIcons));
-  localStorage.setItem("gv_menu_titles", JSON.stringify(state.menuTitles));
-  localStorage.setItem("gv_menu_visibility", JSON.stringify(state.menuVisibility));
-  localStorage.setItem("gv_dashboard_overview_order", JSON.stringify(state.dashboardOverviewOrder));
-  localStorage.setItem("gv_dashboard_overview_visibility", JSON.stringify(state.dashboardOverviewVisibility));
-  localStorage.setItem("gv_dashboard_order", JSON.stringify(state.dashboardOrder));
-  localStorage.setItem("gv_finance_order", JSON.stringify(state.financeOrder));
-  localStorage.setItem("gv_dashboard_spans", JSON.stringify(state.dashboardSpans));
-  localStorage.setItem("gv_finance_spans", JSON.stringify(state.financeSpans));
-  localStorage.setItem("gv_widget_settings", JSON.stringify(state.widgetSettings));
-  localStorage.setItem("gv_ai_settings", JSON.stringify(state.aiSettings));
-  if (state.customLogo) {
-    localStorage.setItem("gv_custom_logo", state.customLogo);
-  } else {
-    localStorage.removeItem("gv_custom_logo");
-  }
+  saveInventoryToStorage();
+  saveSalesToStorage();
+  saveSecondaryTablesToStorage();
+  saveSettingsToStorage();
 
   if (state.autoPushGitHub && !state._isImporting && !state._isRestoring) {
     triggerDebouncedGitHubPush();
   }
 }
+
+window.saveInventoryToStorage = saveInventoryToStorage;
+window.saveSalesToStorage = saveSalesToStorage;
+window.saveSecondaryTablesToStorage = saveSecondaryTablesToStorage;
+window.saveSettingsToStorage = saveSettingsToStorage;
 
 function getUsersFromStorage() {
   let arr = [];

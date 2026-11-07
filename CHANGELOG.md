@@ -5,6 +5,18 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.46] - 2026-11-07
+### Performance
+- **Granular Local Storage Persistence**:
+  - Implemented `saveSettingsToStorage()`, `saveInventoryToStorage()`, and `saveSalesToStorage()` to isolate data saves.
+  - Widget configuration, drag-and-drop order updates, card spans, and layout preferences now persist without re-serializing the full inventory and sales database arrays, eliminating unnecessary CPU churn on minor preference changes.
+- **Single-Pass Array Filtering**:
+  - Streamlined `getFilteredInventory()` and `getFilteredSales()` into unified, single-pass filter predicates.
+  - Short-circuits filtering conditions upfront and eliminates 4–5 intermediate array allocations and garbage collection cycles on every search keystroke or filter toggle.
+  - Optimized sales ledger sorting by comparing ISO date strings directly rather than instantiating thousands of temporary `Date` objects in quicksort.
+- **On-Demand View Data Calculation**:
+  - Moved table filtering in `updateUI()` inside specific view conditions so non-active views no longer perform redundant data filtering.
+
 ## [v2.2.45] - 2026-11-07
 ### Changed
 - **Removed 3-Dots Options Menu from Daily Profit Overview Card**:
