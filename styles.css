@@ -1109,6 +1109,16 @@ a {
 }
 
 /* Card Header Action Dropdown */
+.btn-card-actions {
+  cursor: pointer;
+  transition: opacity 0.2s ease, color 0.2s ease;
+}
+
+.btn-card-actions:hover {
+  opacity: 1 !important;
+  color: var(--accent-cyan);
+}
+
 .card-actions-dropdown {
   position: relative;
   display: inline-block;

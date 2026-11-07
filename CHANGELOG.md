@@ -5,6 +5,14 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.44] - 2026-11-07
+### Added
+- **Daily Profit 3-Dots Options Menu & Fullscreen Maximize**:
+  - Activated the 3-dots dropdown menu (`.btn-card-actions`) in the top right corner of the **Daily Profit** overview container.
+  - Enabled **Configure**: Flips the card smoothly to customize Chart Type (Bar vs. Line) and Time Period (Global, 30 days, 90 days, Year) with state persistence.
+  - Enabled **Maximize**: Expands Daily Profit into a high-resolution, responsive fullscreen modal view with seamless exit and restore to its original overview position.
+  - Added subtle hover highlights to `.btn-card-actions` for enhanced cursor feedback.
+
 ## [v2.2.43] - 2026-11-07
 ### Changed
 - **Overview Row Multi-Row Layout Alignment**:

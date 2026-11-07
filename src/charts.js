@@ -2733,6 +2733,9 @@ function getWidgetFilteredInventory(widgetKey, globalInventoryList) {
   });
 }
 
+let fullscreenOriginalParent = null;
+let fullscreenOriginalSibling = null;
+
 function enterWidgetFullscreen(cardElement) {
   const overlay = document.getElementById("widget-fullscreen-overlay");
   if (!overlay || !cardElement) return;
@@ -2746,10 +2749,18 @@ function enterWidgetFullscreen(cardElement) {
   overlay.classList.add("active");
   document.body.style.overflow = "hidden";
   
-  const maxIcon = cardElement.querySelector(".btn-widget-maximize");
-  if (maxIcon) {
-    maxIcon.className = "fa-solid fa-compress btn-widget-maximize";
-    maxIcon.title = "Exit fullscreen";
+  const maxBtn = cardElement.querySelector(".btn-widget-maximize");
+  if (maxBtn) {
+    if (maxBtn.tagName === "I") {
+      maxBtn.className = "fa-solid fa-compress btn-widget-maximize";
+      maxBtn.title = "Exit fullscreen";
+    } else {
+      const icon = maxBtn.querySelector("i");
+      if (icon) icon.className = "fa-solid fa-compress";
+      maxBtn.title = "Exit fullscreen";
+      const textNodes = Array.from(maxBtn.childNodes).filter(n => n.nodeType === Node.TEXT_NODE);
+      if (textNodes.length > 0) textNodes[0].textContent = " Exit Fullscreen";
+    }
   }
   
   window.dispatchEvent(new Event("resize"));
@@ -2767,10 +2778,18 @@ function exitWidgetFullscreen() {
       fullscreenOriginalParent.appendChild(cardElement);
     }
     
-    const maxIcon = cardElement.querySelector(".btn-widget-maximize");
-    if (maxIcon) {
-      maxIcon.className = "fa-solid fa-expand btn-widget-maximize";
-      maxIcon.title = "Maximize widget";
+    const maxBtn = cardElement.querySelector(".btn-widget-maximize");
+    if (maxBtn) {
+      if (maxBtn.tagName === "I") {
+        maxBtn.className = "fa-solid fa-expand btn-widget-maximize";
+        maxBtn.title = "Maximize widget";
+      } else {
+        const icon = maxBtn.querySelector("i");
+        if (icon) icon.className = "fa-solid fa-expand";
+        maxBtn.title = "Maximize widget";
+        const textNodes = Array.from(maxBtn.childNodes).filter(n => n.nodeType === Node.TEXT_NODE);
+        if (textNodes.length > 0) textNodes[0].textContent = " Maximize";
+      }
     }
   }
   
@@ -3049,6 +3068,8 @@ function bindWidgetControls() {
         } else {
           enterWidgetFullscreen(card);
         }
+        const menu = btnMaximize.closest(".card-actions-menu");
+        if (menu) menu.classList.remove("active");
       }
       return;
     }
