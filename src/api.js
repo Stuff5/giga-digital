@@ -66,9 +66,12 @@ function renderPeriodSummary(dbFilteredSales, dbFilteredInventory) {
     const uniqueTitlesEl = document.getElementById("summary-metric-unique-titles");
     if (uniqueTitlesEl) {
       const titlesSet = new Set();
-      if (dbFilteredInventory) {
+      if (Array.isArray(dbFilteredInventory)) {
         dbFilteredInventory.forEach(item => {
-          if (item.status === "Available" || item.status === "Reserved" || (!item.sold && !item.recycleBin)) {
+          const isSold = item.status === "Sold" || item.sold === true;
+          const isRejected = item.status === "Rejected";
+          const isRecycled = item.recycleBin === true;
+          if (!isSold && !isRejected && !isRecycled) {
             const t = (item.title || item.gameTitle || "").trim();
             if (t) titlesSet.add(t.toLowerCase());
           }

@@ -5,6 +5,12 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.42] - 2026-11-07
+### Changed
+- **Updated Metric to "Unique Titles in Stock"**:
+  - Labeled the new catalog breadth metric in the Inventory Status overview card explicitly as **"Unique Titles in Stock"**.
+  - Refined dataset filtering to strictly count active in-stock licenses (`Available` and `Reserved`), strictly excluding sold, rejected, and recycled keys.
+
 ## [v2.2.41] - 2026-11-07
 ### Added
 - **Unique Titles in Inventory Status Card**:
