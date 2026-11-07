@@ -5,6 +5,13 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.37] - 2026-11-07
+### Added
+- **Transferred Daily Profit of the Month Graph to Top Overview Row**:
+  - Moved `#card-chart-dailyProfitMonth` next to **Performance Summary** and **Inventory Status** in `#dashboard-period-summary-row`.
+  - Balanced card height (`min-height: 220px`), internal flex layout, padding, and headers across all three top cards.
+  - Enabled drag-and-drop rearrangement, Left/Right order swap buttons, Configure settings, and Maximize controls for the Daily Profit graph in the overview row.
+
 ## [v2.2.36] - 2026-11-07
 ### Removed
 - **Removed Dashboard Overview Containers from Settings**:

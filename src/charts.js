@@ -2620,6 +2620,7 @@ function renderDashboardCardsOrder() {
   if (!container) return;
   
   state.dashboardOrder.forEach(key => {
+    if (key === "dailyProfitMonth") return;
     const card = document.getElementById(`card-chart-${key}`);
     if (card) {
       container.appendChild(card);

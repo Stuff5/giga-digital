@@ -1079,10 +1079,10 @@ let state = {
   expenseCategories: [],
   payouts: [],
   menuOrder: ["dashboard", "inventory", "sales", "finance", "suppliers", "platforms", "entries", "recycle", "settings"],
-  dashboardOverviewOrder: ["performance", "inventory"],
-  dashboardOverviewVisibility: { performance: true, inventory: true },
+  dashboardOverviewOrder: ["performance", "inventory", "dailyProfitMonth"],
+  dashboardOverviewVisibility: { performance: true, inventory: true, dailyProfitMonth: true },
   dashboardOrder: [
-    "salesProfit", "platformSplit", "supplierSplit", "topBestsellers", "topBestsellersRevenue", "topBestsellersSales", "topPeakProfit", "topAverageProfit", "dailyProfitMonth", "dayOfWeek",
+    "salesProfit", "platformSplit", "supplierSplit", "topBestsellers", "topBestsellersRevenue", "topBestsellersSales", "topPeakProfit", "topAverageProfit", "dayOfWeek",
     "stockSpeed", "salesFeed", "stockTurnover", "stockAging"
   ],
   financeOrder: [
@@ -1809,7 +1809,7 @@ function loadStateFromStorage() {
     if (storedOverviewOrder) {
       try {
         const parsedOverview = JSON.parse(storedOverviewOrder);
-        const expectedOverview = ["performance", "inventory"];
+        const expectedOverview = ["performance", "inventory", "dailyProfitMonth"];
         if (Array.isArray(parsedOverview)) {
           const filtered = parsedOverview.filter(k => expectedOverview.includes(k));
           expectedOverview.forEach(k => {
@@ -1819,11 +1819,11 @@ function loadStateFromStorage() {
         }
       } catch (e) {
         console.error("Error parsing dashboard overview order, using defaults:", e);
-        state.dashboardOverviewOrder = ["performance", "inventory"];
+        state.dashboardOverviewOrder = ["performance", "inventory", "dailyProfitMonth"];
       }
     }
-    if (!state.dashboardOverviewOrder || !Array.isArray(state.dashboardOverviewOrder) || state.dashboardOverviewOrder.length !== 2) {
-      state.dashboardOverviewOrder = ["performance", "inventory"];
+    if (!state.dashboardOverviewOrder || !Array.isArray(state.dashboardOverviewOrder) || state.dashboardOverviewOrder.length !== 3) {
+      state.dashboardOverviewOrder = ["performance", "inventory", "dailyProfitMonth"];
     }
 
     const storedOverviewVisibility = localStorage.getItem("gv_dashboard_overview_visibility");
@@ -1835,7 +1835,7 @@ function loadStateFromStorage() {
       }
     }
     if (!state.dashboardOverviewVisibility || typeof state.dashboardOverviewVisibility !== 'object') {
-      state.dashboardOverviewVisibility = { performance: true, inventory: true };
+      state.dashboardOverviewVisibility = { performance: true, inventory: true, dailyProfitMonth: true };
     }
 
     const storedFinanceOrder = localStorage.getItem("gv_finance_order");

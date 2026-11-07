@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=60">
+  <link rel="stylesheet" href="styles.css?v=61">
   
   <!-- Early theme application to prevent FOUC / light theme flicker -->
   <script>
@@ -139,7 +139,7 @@
         </div>
         <div class="version-info" style="text-align: center; font-size: 0.7rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; overflow: hidden; white-space: nowrap;">
           <span class="version-label">GameVault</span>
-          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v2.2.36</a>
+          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v2.2.37</a>
         </div>
 
       </div>
@@ -357,6 +357,69 @@
                 <div style="display: flex; flex-direction: column; gap: 4px;">
                   <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-vault" style="margin-right: 6px; color: var(--accent-emerald);"></i>Stock Cost</span>
                   <h3 id="summary-metric-stock-cost" style="margin: 0; font-size: 1.5rem; font-weight: 700; color: var(--accent-emerald);">€0.00</h3>
+                </div>
+              </div>
+            </div>
+
+            <!-- Daily Profit of the Month Card (Transferred to Overview) -->
+            <div class="chart-card dashboard-overview-card" id="card-chart-dailyProfitMonth" data-figure="dailyProfitMonth" data-overview-card="dailyProfitMonth">
+              <div class="card-inner">
+                <div class="card-front">
+                  <div class="chart-card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 14px; user-select: none;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <i class="fa-solid fa-grip-vertical overview-drag-handle" title="Drag to rearrange container" style="cursor: grab; opacity: 0.5; font-size: 0.9rem;"></i>
+                      <h4 style="margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Daily Profit</h4>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <div class="overview-move-controls" style="display: flex; align-items: center; gap: 3px;">
+                        <button type="button" class="btn btn-icon btn-xs btn-overview-move-left" onclick="event.stopPropagation(); moveDashboardOverviewCard('dailyProfitMonth', -1)" title="Move container left" style="width: 24px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); background: var(--bg-card); border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer;"><i class="fa-solid fa-chevron-left" style="font-size: 0.65rem;"></i></button>
+                        <button type="button" class="btn btn-icon btn-xs btn-overview-move-right" onclick="event.stopPropagation(); moveDashboardOverviewCard('dailyProfitMonth', 1)" title="Move container right" style="width: 24px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); background: var(--bg-card); border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer;"><i class="fa-solid fa-chevron-right" style="font-size: 0.65rem;"></i></button>
+                      </div>
+                      <div class="metric-icon" style="position: static; font-size: 1.25rem; opacity: 0.8; width: auto; height: auto; background: none; display: flex; align-items: center; justify-content: center;">
+                        <i class="fa-solid fa-calendar-day" style="color: var(--accent-teal);"></i>
+                      </div>
+                      <div class="card-actions-dropdown" style="margin-left: 2px;">
+                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options" style="cursor: pointer; opacity: 0.7; font-size: 0.95rem;"></i>
+                        <div class="card-actions-menu">
+                          <button type="button" class="card-actions-item btn-widget-configure">
+                            <i class="fa-solid fa-sliders"></i> Configure
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-maximize">
+                            <i class="fa-solid fa-expand"></i> Maximize
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chart-body" style="flex: 1; min-height: 130px; position: relative;">
+                    <canvas id="dailyProfitMonthChart"></canvas>
+                  </div>
+                </div>
+                <div class="card-back">
+                  <form class="widget-config-form" data-widget="dailyProfitMonth">
+                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
+                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
+                    </div>
+                    <div class="config-form-body">
+                      <div class="config-field-group">
+                        <label for="config-dailyProfitMonth-chartType">Chart Type</label>
+                        <select id="config-dailyProfitMonth-chartType" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="bar">Bar Chart</option>
+                          <option value="line">Line Chart</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-dailyProfitMonth-timeframe">Time Period</label>
+                        <select id="config-dailyProfitMonth-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="global">Global Dashboard Filter</option>
+                          <option value="30">Last 30 Days</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="year">This Year</option>
+                        </select>
+                      </div>
+                    </div>
+                  </form>
                 </div>
               </div>
             </div>
@@ -1048,70 +1111,6 @@
                     <div class="config-form-actions">
                       <button type="submit" class="btn-widget-save">Save Changes</button>
                       <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </div>
-
-            <div class="chart-card" id="card-chart-dailyProfitMonth" data-figure="dailyProfitMonth">
-              <div class="card-inner">
-                <div class="card-front">
-                  <div class="chart-card-header">
-                    <h4>Daily Profit of the Month</h4>
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
-                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
-                      <div class="card-actions-dropdown">
-                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
-                        <div class="card-actions-menu">
-                          <button type="button" class="card-actions-item btn-widget-configure">
-                            <i class="fa-solid fa-sliders"></i> Configure
-                          </button>
-                          <button type="button" class="card-actions-item btn-widget-remove">
-                            <i class="fa-solid fa-trash-can"></i> Remove Widget
-                          </button>
-                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
-                          <button type="button" class="card-actions-item" data-span="1">
-                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
-                          </button>
-                          <button type="button" class="card-actions-item" data-span="2">
-                            <i class="fa-solid fa-table-columns"></i> 2 Columns
-                          </button>
-                          <button type="button" class="card-actions-item" data-span="3">
-                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="chart-body">
-                    <canvas id="dailyProfitMonthChart"></canvas>
-                  </div>
-                </div>
-                <div class="card-back">
-                  <form class="widget-config-form" data-widget="dailyProfitMonth">
-                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
-                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
-                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
-                    </div>
-                    <div class="config-form-body">
-                      <div class="config-field-group">
-                        <label for="config-dailyProfitMonth-chartType">Chart Type</label>
-                        <select id="config-dailyProfitMonth-chartType" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
-                          <option value="bar">Bar Chart</option>
-                          <option value="line">Line Chart</option>
-                        </select>
-                      </div>
-                      <div class="config-field-group">
-                        <label for="config-dailyProfitMonth-timeframe">Time Period</label>
-                        <select id="config-dailyProfitMonth-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
-                          <option value="global">Global Dashboard Filter</option>
-                          <option value="30">Last 30 Days</option>
-                          <option value="90">Last 90 Days</option>
-                          <option value="year">This Year</option>
-                        </select>
-                      </div>
                     </div>
                   </form>
                 </div>
@@ -4120,13 +4119,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=101"></script>
-  <script src="src/state.js?v=101"></script>
-  <script src="src/api.js?v=101"></script>
-  <script src="src/charts.js?v=101"></script>
-  <script src="src/ui.js?v=101"></script>
-  <script src="src/ai.js?v=101"></script>
-  <script src="src/importer.js?v=101"></script>
-  <script src="app.js?v=101"></script>
+  <script src="config.js?v=102"></script>
+  <script src="src/state.js?v=102"></script>
+  <script src="src/api.js?v=102"></script>
+  <script src="src/charts.js?v=102"></script>
+  <script src="src/ui.js?v=102"></script>
+  <script src="src/ai.js?v=102"></script>
+  <script src="src/importer.js?v=102"></script>
+  <script src="app.js?v=102"></script>
 </body>
 </html>

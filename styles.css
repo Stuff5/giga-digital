@@ -1225,6 +1225,34 @@ a {
   color: var(--accent-cyan) !important;
   background-color: var(--bg-surface) !important;
 }
+
+/* Overview Row Specific Chart Card Styling */
+#dashboard-period-summary-row .dashboard-overview-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 220px;
+}
+
+#dashboard-period-summary-row .chart-card {
+  min-height: 220px !important;
+  height: 100% !important;
+}
+
+#dashboard-period-summary-row .chart-card .card-inner {
+  height: 100%;
+}
+
+#dashboard-period-summary-row .chart-card .card-front,
+#dashboard-period-summary-row .chart-card .card-back {
+  padding: 20px 24px;
+}
+
+#dashboard-period-summary-row .chart-card .chart-body {
+  flex: 1;
+  min-height: 130px;
+  position: relative;
+}
 .chart-card {
   position: relative;
   perspective: 1200px;

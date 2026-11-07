@@ -5,7 +5,7 @@
 // Asynchronously loads critical HTML templates (modals.html) on application boot
 window.loadHTMLTemplates = async () => {
   try {
-    const ver = window.APP_VERSION || "v2.2.36";
+    const ver = window.APP_VERSION || "v2.2.37";
     const res = await fetch(`templates/modals.html?v=${ver}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const html = await res.text();
@@ -33,7 +33,7 @@ window.ensureHelpModalLoaded = async () => {
 
   _helpModalLoadingPromise = (async () => {
     try {
-      const ver = window.APP_VERSION || "v2.2.36";
+      const ver = window.APP_VERSION || "v2.2.37";
       const res = await fetch(`templates/help-modal.html?v=${ver}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -11760,14 +11760,14 @@ function renderDashboardOverviewCardsOrder() {
   if (!container) return;
 
   if (!state.dashboardOverviewOrder || !Array.isArray(state.dashboardOverviewOrder)) {
-    state.dashboardOverviewOrder = ["performance", "inventory"];
+    state.dashboardOverviewOrder = ["performance", "inventory", "dailyProfitMonth"];
   }
   if (!state.dashboardOverviewVisibility || typeof state.dashboardOverviewVisibility !== "object") {
-    state.dashboardOverviewVisibility = { performance: true, inventory: true };
+    state.dashboardOverviewVisibility = { performance: true, inventory: true, dailyProfitMonth: true };
   }
 
-  // Ensure both keys are present
-  const validKeys = ["performance", "inventory"];
+  // Ensure all 3 keys are present
+  const validKeys = ["performance", "inventory", "dailyProfitMonth"];
   state.dashboardOverviewOrder = state.dashboardOverviewOrder.filter(k => validKeys.includes(k));
   validKeys.forEach(k => {
     if (!state.dashboardOverviewOrder.includes(k)) {
@@ -11775,23 +11775,22 @@ function renderDashboardOverviewCardsOrder() {
     }
   });
 
-  // Calculate visible keys in current visual order
-  const visibleKeys = state.dashboardOverviewOrder.filter(k => state.dashboardOverviewVisibility[k] !== false);
-
   state.dashboardOverviewOrder.forEach(key => {
-    const card = document.getElementById(`card-overview-${key}`);
+    let card = document.getElementById(`card-overview-${key}`);
+    if (!card && key === "dailyProfitMonth") {
+      card = document.getElementById("card-chart-dailyProfitMonth");
+    }
     if (card) {
-      const isVisible = state.dashboardOverviewVisibility[key] !== false;
-      card.style.display = isVisible ? "" : "none";
-      if (isVisible) {
-        container.appendChild(card);
-      }
+      container.appendChild(card);
     }
   });
 
   // Update left/right move button states based on currently visible cards
-  visibleKeys.forEach((key, index) => {
-    const card = document.getElementById(`card-overview-${key}`);
+  state.dashboardOverviewOrder.forEach((key, index) => {
+    let card = document.getElementById(`card-overview-${key}`);
+    if (!card && key === "dailyProfitMonth") {
+      card = document.getElementById("card-chart-dailyProfitMonth");
+    }
     if (card) {
       const leftBtn = card.querySelector(".btn-overview-move-left");
       const rightBtn = card.querySelector(".btn-overview-move-right");
@@ -11802,7 +11801,7 @@ function renderDashboardOverviewCardsOrder() {
         leftBtn.style.cursor = isFirst ? "not-allowed" : "pointer";
       }
       if (rightBtn) {
-        const isLast = (index === visibleKeys.length - 1);
+        const isLast = (index === state.dashboardOverviewOrder.length - 1);
         rightBtn.disabled = isLast;
         rightBtn.style.opacity = isLast ? "0.25" : "0.85";
         rightBtn.style.cursor = isLast ? "not-allowed" : "pointer";
@@ -11813,7 +11812,8 @@ function renderDashboardOverviewCardsOrder() {
   const resetBtn = document.getElementById("btn-reset-overview-order");
   if (resetBtn) {
     const isDefaultOrder = state.dashboardOverviewOrder[0] === "performance" &&
-                          state.dashboardOverviewOrder[1] === "inventory";
+                          state.dashboardOverviewOrder[1] === "inventory" &&
+                          state.dashboardOverviewOrder[2] === "dailyProfitMonth";
 
     if (isDefaultOrder) {
       resetBtn.style.display = "none";
@@ -11829,13 +11829,13 @@ window.renderDashboardOverviewCardsOrder = renderDashboardOverviewCardsOrder;
 
 function toggleDashboardOverviewVisibility(cardKey) {
   if (!state.dashboardOverviewVisibility) {
-    state.dashboardOverviewVisibility = { performance: true, inventory: true };
+    state.dashboardOverviewVisibility = { performance: true, inventory: true, dailyProfitMonth: true };
   }
   const current = state.dashboardOverviewVisibility[cardKey] !== false;
   const next = !current;
 
   // Prevent user from hiding all containers
-  const validKeys = ["performance", "inventory"];
+  const validKeys = ["performance", "inventory", "dailyProfitMonth"];
   const futureVisibleCount = validKeys.filter(k => (k === cardKey ? next : state.dashboardOverviewVisibility[k] !== false)).length;
   if (futureVisibleCount === 0) {
     showToast("At least one overview container must remain visible.", "warning");
@@ -11849,10 +11849,11 @@ function toggleDashboardOverviewVisibility(cardKey) {
 
   const cardLabels = {
     performance: "Performance Summary",
-    inventory: "Inventory Status"
+    inventory: "Inventory Status",
+    dailyProfitMonth: "Daily Profit Graph"
   };
   const label = cardLabels[cardKey] || "Container";
-  const actionMsg = next ? `Restored ${label} container.` : `Hidden ${label} container. You can restore it anytime in Settings.`;
+  const actionMsg = next ? `Restored ${label} container.` : `Hidden ${label} container.`;
   showToast(actionMsg, "info");
 
   if (window.supabaseClient && typeof dbSaveSettings === "function") {
@@ -11863,7 +11864,7 @@ window.toggleDashboardOverviewVisibility = toggleDashboardOverviewVisibility;
 
 function moveDashboardOverviewCard(cardKey, direction) {
   if (!state.dashboardOverviewOrder || !Array.isArray(state.dashboardOverviewOrder)) {
-    state.dashboardOverviewOrder = ["performance", "inventory"];
+    state.dashboardOverviewOrder = ["performance", "inventory", "dailyProfitMonth"];
   }
   const currentIndex = state.dashboardOverviewOrder.indexOf(cardKey);
   if (currentIndex === -1) return;
@@ -11881,7 +11882,8 @@ function moveDashboardOverviewCard(cardKey, direction) {
 
   const cardLabels = {
     performance: "Performance Summary",
-    inventory: "Inventory Status"
+    inventory: "Inventory Status",
+    dailyProfitMonth: "Daily Profit Graph"
   };
   const label = cardLabels[cardKey] || "Container";
   const dirName = direction < 0 ? "left" : "right";
@@ -11894,11 +11896,11 @@ function moveDashboardOverviewCard(cardKey, direction) {
 window.moveDashboardOverviewCard = moveDashboardOverviewCard;
 
 function resetDashboardOverviewCardsOrder() {
-  state.dashboardOverviewOrder = ["performance", "inventory"];
-  state.dashboardOverviewVisibility = { performance: true, inventory: true };
+  state.dashboardOverviewOrder = ["performance", "inventory", "dailyProfitMonth"];
+  state.dashboardOverviewVisibility = { performance: true, inventory: true, dailyProfitMonth: true };
   saveStateToStorage();
   renderDashboardOverviewCardsOrder();
-  showToast("Dashboard overview containers reset to default order & visibility.", "info");
+  showToast("Dashboard overview containers reset to default order.", "info");
 
   if (window.supabaseClient && typeof dbSaveSettings === "function") {
     dbSaveSettings("dashboardOverviewOrder", state.dashboardOverviewOrder);
@@ -11913,14 +11915,14 @@ function bindDashboardOverviewDragAndDrop() {
 
   const cards = container.querySelectorAll(".dashboard-overview-card");
   cards.forEach(card => {
-    const header = card.querySelector(".detail-card-header");
+    const header = card.querySelector(".detail-card-header, .chart-card-header");
     if (!header) return;
 
     header.setAttribute("draggable", "true");
     header.style.cursor = "grab";
 
     header.addEventListener("dragstart", (e) => {
-      if (e.target.closest("button") || e.target.closest(".overview-move-controls")) {
+      if (e.target.closest("button") || e.target.closest(".overview-move-controls") || e.target.closest(".card-actions-dropdown") || e.target.closest("i")) {
         e.preventDefault();
         return;
       }

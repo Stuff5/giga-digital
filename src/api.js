@@ -1193,7 +1193,7 @@ async function dbLoadState() {
         } else if (s.key === "dashboardOverviewOrder") {
           try {
             state.dashboardOverviewOrder = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
-            const expectedOverview = ["performance", "inventory"];
+            const expectedOverview = ["performance", "inventory", "dailyProfitMonth"];
             if (Array.isArray(state.dashboardOverviewOrder)) {
               const filtered = state.dashboardOverviewOrder.filter(k => expectedOverview.includes(k));
               expectedOverview.forEach(k => {
