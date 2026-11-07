@@ -5,6 +5,14 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.35] - 2026-11-07
+### Changed
+- **Removed Efficiency & Potential Overview Container**:
+  - Completely removed the redundant `#card-overview-efficiency` container and metrics from the dashboard to focus on essential Performance Summary and Inventory Status KPIs.
+  - The remaining 2 overview containers (**Performance Summary** & **Inventory Status**) expand smoothly to fill 50% width each on desktop (`1fr 1fr`), automatically adapting to full width if one is hidden or on smaller screens.
+  - Removed Efficiency & Potential toggle checkbox from Settings and updated overview rearrangement, swap controls, and reset logic to manage the streamlined 2-card layout.
+  - Added `grid-auto-flow: dense` to dashboard and finance chart grids so multi-column and single-column widgets automatically pack in and fill row spaces without awkward gaps.
+
 ## [v2.2.34] - 2026-11-07
 ### Added
 - **Toggleable Dashboard Overview Containers (Option C)**:

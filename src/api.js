@@ -85,51 +85,53 @@ function renderPeriodSummary(dbFilteredSales, dbFilteredInventory) {
     marginEl.className = marginVal >= 0 ? 'text-success-neon' : 'text-danger-soft';
   }
 
-  // 4. Calculate & Render Advanced Metrics (Efficiency & Potential Card)
+  // 4. Calculate & Render Advanced Metrics (if present in DOM)
   const roiEl = document.getElementById("summary-metric-roi");
   const avgProfitEl = document.getElementById("summary-metric-avg-profit");
   const potentialProfitEl = document.getElementById("summary-metric-potential-profit");
   const velocityEl = document.getElementById("summary-metric-velocity");
 
-  const roiVal = totalCost > 0 ? (totalProfit / totalCost) * 100 : 0;
-  const avgProfitVal = soldCount > 0 ? (totalProfit / soldCount) : 0;
+  if (roiEl || avgProfitEl || potentialProfitEl || velocityEl) {
+    const roiVal = totalCost > 0 ? (totalProfit / totalCost) * 100 : 0;
+    const avgProfitVal = soldCount > 0 ? (totalProfit / soldCount) : 0;
 
-  // Potential Profit calculation using current subset avg profit per key, or global average if subset is 0
-  const availableKeysList = dbFilteredInventory ? dbFilteredInventory.filter(item => item.status === "Available") : [];
-  const globalAvgProfit = state.sales.length > 0 ? (state.sales.reduce((sum, s) => sum + (s.profit || 0), 0) / state.sales.length) : 0;
-  const currentAvgProfit = soldCount > 0 ? avgProfitVal : globalAvgProfit;
-  const profitPotentialVal = availableKeysList.length * currentAvgProfit;
+    // Potential Profit calculation using current subset avg profit per key, or global average if subset is 0
+    const availableKeysList = dbFilteredInventory ? dbFilteredInventory.filter(item => item.status === "Available") : [];
+    const globalAvgProfit = state.sales.length > 0 ? (state.sales.reduce((sum, s) => sum + (s.profit || 0), 0) / state.sales.length) : 0;
+    const currentAvgProfit = soldCount > 0 ? avgProfitVal : globalAvgProfit;
+    const profitPotentialVal = availableKeysList.length * currentAvgProfit;
 
-  // Days to Sell calculation for the sold keys in this period
-  let totalSellDays = 0;
-  let soldWithDurationCount = 0;
-  dbFilteredSales.forEach(sale => {
-    const invItem = state.inventory.find(i => i.id === sale.inventoryId);
-    if (invItem && invItem.purchaseDate && sale.saleDate) {
-      const start = new Date(invItem.purchaseDate);
-      const end = new Date(sale.saleDate);
-      start.setHours(0, 0, 0, 0);
-      end.setHours(0, 0, 0, 0);
-      const diffDays = Math.round(Math.max(0, end - start) / (1000 * 60 * 60 * 24));
-      totalSellDays += diffDays;
-      soldWithDurationCount++;
+    // Days to Sell calculation for the sold keys in this period
+    let totalSellDays = 0;
+    let soldWithDurationCount = 0;
+    dbFilteredSales.forEach(sale => {
+      const invItem = state.inventory.find(i => i.id === sale.inventoryId);
+      if (invItem && invItem.purchaseDate && sale.saleDate) {
+        const start = new Date(invItem.purchaseDate);
+        const end = new Date(sale.saleDate);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(0, 0, 0, 0);
+        const diffDays = Math.round(Math.max(0, end - start) / (1000 * 60 * 60 * 24));
+        totalSellDays += diffDays;
+        soldWithDurationCount++;
+      }
+    });
+    const avgDaysToSell = soldWithDurationCount > 0 ? (totalSellDays / soldWithDurationCount) : 0;
+
+    if (roiEl) {
+      roiEl.textContent = `${roiVal.toFixed(1)}%`;
+      roiEl.className = roiVal >= 0 ? 'text-success-neon' : 'text-danger-soft';
     }
-  });
-  const avgDaysToSell = soldWithDurationCount > 0 ? (totalSellDays / soldWithDurationCount) : 0;
-
-  if (roiEl) {
-    roiEl.textContent = `${roiVal.toFixed(1)}%`;
-    roiEl.className = roiVal >= 0 ? 'text-success-neon' : 'text-danger-soft';
-  }
-  if (avgProfitEl) {
-    avgProfitEl.textContent = formatCurrency(avgProfitVal);
-    avgProfitEl.className = avgProfitVal >= 0 ? 'text-success-neon' : 'text-danger-soft';
-  }
-  if (potentialProfitEl) {
-    potentialProfitEl.textContent = formatCurrency(profitPotentialVal);
-  }
-  if (velocityEl) {
-    velocityEl.textContent = `${avgDaysToSell.toFixed(1)} days`;
+    if (avgProfitEl) {
+      avgProfitEl.textContent = formatCurrency(avgProfitVal);
+      avgProfitEl.className = avgProfitVal >= 0 ? 'text-success-neon' : 'text-danger-soft';
+    }
+    if (potentialProfitEl) {
+      potentialProfitEl.textContent = formatCurrency(profitPotentialVal);
+    }
+    if (velocityEl) {
+      velocityEl.textContent = `${avgDaysToSell.toFixed(1)} days`;
+    }
   }
 }
 
@@ -1191,7 +1193,7 @@ async function dbLoadState() {
         } else if (s.key === "dashboardOverviewOrder") {
           try {
             state.dashboardOverviewOrder = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
-            const expectedOverview = ["performance", "inventory", "efficiency"];
+            const expectedOverview = ["performance", "inventory"];
             if (Array.isArray(state.dashboardOverviewOrder)) {
               const filtered = state.dashboardOverviewOrder.filter(k => expectedOverview.includes(k));
               expectedOverview.forEach(k => {

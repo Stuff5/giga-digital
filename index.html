@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=58">
+  <link rel="stylesheet" href="styles.css?v=59">
   
   <!-- Early theme application to prevent FOUC / light theme flicker -->
   <script>
@@ -139,7 +139,7 @@
         </div>
         <div class="version-info" style="text-align: center; font-size: 0.7rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; overflow: hidden; white-space: nowrap;">
           <span class="version-label">GameVault</span>
-          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v2.2.34</a>
+          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v2.2.35</a>
         </div>
 
       </div>
@@ -260,7 +260,7 @@
                   <input type="date" id="db-end-date" class="form-control form-control-sm" style="width: auto; height: 32px; padding: 2px 8px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-input); color: var(--text-primary); margin: 0;">
                 </div>
 
-                <button type="button" class="btn btn-outline btn-xs" id="btn-reset-overview-order" onclick="resetDashboardOverviewCardsOrder()" title="Reset the 3 overview containers to default order" style="height: 32px; padding: 4px 10px; font-size: 0.75rem; display: none; align-items: center; gap: 5px; border-color: var(--border-color);">
+                <button type="button" class="btn btn-outline btn-xs" id="btn-reset-overview-order" onclick="resetDashboardOverviewCardsOrder()" title="Reset overview containers to default order" style="height: 32px; padding: 4px 10px; font-size: 0.75rem; display: none; align-items: center; gap: 5px; border-color: var(--border-color);">
                   <i class="fa-solid fa-arrow-rotate-left"></i> Reset Overview
                 </button>
               </div>
@@ -269,7 +269,7 @@
 
           <!-- Dashboard Active Period Summary Card & Inventory Status Card -->
           <div class="charts-grid" id="dashboard-period-summary-row" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-bottom: 24px;">
-            <!-- Performance Summary Card (2/3 width on desktop) -->
+            <!-- Performance Summary Card (fills 50% width on desktop) -->
             <div class="detail-card dashboard-overview-card" id="card-overview-performance" data-overview-card="performance">
               <div class="detail-card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px; user-select: none;">
                 <div style="display: flex; align-items: center; gap: 8px;">
@@ -289,7 +289,7 @@
               </div>
               
               <!-- Performance Stats Row -->
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 20px; padding: 4px;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 20px; padding: 4px;">
                 <!-- Net Profit -->
                 <div style="display: flex; flex-direction: column; gap: 4px;">
                   <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-wallet" style="margin-right: 6px; color: var(--accent-purple);"></i>Net Profit</span>
@@ -322,7 +322,7 @@
               </div>
             </div>
 
-            <!-- Inventory Stock Status Card (1/3 width on desktop) -->
+            <!-- Inventory Stock Status Card (fills 50% width on desktop) -->
             <div class="detail-card dashboard-overview-card" id="card-overview-inventory" data-overview-card="inventory">
               <div class="detail-card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px; user-select: none;">
                 <div style="display: flex; align-items: center; gap: 8px;">
@@ -359,53 +359,6 @@
                 <div style="display: flex; flex-direction: column; gap: 4px;">
                   <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-vault" style="margin-right: 6px; color: var(--accent-emerald);"></i>Stock Cost</span>
                   <h3 id="summary-metric-stock-cost" style="margin: 0; font-size: 1.5rem; font-weight: 700; color: var(--accent-emerald);">€0.00</h3>
-                </div>
-              </div>
-            </div>
-
-            <!-- Operational Efficiency & Potential Card -->
-            <div class="detail-card dashboard-overview-card" id="card-overview-efficiency" data-overview-card="efficiency">
-              <div class="detail-card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px; user-select: none;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <i class="fa-solid fa-grip-vertical overview-drag-handle" title="Drag to rearrange container" style="cursor: grab; opacity: 0.5; font-size: 0.9rem;"></i>
-                  <h4 style="margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Efficiency & Potential</h4>
-                </div>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <div class="overview-move-controls" style="display: flex; align-items: center; gap: 3px;">
-                    <button type="button" class="btn btn-icon btn-xs btn-overview-move-left" onclick="event.stopPropagation(); moveDashboardOverviewCard('efficiency', -1)" title="Move container left" style="width: 24px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); background: var(--bg-card); border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer;"><i class="fa-solid fa-chevron-left" style="font-size: 0.65rem;"></i></button>
-                    <button type="button" class="btn btn-icon btn-xs btn-overview-move-right" onclick="event.stopPropagation(); moveDashboardOverviewCard('efficiency', 1)" title="Move container right" style="width: 24px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); background: var(--bg-card); border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer;"><i class="fa-solid fa-chevron-right" style="font-size: 0.65rem;"></i></button>
-                    <button type="button" class="btn btn-icon btn-xs btn-overview-hide" onclick="event.stopPropagation(); toggleDashboardOverviewVisibility('efficiency')" title="Hide container (restore anytime in Settings)" style="width: 24px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); background: var(--bg-card); border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer;"><i class="fa-solid fa-eye-slash" style="font-size: 0.65rem;"></i></button>
-                  </div>
-                  <div class="metric-icon" style="position: static; font-size: 1.25rem; opacity: 0.8; width: auto; height: auto; background: none; display: flex; align-items: center; justify-content: center;">
-                    <i class="fa-solid fa-percent"></i>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Efficiency Stats Row -->
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 20px; padding: 4px;">
-                <!-- ROI % -->
-                <div style="display: flex; flex-direction: column; gap: 4px;">
-                  <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-circle-dollar-to-slot" style="margin-right: 6px; color: var(--accent-purple);"></i>ROI %</span>
-                  <h3 id="summary-metric-roi" style="margin: 0; font-size: 1.5rem; font-weight: 700;">0.0%</h3>
-                </div>
-
-                <!-- Avg Profit per Key -->
-                <div style="display: flex; flex-direction: column; gap: 4px;">
-                  <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-hand-holding-dollar" style="margin-right: 6px; color: var(--accent-cyan);"></i>Avg Profit/Key</span>
-                  <h3 id="summary-metric-avg-profit" style="margin: 0; font-size: 1.5rem; font-weight: 700;">€0.00</h3>
-                </div>
-
-                <!-- Potential Profit -->
-                <div style="display: flex; flex-direction: column; gap: 4px;">
-                  <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-vault" style="margin-right: 6px; color: var(--accent-teal);"></i>Profit Potential</span>
-                  <h3 id="summary-metric-potential-profit" style="margin: 0; font-size: 1.5rem; font-weight: 700; color: var(--text-success-neon);">€0.00</h3>
-                </div>
-
-                <!-- Avg Days to Sell -->
-                <div style="display: flex; flex-direction: column; gap: 4px;">
-                  <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-gauge" style="margin-right: 6px; color: var(--accent-amber);"></i>Days to Sell</span>
-                  <h3 id="summary-metric-velocity" style="margin: 0; font-size: 1.5rem; font-weight: 700;">0.0 days</h3>
                 </div>
               </div>
             </div>
@@ -3531,17 +3484,6 @@
                       </div>
                       <input type="checkbox" id="settings-overview-toggle-inventory" checked onchange="toggleDashboardOverviewVisibility('inventory')" style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent-purple);">
                     </label>
-
-                    <label class="checkbox-container" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-md); cursor: pointer;">
-                      <div style="display: flex; align-items: center; gap: 10px;">
-                        <i class="fa-solid fa-percent" style="font-size: 1rem; color: var(--accent-pink);"></i>
-                        <div>
-                          <strong style="color: var(--text-main); font-size: 0.88rem; display: block;">Efficiency &amp; Potential</strong>
-                          <span style="color: var(--text-muted); font-size: 0.75rem;">ROI %, Avg Profit/Key, Profit Potential, Days to Sell</span>
-                        </div>
-                      </div>
-                      <input type="checkbox" id="settings-overview-toggle-efficiency" checked onchange="toggleDashboardOverviewVisibility('efficiency')" style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent-purple);">
-                    </label>
                   </div>
                 </div>
 
@@ -4212,13 +4154,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=99"></script>
-  <script src="src/state.js?v=99"></script>
-  <script src="src/api.js?v=99"></script>
-  <script src="src/charts.js?v=99"></script>
-  <script src="src/ui.js?v=99"></script>
-  <script src="src/ai.js?v=99"></script>
-  <script src="src/importer.js?v=99"></script>
-  <script src="app.js?v=99"></script>
+  <script src="config.js?v=100"></script>
+  <script src="src/state.js?v=100"></script>
+  <script src="src/api.js?v=100"></script>
+  <script src="src/charts.js?v=100"></script>
+  <script src="src/ui.js?v=100"></script>
+  <script src="src/ai.js?v=100"></script>
+  <script src="src/importer.js?v=100"></script>
+  <script src="app.js?v=100"></script>
 </body>
 </html>
