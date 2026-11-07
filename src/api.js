@@ -62,6 +62,20 @@ function renderPeriodSummary(dbFilteredSales, dbFilteredInventory) {
       const reservedKeys = dbFilteredInventory ? dbFilteredInventory.filter(item => item.status === "Reserved") : [];
       reservedEl.textContent = reservedKeys.length;
     }
+
+    const uniqueTitlesEl = document.getElementById("summary-metric-unique-titles");
+    if (uniqueTitlesEl) {
+      const titlesSet = new Set();
+      if (dbFilteredInventory) {
+        dbFilteredInventory.forEach(item => {
+          if (item.status === "Available" || item.status === "Reserved" || (!item.sold && !item.recycleBin)) {
+            const t = (item.title || item.gameTitle || "").trim();
+            if (t) titlesSet.add(t.toLowerCase());
+          }
+        });
+      }
+      uniqueTitlesEl.textContent = titlesSet.size.toLocaleString();
+    }
     
     const stockCostEl = document.getElementById("summary-metric-stock-cost");
     if (stockCostEl) {

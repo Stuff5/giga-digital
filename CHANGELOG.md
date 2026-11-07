@@ -5,6 +5,13 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.41] - 2026-11-07
+### Added
+- **Unique Titles in Inventory Status Card**:
+  - Added a new **Unique Titles** metric to the top Inventory Status executive overview card (`#card-overview-inventory`).
+  - Displays the number of distinct game titles currently held across in-stock keys, providing an immediate snapshot of catalog breadth and diversification.
+  - Dynamically synchronizes with the dashboard supplier filter to show distinct game count per supplier or across the entire catalog.
+
 ## [v2.2.40] - 2026-11-07
 ### Fixed
 - **Dashboard Widget Save Scroll Jump**:
