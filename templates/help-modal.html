@@ -447,6 +447,19 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- v2.2.47 -->
+                <div class="changelog-release-card" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.2.47 - Mobile Layout Fix: Daily Profit Container Overflow Resolution</strong>
+                    <span style="font-size: 0.75rem; color: var(--accent-cyan); background: rgba(0, 229, 255, 0.08); padding: 2px 8px; border-radius: 4px; font-weight: 600;">2026-11-07</span>
+                  </div>
+                  <ul style="margin: 0; padding-left: 18px; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+                    <li><strong>Standardized Overview Card Structure:</strong> Converted the Daily Profit container from a legacy 3D flip-card structure (with absolutely positioned inner layers and height locks) to the standard document-flow <code>.detail-card.dashboard-overview-card</code> layout used by adjacent overview cards.</li>
+                    <li><strong>Resolved Mobile Overflow:</strong> Removed fixed height constraints and absolute positioning that previously caused the canvas and daily profit bars to spill past the container boundary on mobile viewports.</li>
+                    <li><strong>Responsive Overview Grid &amp; Header Ellipsis:</strong> Enhanced <code>#dashboard-period-summary-row</code> in mobile media queries to collapse to single column cleanly (<code>1fr</code>) and added robust text-overflow truncation for overview headers on narrow phone screens.</li>
+                  </ul>
+                </div>
+
                 <!-- v2.2.46 -->
                 <div class="changelog-release-card" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">

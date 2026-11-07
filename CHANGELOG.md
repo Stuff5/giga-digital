@@ -5,6 +5,14 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.47] - 2026-11-07
+### Fixed
+- **Mobile View Daily Profit Container Data Overflow**:
+  - Converted `#card-chart-dailyProfitMonth` from a legacy `.chart-card` (which relied on 3D flip layers, `position: absolute` on `.card-front`, and fixed height locks) to the standard document-flow `.detail-card.dashboard-overview-card` structure shared by the adjacent overview cards.
+  - Eliminated container height clipping and absolute positioning constraints that caused the canvas and daily profit bars to overflow onto cards below it on mobile devices.
+  - Added responsive rules for `#dashboard-period-summary-row` under `@media (max-width: 768px)` so overview cards collapse cleanly to a single column (`1fr`) with balanced chart heights (`160px`).
+  - Added text truncation (`text-overflow: ellipsis`) and `min-width: 0` to overview container headers to prevent wrapping distortions and control clipping on narrow phone screens.
+
 ## [v2.2.46] - 2026-11-07
 ### Performance
 - **Granular Local Storage Persistence**:

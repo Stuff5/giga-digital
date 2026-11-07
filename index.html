@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=69">
+  <link rel="stylesheet" href="styles.css?v=70">
   
   <!-- Early theme application to prevent FOUC / light theme flicker -->
   <script>
@@ -139,7 +139,7 @@
         </div>
         <div class="version-info" style="text-align: center; font-size: 0.7rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; overflow: hidden; white-space: nowrap;">
           <span class="version-label">GameVault</span>
-          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v2.2.46</a>
+          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v2.2.47</a>
         </div>
 
       </div>
@@ -268,15 +268,15 @@
           </div>
 
           <!-- Dashboard Active Period Summary Card & Inventory Status Card -->
-          <div class="charts-grid" id="dashboard-period-summary-row" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-bottom: 24px;">
+          <div class="charts-grid" id="dashboard-period-summary-row" style="grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 24px; margin-bottom: 24px;">
             <!-- Performance Summary Card (fills 50% width on desktop) -->
             <div class="detail-card dashboard-overview-card" id="card-overview-performance" data-overview-card="performance">
               <div class="detail-card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px; user-select: none;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <i class="fa-solid fa-grip-vertical overview-drag-handle" title="Drag to rearrange container" style="cursor: grab; opacity: 0.5; font-size: 0.9rem;"></i>
-                  <h4 id="period-summary-title" style="margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Performance Summary: All Time</h4>
+                <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                  <i class="fa-solid fa-grip-vertical overview-drag-handle" title="Drag to rearrange container" style="cursor: grab; opacity: 0.5; font-size: 0.9rem; flex-shrink: 0;"></i>
+                  <h4 id="period-summary-title" style="margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Performance Summary: All Time</h4>
                 </div>
-                <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
                   <div class="overview-move-controls" style="display: flex; align-items: center; gap: 3px;">
                     <button type="button" class="btn btn-icon btn-xs btn-overview-move-left" onclick="event.stopPropagation(); moveDashboardOverviewCard('performance', -1)" title="Move container left" style="width: 24px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); background: var(--bg-card); border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer;"><i class="fa-solid fa-chevron-left" style="font-size: 0.65rem;"></i></button>
                     <button type="button" class="btn btn-icon btn-xs btn-overview-move-right" onclick="event.stopPropagation(); moveDashboardOverviewCard('performance', 1)" title="Move container right" style="width: 24px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); background: var(--bg-card); border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer;"><i class="fa-solid fa-chevron-right" style="font-size: 0.65rem;"></i></button>
@@ -330,11 +330,11 @@
             <!-- Inventory Stock Status Card (fills 50% width on desktop) -->
             <div class="detail-card dashboard-overview-card" id="card-overview-inventory" data-overview-card="inventory">
               <div class="detail-card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px; user-select: none;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <i class="fa-solid fa-grip-vertical overview-drag-handle" title="Drag to rearrange container" style="cursor: grab; opacity: 0.5; font-size: 0.9rem;"></i>
-                  <h4 style="margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Inventory Status</h4>
+                <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                  <i class="fa-solid fa-grip-vertical overview-drag-handle" title="Drag to rearrange container" style="cursor: grab; opacity: 0.5; font-size: 0.9rem; flex-shrink: 0;"></i>
+                  <h4 style="margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Inventory Status</h4>
                 </div>
-                <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
                   <div class="overview-move-controls" style="display: flex; align-items: center; gap: 3px;">
                     <button type="button" class="btn btn-icon btn-xs btn-overview-move-left" onclick="event.stopPropagation(); moveDashboardOverviewCard('inventory', -1)" title="Move container left" style="width: 24px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); background: var(--bg-card); border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer;"><i class="fa-solid fa-chevron-left" style="font-size: 0.65rem;"></i></button>
                     <button type="button" class="btn btn-icon btn-xs btn-overview-move-right" onclick="event.stopPropagation(); moveDashboardOverviewCard('inventory', 1)" title="Move container right" style="width: 24px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); background: var(--bg-card); border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer;"><i class="fa-solid fa-chevron-right" style="font-size: 0.65rem;"></i></button>
@@ -380,28 +380,24 @@
             </div>
 
             <!-- Daily Profit of the Month Card (Transferred to Overview) -->
-            <div class="chart-card dashboard-overview-card" id="card-chart-dailyProfitMonth" data-figure="dailyProfitMonth" data-overview-card="dailyProfitMonth">
-              <div class="card-inner">
-                <div class="card-front">
-                  <div class="chart-card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 14px; user-select: none;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                      <i class="fa-solid fa-grip-vertical overview-drag-handle" title="Drag to rearrange container" style="cursor: grab; opacity: 0.5; font-size: 0.9rem;"></i>
-                      <h4 style="margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Daily Profit</h4>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                      <div class="overview-move-controls" style="display: flex; align-items: center; gap: 3px;">
-                        <button type="button" class="btn btn-icon btn-xs btn-overview-move-left" onclick="event.stopPropagation(); moveDashboardOverviewCard('dailyProfitMonth', -1)" title="Move container left" style="width: 24px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); background: var(--bg-card); border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer;"><i class="fa-solid fa-chevron-left" style="font-size: 0.65rem;"></i></button>
-                        <button type="button" class="btn btn-icon btn-xs btn-overview-move-right" onclick="event.stopPropagation(); moveDashboardOverviewCard('dailyProfitMonth', 1)" title="Move container right" style="width: 24px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); background: var(--bg-card); border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer;"><i class="fa-solid fa-chevron-right" style="font-size: 0.65rem;"></i></button>
-                      </div>
-                      <div class="metric-icon" style="position: static; font-size: 1.25rem; opacity: 0.8; width: auto; height: auto; background: none; display: flex; align-items: center; justify-content: center;">
-                        <i class="fa-solid fa-calendar-day" style="color: var(--accent-teal);"></i>
-                      </div>
-                    </div>
+            <div class="detail-card dashboard-overview-card" id="card-chart-dailyProfitMonth" data-figure="dailyProfitMonth" data-overview-card="dailyProfitMonth">
+              <div class="detail-card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 14px; user-select: none;">
+                <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                  <i class="fa-solid fa-grip-vertical overview-drag-handle" title="Drag to rearrange container" style="cursor: grab; opacity: 0.5; font-size: 0.9rem; flex-shrink: 0;"></i>
+                  <h4 style="margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Daily Profit</h4>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                  <div class="overview-move-controls" style="display: flex; align-items: center; gap: 3px;">
+                    <button type="button" class="btn btn-icon btn-xs btn-overview-move-left" onclick="event.stopPropagation(); moveDashboardOverviewCard('dailyProfitMonth', -1)" title="Move container left" style="width: 24px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); background: var(--bg-card); border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer;"><i class="fa-solid fa-chevron-left" style="font-size: 0.65rem;"></i></button>
+                    <button type="button" class="btn btn-icon btn-xs btn-overview-move-right" onclick="event.stopPropagation(); moveDashboardOverviewCard('dailyProfitMonth', 1)" title="Move container right" style="width: 24px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); background: var(--bg-card); border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer;"><i class="fa-solid fa-chevron-right" style="font-size: 0.65rem;"></i></button>
                   </div>
-                  <div class="chart-body" style="flex: 1; min-height: 130px; position: relative;">
-                    <canvas id="dailyProfitMonthChart"></canvas>
+                  <div class="metric-icon" style="position: static; font-size: 1.25rem; opacity: 0.8; width: auto; height: auto; background: none; display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-calendar-day" style="color: var(--accent-teal);"></i>
                   </div>
                 </div>
+              </div>
+              <div class="chart-body" style="flex: 1; min-height: 140px; position: relative; width: 100%;">
+                <canvas id="dailyProfitMonthChart"></canvas>
               </div>
             </div>
           </div> <!-- Close dashboard-period-summary-row -->
@@ -4100,13 +4096,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=111"></script>
-  <script src="src/state.js?v=111"></script>
-  <script src="src/api.js?v=111"></script>
-  <script src="src/charts.js?v=111"></script>
-  <script src="src/ui.js?v=111"></script>
-  <script src="src/ai.js?v=111"></script>
-  <script src="src/importer.js?v=111"></script>
-  <script src="app.js?v=111"></script>
+  <script src="config.js?v=112"></script>
+  <script src="src/state.js?v=112"></script>
+  <script src="src/api.js?v=112"></script>
+  <script src="src/charts.js?v=112"></script>
+  <script src="src/ui.js?v=112"></script>
+  <script src="src/ai.js?v=112"></script>
+  <script src="src/importer.js?v=112"></script>
+  <script src="app.js?v=112"></script>
 </body>
 </html>

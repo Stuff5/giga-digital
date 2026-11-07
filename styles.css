@@ -1236,32 +1236,29 @@ a {
   background-color: var(--bg-surface) !important;
 }
 
-/* Overview Row Specific Chart Card Styling */
+/* Overview Row Specific Card Styling */
 #dashboard-period-summary-row .dashboard-overview-card {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   min-height: 220px;
+  box-sizing: border-box;
 }
 
-#dashboard-period-summary-row .chart-card {
-  min-height: 220px !important;
-  height: 100% !important;
+#dashboard-period-summary-row #card-chart-dailyProfitMonth {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 220px;
+  box-sizing: border-box;
 }
 
-#dashboard-period-summary-row .chart-card .card-inner {
-  height: 100%;
-}
-
-#dashboard-period-summary-row .chart-card .card-front,
-#dashboard-period-summary-row .chart-card .card-back {
-  padding: 20px 24px;
-}
-
-#dashboard-period-summary-row .chart-card .chart-body {
+#dashboard-period-summary-row #card-chart-dailyProfitMonth .chart-body {
   flex: 1;
-  min-height: 130px;
+  min-height: 140px;
+  max-height: 180px;
   position: relative;
+  width: 100%;
 }
 .chart-card {
   position: relative;
@@ -2700,9 +2697,18 @@ textarea.form-control {
 
 @media (max-width: 768px) {
   #dashboard-charts-container,
+  #dashboard-period-summary-row,
   .finance-charts-grid {
     grid-template-columns: 1fr !important;
     gap: 16px !important;
+  }
+  #dashboard-period-summary-row .dashboard-overview-card {
+    min-height: auto !important;
+  }
+  #dashboard-period-summary-row #card-chart-dailyProfitMonth .chart-body {
+    min-height: 150px !important;
+    max-height: 200px !important;
+    height: 160px !important;
   }
   #dashboard-charts-container .chart-card,
   .finance-charts-grid .chart-card {
@@ -4521,6 +4527,9 @@ textarea.form-control {
 }
 
 @media (max-width: 600px) {
+  #dashboard-period-summary-row .dashboard-overview-card .detail-card-header h4 {
+    font-size: 0.88rem !important;
+  }
   /* Make the detail card header wrap nicely and stack buttons */
   .detail-card-header.flex-header {
     flex-direction: column !important;
