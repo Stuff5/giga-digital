@@ -5,7 +5,7 @@
 // Asynchronously loads critical HTML templates (modals.html) on application boot
 window.loadHTMLTemplates = async () => {
   try {
-    const ver = window.APP_VERSION || "v2.2.31";
+    const ver = window.APP_VERSION || "v2.2.32";
     const res = await fetch(`templates/modals.html?v=${ver}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const html = await res.text();
@@ -33,7 +33,7 @@ window.ensureHelpModalLoaded = async () => {
 
   _helpModalLoadingPromise = (async () => {
     try {
-      const ver = window.APP_VERSION || "v2.2.31";
+      const ver = window.APP_VERSION || "v2.2.32";
       const res = await fetch(`templates/help-modal.html?v=${ver}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const html = await res.text();
@@ -6360,6 +6360,7 @@ function updateUI() {
     calculateSupplierMetrics();
     renderPeriodSummary(dbFilteredSales, dbFilteredInventory);
 
+    renderDashboardOverviewCardsOrder();
     renderDashboardCardsOrder();
     applyWidgetVisibility();
     applyFiguresVisibility();
@@ -11737,6 +11738,181 @@ function applyFiguresVisibility() {
     }
   });
 }
+
+// ==========================================================================
+// DASHBOARD OVERVIEW CONTAINERS REARRANGE & DRAG-AND-DROP
+// ==========================================================================
+
+function renderDashboardOverviewCardsOrder() {
+  const container = document.getElementById("dashboard-period-summary-row");
+  if (!container) return;
+
+  if (!state.dashboardOverviewOrder || !Array.isArray(state.dashboardOverviewOrder)) {
+    state.dashboardOverviewOrder = ["performance", "inventory", "efficiency"];
+  }
+
+  // Ensure all 3 keys are present
+  const validKeys = ["performance", "inventory", "efficiency"];
+  state.dashboardOverviewOrder = state.dashboardOverviewOrder.filter(k => validKeys.includes(k));
+  validKeys.forEach(k => {
+    if (!state.dashboardOverviewOrder.includes(k)) {
+      state.dashboardOverviewOrder.push(k);
+    }
+  });
+
+  state.dashboardOverviewOrder.forEach((key, index) => {
+    const card = document.getElementById(`card-overview-${key}`);
+    if (card) {
+      container.appendChild(card);
+
+      const leftBtn = card.querySelector(".btn-overview-move-left");
+      const rightBtn = card.querySelector(".btn-overview-move-right");
+      if (leftBtn) {
+        const isFirst = (index === 0);
+        leftBtn.disabled = isFirst;
+        leftBtn.style.opacity = isFirst ? "0.25" : "0.85";
+        leftBtn.style.cursor = isFirst ? "not-allowed" : "pointer";
+      }
+      if (rightBtn) {
+        const isLast = (index === state.dashboardOverviewOrder.length - 1);
+        rightBtn.disabled = isLast;
+        rightBtn.style.opacity = isLast ? "0.25" : "0.85";
+        rightBtn.style.cursor = isLast ? "not-allowed" : "pointer";
+      }
+    }
+  });
+
+  const resetBtn = document.getElementById("btn-reset-overview-order");
+  if (resetBtn) {
+    const isDefault = state.dashboardOverviewOrder[0] === "performance" &&
+                      state.dashboardOverviewOrder[1] === "inventory" &&
+                      state.dashboardOverviewOrder[2] === "efficiency";
+    resetBtn.style.display = isDefault ? "none" : "inline-flex";
+  }
+}
+window.renderDashboardOverviewCardsOrder = renderDashboardOverviewCardsOrder;
+
+function moveDashboardOverviewCard(cardKey, direction) {
+  if (!state.dashboardOverviewOrder || !Array.isArray(state.dashboardOverviewOrder)) {
+    state.dashboardOverviewOrder = ["performance", "inventory", "efficiency"];
+  }
+  const currentIndex = state.dashboardOverviewOrder.indexOf(cardKey);
+  if (currentIndex === -1) return;
+
+  const newIndex = currentIndex + direction;
+  if (newIndex < 0 || newIndex >= state.dashboardOverviewOrder.length) return;
+
+  // Swap
+  const temp = state.dashboardOverviewOrder[currentIndex];
+  state.dashboardOverviewOrder[currentIndex] = state.dashboardOverviewOrder[newIndex];
+  state.dashboardOverviewOrder[newIndex] = temp;
+
+  saveStateToStorage();
+  renderDashboardOverviewCardsOrder();
+
+  const cardLabels = {
+    performance: "Performance Summary",
+    inventory: "Inventory Status",
+    efficiency: "Efficiency & Potential"
+  };
+  const label = cardLabels[cardKey] || "Container";
+  const dirName = direction < 0 ? "left" : "right";
+  showToast(`Moved ${label} ${dirName}.`, "success");
+
+  if (window.supabaseClient && typeof dbSaveSettings === "function") {
+    dbSaveSettings("dashboardOverviewOrder", state.dashboardOverviewOrder);
+  }
+}
+window.moveDashboardOverviewCard = moveDashboardOverviewCard;
+
+function resetDashboardOverviewCardsOrder() {
+  state.dashboardOverviewOrder = ["performance", "inventory", "efficiency"];
+  saveStateToStorage();
+  renderDashboardOverviewCardsOrder();
+  showToast("Dashboard overview containers reset to default order.", "info");
+
+  if (window.supabaseClient && typeof dbSaveSettings === "function") {
+    dbSaveSettings("dashboardOverviewOrder", state.dashboardOverviewOrder);
+  }
+}
+window.resetDashboardOverviewCardsOrder = resetDashboardOverviewCardsOrder;
+
+function bindDashboardOverviewDragAndDrop() {
+  const container = document.getElementById("dashboard-period-summary-row");
+  if (!container) return;
+
+  const cards = container.querySelectorAll(".dashboard-overview-card");
+  cards.forEach(card => {
+    const header = card.querySelector(".detail-card-header");
+    if (!header) return;
+
+    header.setAttribute("draggable", "true");
+    header.style.cursor = "grab";
+
+    header.addEventListener("dragstart", (e) => {
+      if (e.target.closest("button") || e.target.closest(".overview-move-controls")) {
+        e.preventDefault();
+        return;
+      }
+      const key = card.getAttribute("data-overview-card");
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", key);
+      card.classList.add("dragging");
+      header.style.cursor = "grabbing";
+    });
+
+    header.addEventListener("dragend", () => {
+      card.classList.remove("dragging");
+      header.style.cursor = "grab";
+      cards.forEach(c => c.classList.remove("drag-over"));
+    });
+
+    card.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+    });
+
+    card.addEventListener("dragenter", (e) => {
+      const draggingCard = container.querySelector(".dashboard-overview-card.dragging");
+      if (draggingCard && draggingCard !== card) {
+        card.classList.add("drag-over");
+      }
+    });
+
+    card.addEventListener("dragleave", (e) => {
+      if (!card.contains(e.relatedTarget)) {
+        card.classList.remove("drag-over");
+      }
+    });
+
+    card.addEventListener("drop", (e) => {
+      e.preventDefault();
+      card.classList.remove("drag-over");
+
+      const fromKey = e.dataTransfer.getData("text/plain");
+      const toKey = card.getAttribute("data-overview-card");
+      if (!fromKey || !toKey || fromKey === toKey) return;
+
+      const fromIndex = state.dashboardOverviewOrder.indexOf(fromKey);
+      const toIndex = state.dashboardOverviewOrder.indexOf(toKey);
+
+      if (fromIndex !== -1 && toIndex !== -1) {
+        state.dashboardOverviewOrder.splice(fromIndex, 1);
+        state.dashboardOverviewOrder.splice(toIndex, 0, fromKey);
+
+        saveStateToStorage();
+        renderDashboardOverviewCardsOrder();
+
+        showToast("Rearranged dashboard overview containers.", "success");
+
+        if (window.supabaseClient && typeof dbSaveSettings === "function") {
+          dbSaveSettings("dashboardOverviewOrder", state.dashboardOverviewOrder);
+        }
+      }
+    });
+  });
+}
+window.bindDashboardOverviewDragAndDrop = bindDashboardOverviewDragAndDrop;
 
 function bindDashboardDragAndDrop() {
   const container = document.getElementById("dashboard-charts-container");

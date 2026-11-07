@@ -5,6 +5,15 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.32] - 2026-11-07
+### Added
+- **Rearrangeable Dashboard Overview Containers**:
+  - Implemented customizable ordering for the 3 main dashboard overview containers: **Performance Summary**, **Inventory Status**, and **Efficiency & Potential**.
+  - Added HTML5 drag-and-drop support with visual drag states (`.dragging`, `.drag-over`) and dedicated grip handles.
+  - Added accessible one-click Left/Right move buttons (`.btn-overview-move-left`, `.btn-overview-move-right`) with automatic boundary disabling (at first/last position) for seamless mobile and desktop use.
+  - Added order persistence via `localStorage` (`gv_dashboard_overview_order`) and cloud synchronization (`app_settings`).
+  - Added a dynamic "Reset Overview" restore button in the dashboard controls that appears whenever containers are rearranged.
+
 ## [v2.2.31] - 2026-11-06
 ### Added & Improved
 - **Dedicated Supplier Column in Sales Ledger**:

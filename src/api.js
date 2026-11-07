@@ -1188,6 +1188,23 @@ async function dbLoadState() {
             state.metricOrder = s.value;
           }
           applyMetricOrder();
+        } else if (s.key === "dashboardOverviewOrder") {
+          try {
+            state.dashboardOverviewOrder = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+            const expectedOverview = ["performance", "inventory", "efficiency"];
+            if (Array.isArray(state.dashboardOverviewOrder)) {
+              const filtered = state.dashboardOverviewOrder.filter(k => expectedOverview.includes(k));
+              expectedOverview.forEach(k => {
+                if (!filtered.includes(k)) filtered.push(k);
+              });
+              state.dashboardOverviewOrder = filtered;
+            }
+            if (typeof renderDashboardOverviewCardsOrder === "function") {
+              renderDashboardOverviewCardsOrder();
+            }
+          } catch(e) {
+            console.error("Error parsing dashboardOverviewOrder:", e);
+          }
         } else if (s.key === "dashboardOrder") {
           try {
             state.dashboardOrder = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
@@ -1468,6 +1485,7 @@ async function dbSeedDatabase() {
       { key: "syncMode", value: state.syncMode },
       { key: "supplierDisplayMode", value: state.supplierDisplayMode },
       { key: "platformDisplayMode", value: state.platformDisplayMode },
+      { key: "dashboardOverviewOrder", value: state.dashboardOverviewOrder },
       { key: "dashboardOrder", value: state.dashboardOrder },
       { key: "financeOrder", value: state.financeOrder },
       { key: "dashboardSpans", value: state.dashboardSpans },

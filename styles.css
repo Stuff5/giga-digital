@@ -1182,6 +1182,48 @@ a {
   transform: scale(1.005);
   transition: transform 0.15s ease, border-color 0.15s ease;
 }
+
+/* Dashboard Overview Containers Drag & Drop / Rearrange */
+.dashboard-overview-card {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.dashboard-overview-card.dragging {
+  opacity: 0.45;
+  border: 1.5px dashed var(--accent-purple) !important;
+  cursor: grabbing !important;
+}
+
+.dashboard-overview-card.drag-over {
+  border: 1.5px dashed var(--accent-cyan) !important;
+  box-shadow: 0 0 16px var(--accent-cyan-glow) !important;
+  transform: scale(1.015);
+}
+
+.dashboard-overview-card .detail-card-header {
+  user-select: none;
+}
+
+.overview-drag-handle {
+  cursor: grab;
+  color: var(--text-muted);
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+
+.overview-drag-handle:hover {
+  color: var(--accent-cyan);
+  opacity: 1 !important;
+}
+
+.overview-move-controls button {
+  transition: all 0.15s ease;
+}
+
+.overview-move-controls button:hover:not(:disabled) {
+  border-color: var(--accent-cyan) !important;
+  color: var(--accent-cyan) !important;
+  background-color: var(--bg-surface) !important;
+}
 .chart-card {
   position: relative;
   perspective: 1200px;

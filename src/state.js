@@ -1078,6 +1078,7 @@ let state = {
   expenseCategories: [],
   payouts: [],
   menuOrder: ["dashboard", "inventory", "sales", "finance", "suppliers", "platforms", "entries", "recycle", "settings"],
+  dashboardOverviewOrder: ["performance", "inventory", "efficiency"],
   dashboardOrder: [
     "salesProfit", "platformSplit", "supplierSplit", "topBestsellers", "topBestsellersRevenue", "topBestsellersSales", "topPeakProfit", "topAverageProfit", "dailyProfitMonth",
     "stockSpeed", "salesFeed", "stockTurnover", "stockAging"
@@ -1797,6 +1798,27 @@ function loadStateFromStorage() {
       }
     }
 
+    const storedOverviewOrder = localStorage.getItem("gv_dashboard_overview_order");
+    if (storedOverviewOrder) {
+      try {
+        const parsedOverview = JSON.parse(storedOverviewOrder);
+        const expectedOverview = ["performance", "inventory", "efficiency"];
+        if (Array.isArray(parsedOverview)) {
+          const filtered = parsedOverview.filter(k => expectedOverview.includes(k));
+          expectedOverview.forEach(k => {
+            if (!filtered.includes(k)) filtered.push(k);
+          });
+          state.dashboardOverviewOrder = filtered;
+        }
+      } catch (e) {
+        console.error("Error parsing dashboard overview order, using defaults:", e);
+        state.dashboardOverviewOrder = ["performance", "inventory", "efficiency"];
+      }
+    }
+    if (!state.dashboardOverviewOrder || !Array.isArray(state.dashboardOverviewOrder) || state.dashboardOverviewOrder.length !== 3) {
+      state.dashboardOverviewOrder = ["performance", "inventory", "efficiency"];
+    }
+
     const storedFinanceOrder = localStorage.getItem("gv_finance_order");
     if (storedFinanceOrder) {
       try {
@@ -2057,6 +2079,7 @@ function saveStateToStorage() {
   localStorage.setItem("gv_menu_icons", JSON.stringify(state.menuIcons));
   localStorage.setItem("gv_menu_titles", JSON.stringify(state.menuTitles));
   localStorage.setItem("gv_menu_visibility", JSON.stringify(state.menuVisibility));
+  localStorage.setItem("gv_dashboard_overview_order", JSON.stringify(state.dashboardOverviewOrder));
   localStorage.setItem("gv_dashboard_order", JSON.stringify(state.dashboardOrder));
   localStorage.setItem("gv_finance_order", JSON.stringify(state.financeOrder));
   localStorage.setItem("gv_dashboard_spans", JSON.stringify(state.dashboardSpans));

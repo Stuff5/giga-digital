@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=55">
+  <link rel="stylesheet" href="styles.css?v=56">
   
   <!-- Early theme application to prevent FOUC / light theme flicker -->
   <script>
@@ -139,7 +139,7 @@
         </div>
         <div class="version-info" style="text-align: center; font-size: 0.7rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; overflow: hidden; white-space: nowrap;">
           <span class="version-label">GameVault</span>
-          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v2.2.31</a>
+          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v2.2.32</a>
         </div>
 
       </div>
@@ -259,6 +259,10 @@
                   <span style="font-size: 0.8rem; color: var(--text-muted);">to</span>
                   <input type="date" id="db-end-date" class="form-control form-control-sm" style="width: auto; height: 32px; padding: 2px 8px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-input); color: var(--text-primary); margin: 0;">
                 </div>
+
+                <button type="button" class="btn btn-outline btn-xs" id="btn-reset-overview-order" onclick="resetDashboardOverviewCardsOrder()" title="Reset the 3 overview containers to default order" style="height: 32px; padding: 4px 10px; font-size: 0.75rem; display: none; align-items: center; gap: 5px; border-color: var(--border-color);">
+                  <i class="fa-solid fa-arrow-rotate-left"></i> Reset Overview
+                </button>
               </div>
             </div>
           </div>
@@ -266,11 +270,20 @@
           <!-- Dashboard Active Period Summary Card & Inventory Status Card -->
           <div class="charts-grid" id="dashboard-period-summary-row" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-bottom: 24px;">
             <!-- Performance Summary Card (2/3 width on desktop) -->
-            <div class="detail-card">
-              <div class="detail-card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
-                <h4 id="period-summary-title" style="margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Performance Summary: All Time</h4>
-                <div class="metric-icon" style="position: static; font-size: 1.25rem; opacity: 0.8; width: auto; height: auto; background: none; display: flex; align-items: center; justify-content: center;">
-                  <i class="fa-solid fa-chart-line"></i>
+            <div class="detail-card dashboard-overview-card" id="card-overview-performance" data-overview-card="performance">
+              <div class="detail-card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px; user-select: none;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <i class="fa-solid fa-grip-vertical overview-drag-handle" title="Drag to rearrange container" style="cursor: grab; opacity: 0.5; font-size: 0.9rem;"></i>
+                  <h4 id="period-summary-title" style="margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Performance Summary: All Time</h4>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <div class="overview-move-controls" style="display: flex; align-items: center; gap: 3px;">
+                    <button type="button" class="btn btn-icon btn-xs btn-overview-move-left" onclick="event.stopPropagation(); moveDashboardOverviewCard('performance', -1)" title="Move container left" style="width: 24px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); background: var(--bg-card); border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer;"><i class="fa-solid fa-chevron-left" style="font-size: 0.65rem;"></i></button>
+                    <button type="button" class="btn btn-icon btn-xs btn-overview-move-right" onclick="event.stopPropagation(); moveDashboardOverviewCard('performance', 1)" title="Move container right" style="width: 24px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); background: var(--bg-card); border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer;"><i class="fa-solid fa-chevron-right" style="font-size: 0.65rem;"></i></button>
+                  </div>
+                  <div class="metric-icon" style="position: static; font-size: 1.25rem; opacity: 0.8; width: auto; height: auto; background: none; display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-chart-line"></i>
+                  </div>
                 </div>
               </div>
               
@@ -309,11 +322,20 @@
             </div>
 
             <!-- Inventory Stock Status Card (1/3 width on desktop) -->
-            <div class="detail-card">
-              <div class="detail-card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
-                <h4 style="margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Inventory Status</h4>
-                <div class="metric-icon" style="position: static; font-size: 1.25rem; opacity: 0.8; width: auto; height: auto; background: none; display: flex; align-items: center; justify-content: center;">
-                  <i class="fa-solid fa-boxes-stacked"></i>
+            <div class="detail-card dashboard-overview-card" id="card-overview-inventory" data-overview-card="inventory">
+              <div class="detail-card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px; user-select: none;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <i class="fa-solid fa-grip-vertical overview-drag-handle" title="Drag to rearrange container" style="cursor: grab; opacity: 0.5; font-size: 0.9rem;"></i>
+                  <h4 style="margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Inventory Status</h4>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <div class="overview-move-controls" style="display: flex; align-items: center; gap: 3px;">
+                    <button type="button" class="btn btn-icon btn-xs btn-overview-move-left" onclick="event.stopPropagation(); moveDashboardOverviewCard('inventory', -1)" title="Move container left" style="width: 24px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); background: var(--bg-card); border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer;"><i class="fa-solid fa-chevron-left" style="font-size: 0.65rem;"></i></button>
+                    <button type="button" class="btn btn-icon btn-xs btn-overview-move-right" onclick="event.stopPropagation(); moveDashboardOverviewCard('inventory', 1)" title="Move container right" style="width: 24px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); background: var(--bg-card); border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer;"><i class="fa-solid fa-chevron-right" style="font-size: 0.65rem;"></i></button>
+                  </div>
+                  <div class="metric-icon" style="position: static; font-size: 1.25rem; opacity: 0.8; width: auto; height: auto; background: none; display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-boxes-stacked"></i>
+                  </div>
                 </div>
               </div>
               
@@ -340,11 +362,20 @@
             </div>
 
             <!-- Operational Efficiency & Potential Card -->
-            <div class="detail-card">
-              <div class="detail-card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
-                <h4 style="margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Efficiency & Potential</h4>
-                <div class="metric-icon" style="position: static; font-size: 1.25rem; opacity: 0.8; width: auto; height: auto; background: none; display: flex; align-items: center; justify-content: center;">
-                  <i class="fa-solid fa-percent"></i>
+            <div class="detail-card dashboard-overview-card" id="card-overview-efficiency" data-overview-card="efficiency">
+              <div class="detail-card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px; user-select: none;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <i class="fa-solid fa-grip-vertical overview-drag-handle" title="Drag to rearrange container" style="cursor: grab; opacity: 0.5; font-size: 0.9rem;"></i>
+                  <h4 style="margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Efficiency & Potential</h4>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <div class="overview-move-controls" style="display: flex; align-items: center; gap: 3px;">
+                    <button type="button" class="btn btn-icon btn-xs btn-overview-move-left" onclick="event.stopPropagation(); moveDashboardOverviewCard('efficiency', -1)" title="Move container left" style="width: 24px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); background: var(--bg-card); border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer;"><i class="fa-solid fa-chevron-left" style="font-size: 0.65rem;"></i></button>
+                    <button type="button" class="btn btn-icon btn-xs btn-overview-move-right" onclick="event.stopPropagation(); moveDashboardOverviewCard('efficiency', 1)" title="Move container right" style="width: 24px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); background: var(--bg-card); border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer;"><i class="fa-solid fa-chevron-right" style="font-size: 0.65rem;"></i></button>
+                  </div>
+                  <div class="metric-icon" style="position: static; font-size: 1.25rem; opacity: 0.8; width: auto; height: auto; background: none; display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-percent"></i>
+                  </div>
                 </div>
               </div>
               
@@ -4039,13 +4070,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=95"></script>
-  <script src="src/state.js?v=95"></script>
-  <script src="src/api.js?v=95"></script>
-  <script src="src/charts.js?v=95"></script>
-  <script src="src/ui.js?v=95"></script>
-  <script src="src/ai.js?v=95"></script>
-  <script src="src/importer.js?v=95"></script>
-  <script src="app.js?v=95"></script>
+  <script src="config.js?v=96"></script>
+  <script src="src/state.js?v=96"></script>
+  <script src="src/api.js?v=96"></script>
+  <script src="src/charts.js?v=96"></script>
+  <script src="src/ui.js?v=96"></script>
+  <script src="src/ai.js?v=96"></script>
+  <script src="src/importer.js?v=96"></script>
+  <script src="app.js?v=96"></script>
 </body>
 </html>
