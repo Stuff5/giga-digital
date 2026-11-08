@@ -3003,12 +3003,12 @@ function initEventHandlers() {
   }
 
   // Finance Layout Toggles
-  const layoutButtons = document.querySelectorAll(".btn-toggle-layout");
+  const layoutButtons = document.querySelectorAll("#finance-layout-toggles .btn-toggle-layout");
   layoutButtons.forEach(btn => {
     btn.addEventListener("click", (e) => {
       e.preventDefault();
       const style = btn.getAttribute("data-style");
-      if (style === "tabbed") return;
+      if (style === "tabbed" || style === "expandable") return;
       state.financeLayoutStyle = style;
       localStorage.setItem("gv_finance_layout_style", style);
       
@@ -12613,10 +12613,10 @@ function renderFinanceView() {
   }
 
   // Update layout toggle buttons active state
-  if (state.financeLayoutStyle === "tabbed") {
+  if (state.financeLayoutStyle === "tabbed" || state.financeLayoutStyle === "expandable") {
     state.financeLayoutStyle = "full";
   }
-  const layoutButtons = document.querySelectorAll(".btn-toggle-layout");
+  const layoutButtons = document.querySelectorAll("#finance-layout-toggles .btn-toggle-layout");
   layoutButtons.forEach(b => {
     b.classList.toggle("active", b.getAttribute("data-style") === state.financeLayoutStyle);
     // Remove inline style overrides so they follow classes in styles.css
@@ -12991,115 +12991,6 @@ function renderFinanceView() {
       gridContainer.appendChild(card);
     });
     detailContent.appendChild(gridContainer);
-  } else if (state.financeLayoutStyle === "expandable") {
-    const tableResponsive = document.createElement("div");
-    tableResponsive.className = "table-responsive";
-    
-    const table = document.createElement("table");
-    table.className = "table";
-    table.style.width = "100%";
-    table.innerHTML = `
-      <thead>
-        <tr>
-          <th>${breakdownType === "month" ? "Month" : (breakdownType === "year" ? "Year" : "Period")}</th>
-          <th>Sold</th>
-          <th>Net Profit</th>
-          <th style="width: 80px; text-align: center;">
-            <button type="button" class="btn btn-xs btn-outline btn-toggle-all-expandable" style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; cursor: pointer; white-space: nowrap;" title="Expand or collapse all period details">Expand All</button>
-          </th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    `;
-    
-    const tbody = table.querySelector("tbody");
-    const btnToggleAll = table.querySelector(".btn-toggle-all-expandable");
-    let allExpanded = false;
-    if (btnToggleAll) {
-      btnToggleAll.addEventListener("click", (e) => {
-        e.stopPropagation();
-        allExpanded = !allExpanded;
-        btnToggleAll.textContent = allExpanded ? "Collapse All" : "Expand All";
-        const allDetails = tbody.querySelectorAll(".details-row");
-        const allIcons = tbody.querySelectorAll(".toggle-icon");
-        allDetails.forEach(row => {
-          row.classList.toggle("hidden", !allExpanded);
-        });
-        allIcons.forEach(icon => {
-          icon.style.transform = allExpanded ? "rotate(180deg)" : "rotate(0deg)";
-          icon.style.color = allExpanded ? "var(--text-primary)" : "var(--text-muted)";
-        });
-      });
-    }
-    sortedKeys.forEach(k => {
-      const stats = groupedData[k];
-      const stock = getPeriodStockStatus(k, breakdownType, financeSaleMap);
-      const roi = stats.cost > 0 ? (stats.profit / stats.cost) * 100 : 0;
-      const avgPrice = stats.count > 0 ? stats.revenue / stats.count : 0;
-      const avgProfit = stats.count > 0 ? stats.profit / stats.count : 0;
-      const avgMargin = avgPrice > 0 ? (avgProfit / avgPrice) * 100 : 0;
-      const avgDuration = stats.durationCount > 0 ? stats.totalSellDays / stats.durationCount : 0;
-      const periodLabel = breakdownType === "month" ? formatMonthKey(k) : k;
-
-      const mainTr = document.createElement("tr");
-      mainTr.style.cursor = "pointer";
-      mainTr.innerHTML = `
-        <td><strong>${periodLabel}</strong></td>
-        <td>${stats.count} keys</td>
-        <td class="${stats.profit >= 0 ? 'text-success-neon' : 'text-danger-soft'}"><strong>${stats.profit >= 0 ? '+' : ''}${formatCurrency(stats.profit)}</strong></td>
-        <td style="text-align: center;"><i class="fa-solid fa-chevron-down toggle-icon" style="transition: transform 0.2s; color: var(--text-muted);"></i></td>
-      `;
-      
-      const detailsTr = document.createElement("tr");
-      detailsTr.className = "details-row hidden";
-      detailsTr.style.background = "var(--bg-card-hover)";
-      detailsTr.innerHTML = `
-        <td colspan="4" style="padding: 16px; border-top: none;">
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px;">
-            <div>
-              <span style="color: var(--text-muted); font-size: 0.75rem; display: block; text-transform: uppercase; letter-spacing: 0.5px;">Totals</span>
-              <span style="font-weight: 600; display: block; margin-top: 4px;">Rev: ${formatCurrency(stats.revenue)}</span>
-              <span style="display: block; color: var(--text-secondary);">Cost: ${formatCurrency(stats.cost)}</span>
-            </div>
-            <div>
-              <span style="color: var(--text-muted); font-size: 0.75rem; display: block; text-transform: uppercase; letter-spacing: 0.5px;">Ending Stock</span>
-              <span style="font-weight: 600; display: block; margin-top: 4px;">Unsold: ${stock.count} keys</span>
-              <span style="display: block; color: var(--text-secondary);">Value: ${formatCurrency(stock.cost)}</span>
-            </div>
-            <div>
-              <span style="color: var(--text-muted); font-size: 0.75rem; display: block; text-transform: uppercase; letter-spacing: 0.5px;">Averages</span>
-              <span style="display: block; margin-top: 4px;">Price: <strong>${formatCurrency(avgPrice)}</strong></span>
-              <span style="display: block; color: var(--text-secondary);">Profit: ${formatCurrency(avgProfit)}</span>
-            </div>
-            <div>
-              <span style="color: var(--text-muted); font-size: 0.75rem; display: block; text-transform: uppercase; letter-spacing: 0.5px;">Margin & ROI</span>
-              <span class="text-success-neon" style="font-weight: 600; display: block; margin-top: 4px;">Margin: ${avgMargin.toFixed(1)}%</span>
-              <span style="display: block; color: var(--text-secondary);">ROI: ${roi.toFixed(1)}%</span>
-            </div>
-            <div>
-              <span style="color: var(--text-muted); font-size: 0.75rem; display: block; text-transform: uppercase; letter-spacing: 0.5px;">Duration</span>
-              <span style="display: block; margin-top: 4px;">Avg Speed:</span>
-              <strong style="font-size: 0.95rem;">${avgDuration.toFixed(1)} days</strong>
-            </div>
-          </div>
-        </td>
-      `;
-      
-      mainTr.addEventListener("click", () => {
-        const isHidden = detailsTr.classList.contains("hidden");
-        detailsTr.classList.toggle("hidden", !isHidden);
-        const icon = mainTr.querySelector(".toggle-icon");
-        if (icon) {
-          icon.style.transform = isHidden ? "rotate(180deg)" : "rotate(0deg)";
-          icon.style.color = isHidden ? "var(--text-primary)" : "var(--text-muted)";
-        }
-      });
-      
-      tbody.appendChild(mainTr);
-      tbody.appendChild(detailsTr);
-    });
-    tableResponsive.appendChild(table);
-    detailContent.appendChild(tableResponsive);
   } else {
     // "full" (Full-Width Table View - default)
     const tableResponsive = document.createElement("div");

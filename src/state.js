@@ -1001,7 +1001,7 @@ let state = {
   customLogo: null, // Base64 string or image URL
   currency: "EUR",
   dateFormat: "YYYY-MM-DD",
-  financeLayoutStyle: (localStorage.getItem("gv_finance_layout_style") && localStorage.getItem("gv_finance_layout_style") !== "tabbed") ? localStorage.getItem("gv_finance_layout_style") : "full",
+  financeLayoutStyle: (localStorage.getItem("gv_finance_layout_style") && localStorage.getItem("gv_finance_layout_style") !== "tabbed" && localStorage.getItem("gv_finance_layout_style") !== "expandable") ? localStorage.getItem("gv_finance_layout_style") : "full",
   financeBreakdownCollapsed: localStorage.getItem("gv_finance_breakdown_collapsed") === "true",
   financeSortOrder: localStorage.getItem("gv_finance_sort_order") || "desc",
   sidebarCollapsed: false,
@@ -1433,7 +1433,7 @@ function loadStateFromStorage() {
     state.benchmarkMode = localStorage.getItem("gv_benchmark_mode") || "averages";
     
     const storedFinanceLayout = localStorage.getItem("gv_finance_layout_style");
-    state.financeLayoutStyle = (storedFinanceLayout && storedFinanceLayout !== "tabbed") ? storedFinanceLayout : "full";
+    state.financeLayoutStyle = (storedFinanceLayout && storedFinanceLayout !== "tabbed" && storedFinanceLayout !== "expandable") ? storedFinanceLayout : "full";
     state.financeBreakdownCollapsed = localStorage.getItem("gv_finance_breakdown_collapsed") === "true";
     state.financeSortOrder = localStorage.getItem("gv_finance_sort_order") || "desc";
     state.sidebarCollapsed = localStorage.getItem("gv_sidebar_collapsed") === "true";

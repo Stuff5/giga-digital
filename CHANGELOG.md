@@ -5,6 +5,21 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.49] - 2026-11-08
+### Removed & Refactored
+- **Streamlined Finance Ledger Breakdown Layouts**:
+  - Deprecated and removed the redundant **Expandable Table View** (`expandable`) from the Finance Ledger Breakdown across all aggregation modes (Monthly, Yearly, and All-Time).
+  - Streamlined the layout view options to the 3 distinct and high-utility modes:
+    1. **Spreadsheet View** (`transposed`): Horizontal matrix format showing all key metrics across periods side-by-side with sticky metric column.
+    2. **Grid Cards View** (`grid`): Modular card-per-period layout detailing totals, unit averages, and stock status.
+    3. **Full-Width Table View** (`full`): Comprehensive tabular display spanning all 12 financial indicators.
+  - Removed the `expandable` layout toggle button from the header toolbar (`#finance-layout-toggles`) in `index.html`.
+  - Removed redundant master-detail accordion row rendering, "Expand All" / "Collapse All" logic, and toggle listeners (~110 lines of code) from `src/ui.js`.
+  - Scoped layout toggle event listeners to `#finance-layout-toggles .btn-toggle-layout` to prevent unintended interactions with other tab switches.
+  - Implemented automatic preference migration: any legacy or stored `gv_finance_layout_style: "expandable"` in `localStorage` seamlessly normalizes to `"full"`.
+- **Version Synchronization & Cache Busting**:
+  - Synchronized application versioning to **v2.2.49** across `config.js`, `app.js`, `src/ui.js`, `index.html` (sidebar and cache busters `styles.css?v=72`, scripts `?v=114`), `README.md`, `CHANGELOG.md`, and `templates/help-modal.html`.
+
 ## [v2.2.48] - 2026-11-07
 ### Documentation
 - **Executive Overview Containers Manual**:

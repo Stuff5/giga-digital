@@ -2,7 +2,7 @@
 
 > High-performance digital game license inventory pipeline, sales ledger, and financial analytics platform designed for digital key merchants, distributors, and online publishers.
 
-![Version](https://img.shields.io/badge/version-v2.2.48-cyan.svg)
+![Version](https://img.shields.io/badge/version-v2.2.49-cyan.svg)
 ![Status](https://img.shields.io/badge/status-active-emerald.svg)
 ![Platform](https://img.shields.io/badge/platform-Web%20SPA-purple.svg)
 
@@ -46,7 +46,7 @@ From bulk spreadsheet imports and real-time inventory tracking to financial marg
 - **Dispute & Refund Reconciliation**: Amber dispute flagging, revenue recalculation, supplier refund tracking, and pulsing sidebar alert counters.
 
 ### 5. Financial Ledger & Outflow Allocation
-- **Monthly Ledger Breakdown**: Aggregated financial metrics across 5 customizable layouts (Cards, Table, Compact, Summary, and Spreadsheet).
+- **Monthly & Yearly Ledger Breakdown**: Aggregated financial metrics across 3 streamlined layouts (Spreadsheet View, Grid Cards View, and Full-Width Table View).
 - **Spreadsheet Mode**: Contained horizontal scrolling with a sticky frozen "Metric" column.
 - **Outflow Allocation**: Allocation doughnut chart breaking down acquisition costs vs operational payouts.
 - **Ending Inventory Valuation**: Automatic asset valuation of unsold keys on period closing dates.
@@ -140,4 +140,4 @@ game-sales-tracker/
 
 See [CHANGELOG.md](CHANGELOG.md) for full release notes and development milestones.
 
-Current Release: **v2.2.48** (2026-11-07)
+Current Release: **v2.2.49** (2026-11-08)
