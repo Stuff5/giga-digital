@@ -692,9 +692,38 @@ function exportSalesToCSV() {
 
   const csvRows = [];
   // Header row
-  csvRows.push(["ID", "Game Title", "Platform", "Cost", "Sale Price", "Platform Sold On", "Net Profit", "Sale Date", "Notes"]);
+  csvRows.push(["ID", "Game Title", "Platform", "Cost", "Sale Price", "Platform Sold On", "Net Profit", "Sale Date", "Duration (Days)", "Notes"]);
+
+  const invMap = new Map();
+  if (state.inventory && Array.isArray(state.inventory)) {
+    state.inventory.forEach(item => {
+      if (item && item.id !== undefined && item.id !== null) {
+        invMap.set(String(item.id), item);
+      }
+    });
+  }
 
   state.sales.forEach(sale => {
+    let durationDaysStr = "";
+    let invItem = null;
+    if (sale.inventoryId !== undefined && sale.inventoryId !== null) {
+      invItem = invMap.get(String(sale.inventoryId));
+    }
+    if (!invItem && state.inventory && sale.title) {
+      invItem = state.inventory.find(i => i.title && i.title.trim().toLowerCase() === String(sale.title).trim().toLowerCase());
+    }
+    const pDate = (invItem && invItem.purchaseDate) || sale.purchaseDate;
+    if (pDate && sale.saleDate) {
+      const d1 = new Date(pDate);
+      const d2 = new Date(sale.saleDate);
+      d1.setHours(0, 0, 0, 0);
+      d2.setHours(0, 0, 0, 0);
+      if (!isNaN(d1.getTime()) && !isNaN(d2.getTime())) {
+        const diffDays = Math.round(Math.max(0, d2 - d1) / (1000 * 60 * 60 * 24));
+        durationDaysStr = String(diffDays);
+      }
+    }
+
     csvRows.push([
       sale.id,
       `"${sale.title.replace(/"/g, '""')}"`,
@@ -704,6 +733,7 @@ function exportSalesToCSV() {
       sale.platformSold,
       sale.profit.toFixed(2),
       sale.saleDate,
+      durationDaysStr,
       `"${(sale.notes || "").replace(/"/g, '""')}"`
     ]);
   });

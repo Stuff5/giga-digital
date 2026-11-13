@@ -458,6 +458,20 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- v2.2.51 -->
+                <div class="changelog-release-card" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v2.2.51 - Sales Ledger Holding Duration Column</strong>
+                    <span style="font-size: 0.75rem; color: var(--accent-cyan); background: rgba(0, 229, 255, 0.08); padding: 2px 8px; border-radius: 4px; font-weight: 600;">2026-11-13</span>
+                  </div>
+                  <ul style="margin: 0; padding-left: 18px; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+                    <li><strong>Holding Duration Metric:</strong> Added a dedicated Duration column in the Sales Ledger table calculating days elapsed between stock acquisition and the sale completion date.</li>
+                    <li><strong>Precision Date Diffing:</strong> Utilizes midnight-normalized date math to avoid daylight saving or timezone drift across different merchant locations.</li>
+                    <li><strong>Contextual Hover Tooltips:</strong> Hovering any duration cell reveals the exact acquisition and closing dates formatted to active preferences.</li>
+                    <li><strong>CSV Export Integration:</strong> Includes the holding duration (in days) as a column in the Sales Ledger CSV export.</li>
+                  </ul>
+                </div>
+
                 <!-- v2.2.50 -->
                 <div class="changelog-release-card" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">

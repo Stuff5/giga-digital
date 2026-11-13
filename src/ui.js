@@ -10642,6 +10642,21 @@ function buildSalesRowHTML(sale, inventoryMap) {
     ? `<div class="secured-key" style="justify-content: flex-start;"><code style="font-size: 0.75rem; padding: 2px 6px; color: var(--text-color);">${escapeHTML(maskedKey)}</code><button class="btn-copy-key" onclick="navigator.clipboard.writeText('${escapeHTML(keyStr)}'); showToast('Key copied!', 'success')" title="Copy Key" style="background: none; border: none; padding: 2px; margin-left: 6px; cursor: pointer; color: var(--text-muted);"><i class="fa-regular fa-copy" style="font-size: 0.75rem;"></i></button></div>`
     : `<span style="color: var(--text-muted)">-</span>`;
 
+  // Calculate duration until sold
+  let durationCell = `<span style="color: var(--text-muted); font-size: 0.8rem;">-</span>`;
+  const pDateStr = (gameInInv && gameInInv.purchaseDate) || sale.purchaseDate;
+  if (pDateStr && sale.saleDate) {
+    const start = parseDateMidnight(pDateStr);
+    const end = parseDateMidnight(sale.saleDate);
+    if (start && end) {
+      const diffTime = Math.max(0, end - start);
+      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+      const formattedPDate = typeof formatDate === "function" ? formatDate(pDateStr) : pDateStr;
+      const formattedSDate = typeof formatDate === "function" ? formatDate(sale.saleDate) : sale.saleDate;
+      durationCell = `<span class="duration-days" style="font-weight: 500; color: var(--text-main); white-space: nowrap;" title="Acquired: ${escapeHTML(formattedPDate)} | Sold: ${escapeHTML(formattedSDate)}">${diffDays} day${diffDays === 1 ? '' : 's'}</span>`;
+    }
+  }
+
   return `
     <tr ${rowStyle}>
       <td>${titleCell}</td>
@@ -10653,6 +10668,7 @@ function buildSalesRowHTML(sale, inventoryMap) {
       <td><span class="tag-platform-sold" style="background-color: hsla(270, 85%, 60%, 0.1); border: 1px solid hsla(270, 85%, 60%, 0.2); color: var(--accent-purple); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight:600;">${escapeHTML(sale.platformSold)}</span></td>
       <td class="${profitClass}"><strong>${profitSign}${profitStr}</strong></td>
       <td>${formatDate(sale.saleDate)}</td>
+      <td>${durationCell}</td>
       <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHTML(sale.notes || '')}">${sale.notes ? escapeHTML(sale.notes) : '<span style="color: var(--text-muted)">-</span>'}</td>
       <td>
         <div class="table-actions">
@@ -10731,7 +10747,7 @@ function renderSalesTable(salesList) {
   updateSalesLedgerSummary(salesList);
 
   if (salesList.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="11" class="text-center" style="text-align: center; padding: 30px; color: var(--text-muted);">No sales recorded in this period.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12" class="text-center" style="text-align: center; padding: 30px; color: var(--text-muted);">No sales recorded in this period.</td></tr>`;
     document.getElementById("sales-count-text").textContent = `Showing 0 sales`;
     const container = document.getElementById("sales-pagination");
     if (container) container.innerHTML = "";
@@ -10789,7 +10805,7 @@ function renderSalesTable(salesList) {
       let tbodyContent = "";
 
       if (topSpacerHeight > 0) {
-        tbodyContent += `<tr style="height: ${topSpacerHeight}px; line-height: 0; font-size: 0;"><td colspan="11" style="padding: 0; border: none; height: ${topSpacerHeight}px; line-height: 0; font-size: 0;"></td></tr>`;
+        tbodyContent += `<tr style="height: ${topSpacerHeight}px; line-height: 0; font-size: 0;"><td colspan="12" style="padding: 0; border: none; height: ${topSpacerHeight}px; line-height: 0; font-size: 0;"></td></tr>`;
       }
 
       const slicedItems = salesList.slice(startIndex, endIndex);
@@ -10799,7 +10815,7 @@ function renderSalesTable(salesList) {
       });
 
       if (bottomSpacerHeight > 0) {
-        tbodyContent += `<tr style="height: ${bottomSpacerHeight}px; line-height: 0; font-size: 0;"><td colspan="11" style="padding: 0; border: none; height: ${bottomSpacerHeight}px; line-height: 0; font-size: 0;"></td></tr>`;
+        tbodyContent += `<tr style="height: ${bottomSpacerHeight}px; line-height: 0; font-size: 0;"><td colspan="12" style="padding: 0; border: none; height: ${bottomSpacerHeight}px; line-height: 0; font-size: 0;"></td></tr>`;
       }
 
       tbody.innerHTML = tbodyContent;

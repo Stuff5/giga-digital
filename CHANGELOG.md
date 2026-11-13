@@ -5,6 +5,18 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.51] - 2026-11-13
+### Added
+- **Sales Ledger Holding Duration Column**:
+  - Added a dedicated **Duration** column to the Sales Ledger table (`#sales-table`), positioned directly alongside Date Closed.
+  - Automatically calculates the exact holding duration in days from key acquisition (`purchaseDate` of the linked inventory item or sale record) until transaction completion (`saleDate`).
+  - Implemented timezone-resilient midnight date comparison (`parseDateMidnight`) to guarantee accurate day counting across all regional client environments.
+  - Enhanced user clarity with rich hover tooltips displaying both acquisition and sale dates formatted according to user preferences (`title="Acquired: ... | Sold: ..."`).
+  - Updated table layout span handling (virtual scrolling top/bottom spacers and empty-state placeholders) to support the 12-column table structure.
+  - Included the `Duration (Days)` metric in CSV export (`exportSalesToCSV()`) for external accounting and supply chain reporting.
+- **Version Synchronization & Cache Busting**:
+  - Synchronized application versioning to **v2.2.51** across `config.js`, `app.js`, `src/ui.js`, `src/importer.js`, `index.html` (sidebar and cache busters `styles.css?v=74`, scripts `?v=116`), `README.md`, `CHANGELOG.md`, and `templates/help-modal.html`.
+
 ## [v2.2.50] - 2026-11-13
 ### Fixed
 - **Light Theme Chart Tooltip Text Contrast**:
