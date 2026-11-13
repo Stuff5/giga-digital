@@ -5,6 +5,20 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.50] - 2026-11-13
+### Fixed
+- **Light Theme Chart Tooltip Text Contrast**:
+  - Fixed an issue where tooltip text displayed on hover was rendered in white (`#fff`) against light-theme sidebar/card backgrounds (`hsl(220, 30%, 91%)`), making hover metrics invisible in light mode.
+  - Affected components resolved:
+    1. **Daily Profit of the Month** (`dailyProfitMonthChartInstance`): Day label and daily net profit metrics now render high-contrast black text on hover in light theme.
+    2. **Stock Aging Distribution** (`stockAgingChartInstance`): Unsold key counts and age bracket tooltips now render high-contrast black text on hover in light theme.
+    3. **Sales vs Profit Trend** (`salesProfitChartInstance`): Total revenue and net profit metric hover values now render high-contrast black text in light theme.
+    4. **Platform Split & Finance Charts**: Platform stock split, monthly financial trends, unit performance averages, and outflow allocation charts now consistently evaluate active light theme mode.
+  - Fixed underlying property mismatch where chart options checked undefined `state.theme` instead of `state.themeMode`.
+  - Added a defensive getter and setter for `state.theme` on the central state object to prevent any legacy or future theme property mismatches.
+- **Version Synchronization & Cache Busting**:
+  - Synchronized application versioning to **v2.2.50** across `config.js`, `app.js`, `src/ui.js`, `src/charts.js`, `src/state.js`, `index.html` (sidebar and cache busters `styles.css?v=73`, scripts `?v=115`), `README.md`, `CHANGELOG.md`, and `templates/help-modal.html`.
+
 ## [v2.2.49] - 2026-11-08
 ### Removed & Refactored
 - **Streamlined Finance Ledger Breakdown Layouts**:

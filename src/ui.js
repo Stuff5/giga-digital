@@ -13271,8 +13271,8 @@ function renderFinanceView() {
         },
         tooltip: {
           backgroundColor: tooltipBg,
-          titleColor: state.theme !== "light" ? "#fff" : "#000",
-          bodyColor: state.theme !== "light" ? "#fff" : "#000",
+          titleColor: (state && state.themeMode !== "light") ? "#fff" : "#000",
+          bodyColor: (state && state.themeMode !== "light") ? "#fff" : "#000",
           borderColor: borderColor,
           borderWidth: 1
         }
@@ -13438,8 +13438,8 @@ function renderFinanceView() {
           },
           tooltip: {
             backgroundColor: tooltipBg,
-            titleColor: state.theme !== "light" ? "#fff" : "#000",
-            bodyColor: state.theme !== "light" ? "#fff" : "#000",
+            titleColor: (state && state.themeMode !== "light") ? "#fff" : "#000",
+            bodyColor: (state && state.themeMode !== "light") ? "#fff" : "#000",
             borderColor: borderColor,
             borderWidth: 1,
             callbacks: {
@@ -13572,8 +13572,8 @@ function renderFinanceView() {
           },
           tooltip: {
             backgroundColor: tooltipBg,
-            titleColor: state.theme !== "light" ? "#fff" : "#000",
-            bodyColor: state.theme !== "light" ? "#fff" : "#000",
+            titleColor: (state && state.themeMode !== "light") ? "#fff" : "#000",
+            bodyColor: (state && state.themeMode !== "light") ? "#fff" : "#000",
             borderColor: borderColor,
             borderWidth: 1,
             callbacks: {

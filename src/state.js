@@ -997,6 +997,12 @@ let state = {
   catalogKeysCurrentPage: 1,
   activeCatalogKeysTitle: "",
   themeMode: "dark", // "dark", "light"
+  get theme() {
+    return this.themeMode;
+  },
+  set theme(val) {
+    this.themeMode = val;
+  },
   themeColor: "classic", // "classic", "ocean", "cyberpunk", "emerald", "amber"
   customLogo: null, // Base64 string or image URL
   currency: "EUR",
