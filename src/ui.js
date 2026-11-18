@@ -5809,12 +5809,12 @@ window.triggerViewCatalogKeys = function(title, openModalFlag = true, explicitIm
   const titleEl = document.getElementById("catalog-keys-modal-title");
   if (titleEl) titleEl.textContent = title;
   
-  // Ensure Supplier header exists in catalog keys table (self-healing if cached modals.html)
+  // Ensure Supplier and Duration headers exist in catalog keys table (self-healing if cached modals.html)
   const keysTable = document.getElementById("catalog-keys-table");
   if (keysTable) {
     const theadRow = keysTable.querySelector("thead tr");
     if (theadRow) {
-      const ths = Array.from(theadRow.querySelectorAll("th"));
+      let ths = Array.from(theadRow.querySelectorAll("th"));
       const hasSupplierTh = ths.some(th => th.textContent.trim().toLowerCase() === "supplier");
       if (!hasSupplierTh) {
         const supTh = document.createElement("th");
@@ -5824,6 +5824,22 @@ window.triggerViewCatalogKeys = function(title, openModalFlag = true, explicitIm
           theadRow.insertBefore(supTh, ths[2]);
         } else {
           theadRow.appendChild(supTh);
+        }
+        ths = Array.from(theadRow.querySelectorAll("th"));
+      }
+
+      const hasDurationTh = ths.some(th => th.textContent.trim().toLowerCase().includes("duration"));
+      if (!hasDurationTh) {
+        const durTh = document.createElement("th");
+        durTh.textContent = "Duration";
+        durTh.title = "How many days took to sell (Duration)";
+        const statusThIndex = ths.findIndex(th => th.textContent.trim().toLowerCase() === "status");
+        if (statusThIndex !== -1) {
+          theadRow.insertBefore(durTh, ths[statusThIndex]);
+        } else if (ths.length > 0) {
+          theadRow.insertBefore(durTh, ths[ths.length - 1]);
+        } else {
+          theadRow.appendChild(durTh);
         }
       }
     }
@@ -5989,7 +6005,7 @@ window.triggerViewCatalogKeys = function(title, openModalFlag = true, explicitIm
   }
   
   if (matchingKeys.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" class="text-center" style="text-align: center; padding: 30px; color: var(--text-muted);">No keys found for this game.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" class="text-center" style="text-align: center; padding: 30px; color: var(--text-muted);">No keys found for this game.</td></tr>`;
     document.getElementById("catalog-keys-count-text").textContent = "Showing 0 keys";
     const paginationContainer = document.getElementById("catalog-keys-pagination");
     if (paginationContainer) paginationContainer.innerHTML = "";
@@ -6023,10 +6039,42 @@ window.triggerViewCatalogKeys = function(title, openModalFlag = true, explicitIm
     const tr = document.createElement("tr");
     
     // Find associated sale if sold
-    const sale = state.sales.find(s => s.inventoryId === item.id);
+    const sale = state.sales.find(s => s && (s.inventoryId === item.id || String(s.inventoryId) === String(item.id))) ||
+                 (item.status === "Sold" && state.sales.find(s => s && s.title && s.title.trim().toLowerCase() === titleLower && s.key && item.key && s.key.trim().toLowerCase() === item.key.trim().toLowerCase()));
     const salePriceText = sale ? formatCurrency(sale.sellPrice) : "—";
-    const sellPlatformText = sale ? sale.platform : "—";
+    const sellPlatformText = sale ? (sale.platformSold || sale.platform || "—") : "—";
     
+    // Calculate duration to sell
+    let durationCell = `<span style="color: var(--text-muted); font-size: 0.8rem;">—</span>`;
+    const pDateStr = item.purchaseDate || (sale && sale.purchaseDate);
+    const sDateStr = sale ? sale.saleDate : (item.dateClosed || item.soldDate);
+
+    if (item.status === "Sold" && pDateStr && sDateStr) {
+      const start = parseDateMidnight(pDateStr);
+      const end = parseDateMidnight(sDateStr);
+      if (start && end) {
+        const diffTime = Math.max(0, end - start);
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+        const formattedPDate = typeof formatDate === "function" ? formatDate(pDateStr) : pDateStr;
+        const formattedSDate = typeof formatDate === "function" ? formatDate(sDateStr) : sDateStr;
+        durationCell = `<span class="duration-days text-success-neon" style="font-weight: 600; white-space: nowrap;" title="Acquired: ${escapeHTML(formattedPDate)} | Sold: ${escapeHTML(formattedSDate)}">${diffDays} day${diffDays === 1 ? '' : 's'}</span>`;
+      }
+    } else if (item.status === "Sold" && (!pDateStr || !sDateStr)) {
+      durationCell = `<span style="color: var(--text-muted); font-size: 0.8rem;" title="Acquisition or sale date missing">—</span>`;
+    } else if (pDateStr) {
+      // Unsold key (Available / Reserved): calculate active holding duration in stock
+      const start = parseDateMidnight(pDateStr);
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      if (start) {
+        const diffDays = Math.round(Math.max(0, now - start) / (1000 * 60 * 60 * 24));
+        const formattedPDate = typeof formatDate === "function" ? formatDate(pDateStr) : pDateStr;
+        const agingCat = typeof getAgingCategory === "function" ? getAgingCategory(pDateStr) : null;
+        const agingText = agingCat ? ` (${agingCat.name})` : '';
+        durationCell = `<span style="color: var(--text-secondary); font-size: 0.82rem; white-space: nowrap;" title="Acquired: ${escapeHTML(formattedPDate)} | In stock for ${diffDays} day${diffDays === 1 ? '' : 's'}${escapeHTML(agingText)}">${diffDays}d <span style="font-size: 0.72rem; color: var(--text-muted);">(in stock)</span></span>`;
+      }
+    }
+
     const keyStr = String(item.key || "");
     const maskedKey = keyStr.length >= 8 
       ? `${keyStr.slice(0, 4)}-****-****-${keyStr.slice(-4)}`
@@ -6110,6 +6158,7 @@ window.triggerViewCatalogKeys = function(title, openModalFlag = true, explicitIm
       <td>${formatCurrency(item.cost)}</td>
       <td>${salePriceText}</td>
       <td>${sellPlatformText}</td>
+      <td>${durationCell}</td>
       <td><span class="badge ${badgeClass}">${item.status}</span></td>
       <td style="text-align: right;">${actionsHtml}</td>
     `;

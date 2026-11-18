@@ -5,6 +5,17 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.52] - 2026-11-18
+### Added
+- **Catalog Keys Modal Duration Column**:
+  - Added a dedicated **Duration** column to the Catalog Keys modal (`#catalog-keys-table`) opened when double-clicking any game title row or card in the Entries view.
+  - Automatically calculates and displays the exact duration in days it took to sell each key from key acquisition (`purchaseDate`) to transaction completion (`saleDate`).
+  - For unsold keys (`Available` / `Reserved`), displays the active in-stock duration (`Xd (in stock)`) with detailed hover tooltips indicating acquisition date and stock aging categories.
+  - Added self-healing table header injection in `triggerViewCatalogKeys` to guarantee the Duration column is dynamically present even if `templates/modals.html` was cached locally.
+  - Updated empty-state colspan handling from 8 to 9 columns and enhanced selling platform resolution.
+- **Version Synchronization & Cache Busting**:
+  - Synchronized application versioning to **v2.2.52** across `config.js`, `app.js`, `src/ui.js`, `index.html` (sidebar and cache busters `styles.css?v=75`, scripts `?v=117`), `README.md`, `CHANGELOG.md`, `templates/modals.html`, and `templates/help-modal.html`.
+
 ## [v2.2.51] - 2026-11-13
 ### Added
 - **Sales Ledger Holding Duration Column**:
