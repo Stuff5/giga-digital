@@ -1783,6 +1783,78 @@ function initEventHandlers() {
     btnCreateSupplier.addEventListener("click", () => openModal("add-supplier-modal"));
   }
 
+  // Titles Stock History Modal Triggers & Controls
+  const btnDashTitlesHist = document.getElementById("btn-dashboard-titles-history");
+  if (btnDashTitlesHist) {
+    btnDashTitlesHist.addEventListener("click", () => {
+      if (typeof window.openTitlesStockHistoryModal === "function") {
+        window.openTitlesStockHistoryModal();
+      }
+    });
+  }
+
+  const btnEntriesTitlesHist = document.getElementById("btn-entries-titles-history");
+  if (btnEntriesTitlesHist) {
+    btnEntriesTitlesHist.addEventListener("click", () => {
+      if (typeof window.openTitlesStockHistoryModal === "function") {
+        window.openTitlesStockHistoryModal();
+      }
+    });
+  }
+
+  // Entries quick-filter stat cards
+  const cardInStock = document.getElementById("entries-stat-card-instock");
+  if (cardInStock) {
+    cardInStock.addEventListener("click", () => {
+      state.entriesStockFilter = state.entriesStockFilter === "in-stock" ? "all" : "in-stock";
+      state.entriesCurrentPage = 1;
+      const select = document.getElementById("entries-stock-filter");
+      if (select) select.value = state.entriesStockFilter;
+      renderEntries();
+    });
+  }
+
+  const cardOutOfStock = document.getElementById("entries-stat-card-outofstock");
+  if (cardOutOfStock) {
+    cardOutOfStock.addEventListener("click", () => {
+      state.entriesStockFilter = state.entriesStockFilter === "out-of-stock" ? "all" : "out-of-stock";
+      state.entriesCurrentPage = 1;
+      const select = document.getElementById("entries-stock-filter");
+      if (select) select.value = state.entriesStockFilter;
+      renderEntries();
+    });
+  }
+
+  const cardTotal = document.getElementById("entries-stat-card-total");
+  if (cardTotal) {
+    cardTotal.addEventListener("click", () => {
+      state.entriesStockFilter = "all";
+      state.entriesCurrentPage = 1;
+      const select = document.getElementById("entries-stock-filter");
+      if (select) select.value = "all";
+      renderEntries();
+    });
+  }
+
+  // Delegated listeners for titles history modal buttons
+  document.addEventListener("click", (e) => {
+    if (e.target && (e.target.id === "btn-titles-hist-month" || e.target.closest("#btn-titles-hist-month"))) {
+      state.titlesHistoryGroupMode = "month";
+      if (typeof window.renderTitlesStockHistoryModal === "function") window.renderTitlesStockHistoryModal();
+    } else if (e.target && (e.target.id === "btn-titles-hist-year" || e.target.closest("#btn-titles-hist-year"))) {
+      state.titlesHistoryGroupMode = "year";
+      if (typeof window.renderTitlesStockHistoryModal === "function") window.renderTitlesStockHistoryModal();
+    } else if (e.target && (e.target.id === "btn-export-titles-history" || e.target.closest("#btn-export-titles-history"))) {
+      if (typeof window.exportTitlesHistoryCSV === "function") window.exportTitlesHistoryCSV();
+    }
+  });
+
+  document.addEventListener("change", (e) => {
+    if (e.target && e.target.id === "titles-history-year-filter") {
+      if (typeof window.renderTitlesStockHistoryModal === "function") window.renderTitlesStockHistoryModal();
+    }
+  });
+
   // Modal closing buttons (via data attribute)
   document.querySelectorAll("[data-close-modal]").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -11616,9 +11688,53 @@ function renderEntries() {
     renderEntriesGalleryLayout(paginatedEntriesList);
   }
 
+  // Update Entries Catalog & Stock Summary Bar
+  const allEntries = Object.values(titleGroups);
+  const totalCatalogCount = allEntries.length;
+  let inStockTitlesCount = 0;
+  let totalAvailableKeysCount = 0;
+
+  allEntries.forEach(entry => {
+    const stock = entry.availableStock || 0;
+    if (stock > 0) inStockTitlesCount++;
+    totalAvailableKeysCount += stock;
+  });
+
+  const outOfStockCount = Math.max(0, totalCatalogCount - inStockTitlesCount);
+  const inStockPct = totalCatalogCount > 0 ? Math.round((inStockTitlesCount / totalCatalogCount) * 100) : 0;
+
+  const statInStockEl = document.getElementById("entries-stat-in-stock-count");
+  if (statInStockEl) statInStockEl.textContent = inStockTitlesCount.toLocaleString();
+
+  const statInStockPctEl = document.getElementById("entries-stat-in-stock-pct");
+  if (statInStockPctEl) statInStockPctEl.textContent = `${inStockPct}% of catalog`;
+
+  const statOutOfStockEl = document.getElementById("entries-stat-out-of-stock-count");
+  if (statOutOfStockEl) statOutOfStockEl.textContent = outOfStockCount.toLocaleString();
+
+  const statOutOfStockSubEl = document.getElementById("entries-stat-out-of-stock-sub");
+  if (statOutOfStockSubEl) statOutOfStockSubEl.textContent = `${outOfStockCount} titles depleted`;
+
+  const statTotalEl = document.getElementById("entries-stat-total-count");
+  if (statTotalEl) statTotalEl.textContent = totalCatalogCount.toLocaleString();
+
+  const statKeysEl = document.getElementById("entries-stat-keys-count");
+  if (statKeysEl) statKeysEl.textContent = totalAvailableKeysCount.toLocaleString();
+
+  // Highlight active stat card
+  const cardInStock = document.getElementById("entries-stat-card-instock");
+  const cardOutOfStock = document.getElementById("entries-stat-card-outofstock");
+  const cardTotal = document.getElementById("entries-stat-card-total");
+  if (cardInStock) cardInStock.classList.toggle("active", state.entriesStockFilter === "in-stock");
+  if (cardOutOfStock) cardOutOfStock.classList.toggle("active", state.entriesStockFilter === "out-of-stock");
+  if (cardTotal) cardTotal.classList.toggle("active", !state.entriesStockFilter || state.entriesStockFilter === "all");
+
   const showingStart = entriesList.length === 0 ? 0 : startIndex + 1;
   const showingEnd = Math.min(endIndex, entriesList.length);
-  document.getElementById("entries-count-text").textContent = `Showing ${showingStart}-${showingEnd} of ${entriesList.length} unique game titles`;
+  const countTextEl = document.getElementById("entries-count-text");
+  if (countTextEl) {
+    countTextEl.textContent = `Showing ${showingStart}-${showingEnd} of ${entriesList.length} unique game titles`;
+  }
 
   // Render pagination controls
   renderEntriesPagination(entriesList.length);
@@ -12445,6 +12561,7 @@ function getPeriodStockStatus(key, breakdownType, precomputedSaleMap = null) {
 
   let openCount = 0;
   let openCost = 0;
+  const uniqueTitlesSet = new Set();
 
   if (state.inventory && Array.isArray(state.inventory)) {
     state.inventory.forEach(item => {
@@ -12455,21 +12572,241 @@ function getPeriodStockStatus(key, breakdownType, precomputedSaleMap = null) {
         if (sale && sale.saleDate) {
           const sTime = new Date(sale.saleDate).getTime();
           if (sTime > endMs) {
-            openCount++;
-            openCost += (parseFloat(item.cost) || 0);
+            const isRejected = item.status === "Rejected";
+            const isRecycled = item.recycleBin === true;
+            if (!isRejected && !isRecycled) {
+              openCount++;
+              openCost += (parseFloat(item.cost) || 0);
+              const t = (item.title || item.gameTitle || "").trim().toLowerCase();
+              if (t) uniqueTitlesSet.add(t);
+            }
           }
         } else {
-          if (item.status !== "sold") {
+          const isSold = item.status === "Sold" || item.status === "sold" || item.sold === true;
+          const isRejected = item.status === "Rejected";
+          const isRecycled = item.recycleBin === true;
+          if (!isSold && !isRejected && !isRecycled) {
             openCount++;
             openCost += (parseFloat(item.cost) || 0);
+            const t = (item.title || item.gameTitle || "").trim().toLowerCase();
+            if (t) uniqueTitlesSet.add(t);
           }
         }
       }
     });
   }
 
-  return { count: openCount, cost: openCost };
+  return { count: openCount, cost: openCost, uniqueTitles: uniqueTitlesSet.size };
 }
+
+window.openTitlesStockHistoryModal = function() {
+  openModal("titles-stock-history-modal");
+  renderTitlesStockHistoryModal();
+};
+
+window.renderTitlesStockHistoryModal = function() {
+  const tbody = document.getElementById("titles-stock-history-tbody");
+  if (!tbody) return;
+
+  const mode = state.titlesHistoryGroupMode || "month";
+  const btnMonth = document.getElementById("btn-titles-hist-month");
+  const btnYear = document.getElementById("btn-titles-hist-year");
+  if (btnMonth) {
+    btnMonth.classList.toggle("active", mode === "month");
+    btnMonth.style.color = mode === "month" ? "var(--text-primary)" : "var(--text-secondary)";
+  }
+  if (btnYear) {
+    btnYear.classList.toggle("active", mode === "year");
+    btnYear.style.color = mode === "year" ? "var(--text-primary)" : "var(--text-secondary)";
+  }
+
+  // Populate Year filter dropdown if month mode
+  const yearFilterEl = document.getElementById("titles-history-year-filter");
+  const yearsSet = new Set();
+  (state.inventory || []).forEach(item => {
+    if (item.purchaseDate && item.purchaseDate.length >= 4) {
+      const y = item.purchaseDate.substring(0, 4);
+      if (/^\d{4}$/.test(y)) yearsSet.add(y);
+    }
+  });
+  (state.sales || []).forEach(sale => {
+    if (sale.saleDate && sale.saleDate.length >= 4) {
+      const y = sale.saleDate.substring(0, 4);
+      if (/^\d{4}$/.test(y)) yearsSet.add(y);
+    }
+  });
+
+  const sortedYears = Array.from(yearsSet).sort((a, b) => b.localeCompare(a));
+  if (yearFilterEl) {
+    if (mode === "month") {
+      yearFilterEl.style.display = "";
+      const currentSelected = yearFilterEl.value || "all";
+      yearFilterEl.innerHTML = `<option value="all">All Years</option>` + sortedYears.map(y => `<option value="${y}">${y}</option>`).join("");
+      if (currentSelected === "all" || sortedYears.includes(currentSelected)) {
+        yearFilterEl.value = currentSelected;
+      } else {
+        yearFilterEl.value = "all";
+      }
+    } else {
+      yearFilterEl.style.display = "none";
+    }
+  }
+
+  const selectedYear = yearFilterEl ? yearFilterEl.value : "all";
+
+  // Build list of unique periods
+  const periodKeysSet = new Set();
+  (state.inventory || []).forEach(item => {
+    if (item.purchaseDate) {
+      if (mode === "month" && item.purchaseDate.length >= 7) {
+        const p = item.purchaseDate.substring(0, 7);
+        if (/^\d{4}-\d{2}$/.test(p)) {
+          if (selectedYear === "all" || p.startsWith(selectedYear)) periodKeysSet.add(p);
+        }
+      } else if (mode === "year" && item.purchaseDate.length >= 4) {
+        const y = item.purchaseDate.substring(0, 4);
+        if (/^\d{4}$/.test(y)) periodKeysSet.add(y);
+      }
+    }
+  });
+  (state.sales || []).forEach(sale => {
+    if (sale.saleDate) {
+      if (mode === "month" && sale.saleDate.length >= 7) {
+        const p = sale.saleDate.substring(0, 7);
+        if (/^\d{4}-\d{2}$/.test(p)) {
+          if (selectedYear === "all" || p.startsWith(selectedYear)) periodKeysSet.add(p);
+        }
+      } else if (mode === "year" && sale.saleDate.length >= 4) {
+        const y = sale.saleDate.substring(0, 4);
+        if (/^\d{4}$/.test(y)) periodKeysSet.add(y);
+      }
+    }
+  });
+
+  // Always include current period
+  const now = new Date();
+  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const currentYearKey = String(now.getFullYear());
+  if (mode === "month" && (selectedYear === "all" || currentMonthKey.startsWith(selectedYear))) {
+    periodKeysSet.add(currentMonthKey);
+  } else if (mode === "year") {
+    periodKeysSet.add(currentYearKey);
+  }
+
+  // Sort chronologically ascending to compute MoM diffs accurately
+  const sortedChrono = Array.from(periodKeysSet).sort();
+
+  // Precompute saleMap once
+  const saleMap = {};
+  (state.sales || []).forEach(sale => {
+    if (sale.inventoryId) saleMap[sale.inventoryId] = sale;
+  });
+
+  const periodStats = sortedChrono.map((key, idx) => {
+    const res = getPeriodStockStatus(key, mode, saleMap);
+    let diff = null;
+    if (idx > 0) {
+      const prev = getPeriodStockStatus(sortedChrono[idx - 1], mode, saleMap);
+      diff = res.uniqueTitles - prev.uniqueTitles;
+    }
+    return {
+      key,
+      uniqueTitles: res.uniqueTitles,
+      count: res.count,
+      cost: res.cost,
+      diff
+    };
+  });
+
+  // Reverse so newest period is on top
+  const displayList = [...periodStats].reverse();
+
+  if (displayList.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 30px; color: var(--text-muted);">No inventory history found.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = displayList.map(item => {
+    const periodLabel = mode === "month" ? (typeof formatMonthKey === "function" ? formatMonthKey(item.key) : item.key) : item.key;
+    let changeBadge = `<span style="color: var(--text-muted);">&ndash;</span>`;
+    if (item.diff !== null) {
+      if (item.diff > 0) {
+        changeBadge = `<span class="badge" style="background: hsla(145, 80%, 45%, 0.15); color: var(--accent-emerald); font-weight: 600; padding: 2px 8px; border-radius: 4px;"><i class="fa-solid fa-arrow-trend-up"></i> +${item.diff} titles</span>`;
+      } else if (item.diff < 0) {
+        changeBadge = `<span class="badge" style="background: hsla(0, 80%, 55%, 0.15); color: var(--accent-danger, #ef4444); font-weight: 600; padding: 2px 8px; border-radius: 4px;"><i class="fa-solid fa-arrow-trend-down"></i> ${item.diff} titles</span>`;
+      } else {
+        changeBadge = `<span style="color: var(--text-muted); font-size: 0.8rem;">0 (No change)</span>`;
+      }
+    }
+
+    return `
+      <tr style="border-bottom: 1px solid var(--border-color);">
+        <td style="font-weight: 600; color: var(--text-main);">${escapeHTML(periodLabel)}</td>
+        <td style="text-align: right; font-weight: 700; color: var(--accent-purple); font-size: 1.05rem;">
+          <i class="fa-solid fa-gamepad" style="font-size: 0.85rem; margin-right: 4px; opacity: 0.7;"></i> ${item.uniqueTitles.toLocaleString()}
+        </td>
+        <td style="text-align: right; color: var(--accent-teal); font-weight: 600;">
+          ${item.count.toLocaleString()} keys
+        </td>
+        <td style="text-align: right; color: var(--accent-emerald); font-weight: 600;">
+          ${formatCurrency(item.cost)}
+        </td>
+        <td style="text-align: right;">
+          ${changeBadge}
+        </td>
+      </tr>
+    `;
+  }).join("");
+};
+
+window.exportTitlesHistoryCSV = function() {
+  const mode = state.titlesHistoryGroupMode || "month";
+  const yearFilterEl = document.getElementById("titles-history-year-filter");
+  const selectedYear = yearFilterEl ? yearFilterEl.value : "all";
+
+  // Build periods
+  const periodKeysSet = new Set();
+  (state.inventory || []).forEach(item => {
+    if (item.purchaseDate) {
+      if (mode === "month" && item.purchaseDate.length >= 7) {
+        const p = item.purchaseDate.substring(0, 7);
+        if (/^\d{4}-\d{2}$/.test(p)) {
+          if (selectedYear === "all" || p.startsWith(selectedYear)) periodKeysSet.add(p);
+        }
+      } else if (mode === "year" && item.purchaseDate.length >= 4) {
+        const y = item.purchaseDate.substring(0, 4);
+        if (/^\d{4}$/.test(y)) periodKeysSet.add(y);
+      }
+    }
+  });
+
+  const sortedChrono = Array.from(periodKeysSet).sort();
+  const saleMap = {};
+  (state.sales || []).forEach(sale => {
+    if (sale.inventoryId) saleMap[sale.inventoryId] = sale;
+  });
+
+  const rows = [["Period", "Unique Titles in Stock", "Available Stock Keys", "Stock Valuation", "Change"]];
+  sortedChrono.forEach((key, idx) => {
+    const res = getPeriodStockStatus(key, mode, saleMap);
+    let diff = 0;
+    if (idx > 0) {
+      const prev = getPeriodStockStatus(sortedChrono[idx - 1], mode, saleMap);
+      diff = res.uniqueTitles - prev.uniqueTitles;
+    }
+    const label = mode === "month" ? (typeof formatMonthKey === "function" ? formatMonthKey(key) : key) : key;
+    rows.push([label, res.uniqueTitles, res.count, res.cost.toFixed(2), (diff >= 0 ? "+" : "") + diff]);
+  });
+
+  const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `titles_stock_history_${mode}_${selectedYear}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
 
 function updateFinanceBreakdownCollapseUI() {
   const card = document.getElementById("finance-detail-card");

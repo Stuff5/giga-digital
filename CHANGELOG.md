@@ -5,6 +5,21 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.53] - 2026-11-20
+### Added
+- **Unique Titles in Stock Tracking (Entries View)**:
+  - Added an interactive **Catalog & Stock Summary Bar** above the Game Catalog Entries table with four live metric cards: *Unique Titles in Stock*, *Out of Stock Titles*, *Total Catalog Titles*, and *Available Stock Keys*.
+  - Clicking any summary card instantly filters the catalog table (`in-stock`, `out-of-stock`, or `all`).
+  - Added header action button for opening the historical monthly/yearly breakdown.
+- **Unique Titles in Stock Tracking (Dashboard View)**:
+  - Enhanced the Dashboard Inventory Status card to display catalog coverage percentage alongside active unique titles count.
+  - Added an inline `History` action button to inspect historical title counts and stock breadth directly from the dashboard.
+- **Titles & Stock Monthly/Yearly History Modal**:
+  - Implemented a dedicated breakdown modal (`titles-stock-history-modal`) accessible from both Entries and Dashboard.
+  - Supports toggling between **By Month** and **By Year** with year-based filtering.
+  - Calculates point-in-time active unique titles, available keys, total stock valuation, and period-over-period delta changes.
+  - Includes one-click CSV export functionality (`titles_stock_history.csv`).
+
 ## [v2.2.52] - 2026-11-18
 ### Added
 - **Catalog Keys Modal Duration Column**:

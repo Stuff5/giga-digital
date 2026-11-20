@@ -66,18 +66,25 @@ function renderPeriodSummary(dbFilteredSales, dbFilteredInventory) {
     const uniqueTitlesEl = document.getElementById("summary-metric-unique-titles");
     if (uniqueTitlesEl) {
       const titlesSet = new Set();
+      const allCatalogTitlesSet = new Set();
       if (Array.isArray(dbFilteredInventory)) {
         dbFilteredInventory.forEach(item => {
+          const t = (item.title || item.gameTitle || "").trim();
+          if (t) allCatalogTitlesSet.add(t.toLowerCase());
           const isSold = item.status === "Sold" || item.sold === true;
           const isRejected = item.status === "Rejected";
           const isRecycled = item.recycleBin === true;
           if (!isSold && !isRejected && !isRecycled) {
-            const t = (item.title || item.gameTitle || "").trim();
             if (t) titlesSet.add(t.toLowerCase());
           }
         });
       }
       uniqueTitlesEl.textContent = titlesSet.size.toLocaleString();
+      const pctEl = document.getElementById("summary-metric-unique-titles-pct");
+      if (pctEl) {
+        const pct = allCatalogTitlesSet.size > 0 ? Math.round((titlesSet.size / allCatalogTitlesSet.size) * 100) : 0;
+        pctEl.textContent = `${pct}% of catalog`;
+      }
     }
     
     const stockCostEl = document.getElementById("summary-metric-stock-cost");

@@ -1936,6 +1936,31 @@ a {
 }
 
 /* ==========================================================================
+   GAME CATALOG ENTRIES METRICS & STAT CARDS
+   ========================================================================== */
+.entries-stat-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+}
+.entries-stat-card:hover {
+  border-color: var(--accent-purple);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+}
+.entries-stat-card.active {
+  border-color: var(--accent-purple);
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.08) 0%, rgba(168, 85, 247, 0.02) 100%);
+  box-shadow: 0 0 14px rgba(168, 85, 247, 0.25);
+}
+
+/* ==========================================================================
    GAME CATALOG ENTRIES FILTER BAR (SINGLE ROW)
    ========================================================================== */
 .entries-filter-bar {
