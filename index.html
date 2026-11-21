@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=78">
+  <link rel="stylesheet" href="styles.css?v=79">
   
   <!-- Early theme application to prevent FOUC / light theme flicker -->
   <script>
@@ -139,7 +139,7 @@
         </div>
         <div class="version-info" style="text-align: center; font-size: 0.7rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; overflow: hidden; white-space: nowrap;">
           <span class="version-label">GameVault</span>
-          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v2.2.55</a>
+          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v2.2.56</a>
         </div>
 
       </div>
@@ -347,24 +347,32 @@
               
               <!-- Stock Stats (2 Rows matching Performance card) -->
               <div style="display: flex; flex-direction: column; gap: 14px; flex: 1; justify-content: space-between; padding: 2px 4px;">
-                <!-- Row 1: Available, Reserved, Total Stock -->
+                <!-- Row 1: Available, Reserved, Unique Titles in Stock -->
                 <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px;">
                   <!-- Available Keys -->
                   <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
                     <span style="color: var(--text-secondary); font-size: 0.82rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><i class="fa-solid fa-box" style="margin-right: 6px; color: var(--accent-teal);"></i>Available</span>
                     <h3 id="summary-metric-available" style="margin: 0; font-size: 1.4rem; font-weight: 700;">0</h3>
+                    <span id="summary-metric-available-total-sub" style="font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="Total unsold keys (Available + Reserved)">Total: 0 keys</span>
                   </div>
 
                   <!-- Reserved Keys -->
                   <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
                     <span style="color: var(--text-secondary); font-size: 0.82rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><i class="fa-solid fa-clock" style="margin-right: 6px; color: var(--accent-warning);"></i>Reserved</span>
                     <h3 id="summary-metric-reserved" style="margin: 0; font-size: 1.4rem; font-weight: 700; color: var(--accent-warning);">0</h3>
+                    <span style="font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">On hold</span>
                   </div>
 
-                  <!-- Total Stock Keys -->
+                  <!-- Unique Titles in Stock -->
                   <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
-                    <span style="color: var(--text-secondary); font-size: 0.82rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="Total unsold keys on hand"><i class="fa-solid fa-boxes-stacked" style="margin-right: 6px; color: var(--accent-cyan);"></i>Total Stock</span>
-                    <h3 id="summary-metric-total-stock" style="margin: 0; font-size: 1.4rem; font-weight: 700; color: var(--text-main);">0</h3>
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+                      <span style="color: var(--text-secondary); font-size: 0.82rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="Unique game titles currently in stock"><i class="fa-solid fa-gamepad" style="margin-right: 6px; color: var(--accent-purple);"></i>Unique Titles</span>
+                      <button type="button" class="btn btn-outline btn-xs" id="btn-dashboard-titles-history" style="padding: 1px 6px; font-size: 0.7rem; height: 20px; line-height: 1; border-radius: 4px; border-color: var(--border-color); color: var(--accent-purple); display: inline-flex; align-items: center; gap: 3px; cursor: pointer;" title="View Monthly & Yearly Titles in Stock Breakdown">
+                        <i class="fa-solid fa-calendar-days"></i> History
+                      </button>
+                    </div>
+                    <h3 id="summary-metric-unique-titles" style="margin: 0; font-size: 1.4rem; font-weight: 700; color: var(--text-main);">0</h3>
+                    <span id="summary-metric-unique-titles-pct" style="font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">0% of catalog</span>
                   </div>
                 </div>
 
@@ -374,18 +382,21 @@
                   <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
                     <span style="color: var(--text-secondary); font-size: 0.82rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><i class="fa-solid fa-vault" style="margin-right: 6px; color: var(--accent-emerald);"></i>Stock Cost</span>
                     <h3 id="summary-metric-stock-cost" style="margin: 0; font-size: 1.4rem; font-weight: 700; color: var(--accent-emerald);">€0.00</h3>
+                    <span style="font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Inventory value</span>
                   </div>
 
                   <!-- Avg Cost per Key -->
                   <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
-                    <span style="color: var(--text-secondary); font-size: 0.82rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="Average purchase cost per in-stock key"><i class="fa-solid fa-tag" style="margin-right: 6px; color: var(--accent-purple);"></i>Avg Cost/Key</span>
+                    <span style="color: var(--text-secondary); font-size: 0.82rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="Average purchase cost per in-stock key"><i class="fa-solid fa-tag" style="margin-right: 6px; color: var(--accent-cyan);"></i>Avg Cost/Key</span>
                     <h3 id="summary-metric-avg-cost" style="margin: 0; font-size: 1.4rem; font-weight: 700; color: var(--text-main);">€0.00</h3>
+                    <span style="font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Per unit avg</span>
                   </div>
 
                   <!-- Avg Stock Age -->
                   <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
                     <span style="color: var(--text-secondary); font-size: 0.82rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="Average holding duration of in-stock keys"><i class="fa-solid fa-hourglass-half" style="margin-right: 6px; color: var(--accent-warning);"></i>Avg Age</span>
                     <h3 id="summary-metric-avg-age" style="margin: 0; font-size: 1.4rem; font-weight: 700; color: var(--text-main);">0d</h3>
+                    <span style="font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">In warehouse</span>
                   </div>
                 </div>
               </div>
@@ -4182,13 +4193,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=120"></script>
-  <script src="src/state.js?v=120"></script>
-  <script src="src/api.js?v=120"></script>
-  <script src="src/charts.js?v=120"></script>
-  <script src="src/ui.js?v=120"></script>
-  <script src="src/ai.js?v=120"></script>
-  <script src="src/importer.js?v=120"></script>
-  <script src="app.js?v=120"></script>
+  <script src="config.js?v=121"></script>
+  <script src="src/state.js?v=121"></script>
+  <script src="src/api.js?v=121"></script>
+  <script src="src/charts.js?v=121"></script>
+  <script src="src/ui.js?v=121"></script>
+  <script src="src/ai.js?v=121"></script>
+  <script src="src/importer.js?v=121"></script>
+  <script src="app.js?v=121"></script>
 </body>
 </html>

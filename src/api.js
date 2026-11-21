@@ -68,6 +68,34 @@ function renderPeriodSummary(dbFilteredSales, dbFilteredInventory) {
     if (totalStockEl) {
       totalStockEl.textContent = totalStockCount.toLocaleString();
     }
+    const availableTotalSub = document.getElementById("summary-metric-available-total-sub");
+    if (availableTotalSub) {
+      availableTotalSub.textContent = `Total: ${totalStockCount.toLocaleString()} keys`;
+    }
+
+    const uniqueTitlesEl = document.getElementById("summary-metric-unique-titles");
+    if (uniqueTitlesEl) {
+      const titlesSet = new Set();
+      const allCatalogTitlesSet = new Set();
+      if (Array.isArray(dbFilteredInventory)) {
+        dbFilteredInventory.forEach(item => {
+          const t = (item.title || item.gameTitle || "").trim();
+          if (t) allCatalogTitlesSet.add(t.toLowerCase());
+          const isSold = item.status === "Sold" || item.sold === true;
+          const isRejected = item.status === "Rejected";
+          const isRecycled = item.recycleBin === true;
+          if (!isSold && !isRejected && !isRecycled) {
+            if (t) titlesSet.add(t.toLowerCase());
+          }
+        });
+      }
+      uniqueTitlesEl.textContent = titlesSet.size.toLocaleString();
+      const pctEl = document.getElementById("summary-metric-unique-titles-pct");
+      if (pctEl) {
+        const pct = allCatalogTitlesSet.size > 0 ? Math.round((titlesSet.size / allCatalogTitlesSet.size) * 100) : 0;
+        pctEl.textContent = `${pct}% of catalog`;
+      }
+    }
     
     const unsoldKeys = dbFilteredInventory ? dbFilteredInventory.filter(item => {
       const isSold = item.status === "Sold" || item.sold === true;

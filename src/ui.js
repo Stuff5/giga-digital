@@ -1783,7 +1783,16 @@ function initEventHandlers() {
     btnCreateSupplier.addEventListener("click", () => openModal("add-supplier-modal"));
   }
 
-  // Titles Stock History Modal Trigger (Entries)
+  // Titles Stock History Modal Triggers (Dashboard & Entries)
+  const btnDashTitlesHist = document.getElementById("btn-dashboard-titles-history");
+  if (btnDashTitlesHist) {
+    btnDashTitlesHist.addEventListener("click", () => {
+      if (typeof window.openTitlesStockHistoryModal === "function") {
+        window.openTitlesStockHistoryModal();
+      }
+    });
+  }
+
   const btnEntriesTitlesHist = document.getElementById("btn-entries-titles-history");
   if (btnEntriesTitlesHist) {
     btnEntriesTitlesHist.addEventListener("click", () => {

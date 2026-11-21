@@ -5,6 +5,15 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.56] - 2026-11-21
+### Added
+- **Dashboard Inventory Status Unique Titles Integration**:
+  - Re-integrated **Unique Titles** count, active catalog percentage (`X% of catalog`), and historical monthly/yearly breakdown trigger button into Row 1 of the Dashboard Inventory Status card (`#card-overview-inventory`).
+  - Preserved the balanced, vertically top-aligned 2-row layout mirroring the Performance Summary card:
+    - **Row 1**: *Available Keys* (with total keys held subtitle), *Reserved Keys* (with on-hold subtitle), and *Unique Titles* (with inline history button & % of catalog).
+    - **Row 2**: *Stock Cost* (inventory valuation), *Avg Cost / Key* (per unit acquisition average), and *Avg Age* (average warehouse holding duration).
+  - Wired event handlers to open `titles-stock-history-modal` from the Dashboard trigger button.
+
 ## [v2.2.55] - 2026-11-21
 ### Added
 - **Inventory Status Overview Card Symmetry & Real-Time Metrics**:
