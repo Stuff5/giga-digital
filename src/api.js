@@ -55,19 +55,58 @@ function renderPeriodSummary(dbFilteredSales, dbFilteredInventory) {
   
   if (availableEl) {
     const availableKeys = dbFilteredInventory ? dbFilteredInventory.filter(item => item.status === "Available") : [];
-    availableEl.textContent = availableKeys.length;
+    availableEl.textContent = availableKeys.length.toLocaleString();
     
     const reservedEl = document.getElementById("summary-metric-reserved");
+    const reservedKeys = dbFilteredInventory ? dbFilteredInventory.filter(item => item.status === "Reserved") : [];
     if (reservedEl) {
-      const reservedKeys = dbFilteredInventory ? dbFilteredInventory.filter(item => item.status === "Reserved") : [];
-      reservedEl.textContent = reservedKeys.length;
+      reservedEl.textContent = reservedKeys.length.toLocaleString();
+    }
+
+    const totalStockEl = document.getElementById("summary-metric-total-stock");
+    const totalStockCount = availableKeys.length + reservedKeys.length;
+    if (totalStockEl) {
+      totalStockEl.textContent = totalStockCount.toLocaleString();
     }
     
+    const unsoldKeys = dbFilteredInventory ? dbFilteredInventory.filter(item => {
+      const isSold = item.status === "Sold" || item.sold === true;
+      const isRejected = item.status === "Rejected";
+      const isRecycled = item.recycleBin === true;
+      return !isSold && !isRejected && !isRecycled;
+    }) : [];
+
     const stockCostEl = document.getElementById("summary-metric-stock-cost");
+    const inventoryCost = unsoldKeys.reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0);
     if (stockCostEl) {
-      const unsoldKeys = dbFilteredInventory ? dbFilteredInventory.filter(item => item.status !== "Sold") : [];
-      const inventoryCost = unsoldKeys.reduce((sum, item) => sum + (item.cost || 0), 0);
       stockCostEl.textContent = formatCurrency(inventoryCost);
+    }
+
+    const avgCostEl = document.getElementById("summary-metric-avg-cost");
+    if (avgCostEl) {
+      const avgCost = totalStockCount > 0 ? (inventoryCost / totalStockCount) : 0;
+      avgCostEl.textContent = formatCurrency(avgCost);
+    }
+
+    const avgAgeEl = document.getElementById("summary-metric-avg-age");
+    if (avgAgeEl) {
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      let totalAgeDays = 0;
+      let countWithDate = 0;
+      unsoldKeys.forEach(item => {
+        if (item.purchaseDate) {
+          const pDate = new Date(item.purchaseDate);
+          pDate.setHours(0, 0, 0, 0);
+          if (!isNaN(pDate.getTime())) {
+            const age = Math.max(0, Math.round((now - pDate) / (1000 * 60 * 60 * 24)));
+            totalAgeDays += age;
+            countWithDate++;
+          }
+        }
+      });
+      const avgDays = countWithDate > 0 ? Math.round(totalAgeDays / countWithDate) : 0;
+      avgAgeEl.textContent = `${avgDays}d`;
     }
   }
   

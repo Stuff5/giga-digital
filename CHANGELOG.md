@@ -5,6 +5,14 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.55] - 2026-11-21
+### Added
+- **Inventory Status Overview Card Symmetry & Real-Time Metrics**:
+  - Restored full vertical alignment and top-positioning of the Inventory Status card (`#card-overview-inventory`) by establishing a balanced 2-row layout mirroring the Performance Summary card.
+  - Added **Total Stock Keys** (`summary-metric-total-stock`): Combined count of Available and Reserved unsold keys.
+  - Added **Avg Cost / Key** (`summary-metric-avg-cost`): Real-time capital efficiency metric calculating average acquisition cost per held key.
+  - Added **Avg Stock Age** (`summary-metric-avg-age`): Dynamic calculation of the average holding age in days for all unsold keys currently held in inventory.
+
 ## [v2.2.54] - 2026-11-21
 ### Removed
 - **Dashboard Unique Titles Redundancy**:
