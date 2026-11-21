@@ -5,6 +5,12 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.54] - 2026-11-21
+### Removed
+- **Dashboard Unique Titles Redundancy**:
+  - Removed Unique Titles metric and history trigger from the Dashboard Inventory Status card (`#card-overview-inventory`), streamlining the card into a clean single-row layout displaying *Available Keys*, *Reserved Keys*, and *Stock Cost*.
+  - Consolidated all Catalog Breadth & Unique Titles in Stock tracking exclusively within the **Entries** catalog view.
+
 ## [v2.2.53] - 2026-11-20
 ### Added
 - **Unique Titles in Stock Tracking (Entries View)**:
