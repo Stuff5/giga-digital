@@ -5,6 +5,13 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.57] - 2026-11-21
+### Changed
+- **Dashboard Inventory Status Clean-up**:
+  - Removed the inline `History` button from the **Unique Titles** card in the Dashboard Inventory Status overview (`#card-overview-inventory`), keeping the card aesthetic clean and aligned with sibling metrics.
+  - Preserved the full Unique Titles metric display (`#summary-metric-unique-titles`) and `% of catalog` coverage subtitle (`#summary-metric-unique-titles-pct`).
+  - Historical monthly and yearly catalog breakdown remains accessible in the **Entries** catalog view.
+
 ## [v2.2.56] - 2026-11-21
 ### Added
 - **Dashboard Inventory Status Unique Titles Integration**:
