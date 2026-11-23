@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=81">
+  <link rel="stylesheet" href="styles.css?v=82">
   
   <!-- Early theme application to prevent FOUC / light theme flicker -->
   <script>
@@ -139,7 +139,7 @@
         </div>
         <div class="version-info" style="text-align: center; font-size: 0.7rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; overflow: hidden; white-space: nowrap;">
           <span class="version-label">GameVault</span>
-          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v2.2.58</a>
+          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v2.2.59</a>
         </div>
 
       </div>
@@ -154,10 +154,9 @@
           <button class="mobile-toggle" id="sidebar-toggle" aria-label="Toggle Navigation">
             <i class="fa-solid fa-bars"></i>
           </button>
-          <div class="search-bar" style="position: relative; display: flex; align-items: center;">
+          <div class="search-bar">
             <i class="fa-solid fa-magnifying-glass"></i>
             <input type="text" id="global-search" placeholder="Search keys, games, platforms..." autocomplete="off">
-            <kbd id="btn-topbar-command-palette" title="Open Command Palette (Ctrl+K)" style="position: absolute; right: 10px; font-size: 0.68rem; padding: 2px 6px; border-radius: 4px; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-muted); cursor: pointer; user-select: none; font-family: inherit; font-weight: 600;">Ctrl K</kbd>
           </div>
         </div>
         
@@ -4117,47 +4116,6 @@
 
   <!-- EDIT GAME MODAL -->
 
-  <!-- COMMAND PALETTE MODAL (Ctrl + K) -->
-  <div class="modal-backdrop command-palette-backdrop" id="command-palette-modal">
-    <div class="command-palette-card">
-      <div class="command-palette-header">
-        <i class="fa-solid fa-magnifying-glass command-palette-icon"></i>
-        <input type="text" id="cmd-palette-input" class="command-palette-input" placeholder="Search games, keys, actions, or views... (Esc to exit)" autocomplete="off" spellcheck="false">
-        <div class="command-palette-header-actions">
-          <kbd class="command-palette-kbd">Esc</kbd>
-          <button type="button" class="command-palette-close-btn" id="btn-close-command-palette" aria-label="Close Command Palette">&times;</button>
-        </div>
-      </div>
-      
-      <!-- Filter Category Tabs -->
-      <div class="command-palette-tabs" id="cmd-palette-tabs">
-        <button type="button" class="cmd-tab-pill active" data-filter="all">All</button>
-        <button type="button" class="cmd-tab-pill" data-filter="nav"><i class="fa-solid fa-compass" style="margin-right: 4px;"></i>Views</button>
-        <button type="button" class="cmd-tab-pill" data-filter="actions"><i class="fa-solid fa-bolt" style="margin-right: 4px;"></i>Actions</button>
-        <button type="button" class="cmd-tab-pill" data-filter="games"><i class="fa-solid fa-gamepad" style="margin-right: 4px;"></i>Games</button>
-        <button type="button" class="cmd-tab-pill" data-filter="keys"><i class="fa-solid fa-key" style="margin-right: 4px;"></i>Keys</button>
-      </div>
-
-      <!-- Results Body -->
-      <div class="command-palette-body" id="cmd-palette-results">
-        <!-- Rendered dynamically -->
-      </div>
-
-      <!-- Footer Hints -->
-      <div class="command-palette-footer">
-        <div class="cmd-hint-group">
-          <kbd>↑</kbd><kbd>↓</kbd> <span>Navigate</span>
-        </div>
-        <div class="cmd-hint-group">
-          <kbd>↵</kbd> <span>Select</span>
-        </div>
-        <div class="cmd-hint-group">
-          <kbd>Esc</kbd> <span>Close</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- Modal Placeholders -->
   <div id="modals-placeholder"></div>
   <div id="help-modal-placeholder"></div>
@@ -4327,13 +4285,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=123"></script>
-  <script src="src/state.js?v=123"></script>
-  <script src="src/api.js?v=123"></script>
-  <script src="src/charts.js?v=123"></script>
-  <script src="src/ui.js?v=123"></script>
-  <script src="src/ai.js?v=123"></script>
-  <script src="src/importer.js?v=123"></script>
-  <script src="app.js?v=123"></script>
+  <script src="config.js?v=124"></script>
+  <script src="src/state.js?v=124"></script>
+  <script src="src/api.js?v=124"></script>
+  <script src="src/charts.js?v=124"></script>
+  <script src="src/ui.js?v=124"></script>
+  <script src="src/ai.js?v=124"></script>
+  <script src="src/importer.js?v=124"></script>
+  <script src="app.js?v=124"></script>
 </body>
 </html>

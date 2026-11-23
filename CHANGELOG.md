@@ -5,6 +5,13 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.59] - 2026-11-23
+### Removed
+- **Global Command Palette**:
+  - Removed the Command Palette overlay modal (`#command-palette-modal`), `Ctrl + K` / `Cmd + K` keyboard event handlers, and the search bar shortcut trigger pill per user request.
+  - Kept the native topbar search input focused on filtering table records without modal interruption.
+  - Preserved the Smart Restock Radar dashboard widget and pre-filled restock modal workflow.
+
 ## [v2.2.58] - 2026-11-23
 ### Added
 - **Global Command Palette (`Ctrl + K` / `Cmd + K`)**:
