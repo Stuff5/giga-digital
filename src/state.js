@@ -1088,7 +1088,7 @@ let state = {
   dashboardOverviewOrder: ["performance", "inventory", "dailyProfitMonth"],
   dashboardOverviewVisibility: { performance: true, inventory: true, dailyProfitMonth: true },
   dashboardOrder: [
-    "salesProfit", "platformSplit", "supplierSplit", "topBestsellers", "topBestsellersRevenue", "topBestsellersSales", "topPeakProfit", "topAverageProfit", "dayOfWeek",
+    "salesProfit", "platformSplit", "supplierSplit", "topBestsellers", "topBestsellersRevenue", "topBestsellersSales", "topPeakProfit", "topAverageProfit", "restockRadar", "dayOfWeek",
     "stockSpeed", "salesFeed", "stockTurnover", "stockAging"
   ],
   financeOrder: [
@@ -1103,6 +1103,7 @@ let state = {
     topBestsellersSales: 3,
     topPeakProfit: 3,
     topAverageProfit: 3,
+    restockRadar: 3,
     dailyProfitMonth: 3,
     dayOfWeek: 3,
     stockSpeed: 1,
@@ -1120,6 +1121,7 @@ let state = {
     topBestsellersSales: { visible: true, collapsed: false, limit: 5, metric: 'sales', timeframe: 'global', coverStyle: 'cover' },
     topPeakProfit: { visible: true, collapsed: false, limit: 5, metric: 'peakProfit', timeframe: 'global', coverStyle: 'cover' },
     topAverageProfit: { visible: true, collapsed: false, limit: 5, metric: 'avgProfit', minSales: 1, timeframe: 'global', coverStyle: 'cover' },
+    restockRadar: { visible: true, collapsed: false, limit: 5, threshold: 2, metric: 'profit', timeframe: 'global', coverStyle: 'cover' },
     dailyProfitMonth: { visible: true, collapsed: false, chartType: 'bar', timeframe: 'global' },
     dayOfWeek: { visible: true, collapsed: false, chartType: 'bar', metric: 'profit', timeframe: 'global' },
     stockSpeed: { visible: true, collapsed: false, chartType: 'doughnut', timeframe: 'global' },
@@ -1903,6 +1905,15 @@ function loadStateFromStorage() {
     }
     if (!state.widgetSettings.dayOfWeek) {
       state.widgetSettings.dayOfWeek = { visible: true, collapsed: false, chartType: 'bar', metric: 'profit', timeframe: 'global' };
+    }
+    if (!state.widgetSettings.restockRadar) {
+      state.widgetSettings.restockRadar = { visible: true, collapsed: false, limit: 5, threshold: 2, metric: 'profit', timeframe: 'global', coverStyle: 'cover' };
+    }
+    if (state.dashboardOrder && !state.dashboardOrder.includes("restockRadar")) {
+      state.dashboardOrder.splice(8, 0, "restockRadar");
+    }
+    if (state.dashboardSpans && !state.dashboardSpans.restockRadar) {
+      state.dashboardSpans.restockRadar = 3;
     }
 
     if (state.widgetSettings && state.visibleFigures) {

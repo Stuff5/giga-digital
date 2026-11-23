@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=80">
+  <link rel="stylesheet" href="styles.css?v=81">
   
   <!-- Early theme application to prevent FOUC / light theme flicker -->
   <script>
@@ -139,7 +139,7 @@
         </div>
         <div class="version-info" style="text-align: center; font-size: 0.7rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; overflow: hidden; white-space: nowrap;">
           <span class="version-label">GameVault</span>
-          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v2.2.57</a>
+          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v2.2.58</a>
         </div>
 
       </div>
@@ -154,9 +154,10 @@
           <button class="mobile-toggle" id="sidebar-toggle" aria-label="Toggle Navigation">
             <i class="fa-solid fa-bars"></i>
           </button>
-          <div class="search-bar">
+          <div class="search-bar" style="position: relative; display: flex; align-items: center;">
             <i class="fa-solid fa-magnifying-glass"></i>
             <input type="text" id="global-search" placeholder="Search keys, games, platforms..." autocomplete="off">
+            <kbd id="btn-topbar-command-palette" title="Open Command Palette (Ctrl+K)" style="position: absolute; right: 10px; font-size: 0.68rem; padding: 2px 6px; border-radius: 4px; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-muted); cursor: pointer; user-select: none; font-family: inherit; font-weight: 600;">Ctrl K</kbd>
           </div>
         </div>
         
@@ -1472,6 +1473,103 @@
                         <label for="config-stockAging-supplier">Supplier Filter</label>
                         <select id="config-stockAging-supplier" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
                           <option value="all">All Suppliers</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="config-form-actions">
+                      <button type="submit" class="btn-widget-save">Save Changes</button>
+                      <button type="button" class="btn-widget-cancel btn-widget-flip-cancel">Cancel</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <!-- Widget: Restock Radar (Low & Depleted Stock) -->
+            <div class="chart-card span-3" id="card-chart-restockRadar" data-figure="restockRadar" style="min-height: 520px;">
+              <div class="card-inner">
+                <div class="card-front">
+                  <div class="chart-card-header">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <i class="fa-solid fa-radar" style="color: var(--accent-warning);"></i>
+                      <h4 id="restock-radar-chart-title">Restock Radar (Low &amp; Depleted Stock)</h4>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <i class="fa-solid fa-chevron-down btn-widget-minimize" title="Minimize widget"></i>
+                      <i class="fa-solid fa-expand btn-widget-maximize" title="Maximize widget"></i>
+                      <div class="card-actions-dropdown">
+                        <i class="fa-solid fa-ellipsis-vertical btn-card-actions" title="Widget options"></i>
+                        <div class="card-actions-menu">
+                          <button type="button" class="card-actions-item btn-widget-configure">
+                            <i class="fa-solid fa-sliders"></i> Configure
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-toggle-cover">
+                            <i class="fa-solid fa-image"></i> Toggle Cover / Thumbnail
+                          </button>
+                          <button type="button" class="card-actions-item btn-widget-remove">
+                            <i class="fa-solid fa-trash-can"></i> Remove Widget
+                          </button>
+                          <div style="padding: 6px 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 4px; margin-bottom: 4px;">Card Width</div>
+                          <button type="button" class="card-actions-item" data-span="1">
+                            <i class="fa-solid fa-table-cells-large"></i> 1 Column
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="2">
+                            <i class="fa-solid fa-table-columns"></i> 2 Columns
+                          </button>
+                          <button type="button" class="card-actions-item" data-span="3">
+                            <i class="fa-solid fa-table-cells"></i> 3 Columns (Full)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chart-body" style="min-height: auto; max-height: none; overflow-y: auto; padding: 12px 16px;">
+                    <div id="restock-radar-list" class="restock-radar-list"></div>
+                  </div>
+                </div>
+                <div class="card-back">
+                  <form class="widget-config-form" data-widget="restockRadar">
+                    <div class="config-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                      <h4 style="margin:0; font-size: 1rem; font-weight: 600; color: var(--text-main);">Widget Configuration</h4>
+                      <i class="fa-solid fa-arrow-rotate-left btn-widget-flip-cancel" style="cursor: pointer; color: var(--text-muted);" title="Cancel settings"></i>
+                    </div>
+                    <div class="config-form-body">
+                      <div class="config-field-group">
+                        <label for="config-restockRadar-threshold">Stock Threshold Alert</label>
+                        <select id="config-restockRadar-threshold" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="0">Depleted Only (0 Keys)</option>
+                          <option value="2" selected>Critical (≤ 2 Keys)</option>
+                          <option value="5">Low Stock (≤ 5 Keys)</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-restockRadar-metric">Ranking Priority</label>
+                        <select id="config-restockRadar-metric" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="profit" selected>Historical Net Profit</option>
+                          <option value="sales">Historical Sales Volume</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-restockRadar-limit">Items to Display</label>
+                        <select id="config-restockRadar-limit" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="5" selected>Top 5 Recommendations</option>
+                          <option value="10">Top 10 Recommendations</option>
+                          <option value="15">Top 15 Recommendations</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-restockRadar-coverStyle">Artwork Style</label>
+                        <select id="config-restockRadar-coverStyle" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="cover" selected>Wide Banner Cover</option>
+                          <option value="compact">Compact Square Thumbnail</option>
+                        </select>
+                      </div>
+                      <div class="config-field-group">
+                        <label for="config-restockRadar-timeframe">Sales Historical Window</label>
+                        <select id="config-restockRadar-timeframe" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main);">
+                          <option value="global" selected>All Time History</option>
+                          <option value="90">Last 90 Days</option>
+                          <option value="30">Last 30 Days</option>
                         </select>
                       </div>
                     </div>
@@ -4019,6 +4117,47 @@
 
   <!-- EDIT GAME MODAL -->
 
+  <!-- COMMAND PALETTE MODAL (Ctrl + K) -->
+  <div class="modal-backdrop command-palette-backdrop" id="command-palette-modal">
+    <div class="command-palette-card">
+      <div class="command-palette-header">
+        <i class="fa-solid fa-magnifying-glass command-palette-icon"></i>
+        <input type="text" id="cmd-palette-input" class="command-palette-input" placeholder="Search games, keys, actions, or views... (Esc to exit)" autocomplete="off" spellcheck="false">
+        <div class="command-palette-header-actions">
+          <kbd class="command-palette-kbd">Esc</kbd>
+          <button type="button" class="command-palette-close-btn" id="btn-close-command-palette" aria-label="Close Command Palette">&times;</button>
+        </div>
+      </div>
+      
+      <!-- Filter Category Tabs -->
+      <div class="command-palette-tabs" id="cmd-palette-tabs">
+        <button type="button" class="cmd-tab-pill active" data-filter="all">All</button>
+        <button type="button" class="cmd-tab-pill" data-filter="nav"><i class="fa-solid fa-compass" style="margin-right: 4px;"></i>Views</button>
+        <button type="button" class="cmd-tab-pill" data-filter="actions"><i class="fa-solid fa-bolt" style="margin-right: 4px;"></i>Actions</button>
+        <button type="button" class="cmd-tab-pill" data-filter="games"><i class="fa-solid fa-gamepad" style="margin-right: 4px;"></i>Games</button>
+        <button type="button" class="cmd-tab-pill" data-filter="keys"><i class="fa-solid fa-key" style="margin-right: 4px;"></i>Keys</button>
+      </div>
+
+      <!-- Results Body -->
+      <div class="command-palette-body" id="cmd-palette-results">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Footer Hints -->
+      <div class="command-palette-footer">
+        <div class="cmd-hint-group">
+          <kbd>↑</kbd><kbd>↓</kbd> <span>Navigate</span>
+        </div>
+        <div class="cmd-hint-group">
+          <kbd>↵</kbd> <span>Select</span>
+        </div>
+        <div class="cmd-hint-group">
+          <kbd>Esc</kbd> <span>Close</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal Placeholders -->
   <div id="modals-placeholder"></div>
   <div id="help-modal-placeholder"></div>
@@ -4188,13 +4327,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=122"></script>
-  <script src="src/state.js?v=122"></script>
-  <script src="src/api.js?v=122"></script>
-  <script src="src/charts.js?v=122"></script>
-  <script src="src/ui.js?v=122"></script>
-  <script src="src/ai.js?v=122"></script>
-  <script src="src/importer.js?v=122"></script>
-  <script src="app.js?v=122"></script>
+  <script src="config.js?v=123"></script>
+  <script src="src/state.js?v=123"></script>
+  <script src="src/api.js?v=123"></script>
+  <script src="src/charts.js?v=123"></script>
+  <script src="src/ui.js?v=123"></script>
+  <script src="src/ai.js?v=123"></script>
+  <script src="src/importer.js?v=123"></script>
+  <script src="app.js?v=123"></script>
 </body>
 </html>

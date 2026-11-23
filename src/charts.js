@@ -2634,6 +2634,215 @@ function exportAgingReportToCSV() {
   showToast("Inventory aging report exported to CSV!", "success");
 }
 
+// ==========================================================================
+// RESTOCK RADAR WIDGET (Low & Depleted Stock Intelligence)
+// ==========================================================================
+function renderRestockRadarWidget(filteredSalesList) {
+  const container = document.getElementById("restock-radar-list");
+  if (!container) return;
+
+  const cfg = state.widgetSettings ? state.widgetSettings.restockRadar : null;
+  const threshold = (cfg && cfg.threshold !== undefined) ? parseInt(cfg.threshold, 10) : 2;
+  const metric = (cfg && cfg.metric) || "profit";
+  const limit = (cfg && cfg.limit) ? parseInt(cfg.limit, 10) : 5;
+  const isCover = !cfg || cfg.coverStyle !== "compact";
+
+  const wSales = getWidgetFilteredSales("restockRadar", filteredSalesList);
+
+  // 1. Gather all unique game titles and calculate stock and historical performance
+  const titlesData = new Map();
+
+  // From sales: calculate historical sales volume and profit
+  if (Array.isArray(wSales)) {
+    wSales.forEach(s => {
+      const rawTitle = (s.title || s.gameTitle || "").trim();
+      if (!rawTitle) return;
+      const key = rawTitle.toLowerCase();
+      if (!titlesData.has(key)) {
+        titlesData.set(key, {
+          title: rawTitle,
+          imageUrl: s.imageUrl || "",
+          soldCount: 0,
+          revenue: 0,
+          cost: 0,
+          profit: 0,
+          unsoldStock: 0,
+          lastSupplier: s.supplier || s.source || "Unknown",
+          lastCost: parseFloat(s.cost) || 0,
+          lastSaleDate: s.saleDate || s.date || ""
+        });
+      }
+      const data = titlesData.get(key);
+      data.soldCount++;
+      const rev = parseFloat(s.price || s.salePrice || 0);
+      const c = parseFloat(s.cost || 0);
+      const fee = parseFloat(s.fee || s.platformFee || 0);
+      data.revenue += rev;
+      data.cost += c;
+      data.profit += (rev - c - fee);
+
+      if (s.imageUrl && !data.imageUrl) data.imageUrl = s.imageUrl;
+      if (s.supplier && data.lastSupplier === "Unknown") data.lastSupplier = s.supplier;
+      if (c > 0 && data.lastCost === 0) data.lastCost = c;
+    });
+  }
+
+  // From inventory: calculate remaining unsold keys and find latest supplier / cost
+  if (Array.isArray(state.inventory)) {
+    state.inventory.forEach(item => {
+      const rawTitle = (item.title || item.gameTitle || "").trim();
+      if (!rawTitle) return;
+      const key = rawTitle.toLowerCase();
+      if (!titlesData.has(key)) {
+        titlesData.set(key, {
+          title: rawTitle,
+          imageUrl: item.imageUrl || "",
+          soldCount: 0,
+          revenue: 0,
+          cost: 0,
+          profit: 0,
+          unsoldStock: 0,
+          lastSupplier: item.supplier || item.source || "Unknown",
+          lastCost: parseFloat(item.cost) || 0,
+          lastSaleDate: ""
+        });
+      }
+      const data = titlesData.get(key);
+      if (item.imageUrl && !data.imageUrl) data.imageUrl = item.imageUrl;
+      if (item.supplier && (data.lastSupplier === "Unknown" || !data.lastSupplier)) data.lastSupplier = item.supplier;
+      const c = parseFloat(item.cost || 0);
+      if (c > 0) data.lastCost = c;
+
+      const isSold = item.status === "Sold" || item.sold === true;
+      const isRejected = item.status === "Rejected";
+      const isRecycled = item.recycleBin === true;
+      if (!isSold && !isRejected && !isRecycled) {
+        data.unsoldStock++;
+      }
+    });
+  }
+
+  // Filter candidates: must have sold at least 1 unit AND unsoldStock <= threshold
+  const candidates = Array.from(titlesData.values()).filter(g => {
+    return g.soldCount > 0 && g.unsoldStock <= threshold;
+  });
+
+  // Calculate priority score
+  candidates.forEach(g => {
+    // Scarcity weighting: 0 in stock is highest priority
+    const scarcityMultiplier = g.unsoldStock === 0 ? 3.0 : (g.unsoldStock === 1 ? 2.0 : 1.2);
+    if (metric === "sales") {
+      g.priorityScore = g.soldCount * scarcityMultiplier;
+    } else {
+      g.priorityScore = Math.max(0, g.profit) * scarcityMultiplier;
+    }
+  });
+
+  candidates.sort((a, b) => b.priorityScore - a.priorityScore);
+  const topRecommendations = candidates.slice(0, limit);
+
+  const safeEscape = (str) => {
+    if (typeof window.escapeHTML === "function") return window.escapeHTML(str);
+    return String(str || "").replace(/[&<>"']/g, m => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+    })[m]);
+  };
+
+  const currSym = state.currency === 'USD' ? '$' : '€';
+
+  if (topRecommendations.length === 0) {
+    container.innerHTML = `
+      <div class="cmd-empty-state" style="padding: 36px 16px;">
+        <i class="fa-solid fa-circle-check" style="font-size: 2.2rem; color: var(--accent-emerald); margin-bottom: 10px;"></i>
+        <h5 style="margin: 0 0 6px 0; font-weight: 600; font-size: 1rem; color: var(--text-main);">Inventory Levels Healthy</h5>
+        <p class="text-muted" style="margin: 0; font-size: 0.82rem;">No high-demand game titles currently have depleted or low stock below threshold (${threshold} keys).</p>
+      </div>
+    `;
+    return;
+  }
+
+  let html = "";
+  topRecommendations.forEach((game, idx) => {
+    const rank = idx + 1;
+    let rankClass = "";
+    if (rank === 1) rankClass = "rank-1";
+    else if (rank === 2) rankClass = "rank-2";
+    else if (rank === 3) rankClass = "rank-3";
+
+    const initials = game.title.split(" ").map(w => w[0]).join("").slice(0, 3).toUpperCase();
+    const titleSafe = safeEscape(game.title);
+    const hashGrad = (typeof window.getHashGradient === "function")
+      ? window.getHashGradient(game.title)
+      : "linear-gradient(135deg, var(--accent-purple), var(--accent-cyan))";
+
+    let visualHtml = "";
+    if (isCover) {
+      if (game.imageUrl) {
+        visualHtml = `
+          <div class="bestseller-cover-wrap" style="width: 110px; height: 56px; min-width: 110px; border-radius: var(--radius-sm); overflow: hidden; position: relative;">
+            <img src="${safeEscape(game.imageUrl)}" class="bestseller-cover-img" alt="${titleSafe}" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+            <div class="bestseller-cover-placeholder" style="display: none; background: ${hashGrad}; width: 100%; height: 100%; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 0.85rem;">${safeEscape(initials)}</div>
+          </div>`;
+      } else {
+        visualHtml = `
+          <div class="bestseller-cover-wrap" style="width: 110px; height: 56px; min-width: 110px; border-radius: var(--radius-sm); overflow: hidden; display: flex; align-items: center; justify-content: center; background: ${hashGrad}; font-weight: 700; color: #fff; font-size: 0.85rem;">
+            ${safeEscape(initials)}
+          </div>`;
+      }
+    } else {
+      if (game.imageUrl) {
+        visualHtml = `
+          <img src="${safeEscape(game.imageUrl)}" class="cmd-item-thumb" alt="${titleSafe}" loading="lazy" style="width: 44px; height: 44px; min-width: 44px; border-radius: 6px; object-fit: cover; border: 1px solid var(--border-color); background: var(--bg-input);" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+          <div class="game-thumbnail-placeholder" style="display: none; width: 44px; height: 44px; min-width: 44px; border-radius: 6px; background: ${hashGrad}; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 0.8rem;">${safeEscape(initials)}</div>`;
+      } else {
+        visualHtml = `<div class="game-thumbnail-placeholder" style="width: 44px; height: 44px; min-width: 44px; border-radius: 6px; background: ${hashGrad}; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 0.8rem;">${safeEscape(initials)}</div>`;
+      }
+    }
+
+    let badgeHtml = "";
+    if (game.unsoldStock === 0) {
+      badgeHtml = `<span style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); font-weight: 700; font-size: 0.72rem; padding: 2px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-triangle-exclamation"></i> 0 in stock (Depleted)</span>`;
+    } else if (game.unsoldStock === 1) {
+      badgeHtml = `<span style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.35); font-weight: 700; font-size: 0.72rem; padding: 2px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-circle-exclamation"></i> 1 key left (Critical)</span>`;
+    } else {
+      badgeHtml = `<span style="background: rgba(245, 158, 11, 0.12); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.25); font-weight: 600; font-size: 0.72rem; padding: 2px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-box"></i> ${game.unsoldStock} keys left (Low)</span>`;
+    }
+
+    const clickKeysAction = `if(typeof window.triggerViewCatalogKeys==='function'){window.triggerViewCatalogKeys('${game.title.replace(/'/g, "\\'")}', true, '${(game.imageUrl || '').replace(/'/g, "\\'")}');}`;
+    const restockAction = `if(typeof window.openAddGameModalWithTitle==='function'){window.openAddGameModalWithTitle('${game.title.replace(/'/g, "\\'")}');}else{openModal('add-game-modal');}`;
+
+    html += `
+      <div class="restock-radar-item">
+        <div class="restock-radar-rank ${rankClass}">${rank}</div>
+        ${visualHtml}
+        <div class="restock-radar-info">
+          <div class="restock-radar-title-row">
+            <span class="restock-radar-title" onclick="${clickKeysAction}" title="Click to view catalog keys for ${titleSafe}">${titleSafe}</span>
+            ${badgeHtml}
+          </div>
+          <div class="restock-radar-stats-row">
+            <span><i class="fa-solid fa-receipt" style="color: var(--accent-cyan); margin-right: 4px;"></i>Sold: <strong>${game.soldCount}</strong></span>
+            <span><i class="fa-solid fa-wallet" style="color: var(--accent-purple); margin-right: 4px;"></i>Profit: <strong>${currSym}${game.profit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
+            <span><i class="fa-solid fa-truck-ramp-box" style="margin-right: 4px; color: var(--text-muted);"></i>Supplier: <strong>${safeEscape(game.lastSupplier)}</strong></span>
+            ${game.lastCost > 0 ? `<span><i class="fa-solid fa-tag" style="margin-right: 4px; color: var(--accent-emerald);"></i>Last Cost: <strong>${currSym}${game.lastCost.toFixed(2)}</strong></span>` : ""}
+          </div>
+        </div>
+        <div class="restock-radar-actions">
+          <button type="button" class="btn btn-outline btn-xs" onclick="${clickKeysAction}" title="Inspect Keys" style="padding: 4px 8px; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px; border-radius: 4px;">
+            <i class="fa-solid fa-key"></i> <span class="hide-mobile">Keys</span>
+          </button>
+          <button type="button" class="btn btn-primary btn-xs" onclick="${restockAction}" title="Restock / Add Keys for this game" style="padding: 4px 10px; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px; border-radius: 4px;">
+            <i class="fa-solid fa-cart-plus"></i> Restock
+          </button>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+window.renderRestockRadarWidget = renderRestockRadarWidget;
+
 function renderDashboardCardsOrder() {
   const container = document.getElementById("dashboard-charts-container");
   if (!container || !Array.isArray(state.dashboardOrder)) return;
@@ -2851,7 +3060,8 @@ function renderWidgetGallery() {
     stockSpeed: { title: "Sales Turnaround Speed", desc: "Doughnut/Pie/Bar chart tracking how fast sold keys took to sell." },
     salesFeed: { title: "Recent Sales Activity Feed", desc: "Visual feed of the latest game key sales transactions." },
     stockTurnover: { title: "Stock Turnover Timeline", desc: "Dual timeline chart of key purchases vs keys sold over time." },
-    stockAging: { title: "Stock Aging Distribution", desc: "Segments available stock keys by age brackets." }
+    stockAging: { title: "Stock Aging Distribution", desc: "Segments available stock keys by age brackets." },
+    restockRadar: { title: "Restock Radar (Low & Depleted Stock)", desc: "High-priority restock recommendations based on sales demand and depleted inventory." }
   };
   
   let html = "";
@@ -2967,6 +3177,15 @@ function bindWidgetControls() {
     } else if (widgetKey === "salesFeed") {
       const selectLimit = document.getElementById("config-salesFeed-limit");
       if (selectLimit) selectLimit.value = (cfg && cfg.limit) || 5;
+    } else if (widgetKey === "restockRadar") {
+      const selectLimit = document.getElementById("config-restockRadar-limit");
+      if (selectLimit) selectLimit.value = (cfg && cfg.limit) || 5;
+      const selectCover = document.getElementById("config-restockRadar-coverStyle");
+      if (selectCover) selectCover.value = (cfg && cfg.coverStyle === "compact") ? "compact" : "cover";
+      const selectThreshold = document.getElementById("config-restockRadar-threshold");
+      if (selectThreshold) selectThreshold.value = (cfg && cfg.threshold !== undefined) ? cfg.threshold : 2;
+      const selectMetric = document.getElementById("config-restockRadar-metric");
+      if (selectMetric) selectMetric.value = (cfg && cfg.metric) || "profit";
     } else if (widgetKey === "markupAnalysis") {
       const selectGroupBy = document.getElementById("config-markupAnalysis-groupBy");
       if (selectGroupBy) selectGroupBy.value = (cfg && cfg.groupBy) || "publisher";
@@ -3191,6 +3410,15 @@ function bindWidgetControls() {
         } else if (widgetKey === "salesFeed") {
           const selectLimit = document.getElementById("config-salesFeed-limit");
           if (selectLimit) cfg.limit = parseInt(selectLimit.value);
+        } else if (widgetKey === "restockRadar") {
+          const selectLimit = document.getElementById("config-restockRadar-limit");
+          if (selectLimit) cfg.limit = parseInt(selectLimit.value);
+          const selectCover = document.getElementById("config-restockRadar-coverStyle");
+          if (selectCover) cfg.coverStyle = selectCover.value;
+          const selectThreshold = document.getElementById("config-restockRadar-threshold");
+          if (selectThreshold) cfg.threshold = parseInt(selectThreshold.value);
+          const selectMetric = document.getElementById("config-restockRadar-metric");
+          if (selectMetric) cfg.metric = selectMetric.value;
         } else if (widgetKey === "markupAnalysis") {
           const selectGroupBy = document.getElementById("config-markupAnalysis-groupBy");
           if (selectGroupBy) cfg.groupBy = selectGroupBy.value;

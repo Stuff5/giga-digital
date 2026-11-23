@@ -1746,8 +1746,26 @@ function initEventHandlers() {
   if (btnUndo) btnUndo.addEventListener("click", window.handleUndo);
   if (btnRedo) btnRedo.addEventListener("click", window.handleRedo);
 
-  // Undo/Redo keyboard shortcuts
+  // Undo/Redo & Global Keyboard shortcuts
   document.addEventListener("keydown", (e) => {
+    // Command Palette global shortcut (Ctrl+K / Cmd+K)
+    if ((e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K")) {
+      e.preventDefault();
+      if (typeof window.toggleCommandPalette === "function") {
+        window.toggleCommandPalette();
+      }
+      return;
+    }
+
+    const cmdModal = document.getElementById("command-palette-modal");
+    if (cmdModal && cmdModal.classList.contains("active") && e.key === "Escape") {
+      e.preventDefault();
+      if (typeof window.closeCommandPalette === "function") {
+        window.closeCommandPalette();
+      }
+      return;
+    }
+
     const activeEl = document.activeElement;
     if (activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA" || activeEl.isContentEditable)) {
       return;
@@ -1766,6 +1784,10 @@ function initEventHandlers() {
       }
     }
   });
+
+  if (typeof initCommandPaletteEvents === "function") {
+    initCommandPaletteEvents();
+  }
 
   // Modal opening buttons
   const btnAddGameModal = document.getElementById("btn-add-game-modal");
@@ -6496,6 +6518,7 @@ function updateUI() {
     if (isWidgetVisible("salesFeed")) renderSalesFeedWidget(dbFilteredSales);
     if (isWidgetVisible("stockTurnover")) renderStockTurnoverChart(dbFilteredInventory, dbFilteredSales);
     if (isWidgetVisible("stockAging")) renderStockAgingChart(dbFilteredInventory);
+    if (isWidgetVisible("restockRadar") && typeof renderRestockRadarWidget === "function") renderRestockRadarWidget(dbFilteredSales);
 
     renderDashboardDetails(dbFilteredSales, dbFilteredInventory);
 
@@ -17516,3 +17539,354 @@ function bindProfileSettingsControls() {
     }
   });
 }
+
+// ==========================================================================
+// RESTOCK RADAR HELPER
+// ==========================================================================
+window.openAddGameModalWithTitle = function(title) {
+  if (typeof openModal === "function") {
+    openModal("add-game-modal");
+  }
+  const titleInput = document.getElementById("game-title");
+  if (titleInput && title) {
+    titleInput.value = title;
+    titleInput.dispatchEvent(new Event("input"));
+  }
+};
+
+// ==========================================================================
+// GLOBAL COMMAND PALETTE (Ctrl + K / Cmd + K)
+// ==========================================================================
+let cmdPaletteActiveIndex = 0;
+let cmdPaletteCurrentFilter = "all";
+let cmdPaletteResults = [];
+
+function openCommandPalette() {
+  const modal = document.getElementById("command-palette-modal");
+  const input = document.getElementById("cmd-palette-input");
+  if (!modal || !input) return;
+
+  modal.classList.add("active");
+  input.value = "";
+  cmdPaletteActiveIndex = 0;
+  cmdPaletteCurrentFilter = "all";
+
+  const tabs = document.querySelectorAll("#cmd-palette-tabs .cmd-tab-pill");
+  tabs.forEach(tab => {
+    tab.classList.toggle("active", tab.getAttribute("data-filter") === "all");
+  });
+
+  renderCommandPaletteResults("");
+  setTimeout(() => input.focus(), 60);
+}
+window.openCommandPalette = openCommandPalette;
+
+function closeCommandPalette() {
+  const modal = document.getElementById("command-palette-modal");
+  if (modal) modal.classList.remove("active");
+}
+window.closeCommandPalette = closeCommandPalette;
+
+function toggleCommandPalette() {
+  const modal = document.getElementById("command-palette-modal");
+  if (modal && modal.classList.contains("active")) {
+    closeCommandPalette();
+  } else {
+    openCommandPalette();
+  }
+}
+window.toggleCommandPalette = toggleCommandPalette;
+
+function executeCommandItem(index) {
+  const item = cmdPaletteResults[index];
+  if (!item) return;
+  closeCommandPalette();
+  if (typeof item.action === "function") {
+    item.action();
+  }
+}
+
+function updateCmdActiveItem() {
+  const items = document.querySelectorAll("#cmd-palette-results .cmd-item");
+  items.forEach((el, idx) => {
+    const isSelected = idx === cmdPaletteActiveIndex;
+    el.classList.toggle("selected", isSelected);
+    if (isSelected) {
+      el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  });
+}
+
+function renderCommandPaletteResults(rawQuery = "") {
+  const container = document.getElementById("cmd-palette-results");
+  if (!container) return;
+
+  const query = (rawQuery || "").toLowerCase().trim();
+  cmdPaletteResults = [];
+
+  const safeEscape = (str) => {
+    if (typeof window.escapeHTML === "function") return window.escapeHTML(str);
+    return String(str || "").replace(/[&<>"']/g, m => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+    })[m]);
+  };
+
+  // 1. Navigation Items
+  const navItems = [
+    { id: "nav-dash", category: "nav", title: "Dashboard Overview", subtitle: "Real-time statistics & executive overview", icon: "fa-chart-line", action: () => document.getElementById("nav-dashboard")?.click() },
+    { id: "nav-inv", category: "nav", title: "Inventory Warehouse", subtitle: "Stock keys, availability & statuses", icon: "fa-boxes-stacked", action: () => document.getElementById("nav-inventory")?.click() },
+    { id: "nav-sales", category: "nav", title: "Sales Ledger", subtitle: "Transaction ledger, sales history & revenues", icon: "fa-receipt", action: () => document.getElementById("nav-sales")?.click() },
+    { id: "nav-fin", category: "nav", title: "Finance Analytics", subtitle: "P&L, outflows, monthly ledger breakdown", icon: "fa-coins", action: () => document.getElementById("nav-finance")?.click() },
+    { id: "nav-supp", category: "nav", title: "Suppliers & Publishers", subtitle: "Supplier performance, ROI & metrics", icon: "fa-truck-ramp-box", action: () => document.getElementById("nav-suppliers")?.click() },
+    { id: "nav-plat", category: "nav", title: "Selling Platforms", subtitle: "Marketplace breakdown & performance", icon: "fa-gamepad", action: () => document.getElementById("nav-platforms")?.click() },
+    { id: "nav-ent", category: "nav", title: "Catalog Entries", subtitle: "Game catalog breadth, titles & editions", icon: "fa-tags", action: () => document.getElementById("nav-entries")?.click() },
+    { id: "nav-rec", category: "nav", title: "Recycle Bin", subtitle: "Deleted keys & salvage archive", icon: "fa-trash-can", action: () => document.getElementById("nav-recycle")?.click() },
+    { id: "nav-set", category: "nav", title: "Settings & Cloud", subtitle: "Cloud credentials, themes & utilities", icon: "fa-gear", action: () => document.getElementById("nav-settings")?.click() }
+  ];
+
+  // 2. Quick Actions
+  const actionItems = [
+    { id: "act-add-key", category: "actions", title: "Add New Game Key", subtitle: "Register new key inventory", icon: "fa-plus", badge: "Action", action: () => openModal("add-game-modal") },
+    { id: "act-add-supp", category: "actions", title: "Add New Supplier", subtitle: "Register a merchant or supplier source", icon: "fa-truck-medical", badge: "Action", action: () => openModal("add-supplier-modal") },
+    { id: "act-theme", category: "actions", title: "Toggle Light / Dark Mode", subtitle: "Switch active appearance theme", icon: "fa-circle-half-stroke", badge: "Theme", action: () => document.getElementById("btn-theme-toggle")?.click() },
+    { id: "act-ai", category: "actions", title: "Open AI Merchant Assistant", subtitle: "Strategic advisor & margin audit", icon: "fa-wand-magic-sparkles", badge: "AI", action: () => document.getElementById("btn-topbar-ai")?.click() },
+    { id: "act-wizard", category: "actions", title: "CSV Import Wizard", subtitle: "Bulk import keys and sales spreadsheets", icon: "fa-file-import", badge: "Import", action: () => openModal("csv-import-wizard-modal") },
+    { id: "act-steam-enrich", category: "actions", title: "Steam Ratings Enricher", subtitle: "Fetch official reviews & sentiment", icon: "fa-steam", badge: "Data", action: () => { document.getElementById("nav-settings")?.click(); } },
+    { id: "act-export", category: "actions", title: "Export Data Backup (JSON)", subtitle: "Save offline snapshot", icon: "fa-file-export", badge: "Export", action: () => document.getElementById("btn-export-json")?.click() }
+  ];
+
+  const matchItem = (item) => {
+    if (!query) return true;
+    return item.title.toLowerCase().includes(query) || item.subtitle.toLowerCase().includes(query);
+  };
+
+  const filteredNav = (cmdPaletteCurrentFilter === "all" || cmdPaletteCurrentFilter === "nav") ? navItems.filter(matchItem) : [];
+  const filteredActions = (cmdPaletteCurrentFilter === "all" || cmdPaletteCurrentFilter === "actions") ? actionItems.filter(matchItem) : [];
+
+  // 3. Game Catalog Titles
+  let filteredGames = [];
+  if (cmdPaletteCurrentFilter === "all" || cmdPaletteCurrentFilter === "games") {
+    const titlesMap = new Map();
+    if (state.inventory && Array.isArray(state.inventory)) {
+      state.inventory.forEach(item => {
+        if (!item || !item.title) return;
+        const key = item.title.trim().toLowerCase();
+        if (!titlesMap.has(key)) {
+          titlesMap.set(key, {
+            title: item.title.trim(),
+            imageUrl: item.imageUrl || "",
+            platform: item.platform || "PC",
+            availableCount: 0,
+            totalCount: 0
+          });
+        }
+        const obj = titlesMap.get(key);
+        obj.totalCount++;
+        const isSold = item.status === "Sold" || item.sold === true;
+        const isRejected = item.status === "Rejected";
+        const isRecycled = item.recycleBin === true;
+        if (!isSold && !isRejected && !isRecycled) {
+          obj.availableCount++;
+        }
+        if (!obj.imageUrl && item.imageUrl) {
+          obj.imageUrl = item.imageUrl;
+        }
+      });
+    }
+
+    const allTitles = Array.from(titlesMap.values());
+    filteredGames = allTitles.filter(g => {
+      if (!query) return g.availableCount > 0;
+      return g.title.toLowerCase().includes(query) || (g.platform && g.platform.toLowerCase().includes(query));
+    }).slice(0, 10).map(g => ({
+      id: `game-${g.title}`,
+      category: "games",
+      title: g.title,
+      subtitle: `${g.availableCount} keys in stock • ${g.platform}`,
+      badge: g.availableCount > 0 ? `${g.availableCount} Available` : "0 Stock",
+      imageUrl: g.imageUrl,
+      action: () => {
+        if (typeof window.triggerViewCatalogKeys === "function") {
+          window.triggerViewCatalogKeys(g.title, true, g.imageUrl);
+        } else {
+          document.getElementById("nav-entries")?.click();
+        }
+      }
+    }));
+  }
+
+  // 4. License Keys
+  let filteredKeys = [];
+  if ((cmdPaletteCurrentFilter === "all" || cmdPaletteCurrentFilter === "keys") && query.length >= 2) {
+    if (state.inventory && Array.isArray(state.inventory)) {
+      for (let i = 0; i < state.inventory.length; i++) {
+        const item = state.inventory[i];
+        if (!item) continue;
+        const keyCode = String(item.key || item.keyCode || "");
+        if (keyCode.toLowerCase().includes(query)) {
+          const costVal = parseFloat(item.cost) || 0;
+          filteredKeys.push({
+            id: `key-${item.id || i}`,
+            category: "keys",
+            title: keyCode,
+            subtitle: `${item.title || "Unknown Title"} • ${item.status || "Available"} • Cost: €${costVal.toFixed(2)}`,
+            badge: item.status || "Available",
+            icon: "fa-key",
+            action: () => {
+              if (typeof window.triggerViewKey === "function" && item.id) {
+                window.triggerViewKey(item.id);
+              } else {
+                document.getElementById("nav-inventory")?.click();
+              }
+            }
+          });
+          if (filteredKeys.length >= 8) break;
+        }
+      }
+    }
+  }
+
+  // Assemble full list
+  let html = "";
+  let runningIndex = 0;
+
+  const renderSection = (title, items) => {
+    if (items.length === 0) return "";
+    let secHtml = `<div class="cmd-category-header">${safeEscape(title)}</div>`;
+    items.forEach(item => {
+      const itemIdx = runningIndex++;
+      cmdPaletteResults.push(item);
+      const isSelected = itemIdx === cmdPaletteActiveIndex;
+
+      let visualHtml = "";
+      if (item.imageUrl) {
+        visualHtml = `<img src="${safeEscape(item.imageUrl)}" class="cmd-item-thumb" alt="" onerror="this.style.display='none';">`;
+      } else {
+        const iconClass = item.icon || "fa-compass";
+        visualHtml = `<div class="cmd-item-icon"><i class="fa-solid ${safeEscape(iconClass)}"></i></div>`;
+      }
+
+      let badgeHtml = item.badge ? `<span class="cmd-item-action-badge">${safeEscape(item.badge)}</span>` : "";
+
+      secHtml += `
+        <div class="cmd-item ${isSelected ? "selected" : ""}" data-cmd-index="${itemIdx}">
+          ${visualHtml}
+          <div class="cmd-item-info">
+            <div class="cmd-item-title-row">
+              <span class="cmd-item-title">${safeEscape(item.title)}</span>
+              ${badgeHtml}
+              <span class="cmd-item-enter-hint"><kbd style="font-size: 0.65rem; padding: 1px 4px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--bg-card);">↵</kbd> Select</span>
+            </div>
+            <span class="cmd-item-subtitle">${safeEscape(item.subtitle)}</span>
+          </div>
+        </div>
+      `;
+    });
+    return secHtml;
+  };
+
+  html += renderSection("Navigation & Views", filteredNav);
+  html += renderSection("Quick Actions", filteredActions);
+  html += renderSection("Game Catalog", filteredGames);
+  html += renderSection("License Keys", filteredKeys);
+
+  if (cmdPaletteResults.length === 0) {
+    html = `
+      <div class="cmd-empty-state">
+        <i class="fa-solid fa-magnifying-glass" style="font-size: 2rem; color: var(--text-muted); opacity: 0.4; margin-bottom: 12px;"></i>
+        <p style="margin: 0; font-size: 0.9rem; font-weight: 500;">No results found for "${safeEscape(query)}"</p>
+        <span style="font-size: 0.76rem; color: var(--text-muted); margin-top: 4px;">Try searching for a game name, key snippet, view, or action.</span>
+      </div>
+    `;
+  }
+
+  container.innerHTML = html;
+
+  if (cmdPaletteActiveIndex >= cmdPaletteResults.length) {
+    cmdPaletteActiveIndex = 0;
+  }
+  updateCmdActiveItem();
+}
+window.renderCommandPaletteResults = renderCommandPaletteResults;
+
+function initCommandPaletteEvents() {
+  const modal = document.getElementById("command-palette-modal");
+  const input = document.getElementById("cmd-palette-input");
+  const btnClose = document.getElementById("btn-close-command-palette");
+  const btnTopbar = document.getElementById("btn-topbar-command-palette");
+  const resultsContainer = document.getElementById("cmd-palette-results");
+
+  if (btnTopbar) {
+    btnTopbar.addEventListener("click", () => openCommandPalette());
+  }
+
+  if (btnClose) {
+    btnClose.addEventListener("click", () => closeCommandPalette());
+  }
+
+  if (modal) {
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) {
+        closeCommandPalette();
+      }
+    });
+  }
+
+  if (input) {
+    input.addEventListener("input", (e) => {
+      cmdPaletteActiveIndex = 0;
+      renderCommandPaletteResults(e.target.value);
+    });
+
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        if (cmdPaletteResults.length > 0) {
+          cmdPaletteActiveIndex = (cmdPaletteActiveIndex + 1) % cmdPaletteResults.length;
+          updateCmdActiveItem();
+        }
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (cmdPaletteResults.length > 0) {
+          cmdPaletteActiveIndex = (cmdPaletteActiveIndex - 1 + cmdPaletteResults.length) % cmdPaletteResults.length;
+          updateCmdActiveItem();
+        }
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        executeCommandItem(cmdPaletteActiveIndex);
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        closeCommandPalette();
+      }
+    });
+  }
+
+  // Category Tab Filter Pills
+  const tabContainer = document.getElementById("cmd-palette-tabs");
+  if (tabContainer) {
+    tabContainer.addEventListener("click", (e) => {
+      const pill = e.target.closest(".cmd-tab-pill");
+      if (pill) {
+        tabContainer.querySelectorAll(".cmd-tab-pill").forEach(p => p.classList.remove("active"));
+        pill.classList.add("active");
+        cmdPaletteCurrentFilter = pill.getAttribute("data-filter") || "all";
+        cmdPaletteActiveIndex = 0;
+        renderCommandPaletteResults(input ? input.value : "");
+        if (input) input.focus();
+      }
+    });
+  }
+
+  if (resultsContainer) {
+    resultsContainer.addEventListener("click", (e) => {
+      const itemEl = e.target.closest(".cmd-item");
+      if (itemEl) {
+        const idx = parseInt(itemEl.getAttribute("data-cmd-index"), 10);
+        if (!isNaN(idx)) {
+          executeCommandItem(idx);
+        }
+      }
+    });
+  }
+}
+window.initCommandPaletteEvents = initCommandPaletteEvents;

@@ -5,6 +5,25 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.58] - 2026-11-23
+### Added
+- **Global Command Palette (`Ctrl + K` / `Cmd + K`)**:
+  - Implemented an instant Spotlight-style search overlay accessible from any screen via `Ctrl + K` or by clicking the new shortcut pill in the topbar search.
+  - Multi-category search spanning:
+    - **Navigation**: Instant jump to Dashboard, Inventory, Sales Ledger, Finance, Suppliers, Platforms, Entries, Recycle Bin, and Settings.
+    - **Quick Actions**: Add New Game Key, Add Supplier, Toggle Appearance Mode, Open AI Merchant Assistant, CSV Wizard, and Data Backup.
+    - **Game Catalog**: Instant title search with live in-stock counts and 1-click drill-down to the Catalog Keys modal.
+    - **License Keys**: Substring search across all digital license key serials with status, supplier source, and cost details.
+  - Full keyboard accessibility: Arrow navigation (`↑` / `↓`), selection (`↵`), and dismissal (`Esc`).
+  - Scoped category filter tabs: `All`, `Views`, `Actions`, `Games`, and `Keys`.
+- **Smart "Restock Radar" (Dashboard Actionable Widget)**:
+  - Added a dedicated Dashboard actionable widget (`#card-chart-restockRadar`) that detects fast-moving games with depleted (0 keys) or critical (≤ 2 keys) inventory.
+  - Prioritizes restock candidates based on historical net profitability and sales volume weighted by stock scarcity.
+  - Surfaces actionable sourcing intelligence for each game: units sold, total profit generated, previous supplier source, and last purchase cost.
+  - Includes a 1-click **Restock** button that opens the Add Game Key modal with the selected title pre-filled, plus a **Keys** button to inspect license records.
+  - Fully configurable via the widget flip-card: customizable stock alert threshold (Depleted, Critical, Low), ranking priority (Profit vs Sales Volume), display limit (5, 10, 15), and artwork style (Wide Banner vs Compact).
+  - Integrated into Dashboard layout ordering, spans, and Widget Gallery drawer.
+
 ## [v2.2.57] - 2026-11-21
 ### Changed
 - **Dashboard Inventory Status Clean-up**:
