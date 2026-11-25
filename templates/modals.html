@@ -1442,13 +1442,19 @@
               <div id="sourcing-stores-dropdown" class="sourcing-stores-menu" style="display: none; position: absolute; top: calc(100% + 6px); left: 0; z-index: 1050; min-width: 250px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); padding: 10px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; margin-bottom: 8px;">
                   <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted);">Scanned Stores</span>
-                  <div style="display: flex; gap: 6px;">
+                  <div style="display: flex; gap: 4px;">
+                    <button type="button" class="btn btn-ghost btn-xs" id="btn-sourcing-stores-mysup" style="font-size: 0.7rem; padding: 1px 6px; color: var(--accent-cyan);" title="Scan only active stores from your Suppliers list">My Suppliers</button>
                     <button type="button" class="btn btn-ghost btn-xs" id="btn-sourcing-stores-all" style="font-size: 0.7rem; padding: 1px 6px;">All</button>
                     <button type="button" class="btn btn-ghost btn-xs" id="btn-sourcing-stores-none" style="font-size: 0.7rem; padding: 1px 6px;">Clear</button>
                   </div>
                 </div>
                 <div id="sourcing-stores-checkboxes-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto;">
                   <!-- Checkboxes dynamically rendered -->
+                </div>
+                <div style="border-top: 1px solid var(--border-color); padding-top: 6px; margin-top: 6px; text-align: center;">
+                  <a href="#" onclick="closeModal('sourcing-radar-modal'); if(typeof navigateTo === 'function') navigateTo('suppliers-view');" style="font-size: 0.72rem; color: var(--accent-cyan); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                    <i class="fa-solid fa-sliders"></i> Configure in Manage Suppliers
+                  </a>
                 </div>
               </div>
             </div>

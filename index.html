@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=85">
+  <link rel="stylesheet" href="styles.css?v=86">
   
   <!-- Early theme application to prevent FOUC / light theme flicker -->
   <script>
@@ -2102,6 +2102,9 @@
                     <button class="btn btn-primary btn-sm" id="btn-create-supplier" style="height: 32px; display: flex; align-items: center; gap: 6px;">
                       <i class="fa-solid fa-plus"></i> Create New Supplier
                     </button>
+                    <button type="button" class="btn btn-outline btn-sm" id="btn-open-sourcing-radar-from-sup" style="height: 32px; display: flex; align-items: center; gap: 6px;" title="Open Sourcing & Kinguin Arbitrage Radar">
+                      <i class="fa-solid fa-crosshairs text-cyan"></i> Sourcing Radar
+                    </button>
                     <div style="display: flex; align-items: center; gap: 8px;">
                       <label for="suppliers-sort" style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; margin: 0; letter-spacing: 0.05em;">Sort:</label>
                       <select id="suppliers-sort" class="form-control form-control-sm" style="width: auto; padding: 4px 10px; background-color: var(--bg-input);">
@@ -2127,6 +2130,7 @@
                         <th>Revenue</th>
                         <th>Profit</th>
                         <th>Status</th>
+                        <th style="text-align: center;">Radar Scan</th>
                         <th style="text-align: right;">Actions</th>
                       </tr>
                     </thead>
@@ -4293,13 +4297,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=127"></script>
-  <script src="src/state.js?v=127"></script>
-  <script src="src/api.js?v=127"></script>
-  <script src="src/charts.js?v=127"></script>
-  <script src="src/ui.js?v=127"></script>
-  <script src="src/ai.js?v=127"></script>
-  <script src="src/importer.js?v=127"></script>
-  <script src="app.js?v=127"></script>
+  <script src="config.js?v=128"></script>
+  <script src="src/state.js?v=128"></script>
+  <script src="src/api.js?v=128"></script>
+  <script src="src/charts.js?v=128"></script>
+  <script src="src/ui.js?v=128"></script>
+  <script src="src/ai.js?v=128"></script>
+  <script src="src/importer.js?v=128"></script>
+  <script src="app.js?v=128"></script>
 </body>
 </html>

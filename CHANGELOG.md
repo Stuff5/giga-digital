@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **GameVault 3.0 Generation — Sourcing & Kinguin Arbitrage Radar**:
   - Implemented a dedicated Sourcing & Arbitrage Radar modal (`#sourcing-radar-modal`) accessible from both the **Dashboard** and **Entries** header controls.
   - Reuses the existing starred **Favorite Games** (`state.favoriteGames`) as the live sourcing watchlist so merchants can track price drops without duplicate list management.
+  - **Hybrid Suppliers Menu & Radar Synchronization**:
+    - Added a dedicated **Radar Scan** column to the Manage Suppliers table (`#suppliers-table`), featuring interactive `[Scanning ON/OFF]` toggle buttons for recognized digital retailers (Steam, Fanatical, Humble Bundle, GreenManGaming, GOG, Epic Games, etc.) and `Manual / Keyshop` badges for offline sources.
+    - Added **`[My Suppliers]`** 1-click filter button inside the Sourcing Radar modal dropdown, instantly restricting deal queries to the merchant's active registered suppliers.
+    - Added visual **`In Suppliers`** badges next to store entries in the radar dropdown checklist, with a direct shortcut link to Manage Suppliers.
+    - Added **`[Sourcing Radar]`** header launcher button inside `#suppliers-view` for seamless cross-navigation.
   - **Configurable Supplier & Retailer Scanning**:
     - Added an interactive **Stores** selector dropdown (`#btn-sourcing-stores-toggle`) allowing merchants to choose exactly which digital store suppliers to scan (e.g. Fanatical, Steam, GreenManGaming, Humble Store, GOG, Epic Games Store, GamersGate, Gamesplanet, GameBillet, DreamGame, WinGameStore, IndieGala, Uplay).
     - Quick actions: `[All]` to select all stores, `[Clear]` to clear selection, or granular individual checkbox selection.

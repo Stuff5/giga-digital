@@ -1905,6 +1905,42 @@ function initEventHandlers() {
     });
   }
 
+  const btnStoresMySup = document.getElementById("btn-sourcing-stores-mysup");
+  if (btnStoresMySup) {
+    btnStoresMySup.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const activeStoreIds = [];
+      (state.suppliers || []).forEach(s => {
+        if (s.enabled !== false && s.radarScan !== false) {
+          const id = typeof getRadarStoreIdForSupplier === "function" ? getRadarStoreIdForSupplier(s.name) : null;
+          if (id && !activeStoreIds.includes(id)) activeStoreIds.push(id);
+        }
+      });
+      if (!state.sourcingSettings) state.sourcingSettings = {};
+      if (activeStoreIds.length === 0) {
+        if (typeof showToast === "function") showToast("No active Radar-supported stores in your Suppliers list.", "warning");
+        return;
+      }
+      state.sourcingSettings.selectedStores = activeStoreIds;
+      if (typeof saveSecondaryTablesToStorage === "function") saveSecondaryTablesToStorage();
+      if (window.supabaseClient && typeof dbSaveSettings === "function") {
+        dbSaveSettings("sourcingSettings", state.sourcingSettings);
+      }
+      if (typeof window.renderSourcingStoresDropdown === "function") window.renderSourcingStoresDropdown();
+      if (typeof window.renderSourcingRadarView === "function") window.renderSourcingRadarView();
+      if (typeof showToast === "function") showToast(`Filtered to ${activeStoreIds.length} store${activeStoreIds.length === 1 ? '' : 's'} from your Suppliers list.`, "success");
+    });
+  }
+
+  const btnOpenRadarFromSup = document.getElementById("btn-open-sourcing-radar-from-sup");
+  if (btnOpenRadarFromSup) {
+    btnOpenRadarFromSup.addEventListener("click", () => {
+      if (typeof window.openSourcingRadarModal === "function") {
+        window.openSourcingRadarModal();
+      }
+    });
+  }
+
   // Entries quick-filter stat cards
   const cardInStock = document.getElementById("entries-stat-card-instock");
   if (cardInStock) {
@@ -6868,6 +6904,35 @@ function populatePlatformDropdowns() {
 }
 window.populatePlatformDropdowns = populatePlatformDropdowns;
 
+const RADAR_STORE_MAP = {
+  "fanatical": "15",
+  "humble bundle": "11",
+  "humble": "11",
+  "humble store": "11",
+  "steam": "1",
+  "greenmangaming": "3",
+  "green man gaming": "3",
+  "gog": "7",
+  "gog.com": "7",
+  "epic games": "25",
+  "epic games store": "25",
+  "gamersgate": "2",
+  "gamesplanet": "27",
+  "gamebillet": "23",
+  "dreamgame": "35",
+  "wingamestore": "21",
+  "indiegala": "30",
+  "ubisoft": "13",
+  "uplay": "13"
+};
+
+function getRadarStoreIdForSupplier(supplierName) {
+  if (!supplierName) return null;
+  const clean = supplierName.trim().toLowerCase();
+  return RADAR_STORE_MAP[clean] || null;
+}
+window.getRadarStoreIdForSupplier = getRadarStoreIdForSupplier;
+
 function renderSuppliers() {
   calculateSupplierMetrics();
 
@@ -6876,7 +6941,7 @@ function renderSuppliers() {
   tbody.innerHTML = "";
 
   if (state.suppliers.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 20px;">No suppliers registered.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 20px;">No suppliers registered.</td></tr>`;
   } else {
     // Sort suppliers list based on user selection
     const sortVal = document.getElementById("suppliers-sort")?.value || "date-desc";
@@ -6890,7 +6955,7 @@ function renderSuppliers() {
     }
 
     if (sortedSuppliers.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 20px;">No suppliers matching "${escapeHTML(selectedSupplier)}".</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 20px;">No suppliers matching "${escapeHTML(selectedSupplier)}".</td></tr>`;
       if (typeof window.populateSupplierDropdowns === "function") window.populateSupplierDropdowns();
       renderSupplierAnalytics();
       return;
@@ -6983,6 +7048,32 @@ function renderSuppliers() {
         ? `<img src="${escapeHTML(resolvedSupLogo)}" class="supplier-logo-thumbnail" alt="${escapeHTML(supplierName)}" onerror="if(!this.dataset.ddTried){this.dataset.ddTried='1';const d=window.resolveSupplierDomain?window.resolveSupplierDomain('${escapeHTML(escapedNameForJS)}'):'';if(d){this.src='https://icons.duckduckgo.com/ip3/'+encodeURIComponent(d)+'.ico';return;}}this.style.display='none';if(this.nextElementSibling)this.nextElementSibling.style.display='inline-flex';"><div class="supplier-logo-placeholder" style="display: none; background-color: ${colorPreset.value}20; color: ${colorPreset.value}; border: 1px solid ${colorPreset.value}40;"><i class="fa-solid fa-truck-ramp-box"></i></div>`
         : `<div class="supplier-logo-placeholder" style="background-color: ${colorPreset.value}20; color: ${colorPreset.value}; border: 1px solid ${colorPreset.value}40;"><i class="fa-solid fa-truck-ramp-box"></i></div>`;
 
+      const storeId = typeof getRadarStoreIdForSupplier === "function" ? getRadarStoreIdForSupplier(supplierName) : null;
+      let radarScanBtn = "";
+      if (storeId) {
+        const isRadarActive = supplierObj.radarScan !== false;
+        radarScanBtn = `
+          <button type="button" 
+                  class="btn btn-xs" 
+                  onclick="window.triggerToggleSupplierRadar('${escapeHTML(escapedNameForJS)}')" 
+                  title="${isRadarActive ? 'Active in Sourcing Radar. Click to disable scan.' : 'Disabled in Sourcing Radar. Click to enable scan.'}"
+                  style="padding: 3px 8px; font-size: 0.72rem; border-radius: var(--radius-sm); font-weight: 600; cursor: pointer; transition: all 0.2s ease; ${
+                    isRadarActive 
+                      ? 'background-color: rgba(6, 182, 212, 0.12); border: 1px solid var(--accent-cyan); color: var(--accent-cyan);' 
+                      : 'background-color: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-muted);'
+                  }">
+            <i class="fa-solid fa-crosshairs" style="margin-right: 4px; color: ${isRadarActive ? 'var(--accent-cyan)' : 'inherit'};"></i>
+            ${isRadarActive ? 'Scanning ON' : 'Scanning OFF'}
+          </button>
+        `;
+      } else {
+        radarScanBtn = `
+          <span class="badge" style="background: var(--bg-input); color: var(--text-muted); border: 1px solid var(--border-color); font-size: 0.7rem; padding: 2px 7px;" title="Manual / Keyshop purchase source (No open deal API)">
+            Manual
+          </span>
+        `;
+      }
+
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>
@@ -7020,6 +7111,9 @@ function renderSuppliers() {
         </td>
         <td>
           ${statusBtn}
+        </td>
+        <td style="text-align: center;">
+          ${radarScanBtn}
         </td>
         <td style="text-align: right;">
           <button class="btn-action btn-action-logo" onclick="triggerRetrieveSupplierLogo('${escapeHTML(escapedNameForJS)}')" title="Retrieve Supplier Logo">
@@ -7749,6 +7843,46 @@ window.triggerToggleSupplier = async function(name) {
   
   const statusStr = supplierObj.enabled !== false ? "Enabled" : "Disabled";
   showToast(`Supplier "${name}" is now ${statusStr}.`, "success");
+};
+
+window.triggerToggleSupplierRadar = async function(name) {
+  const supplierObj = (state.suppliers || []).find(s => (s.name || "").trim().toLowerCase() === name.trim().toLowerCase());
+  if (!supplierObj) return;
+
+  supplierObj.radarScan = !(supplierObj.radarScan !== false);
+  if (typeof saveSuppliersToStorage === "function") saveSuppliersToStorage();
+  if (typeof saveStateToStorage === "function") saveStateToStorage();
+  if (window.supabaseClient && typeof dbSaveSupplier === "function") {
+    await dbSaveSupplier(supplierObj);
+  }
+
+  if (typeof window.syncSourcingStoresFromSuppliers === "function") {
+    window.syncSourcingStoresFromSuppliers();
+  }
+
+  renderSuppliers();
+  const statusStr = supplierObj.radarScan !== false ? "Active" : "Disabled";
+  showToast(`Sourcing Radar scanning for "${supplierObj.name}" is now ${statusStr}.`, "info");
+};
+
+window.syncSourcingStoresFromSuppliers = function() {
+  if (!state.suppliers) return;
+  const activeRadarStoreIds = [];
+  state.suppliers.forEach(s => {
+    if (s.enabled !== false && s.radarScan !== false) {
+      const storeId = typeof getRadarStoreIdForSupplier === "function" ? getRadarStoreIdForSupplier(s.name) : null;
+      if (storeId && !activeRadarStoreIds.includes(storeId)) {
+        activeRadarStoreIds.push(storeId);
+      }
+    }
+  });
+
+  if (!state.sourcingSettings) state.sourcingSettings = {};
+  state.sourcingSettings.mySupplierStoreIds = activeRadarStoreIds;
+
+  if (typeof saveSecondaryTablesToStorage === "function") {
+    saveSecondaryTablesToStorage();
+  }
 };
 
 // ==========================================================================
@@ -17697,10 +17831,24 @@ window.renderSourcingStoresDropdown = function() {
   container.innerHTML = allStoreIds.map(id => {
     const name = CHEAPSHARK_STORES[id];
     const isChecked = isAll || (!isNone && selected.includes(id));
+    const matchingSupplier = (state.suppliers || []).find(s => {
+      const supStoreId = typeof getRadarStoreIdForSupplier === "function" ? getRadarStoreIdForSupplier(s.name) : null;
+      return supStoreId === id;
+    });
+    const isMySupplier = !!matchingSupplier;
+    const isScanActive = isMySupplier && (matchingSupplier.radarScan !== false);
+
     return `
-      <label class="sourcing-store-checkbox-row">
-        <input type="checkbox" value="${id}" ${isChecked ? "checked" : ""} class="sourcing-store-checkbox" />
-        <span class="store-name">${name}</span>
+      <label class="sourcing-store-checkbox-row" style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <input type="checkbox" value="${id}" ${isChecked ? "checked" : ""} class="sourcing-store-checkbox" />
+          <span class="store-name">${name}</span>
+        </div>
+        ${isMySupplier ? `
+          <span class="badge ${isScanActive ? 'badge-available' : 'badge-sold'}" style="font-size: 0.65rem; padding: 1px 5px; flex-shrink: 0;" title="Matched with supplier '${escapeHTML(matchingSupplier.name)}' (${isScanActive ? 'Radar ON' : 'Radar OFF in Suppliers menu'})">
+            <i class="fa-solid fa-truck-ramp-box" style="margin-right: 3px;"></i>${isScanActive ? 'My Supplier' : 'Suppliers (Off)'}
+          </span>
+        ` : ''}
       </label>
     `;
   }).join("");
