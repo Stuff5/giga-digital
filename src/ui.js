@@ -1793,6 +1793,68 @@ function initEventHandlers() {
     });
   }
 
+  // Sourcing & Kinguin Arbitrage Radar Triggers
+  const btnEntriesSourcingRadar = document.getElementById("btn-open-sourcing-radar");
+  if (btnEntriesSourcingRadar) {
+    btnEntriesSourcingRadar.addEventListener("click", () => {
+      if (typeof window.openSourcingRadarModal === "function") {
+        window.openSourcingRadarModal();
+      }
+    });
+  }
+
+  const btnDashboardSourcingRadar = document.getElementById("btn-dashboard-sourcing-radar");
+  if (btnDashboardSourcingRadar) {
+    btnDashboardSourcingRadar.addEventListener("click", () => {
+      if (typeof window.openSourcingRadarModal === "function") {
+        window.openSourcingRadarModal();
+      }
+    });
+  }
+
+  // Sourcing Radar Modal Controls
+  const btnRefreshSourcing = document.getElementById("btn-refresh-sourcing-deals");
+  if (btnRefreshSourcing) {
+    btnRefreshSourcing.addEventListener("click", () => {
+      if (typeof window.refreshSourcingDeals === "function") {
+        window.refreshSourcingDeals();
+      }
+    });
+  }
+
+  const sourcingFeePctInput = document.getElementById("sourcing-kinguin-fee-pct");
+  if (sourcingFeePctInput) {
+    sourcingFeePctInput.addEventListener("input", (e) => {
+      const val = parseFloat(e.target.value);
+      if (!isNaN(val) && val >= 0) {
+        if (!state.sourcingSettings) state.sourcingSettings = {};
+        state.sourcingSettings.kinguinFeePct = val;
+        if (typeof saveSecondaryTablesToStorage === "function") saveSecondaryTablesToStorage();
+        if (typeof window.renderSourcingRadarView === "function") window.renderSourcingRadarView();
+      }
+    });
+  }
+
+  const sourcingFixedFeeInput = document.getElementById("sourcing-kinguin-fixed-fee");
+  if (sourcingFixedFeeInput) {
+    sourcingFixedFeeInput.addEventListener("input", (e) => {
+      const val = parseFloat(e.target.value);
+      if (!isNaN(val) && val >= 0) {
+        if (!state.sourcingSettings) state.sourcingSettings = {};
+        state.sourcingSettings.kinguinFixedFee = val;
+        if (typeof saveSecondaryTablesToStorage === "function") saveSecondaryTablesToStorage();
+        if (typeof window.renderSourcingRadarView === "function") window.renderSourcingRadarView();
+      }
+    });
+  }
+
+  const sourcingFilterStatus = document.getElementById("sourcing-filter-status");
+  if (sourcingFilterStatus) {
+    sourcingFilterStatus.addEventListener("change", () => {
+      if (typeof window.renderSourcingRadarView === "function") window.renderSourcingRadarView();
+    });
+  }
+
   // Entries quick-filter stat cards
   const cardInStock = document.getElementById("entries-stat-card-instock");
   if (cardInStock) {
@@ -5303,6 +5365,9 @@ window.toggleFavoriteGame = function(gameTitle) {
   }
   saveStateToStorage();
   renderEntries();
+  if (typeof window.updateSourcingBadge === "function") {
+    window.updateSourcingBadge();
+  }
   if (window.supabaseClient) {
     dbSaveSettings("favoriteGames", state.favoriteGames);
   }
@@ -6427,6 +6492,9 @@ function updateUI() {
   }
   if (typeof window.updateDuplicateFilterButtonState === "function") {
     window.updateDuplicateFilterButtonState();
+  }
+  if (typeof window.updateSourcingBadge === "function") {
+    window.updateSourcingBadge();
   }
 
   // Ensure dropdowns across modals and filters are populated with current state
@@ -17530,4 +17598,533 @@ window.openAddGameModalWithTitle = function(title) {
     titleInput.value = title;
     titleInput.dispatchEvent(new Event("input"));
   }
+};
+
+// ==========================================================================
+// SOURCING & KINGUIN ARBITRAGE RADAR
+// ==========================================================================
+
+const CHEAPSHARK_STORES = {
+  "1": "Steam",
+  "2": "GamersGate",
+  "3": "GreenManGaming",
+  "4": "Amazon",
+  "6": "Direct2Drive",
+  "7": "GOG",
+  "8": "Origin",
+  "11": "Humble Store",
+  "13": "Ubisoft",
+  "15": "Fanatical",
+  "21": "WinGameStore",
+  "23": "GameStop",
+  "25": "Epic Games",
+  "27": "Gamesplanet",
+  "30": "Voidu",
+  "31": "Battle.net",
+  "32": "AllYouPlay",
+  "34": "DreamGame",
+  "35": "GameBillet",
+  "37": "DLGamer"
+};
+
+window.updateSourcingBadge = function() {
+  const badge = document.getElementById("sourcing-deals-count-badge");
+  if (!badge) return;
+  const favorites = state.favoriteGames || [];
+  if (favorites.length === 0) {
+    badge.style.display = "none";
+    return;
+  }
+  const cached = state.sourcingSettings?.cachedDeals || {};
+  let count = 0;
+  favorites.forEach(title => {
+    if (cached[title] && Number(cached[title].salePrice) > 0) {
+      count++;
+    }
+  });
+  if (count > 0) {
+    badge.textContent = count;
+    badge.style.display = "inline-block";
+  } else {
+    badge.style.display = "none";
+  }
+};
+
+window.openSourcingRadarModal = async function() {
+  let modal = document.getElementById("sourcing-radar-modal");
+  if (!modal) {
+    if (typeof loadHTMLTemplates === "function") {
+      await loadHTMLTemplates();
+      modal = document.getElementById("sourcing-radar-modal");
+    }
+  }
+  if (!modal) {
+    if (typeof showToast === "function") showToast("Loading Sourcing Radar template...", "info");
+    return;
+  }
+
+  // Populate Kinguin fee inputs from state
+  if (state.sourcingSettings) {
+    const feePctEl = document.getElementById("sourcing-kinguin-fee-pct");
+    const fixedFeeEl = document.getElementById("sourcing-kinguin-fixed-fee");
+    if (feePctEl) feePctEl.value = state.sourcingSettings.kinguinFeePct ?? 11;
+    if (fixedFeeEl) fixedFeeEl.value = state.sourcingSettings.kinguinFixedFee ?? 0.10;
+  }
+
+  openModal("sourcing-radar-modal");
+  window.renderSourcingRadarView();
+
+  // If deals have never been cached and user has favorites, auto-fetch
+  const cached = state.sourcingSettings?.cachedDeals;
+  const hasDeals = cached && Object.keys(cached).length > 0;
+  if (!hasDeals && (state.favoriteGames || []).length > 0) {
+    window.refreshSourcingDeals();
+  }
+};
+
+window.renderSourcingRadarView = function() {
+  const container = document.getElementById("sourcing-radar-list");
+  if (!container) return;
+
+  const favorites = (state.favoriteGames || []).slice();
+  const feePct = Number(state.sourcingSettings?.kinguinFeePct ?? 11);
+  const fixedFee = Number(state.sourcingSettings?.kinguinFixedFee ?? 0.10);
+  const filterSelect = document.getElementById("sourcing-filter-status");
+  const filterVal = filterSelect ? filterSelect.value : "all";
+
+  // KPI elements
+  const kpiFavs = document.getElementById("sourcing-kpi-total-favs");
+  const kpiDeals = document.getElementById("sourcing-kpi-active-deals");
+  const kpiProfit = document.getElementById("sourcing-kpi-profitable");
+  const kpiTopRoi = document.getElementById("sourcing-kpi-top-roi");
+  const lastUpdatedEl = document.getElementById("sourcing-last-updated-text");
+
+  if (kpiFavs) kpiFavs.textContent = favorites.length;
+
+  if (lastUpdatedEl) {
+    if (state.sourcingSettings?.lastChecked) {
+      try {
+        const d = new Date(state.sourcingSettings.lastChecked);
+        const timeStr = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        lastUpdatedEl.innerHTML = `<i class="fa-regular fa-clock" style="margin-right: 4px;"></i>Updated ${timeStr}`;
+      } catch (e) {
+        lastUpdatedEl.innerHTML = `<i class="fa-regular fa-clock" style="margin-right: 4px;"></i>Cached`;
+      }
+    } else {
+      lastUpdatedEl.innerHTML = `<i class="fa-regular fa-clock" style="margin-right: 4px;"></i>Not checked yet`;
+    }
+  }
+
+  if (favorites.length === 0) {
+    if (kpiDeals) kpiDeals.textContent = "0";
+    if (kpiProfit) kpiProfit.textContent = "0";
+    if (kpiTopRoi) kpiTopRoi.textContent = "0%";
+    container.innerHTML = `
+      <div style="text-align: center; padding: 48px 20px; background: var(--bg-card); border: 1px dashed var(--border-color); border-radius: var(--radius-md);">
+        <i class="fa-solid fa-crosshairs" style="font-size: 2.8rem; color: var(--accent-purple); opacity: 0.5; margin-bottom: 14px;"></i>
+        <h4 style="margin: 0 0 8px 0; font-size: 1.1rem; color: var(--text-main);">No Favorite Games Starred Yet</h4>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); max-width: 480px; margin: 0 auto 18px; line-height: 1.5;">
+          Star games (<i class="fa-solid fa-star" style="color: #fbbf24;"></i>) in the <strong>Entries</strong> tab to automatically track price drops across official stores and calculate real-time Kinguin arbitrage profit!
+        </p>
+        <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('sourcing-radar-modal'); if (typeof navigateTo === 'function') navigateTo('entries-view');">
+          <i class="fa-solid fa-list-check" style="margin-right: 6px;"></i> Browse Entries &amp; Star Games
+        </button>
+      </div>
+    `;
+    window.updateSourcingBadge();
+    return;
+  }
+
+  // Pre-index sales and inventory
+  const salesByTitle = {};
+  (state.sales || []).forEach(s => {
+    if (!s.title) return;
+    const t = s.title.trim().toLowerCase();
+    if (!salesByTitle[t]) salesByTitle[t] = [];
+    salesByTitle[t].push(s);
+  });
+
+  const invByTitle = {};
+  (state.inventory || []).forEach(item => {
+    if (!item.title) return;
+    const t = item.title.trim().toLowerCase();
+    if (!invByTitle[t]) invByTitle[t] = [];
+    invByTitle[t].push(item);
+  });
+
+  let activeDealsCount = 0;
+  let profitableCount = 0;
+  let maxRoi = 0;
+
+  const computedItems = favorites.map(title => {
+    const key = title.trim().toLowerCase();
+    const invItems = invByTitle[key] || [];
+    const inStockCount = invItems.filter(i => i.status === "Available" || (!i.status && !i.isSold)).length;
+
+    // Resolve Kinguin resale benchmark
+    let benchmarkPrice = null;
+    let benchmarkSource = "No Data";
+
+    const manual = state.sourcingSettings?.manualBenchmarks?.[title];
+    if (manual !== undefined && manual !== null && manual !== "" && !isNaN(Number(manual)) && Number(manual) > 0) {
+      benchmarkPrice = Number(manual);
+      benchmarkSource = "Manual Override";
+    } else {
+      const titleSales = salesByTitle[key] || [];
+      const kinguinSales = titleSales.filter(s => s.platform && s.platform.trim().toLowerCase() === "kinguin" && Number(s.price) > 0);
+      if (kinguinSales.length > 0) {
+        // Most recent Kinguin sale price
+        const lastSale = kinguinSales[kinguinSales.length - 1];
+        benchmarkPrice = Number(lastSale.price);
+        benchmarkSource = `Kinguin (${kinguinSales.length} sold)`;
+      } else if (titleSales.length > 0) {
+        const lastAny = titleSales[titleSales.length - 1];
+        benchmarkPrice = Number(lastAny.price);
+        benchmarkSource = `Last sold (${lastAny.platform || "Platform"})`;
+      } else {
+        const costItems = invItems.filter(i => Number(i.cost) > 0);
+        if (costItems.length > 0) {
+          const avgCost = costItems.reduce((acc, curr) => acc + Number(curr.cost), 0) / costItems.length;
+          benchmarkPrice = Math.round(avgCost * 1.35 * 100) / 100;
+          benchmarkSource = "Catalog Cost + 35%";
+        }
+      }
+    }
+
+    // Cached deal data
+    const cachedDeal = state.sourcingSettings?.cachedDeals?.[title];
+    const dealPrice = (cachedDeal && Number(cachedDeal.salePrice) > 0) ? Number(cachedDeal.salePrice) : null;
+    const normalPrice = (cachedDeal && Number(cachedDeal.normalPrice) > 0) ? Number(cachedDeal.normalPrice) : null;
+    const savings = cachedDeal ? Number(cachedDeal.savings || 0) : 0;
+    const storeName = cachedDeal ? (cachedDeal.storeName || CHEAPSHARK_STORES[cachedDeal.storeID] || "Store") : null;
+    const dealId = cachedDeal?.dealID || null;
+    const thumbUrl = cachedDeal?.thumb || state.catalogArtwork?.[title] || "";
+
+    if (dealPrice !== null && dealPrice > 0) {
+      activeDealsCount++;
+    }
+
+    // Net Kinguin Payout & Profit
+    let netPayout = null;
+    let netProfit = null;
+    let roiPct = null;
+
+    if (benchmarkPrice !== null && benchmarkPrice > 0) {
+      netPayout = Math.max(0, (benchmarkPrice * (1 - feePct / 100)) - fixedFee);
+      if (dealPrice !== null && dealPrice > 0) {
+        netProfit = netPayout - dealPrice;
+        roiPct = (netProfit / dealPrice) * 100;
+        if (netProfit > 0) {
+          profitableCount++;
+          if (roiPct > maxRoi) maxRoi = roiPct;
+        }
+      }
+    }
+
+    return {
+      title,
+      inStockCount,
+      benchmarkPrice,
+      benchmarkSource,
+      netPayout,
+      dealPrice,
+      normalPrice,
+      savings,
+      storeName,
+      dealId,
+      thumbUrl,
+      netProfit,
+      roiPct
+    };
+  });
+
+  // Update KPI counters
+  if (kpiDeals) kpiDeals.textContent = activeDealsCount;
+  if (kpiProfit) kpiProfit.textContent = profitableCount;
+  if (kpiTopRoi) kpiTopRoi.textContent = maxRoi > 0 ? `+${Math.round(maxRoi)}%` : "0%";
+
+  // Apply Filter
+  let filtered = computedItems;
+  if (filterVal === "profitable") {
+    filtered = computedItems.filter(item => item.netProfit !== null && item.netProfit > 0);
+  } else if (filterVal === "high-margin") {
+    filtered = computedItems.filter(item => item.roiPct !== null && item.roiPct >= 30);
+  } else if (filterVal === "out-of-stock") {
+    filtered = computedItems.filter(item => item.inStockCount === 0);
+  }
+
+  // Sort: highest profit first, then highest ROI, then title
+  filtered.sort((a, b) => {
+    const profitA = a.netProfit !== null ? a.netProfit : -9999;
+    const profitB = b.netProfit !== null ? b.netProfit : -9999;
+    if (profitB !== profitA) return profitB - profitA;
+    return a.title.localeCompare(b.title);
+  });
+
+  if (filtered.length === 0) {
+    let emptyMsg = "No games matched this filter.";
+    if (filterVal === "profitable") {
+      emptyMsg = "No profitable Kinguin arbitrage deals detected currently. Click <strong>Refresh Deals</strong> above or check gg.deals / Allkeyshop launchers below.";
+    } else if (filterVal === "high-margin") {
+      emptyMsg = "No watched games currently meet the &ge; 30% ROI threshold. Try checking <strong>All Favorites</strong>.";
+    } else if (filterVal === "out-of-stock") {
+      emptyMsg = "All watched favorite games currently have keys in stock!";
+    }
+
+    container.innerHTML = `
+      <div style="text-align: center; padding: 36px 20px; background: var(--bg-card); border: 1px dashed var(--border-color); border-radius: var(--radius-md);">
+        <i class="fa-solid fa-filter" style="font-size: 2rem; color: var(--text-muted); opacity: 0.6; margin-bottom: 10px;"></i>
+        <h4 style="margin: 0 0 6px 0; font-size: 0.95rem; color: var(--text-secondary);">${emptyMsg}</h4>
+        <button type="button" class="btn btn-outline btn-xs" style="margin-top: 10px;" onclick="document.getElementById('sourcing-filter-status').value = 'all'; window.renderSourcingRadarView();">
+          Show All Favorites (${favorites.length})
+        </button>
+      </div>
+    `;
+    window.updateSourcingBadge();
+    return;
+  }
+
+  const itemsHtml = filtered.map(item => {
+    const isProfitable = item.netProfit !== null && item.netProfit > 0;
+    const isLoss = item.netProfit !== null && item.netProfit <= 0;
+    const itemClass = isProfitable ? "sourcing-item is-profitable" : (isLoss ? "sourcing-item is-loss" : "sourcing-item");
+
+    const safeTitle = item.title.replace(/"/g, "&quot;");
+    const encodedTitle = encodeURIComponent(item.title);
+
+    let roiBadge = `<span class="sourcing-roi-badge sourcing-roi-low">-</span>`;
+    if (item.roiPct !== null) {
+      const roundedRoi = Math.round(item.roiPct);
+      if (item.roiPct >= 30) {
+        roiBadge = `<span class="sourcing-roi-badge sourcing-roi-high"><i class="fa-solid fa-arrow-trend-up"></i> +${roundedRoi}% ROI</span>`;
+      } else if (item.roiPct > 0) {
+        roiBadge = `<span class="sourcing-roi-badge sourcing-roi-med"><i class="fa-solid fa-arrow-trend-up"></i> +${roundedRoi}% ROI</span>`;
+      } else {
+        roiBadge = `<span class="sourcing-roi-badge sourcing-roi-low">${roundedRoi}% ROI</span>`;
+      }
+    }
+
+    return `
+      <div class="${itemClass}">
+        ${item.thumbUrl ? `
+          <img src="${item.thumbUrl}" alt="" class="sourcing-item-thumb" onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+          <div class="sourcing-item-thumb-placeholder" style="display: none; background: var(--accent-purple);">
+            ${item.title.substring(0, 2).toUpperCase()}
+          </div>
+        ` : `
+          <div class="sourcing-item-thumb-placeholder" style="background: var(--accent-purple);">
+            ${item.title.substring(0, 2).toUpperCase()}
+          </div>
+        `}
+
+        <div class="sourcing-item-main">
+          <div class="sourcing-item-header">
+            <span class="sourcing-item-title" title="${safeTitle}" onclick="window.triggerEditCatalogEntry('${item.title.replace(/'/g, "\\'")}')">
+              ${safeTitle}
+            </span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span class="badge ${item.inStockCount === 0 ? 'badge-out-of-stock' : 'badge-available'}" style="font-size: 0.7rem; padding: 2px 7px;">
+                ${item.inStockCount} in stock
+              </span>
+            </div>
+          </div>
+
+          <div class="sourcing-item-grid">
+            <!-- Kinguin Benchmark Column -->
+            <div class="sourcing-stat-col">
+              <span class="sourcing-stat-label">
+                <i class="fa-solid fa-tag" style="color: #ff5000;"></i> Kinguin Resale
+              </span>
+              <div class="sourcing-stat-value" style="cursor: pointer;" title="Click to override Kinguin resale benchmark price" onclick="window.setSourcingManualBenchmark('${item.title.replace(/'/g, "\\'")}')">
+                <span>${item.benchmarkPrice !== null ? `€${item.benchmarkPrice.toFixed(2)}` : `<span style="color: var(--text-muted); font-size: 0.8rem;">Set benchmark</span>`}</span>
+                <i class="fa-solid fa-pen" style="font-size: 0.68rem; color: var(--text-muted); opacity: 0.7;"></i>
+              </div>
+              <span style="font-size: 0.7rem; color: var(--text-muted);">
+                Net: ${item.netPayout !== null ? `€${item.netPayout.toFixed(2)}` : "-"} (${item.benchmarkSource})
+              </span>
+            </div>
+
+            <!-- Best Store Deal Column -->
+            <div class="sourcing-stat-col">
+              <span class="sourcing-stat-label">
+                <i class="fa-solid fa-store" style="color: var(--accent-cyan);"></i> Best Deal (${item.storeName || "Stores"})
+              </span>
+              <div class="sourcing-stat-value">
+                <span>${item.dealPrice !== null ? `€${item.dealPrice.toFixed(2)}` : `<span style="color: var(--text-muted); font-size: 0.8rem;">No deal cached</span>`}</span>
+                ${item.savings > 0 ? `<span class="badge badge-danger" style="font-size: 0.68rem; padding: 1px 5px;">-${item.savings}%</span>` : ""}
+              </div>
+              <span style="font-size: 0.7rem; color: var(--text-muted);">
+                ${item.normalPrice && item.normalPrice > item.dealPrice ? `Regular: €${item.normalPrice.toFixed(2)}` : "Official retailer deal"}
+              </span>
+            </div>
+
+            <!-- Kinguin Arbitrage Profit & ROI Column -->
+            <div class="sourcing-stat-col">
+              <span class="sourcing-stat-label">
+                <i class="fa-solid fa-calculator" style="color: var(--accent-emerald);"></i> Net Profit &amp; ROI
+              </span>
+              <div class="sourcing-stat-value">
+                ${item.netProfit !== null ? `
+                  <span style="color: ${item.netProfit > 0 ? 'var(--accent-emerald)' : 'var(--text-muted)'};">
+                    ${item.netProfit > 0 ? "+" : ""}€${item.netProfit.toFixed(2)}
+                  </span>
+                  ${roiBadge}
+                ` : `<span style="color: var(--text-muted); font-size: 0.8rem;">-</span>`}
+              </div>
+              <span style="font-size: 0.7rem; color: var(--text-muted);">
+                After ${feePct}% + €${fixedFee.toFixed(2)} Kinguin fee
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 1-Click Launchers Hub -->
+        <div class="sourcing-actions-hub">
+          ${item.dealId ? `
+            <a href="https://www.cheapshark.com/redirect?dealID=${item.dealId}" target="_blank" rel="noopener noreferrer" class="btn-sourcing-launcher btn-sourcing-buy" title="Open ${item.storeName} deal in new tab">
+              <i class="fa-solid fa-bolt"></i> Buy Deal
+            </a>
+          ` : ""}
+          <a href="https://gg.deals/games/?title=${encodedTitle}" target="_blank" rel="noopener noreferrer" class="btn-sourcing-launcher" title="Check keyshops and stores on gg.deals">
+            <span>gg.deals</span> <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.65rem;"></i>
+          </a>
+          <a href="https://www.allkeyshop.com/blog/?s=${encodedTitle}" target="_blank" rel="noopener noreferrer" class="btn-sourcing-launcher" title="Compare on Allkeyshop">
+            <span>Allkeyshop</span> <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.65rem;"></i>
+          </a>
+          <a href="https://www.kinguin.net/listing?active=1&hide_out_of_stock=1&phrase=${encodedTitle}" target="_blank" rel="noopener noreferrer" class="btn-sourcing-launcher" title="View active listings on Kinguin">
+            <span style="color: #ff5000; font-weight: 700;">Kinguin</span> <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.65rem;"></i>
+          </a>
+          <button type="button" class="btn btn-outline btn-xs" style="height: 28px; padding: 0 8px;" onclick="window.openAddGameModalWithTitle('${item.title.replace(/'/g, "\\'")}')" title="Log purchased keys into Inventory">
+            <i class="fa-solid fa-plus text-emerald"></i>
+          </button>
+          <button type="button" class="btn btn-ghost btn-xs text-danger" style="height: 28px; padding: 0 6px;" onclick="window.removeFavoriteFromRadar('${item.title.replace(/'/g, "\\'")}')" title="Remove from Favorites Watchlist">
+            <i class="fa-solid fa-star" style="color: #fbbf24;"></i>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  container.innerHTML = itemsHtml;
+  window.updateSourcingBadge();
+};
+
+window.refreshSourcingDeals = async function() {
+  const favorites = (state.favoriteGames || []).slice();
+  if (favorites.length === 0) {
+    if (typeof showToast === "function") showToast("No favorite games starred to refresh.", "warning");
+    return;
+  }
+
+  const refreshIcon = document.getElementById("sourcing-refresh-icon");
+  const refreshBtn = document.getElementById("btn-refresh-sourcing-deals");
+  if (refreshIcon) refreshIcon.classList.add("fa-spin");
+  if (refreshBtn) refreshBtn.disabled = true;
+
+  if (!state.sourcingSettings) state.sourcingSettings = {};
+  if (!state.sourcingSettings.cachedDeals) state.sourcingSettings.cachedDeals = {};
+
+  let updatedCount = 0;
+
+  try {
+    for (const title of favorites) {
+      // Clean title for CheapShark search (strip suffixes like [Steam], (PC), etc.)
+      const cleanTitle = title.replace(/\s*[\(\[].*?[\)\]]/g, "").trim();
+      if (!cleanTitle) continue;
+
+      try {
+        const url = `https://www.cheapshark.com/api/1.0/deals?title=${encodeURIComponent(cleanTitle)}&exact=0&pageSize=6`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const deals = await res.json();
+          if (Array.isArray(deals) && deals.length > 0) {
+            // Find best matching deal with lowest price or highest savings
+            let bestDeal = deals[0];
+            deals.forEach(d => {
+              if (Number(d.salePrice) < Number(bestDeal.salePrice) && Number(d.salePrice) > 0) {
+                bestDeal = d;
+              }
+            });
+
+            state.sourcingSettings.cachedDeals[title] = {
+              dealID: bestDeal.dealID,
+              storeID: bestDeal.storeID,
+              storeName: CHEAPSHARK_STORES[bestDeal.storeID] || "Partner Store",
+              salePrice: Number(bestDeal.salePrice),
+              normalPrice: Number(bestDeal.normalPrice),
+              savings: Math.round(Number(bestDeal.savings || 0)),
+              title: bestDeal.title,
+              thumb: bestDeal.thumb,
+              fetchedAt: Date.now()
+            };
+            updatedCount++;
+          }
+        }
+      } catch (err) {
+        console.warn(`[Sourcing Radar] Deal fetch error for "${title}":`, err);
+      }
+
+      // Gentle throttle to avoid rate-limiting
+      await new Promise(r => setTimeout(r, 120));
+    }
+
+    state.sourcingSettings.lastChecked = new Date().toISOString();
+    if (typeof saveSecondaryTablesToStorage === "function") {
+      saveSecondaryTablesToStorage();
+    }
+    if (window.supabaseClient && typeof dbSaveSettings === "function") {
+      dbSaveSettings("sourcingSettings", state.sourcingSettings);
+    }
+
+    if (typeof showToast === "function") {
+      showToast(`Updated deals for ${updatedCount} favorite game${updatedCount === 1 ? '' : 's'}.`, "success");
+    }
+  } catch (ex) {
+    console.error("[Sourcing Radar] Refresh failed:", ex);
+    if (typeof showToast === "function") showToast("Failed to refresh some deals.", "warning");
+  } finally {
+    if (refreshIcon) refreshIcon.classList.remove("fa-spin");
+    if (refreshBtn) refreshBtn.disabled = false;
+    window.renderSourcingRadarView();
+    window.updateSourcingBadge();
+  }
+};
+
+window.setSourcingManualBenchmark = function(title) {
+  if (!state.sourcingSettings) state.sourcingSettings = {};
+  if (!state.sourcingSettings.manualBenchmarks) state.sourcingSettings.manualBenchmarks = {};
+
+  const current = state.sourcingSettings.manualBenchmarks[title] || "";
+  const input = prompt(`Enter your target Kinguin selling price in € for:\n"${title}"\n(Leave empty to reset to automated historical price):`, current);
+  if (input === null) return; // user cancelled
+
+  const trimmed = input.trim();
+  if (trimmed === "") {
+    delete state.sourcingSettings.manualBenchmarks[title];
+    if (typeof showToast === "function") showToast(`Reset benchmark for "${title}" to automated.`, "info");
+  } else {
+    const val = parseFloat(trimmed.replace(",", "."));
+    if (isNaN(val) || val <= 0) {
+      if (typeof showToast === "function") showToast("Please enter a valid positive euro price (e.g. 14.50).", "warning");
+      return;
+    }
+    state.sourcingSettings.manualBenchmarks[title] = val;
+    if (typeof showToast === "function") showToast(`Benchmark for "${title}" set to €${val.toFixed(2)}.`, "success");
+  }
+
+  if (typeof saveSecondaryTablesToStorage === "function") {
+    saveSecondaryTablesToStorage();
+  }
+  if (window.supabaseClient && typeof dbSaveSettings === "function") {
+    dbSaveSettings("sourcingSettings", state.sourcingSettings);
+  }
+
+  window.renderSourcingRadarView();
+};
+
+window.removeFavoriteFromRadar = function(title) {
+  if (typeof window.toggleFavoriteGame === "function") {
+    window.toggleFavoriteGame(title);
+  }
+  window.renderSourcingRadarView();
 };

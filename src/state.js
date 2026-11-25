@@ -945,6 +945,14 @@ window.DEFAULT_PUBLISHER_LOGOS = DEFAULT_PUBLISHER_LOGOS;
 let state = {
   currentUser: null,
   favoriteGames: [],
+  sourcingSettings: {
+    kinguinFeePct: 11,
+    kinguinFixedFee: 0.10,
+    minMarginPct: 20,
+    cachedDeals: {},
+    lastChecked: null,
+    manualBenchmarks: {}
+  },
   auditLogs: [],
   entriesFilterFav: false,
   suppliersActiveTab: "supplier",
@@ -1575,6 +1583,17 @@ function loadStateFromStorage() {
       console.error("Error loading favorite games:", e);
       state.favoriteGames = [];
     }
+
+    try {
+      const storedSourcing = localStorage.getItem("gv_sourcing_settings" + userSuffix);
+      if (storedSourcing) {
+        state.sourcingSettings = { ...state.sourcingSettings, ...JSON.parse(storedSourcing) };
+      }
+      if (!state.sourcingSettings.manualBenchmarks) state.sourcingSettings.manualBenchmarks = {};
+      if (!state.sourcingSettings.cachedDeals) state.sourcingSettings.cachedDeals = {};
+    } catch (e) {
+      console.error("Error loading sourcing settings:", e);
+    }
     
     const storedInventory = localStorage.getItem("gv_inventory" + userSuffix);
     const storedSales = localStorage.getItem("gv_sales" + userSuffix);
@@ -2078,6 +2097,7 @@ function saveSecondaryTablesToStorage() {
     localStorage.setItem("gv_catalog_artwork", JSON.stringify(state.catalogArtwork || {}));
     localStorage.setItem("gv_catalog_reviews", JSON.stringify(state.catalogReviews || {}));
     localStorage.setItem("gv_favorite_games" + userSuffix, JSON.stringify(state.favoriteGames || []));
+    localStorage.setItem("gv_sourcing_settings" + userSuffix, JSON.stringify(state.sourcingSettings || {}));
     localStorage.setItem("gv_suppliers" + userSuffix, JSON.stringify(state.suppliers || []));
     localStorage.setItem("gv_supplier_logos" + userSuffix, JSON.stringify(state.supplierLogos || {}));
     localStorage.setItem("gv_supplier_logos", JSON.stringify(state.supplierLogos || {}));

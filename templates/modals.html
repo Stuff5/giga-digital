@@ -1390,3 +1390,87 @@
     </div>
   </div>
 
+  <!-- SOURCING & KINGUIN ARBITRAGE RADAR MODAL -->
+  <div class="modal-backdrop" id="sourcing-radar-modal">
+    <div class="modal-card" style="max-width: 1040px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal-header" style="flex-shrink: 0;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(147, 51, 234, 0.15); display: flex; align-items: center; justify-content: center; color: var(--accent-purple); font-size: 1.1rem;">
+            <i class="fa-solid fa-crosshairs"></i>
+          </div>
+          <div>
+            <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700;">Sourcing &amp; Kinguin Arbitrage Radar</h3>
+            <p style="margin: 0; font-size: 0.76rem; color: var(--text-muted);">Real-time store price drops &amp; net Kinguin resale profit estimates for your favorite games.</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" data-close-modal="sourcing-radar-modal">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding: 16px 20px; overflow-y: auto; flex-grow: 1; display: flex; flex-direction: column; gap: 16px;">
+        <!-- Top Toolbar & Configuration Row -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; background: var(--bg-card); padding: 12px 16px; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+          <!-- Kinguin Fee Simulation Settings -->
+          <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);"><i class="fa-solid fa-percent" style="color: var(--accent-cyan); margin-right: 4px;"></i>Kinguin Fee:</span>
+              <input type="number" id="sourcing-kinguin-fee-pct" class="form-control form-control-sm" value="11" min="0" max="40" step="0.5" style="width: 58px; height: 28px; padding: 2px 6px; text-align: center;" title="Kinguin standard commission percentage">
+              <span style="font-size: 0.78rem; color: var(--text-muted);">%</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);"><i class="fa-solid fa-coins" style="color: var(--accent-purple); margin-right: 4px;"></i>Fixed Fee:</span>
+              <input type="number" id="sourcing-kinguin-fixed-fee" class="form-control form-control-sm" value="0.10" min="0" max="5" step="0.05" style="width: 58px; height: 28px; padding: 2px 6px; text-align: center;" title="Fixed payout/transaction fee in euros">
+              <span style="font-size: 0.78rem; color: var(--text-muted);">€</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);"><i class="fa-solid fa-filter" style="color: var(--accent-emerald); margin-right: 4px;"></i>View:</span>
+              <select id="sourcing-filter-status" class="form-control form-control-sm" style="width: auto; height: 28px; padding: 2px 8px; font-size: 0.78rem;">
+                <option value="all">All Favorites</option>
+                <option value="profitable" selected>Profitable Deals Only (&gt; 0€)</option>
+                <option value="high-margin">High ROI (&ge; 30%)</option>
+                <option value="out-of-stock">Depleted Stock (0 keys)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Refresh Deals & Timestamp -->
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span id="sourcing-last-updated-text" style="font-size: 0.72rem; color: var(--text-muted);"><i class="fa-regular fa-clock" style="margin-right: 4px;"></i>Cached</span>
+            <button type="button" class="btn btn-outline btn-xs" id="btn-refresh-sourcing-deals" style="height: 28px; padding: 0 10px; font-size: 0.76rem; display: inline-flex; align-items: center; gap: 5px; cursor: pointer;">
+              <i class="fa-solid fa-arrows-rotate" id="sourcing-refresh-icon"></i> <span>Refresh Deals</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- KPI Summary Cards Row -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+          <div class="detail-card" style="padding: 12px 14px; margin-bottom: 0;">
+            <span style="font-size: 0.74rem; font-weight: 600; text-transform: uppercase; color: var(--accent-purple);">Watched Favorites</span>
+            <h4 id="sourcing-kpi-total-favs" style="margin: 4px 0 0 0; font-size: 1.35rem; font-weight: 700;">0</h4>
+          </div>
+          <div class="detail-card" style="padding: 12px 14px; margin-bottom: 0;">
+            <span style="font-size: 0.74rem; font-weight: 600; text-transform: uppercase; color: var(--accent-cyan);">Active Store Deals</span>
+            <h4 id="sourcing-kpi-active-deals" style="margin: 4px 0 0 0; font-size: 1.35rem; font-weight: 700; color: var(--accent-cyan);">0</h4>
+          </div>
+          <div class="detail-card" style="padding: 12px 14px; margin-bottom: 0;">
+            <span style="font-size: 0.74rem; font-weight: 600; text-transform: uppercase; color: var(--accent-emerald);">Profitable Opportunities</span>
+            <h4 id="sourcing-kpi-profitable" style="margin: 4px 0 0 0; font-size: 1.35rem; font-weight: 700; color: var(--accent-emerald);">0</h4>
+          </div>
+          <div class="detail-card" style="padding: 12px 14px; margin-bottom: 0;">
+            <span style="font-size: 0.74rem; font-weight: 600; text-transform: uppercase; color: var(--accent-warning);">Top Projected ROI</span>
+            <h4 id="sourcing-kpi-top-roi" style="margin: 4px 0 0 0; font-size: 1.35rem; font-weight: 700; color: var(--accent-warning);">0%</h4>
+          </div>
+        </div>
+
+        <!-- Sourcing Deals List / Grid Container -->
+        <div id="sourcing-radar-list" style="display: flex; flex-direction: column; gap: 10px; min-height: 220px;">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-top: 1px solid var(--border-color); background: var(--bg-modal-footer); flex-shrink: 0;">
+        <span style="font-size: 0.75rem; color: var(--text-muted);"><i class="fa-solid fa-circle-info" style="margin-right: 4px;"></i>Star games in Entries to add/remove them from this radar.</span>
+        <button type="button" class="btn btn-outline btn-sm" data-close-modal="sourcing-radar-modal">Close</button>
+      </div>
+    </div>
+  </div>
+

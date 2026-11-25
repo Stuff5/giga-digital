@@ -5,6 +5,25 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.60] - 2026-11-25
+### Added
+- **Sourcing & Kinguin Arbitrage Radar**:
+  - Implemented a dedicated Sourcing & Arbitrage Radar modal (`#sourcing-radar-modal`) accessible from both the **Dashboard** and **Entries** header controls.
+  - Reuses the existing starred **Favorite Games** (`state.favoriteGames`) as the live sourcing watchlist so merchants can track price drops without duplicate list management.
+  - **Live Store Deal Tracking**: Integrates with CheapShark's deals REST API across major authorized digital retailers (Steam, Fanatical, Humble Store, GreenManGaming, GOG, Epic Games, etc.) with local caching and throttled refreshes.
+  - **Automated Kinguin Arbitrage Calculator**:
+    - Calculates estimated net Kinguin payouts using configurable fee percentages (default 11%) and fixed transaction fees (default €0.10).
+    - Derives resale benchmark prices automatically from the user's historical Kinguin sales data, fallback catalog cost markup (+35%), or custom 1-click manual price overrides.
+    - Computes real-time Net Profit (€) and ROI (%) for every watched title.
+  - **1-Click Aggregator & Keyshop Launchers**:
+    - Direct `[Buy Deal ↗]` launcher pointing to the best authorized store deal.
+    - Instant search shortcuts to `gg.deals`, `Allkeyshop`, and `Kinguin` with zero bot-blocking risk.
+    - 1-click `[+]` button to pre-fill the "Add Game Key" modal with the acquired title for instant inventory logging.
+  - **Radar Filters & KPI Analytics**:
+    - View filters: `All Favorites`, `Profitable Deals Only (> 0€)`, `High ROI (≥ 30%)`, and `Depleted Stock (0 keys)`.
+    - Live KPI summary cards: Watched Favorites, Active Store Deals, Profitable Opportunities, and Top Projected ROI %.
+    - Dynamic deal badge on the Entries view header button that updates in real-time when favorite games are starred or unstarred.
+
 ## [v2.2.59] - 2026-11-23
 ### Removed
 - **Global Command Palette**:
