@@ -5,9 +5,9 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v2.3.0] - 2026-11-25
+## [v3.0.0] - 2026-11-25
 ### Added
-- **Sourcing & Kinguin Arbitrage Radar (Major Milestone)**:
+- **GameVault 3.0 Generation — Sourcing & Kinguin Arbitrage Radar**:
   - Implemented a dedicated Sourcing & Arbitrage Radar modal (`#sourcing-radar-modal`) accessible from both the **Dashboard** and **Entries** header controls.
   - Reuses the existing starred **Favorite Games** (`state.favoriteGames`) as the live sourcing watchlist so merchants can track price drops without duplicate list management.
   - **Configurable Supplier & Retailer Scanning**:
