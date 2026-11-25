@@ -2204,8 +2204,22 @@ window.triggerAutoFetchSteamCover = async function(titleInputId, targetInputId, 
 // ==========================================================================
 
 /**
+ * Formats request URL through an optional CORS relay proxy if configured.
+ */
+function getKinguinRequestUrl(targetUrl, customProxyUrl) {
+  const proxy = customProxyUrl !== undefined ? customProxyUrl.trim() : (state.sourcingSettings?.kinguinProxyUrl || "").trim();
+  if (!proxy) return targetUrl;
+  if (proxy.includes("?url=") || proxy.endsWith("?url=")) {
+    return proxy + encodeURIComponent(targetUrl);
+  }
+  if (proxy.endsWith("/")) {
+    return proxy + targetUrl;
+  }
+  return proxy + "/" + targetUrl;
+}
+
+/**
  * Queries Kinguin eCommerce API for a specific game's lowest market price.
- * Tries direct fetch first, gracefully falling back to CORS proxy for browser execution.
  */
 window.fetchKinguinLiveProduct = async function(title, customApiKey) {
   const key = customApiKey || state.sourcingSettings?.kinguinApiKey;
@@ -2215,124 +2229,99 @@ window.fetchKinguinLiveProduct = async function(title, customApiKey) {
   const clean = title.replace(/\s*[\(\[].*?[\)\]]/g, "").trim();
   if (!clean) return null;
 
-  const targetUrl = `https://gateway.kinguin.net/esa/api/v1/products?name=${encodeURIComponent(clean)}&page=1&limit=5`;
+  const rawUrl = `https://gateway.kinguin.net/esa/api/v1/products?name=${encodeURIComponent(clean)}&page=1&limit=5`;
+  const requestUrl = getKinguinRequestUrl(rawUrl);
   const headers = { "X-Api-Key": key.trim() };
 
-  let rawData = null;
-
-  // Attempt 1: Direct fetch
   try {
-    const res = await fetch(targetUrl, { headers });
-    if (res.ok) {
-      rawData = await res.json();
-    }
+    const res = await fetch(requestUrl, { headers });
+    if (!res.ok) return null;
+    const rawData = await res.json();
+
+    let items = [];
+    if (Array.isArray(rawData)) items = rawData;
+    else if (Array.isArray(rawData.results)) items = rawData.results;
+    else if (Array.isArray(rawData.data)) items = rawData.data;
+    else if (rawData.price !== undefined) items = [rawData];
+
+    if (items.length === 0) return null;
+
+    // Find lowest price item with available stock or valid price
+    let best = null;
+    items.forEach(it => {
+      const p = Number(it.price);
+      if (p > 0) {
+        if (!best || p < Number(best.price)) {
+          best = it;
+        }
+      }
+    });
+
+    if (!best) return null;
+
+    return {
+      kinguinId: best.kinguinId,
+      productId: best.productId,
+      name: best.name,
+      price: Number(best.price),
+      qty: Number(best.qty ?? best.textQty ?? 0),
+      fetchedAt: Date.now()
+    };
   } catch (err) {
-    // Expected in browsers when gateway lacks CORS headers
+    console.warn(`[Kinguin API] Fetch error for "${title}":`, err.message);
+    return null;
   }
-
-  // Attempt 2: CORS Proxy fallback
-  if (!rawData) {
-    try {
-      const proxyUrl = `https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}`;
-      const res = await fetch(proxyUrl, { headers });
-      if (res.ok) {
-        rawData = await res.json();
-      }
-    } catch (proxyErr) {
-      console.warn(`[Kinguin API] Proxy lookup failed for "${title}":`, proxyErr);
-    }
-  }
-
-  if (!rawData) return null;
-
-  let items = [];
-  if (Array.isArray(rawData)) items = rawData;
-  else if (Array.isArray(rawData.results)) items = rawData.results;
-  else if (Array.isArray(rawData.data)) items = rawData.data;
-  else if (rawData.price !== undefined) items = [rawData];
-
-  if (items.length === 0) return null;
-
-  // Find lowest price item with available stock or valid price
-  let best = null;
-  items.forEach(it => {
-    const p = Number(it.price);
-    if (p > 0) {
-      if (!best || p < Number(best.price)) {
-        best = it;
-      }
-    }
-  });
-
-  if (!best) return null;
-
-  return {
-    kinguinId: best.kinguinId,
-    productId: best.productId,
-    name: best.name,
-    price: Number(best.price),
-    qty: Number(best.qty ?? best.textQty ?? 0),
-    fetchedAt: Date.now()
-  };
 };
 
 /**
  * Validates a Kinguin API key against the live Kinguin gateway.
  */
-window.testKinguinConnection = async function(customApiKey) {
+window.testKinguinConnection = async function(customApiKey, customProxyUrl) {
   const key = (customApiKey || state.sourcingSettings?.kinguinApiKey || "").trim();
   if (!key) {
     return { success: false, message: "Please provide a Kinguin API key." };
   }
 
-  const targetUrl = `https://gateway.kinguin.net/esa/api/v1/products?name=Minecraft&page=1&limit=1`;
+  const rawUrl = `https://gateway.kinguin.net/esa/api/v1/products?name=Minecraft&page=1&limit=1`;
+  const proxyUrl = customProxyUrl !== undefined ? customProxyUrl.trim() : (state.sourcingSettings?.kinguinProxyUrl || "").trim();
+  const requestUrl = getKinguinRequestUrl(rawUrl, proxyUrl);
   const headers = { "X-Api-Key": key };
 
-  let responseOk = false;
-  let status = 0;
-  let data = null;
-
   try {
-    const res = await fetch(targetUrl, { headers });
-    status = res.status;
+    const res = await fetch(requestUrl, { headers });
     if (res.ok) {
-      responseOk = true;
-      data = await res.json();
-    }
-  } catch (err) {
-    // Try via CORS proxy
-    try {
-      const proxyUrl = `https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}`;
-      const res = await fetch(proxyUrl, { headers });
-      status = res.status;
-      if (res.ok) {
-        responseOk = true;
-        data = await res.json();
+      const data = await res.json();
+      let sampleTitle = "catalog product";
+      if (Array.isArray(data.results) && data.results[0]?.name) {
+        sampleTitle = `"${data.results[0].name}" (€${Number(data.results[0].price).toFixed(2)})`;
       }
-    } catch (proxyErr) {
-      return { success: false, message: `Network request failed: ${proxyErr.message}` };
+      return {
+        success: true,
+        message: `Connected successfully to Kinguin eCommerce API! Verified access via live lookup of ${sampleTitle}.`
+      };
     }
-  }
 
-  if (responseOk && data) {
-    let sampleTitle = "catalog product";
-    if (Array.isArray(data.results) && data.results[0]?.name) {
-      sampleTitle = `"${data.results[0].name}" (€${Number(data.results[0].price).toFixed(2)})`;
+    if (res.status === 401 || res.status === 403) {
+      return {
+        success: false,
+        message: "Authentication failed (401/403). Please ensure your Kinguin Store API Key is copied correctly from Kinguin Merchant Dashboard > API > STORES."
+      };
     }
-    return {
-      success: true,
-      message: `Connected successfully to Kinguin eCommerce API! Verified access via live lookup of ${sampleTitle}.`
-    };
-  }
 
-  if (status === 401 || status === 403) {
+    return { success: false, message: `Kinguin API returned unexpected HTTP status: ${res.status}.` };
+  } catch (err) {
+    if (!proxyUrl) {
+      return {
+        success: false,
+        isCorsError: true,
+        message: "Browser CORS Restriction: Kinguin's B2B API gateway blocks direct calls from web browsers ('Failed to fetch'). A CORS relay is required. See the guide below to connect a free Cloudflare Worker or Supabase Edge function in 60 seconds."
+      };
+    }
     return {
       success: false,
-      message: "Authentication failed (401/403). Please ensure your Kinguin Store API Key is copied correctly from Kinguin Merchant Dashboard > API > STORES."
+      message: `Proxy request failed: ${err.message}. Please verify your CORS Proxy URL.`
     };
   }
-
-  return { success: false, message: `Kinguin API returned unexpected HTTP status: ${status}.` };
 };
 
 /**
@@ -2341,15 +2330,18 @@ window.testKinguinConnection = async function(customApiKey) {
 window.initKinguinConnection = function() {
   const key = state.sourcingSettings?.kinguinApiKey || "";
   const storeName = state.sourcingSettings?.kinguinStoreName || "GameVault";
+  const proxyUrl = state.sourcingSettings?.kinguinProxyUrl || "";
 
   const keyInput = document.getElementById("settings-kinguin-apikey");
   const storeInput = document.getElementById("settings-kinguin-storename");
+  const proxyInput = document.getElementById("settings-kinguin-proxyurl");
   const statusBadge = document.getElementById("kinguin-connection-status");
   const radarBadge = document.getElementById("sourcing-kinguin-api-badge");
   const radarLabel = document.getElementById("sourcing-kinguin-api-label");
 
   if (keyInput && !keyInput.value) keyInput.value = key;
   if (storeInput && !storeInput.value) storeInput.value = storeName;
+  if (proxyInput && !proxyInput.value) proxyInput.value = proxyUrl;
 
   if (statusBadge) {
     if (key) {
@@ -2387,6 +2379,7 @@ window.bindKinguinSettingsControls = function() {
   const btnToggleVis = document.getElementById("btn-toggle-kinguin-key-vis");
   const keyInput = document.getElementById("settings-kinguin-apikey");
   const storeInput = document.getElementById("settings-kinguin-storename");
+  const proxyInput = document.getElementById("settings-kinguin-proxyurl");
   const btnSave = document.getElementById("btn-save-kinguin-api");
   const btnTest = document.getElementById("btn-test-kinguin-api");
   const feedback = document.getElementById("kinguin-test-feedback");
@@ -2406,10 +2399,12 @@ window.bindKinguinSettingsControls = function() {
     btnSave.addEventListener("click", async () => {
       const keyVal = keyInput ? keyInput.value.trim() : "";
       const storeVal = storeInput ? storeInput.value.trim() : "GameVault";
+      const proxyVal = proxyInput ? proxyInput.value.trim() : "";
 
       if (!state.sourcingSettings) state.sourcingSettings = {};
       state.sourcingSettings.kinguinApiKey = keyVal;
       state.sourcingSettings.kinguinStoreName = storeVal || "GameVault";
+      state.sourcingSettings.kinguinProxyUrl = proxyVal;
 
       if (typeof saveSecondaryTablesToStorage === "function") saveSecondaryTablesToStorage();
       if (window.supabaseClient && typeof dbSaveSettings === "function") {
@@ -2431,6 +2426,8 @@ window.bindKinguinSettingsControls = function() {
   if (btnTest) {
     btnTest.addEventListener("click", async () => {
       const keyVal = keyInput ? keyInput.value.trim() : "";
+      const proxyVal = proxyInput ? proxyInput.value.trim() : "";
+
       if (!keyVal) {
         if (typeof showToast === "function") showToast("Please paste your Kinguin API key first.", "warning");
         if (feedback) {
@@ -2456,7 +2453,7 @@ window.bindKinguinSettingsControls = function() {
       }
 
       try {
-        const result = await window.testKinguinConnection(keyVal);
+        const result = await window.testKinguinConnection(keyVal, proxyVal);
         if (result.success) {
           if (feedback) {
             feedback.style.background = "rgba(16, 185, 129, 0.12)";
@@ -2472,17 +2469,17 @@ window.bindKinguinSettingsControls = function() {
           if (typeof showToast === "function") showToast("Kinguin API Connection Verified!", "success");
         } else {
           if (feedback) {
-            feedback.style.background = "rgba(244, 67, 54, 0.12)";
-            feedback.style.border = "1px solid var(--accent-danger)";
+            feedback.style.background = result.isCorsError ? "rgba(255, 153, 0, 0.12)" : "rgba(244, 67, 54, 0.12)";
+            feedback.style.border = result.isCorsError ? "1px solid var(--accent-warning)" : "1px solid var(--accent-danger)";
             feedback.style.color = "var(--text-main)";
-            feedback.innerHTML = `<i class="fa-solid fa-circle-xmark" style="color: var(--accent-danger); margin-right: 6px;"></i> ${result.message}`;
+            feedback.innerHTML = `<i class="fa-solid ${result.isCorsError ? 'fa-triangle-exclamation text-warning' : 'fa-circle-xmark text-danger'}" style="margin-right: 6px;"></i> ${result.message}`;
           }
           if (statusBadge) {
-            statusBadge.textContent = "Error";
+            statusBadge.textContent = result.isCorsError ? "CORS Required" : "Error";
             statusBadge.className = "badge badge-sold";
-            statusBadge.style.backgroundColor = "var(--accent-danger, #f44336)";
+            statusBadge.style.backgroundColor = result.isCorsError ? "var(--accent-warning, #ff9900)" : "var(--accent-danger, #f44336)";
           }
-          if (typeof showToast === "function") showToast("Kinguin API Connection Failed.", "error");
+          if (typeof showToast === "function") showToast(result.isCorsError ? "Browser CORS proxy required." : "Kinguin API Connection Failed.", result.isCorsError ? "warning" : "error");
         }
       } catch (ex) {
         if (feedback) {

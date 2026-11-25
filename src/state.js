@@ -955,6 +955,7 @@ let state = {
     selectedStores: [],
     kinguinApiKey: "",
     kinguinStoreName: "GameVault",
+    kinguinProxyUrl: "",
     liveKinguinPrices: {},
     topbarAlerts: true
   },
@@ -1633,6 +1634,7 @@ function loadStateFromStorage() {
       if (!state.sourcingSettings.liveKinguinPrices) state.sourcingSettings.liveKinguinPrices = {};
       if (state.sourcingSettings.kinguinApiKey === undefined) state.sourcingSettings.kinguinApiKey = "";
       if (!state.sourcingSettings.kinguinStoreName) state.sourcingSettings.kinguinStoreName = "GameVault";
+      if (state.sourcingSettings.kinguinProxyUrl === undefined) state.sourcingSettings.kinguinProxyUrl = "";
     } catch (e) {
       console.error("Error loading sourcing settings:", e);
     }

@@ -3477,6 +3477,16 @@
                       </div>
                     </div>
 
+                    <div class="form-group" style="margin-bottom: 12px;">
+                      <label for="settings-kinguin-proxyurl" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>CORS Proxy / Relay URL <small style="color: var(--text-muted); font-weight: normal;">(Required for browser calls to Kinguin B2B Gateway)</small></span>
+                      </label>
+                      <input type="url" id="settings-kinguin-proxyurl" class="form-control" placeholder="https://your-worker.your-subdomain.workers.dev/?url=" style="font-size: 0.8rem;">
+                      <small class="form-help" style="margin-top: 4px; display: block; font-size: 0.73rem; color: var(--text-muted);">
+                        Kinguin's B2B API gateway blocks direct browser calls due to CORS. Use your free Cloudflare Worker, Supabase Edge function, or private CORS relay.
+                      </small>
+                    </div>
+
                     <div style="display: flex; gap: 12px; margin-top: 15px; flex-wrap: wrap;">
                       <button type="button" class="btn btn-outline btn-sm" id="btn-test-kinguin-api" style="flex: 1; min-width: 140px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; font-size: 0.85rem;">
                         <i class="fa-solid fa-plug-circle-check"></i> Test Kinguin Connection
@@ -4337,13 +4347,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=130"></script>
-  <script src="src/state.js?v=130"></script>
-  <script src="src/api.js?v=130"></script>
-  <script src="src/charts.js?v=130"></script>
-  <script src="src/ui.js?v=130"></script>
-  <script src="src/ai.js?v=130"></script>
-  <script src="src/importer.js?v=130"></script>
-  <script src="app.js?v=130"></script>
+  <script src="config.js?v=131"></script>
+  <script src="src/state.js?v=131"></script>
+  <script src="src/api.js?v=131"></script>
+  <script src="src/charts.js?v=131"></script>
+  <script src="src/ui.js?v=131"></script>
+  <script src="src/ai.js?v=131"></script>
+  <script src="src/importer.js?v=131"></script>
+  <script src="app.js?v=131"></script>
 </body>
 </html>
