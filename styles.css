@@ -34,6 +34,13 @@
   --border-badge-info: hsla(270, 85%, 60%, 0.2);
   --border-sidebar: hsla(224, 20%, 25%, 0.35);
   
+  /* Solid Dropdown Surface Colors */
+  --bg-dropdown: hsl(224, 25%, 11%);
+  --bg-dropdown-header: hsl(224, 25%, 9%);
+  --bg-dropdown-sub: hsl(224, 25%, 13%);
+  --bg-dropdown-hover: hsl(224, 22%, 16%);
+  --bg-dropdown-unread: hsl(224, 22%, 14%);
+  
   /* Neon Accents */
   --accent-purple: hsl(270, 85%, 60%);
   --accent-purple-glow: hsla(270, 85%, 60%, 0.3);
@@ -117,6 +124,13 @@
   --bg-badge-info: hsla(270, 85%, 45%, 0.08);
   --border-badge-info: hsla(270, 85%, 45%, 0.15);
   --border-sidebar: hsla(220, 20%, 75%, 0.4);
+  
+  /* Solid Dropdown Surface Colors for Light Mode */
+  --bg-dropdown: #ffffff;
+  --bg-dropdown-header: #f8fafc;
+  --bg-dropdown-sub: #f1f5f9;
+  --bg-dropdown-hover: #f1f5f9;
+  --bg-dropdown-unread: #f8fafc;
   
   /* Adjusted shadow and glow for light theme */
   --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
@@ -7267,6 +7281,139 @@ textarea.form-control {
   color: var(--text-main);
   flex-grow: 1;
 }
+
+/* ==========================================================================
+   TOPBAR NOTIFICATION CENTER (Opaque Solid Surface & High-Contrast Typography)
+   ========================================================================== */
+#notification-dropdown {
+  background: var(--bg-dropdown, #141722) !important;
+  color: var(--text-main) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.75), 0 0 0 1px var(--border-color) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  opacity: 1 !important;
+}
+
+[data-theme-mode="light"] #notification-dropdown,
+[data-theme="light"] #notification-dropdown {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.08) !important;
+}
+
+#notification-dropdown .notif-header {
+  background: var(--bg-dropdown-header, #0e111a) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+[data-theme-mode="light"] #notification-dropdown .notif-header,
+[data-theme="light"] #notification-dropdown .notif-header {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+#notification-dropdown .notif-tabs-bar {
+  background: var(--bg-dropdown-sub, #191c28) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+[data-theme-mode="light"] #notification-dropdown .notif-tabs-bar,
+[data-theme="light"] #notification-dropdown .notif-tabs-bar {
+  background: #f1f5f9 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+#notification-dropdown #notification-list {
+  background: var(--bg-dropdown, #141722) !important;
+}
+
+[data-theme-mode="light"] #notification-dropdown #notification-list,
+[data-theme="light"] #notification-dropdown #notification-list {
+  background: #ffffff !important;
+}
+
+.notification-item {
+  background: var(--bg-dropdown, #141722) !important;
+  color: var(--text-main) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.notification-item:hover {
+  background: var(--bg-dropdown-hover, #1d2130) !important;
+}
+
+.notification-item.notif-unread {
+  background: var(--bg-dropdown-unread, #181c2a) !important;
+}
+
+.notification-item.notif-radar {
+  border-left: 3px solid rgba(16, 185, 129, 0.5) !important;
+}
+
+.notification-item.notif-radar.notif-unread {
+  background: rgba(16, 185, 129, 0.12) !important;
+  border-left: 3px solid var(--accent-emerald, #10b981) !important;
+}
+
+.notification-item .notif-item-title {
+  color: var(--text-main) !important;
+}
+
+.notification-item.notif-radar .notif-item-title {
+  color: var(--accent-emerald, #10b981) !important;
+}
+
+.notification-item .notif-item-text {
+  color: var(--text-main) !important;
+}
+
+/* Light Mode Overrides for Notification Items */
+[data-theme-mode="light"] .notification-item,
+[data-theme="light"] .notification-item {
+  background: #ffffff !important;
+  color: #1e293b !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+[data-theme-mode="light"] .notification-item:hover,
+[data-theme="light"] .notification-item:hover {
+  background: #f8fafc !important;
+}
+
+[data-theme-mode="light"] .notification-item.notif-unread,
+[data-theme="light"] .notification-item.notif-unread {
+  background: #f8fafc !important;
+}
+
+[data-theme-mode="light"] .notification-item.notif-radar,
+[data-theme="light"] .notification-item.notif-radar {
+  border-left: 3px solid #10b981 !important;
+}
+
+[data-theme-mode="light"] .notification-item.notif-radar.notif-unread,
+[data-theme="light"] .notification-item.notif-radar.notif-unread {
+  background: #ecfdf5 !important;
+  border-left: 3px solid #059669 !important;
+}
+
+[data-theme-mode="light"] .notification-item .notif-item-title,
+[data-theme="light"] .notification-item .notif-item-title {
+  color: #0f172a !important;
+}
+
+[data-theme-mode="light"] .notification-item.notif-radar .notif-item-title,
+[data-theme="light"] .notification-item.notif-radar .notif-item-title {
+  color: #047857 !important;
+}
+
+[data-theme-mode="light"] .notification-item .notif-item-text,
+[data-theme="light"] .notification-item .notif-item-text {
+  color: #1e293b !important;
+}
+
 
 
 

@@ -1477,17 +1477,17 @@ function renderNotifications() {
       : (isRadar ? `<span style="color: var(--accent-emerald); font-size: 0.9rem; flex-shrink: 0;"><i class="fa-solid fa-crosshairs"></i></span>` : '');
 
     return `
-      <div class="notification-item ${isRadar ? 'notif-radar' : ''}" style="padding: 10px 14px; border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 4px; background: ${notif.unread ? (isRadar ? 'rgba(16, 185, 129, 0.08)' : 'var(--bg-input)') : 'transparent'}; ${hasAction ? 'cursor: pointer; transition: background 0.15s;' : ''}" ${hasAction ? `onclick="if(typeof window.openSourcingRadarModal === 'function') { window.openSourcingRadarModal(); const dd = document.getElementById('notification-dropdown'); if(dd) dd.style.display='none'; }"` : ''}>
+      <div class="notification-item ${isRadar ? 'notif-radar' : ''} ${notif.unread ? 'notif-unread' : ''}" style="padding: 11px 14px; border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 4px; ${hasAction ? 'cursor: pointer;' : ''}" ${hasAction ? `onclick="if(typeof window.openSourcingRadarModal === 'function') { window.openSourcingRadarModal(); const dd = document.getElementById('notification-dropdown'); if(dd) dd.style.display='none'; }"` : ''}>
         <div style="display: flex; align-items: flex-start; gap: 8px;">
           ${iconHtml}
           <div style="flex: 1; min-width: 0;">
-            ${notif.title ? `<div style="font-size: 0.82rem; font-weight: 700; color: ${isRadar ? 'var(--accent-emerald)' : 'var(--text-main)'}; margin-bottom: 2px;">${typeof escapeHTML === 'function' ? escapeHTML(notif.title) : notif.title}</div>` : ''}
-            <div style="font-size: 0.8rem; color: var(--text-main); line-height: 1.35; word-break: break-word;">${typeof escapeHTML === 'function' ? escapeHTML(notif.text) : notif.text}</div>
+            ${notif.title ? `<div class="notif-item-title" style="font-size: 0.83rem; font-weight: 700; margin-bottom: 2px;">${typeof escapeHTML === 'function' ? escapeHTML(notif.title) : notif.title}</div>` : ''}
+            <div class="notif-item-text" style="font-size: 0.81rem; line-height: 1.45; word-break: break-word;">${typeof escapeHTML === 'function' ? escapeHTML(notif.text) : notif.text}</div>
           </div>
         </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-muted); margin-top: 3px;">
-          ${hasAction ? `<span style="color: var(--accent-cyan); font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">Open Radar <i class="fa-solid fa-arrow-right" style="font-size: 0.65rem;"></i></span>` : `<span></span>`}
-          <span>${notif.time}</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">
+          ${hasAction ? `<span style="color: var(--accent-cyan); font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">Open Radar <i class="fa-solid fa-arrow-right" style="font-size: 0.65rem;"></i></span>` : `<span></span>`}
+          <span style="font-weight: 500; opacity: 0.85;">${notif.time}</span>
         </div>
       </div>
     `;

@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added real-time badge counters (`#notif-radar-count` and `#notif-actions-count`) displaying live counts for each stream.
   - Implemented contextual clearing logic: clearing notifications now only clears alerts belonging to the active tab, preserving other notification histories.
   - Added dedicated Price Radar empty state with an interactive 1-click `[Open Sourcing Radar]` launcher button.
+  - **Opaque High-Contrast Surface**: Replaced semi-transparent glass panel background with 100% solid surfaces (`#141722` in dark mode, pure white in light mode) with high-elevation drop shadows (`0 16px 45px rgba(0,0,0,0.75)`), eliminating background element bleed-through and ensuring crisp legibility.
 - **Kinguin Merchant API Integration & CORS Relay**:
   - Direct integration with Kinguin eCommerce B2B API gateway using merchant API keys (`X-Api-Key`) and customizable store name (`GameVault`).
   - Added configurable **CORS Proxy / Relay URL** field in Settings (`#settings-view`), enabling seamless browser execution via personal Cloudflare Worker relays.
