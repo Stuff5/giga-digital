@@ -1205,11 +1205,17 @@ let stockTurnoverChartInstance = null;
 
 // Initialize notification center state and bindings
 function initNotificationCenter() {
-  // Load notification limit
+  // Load notification settings
   try {
     state.notificationLimit = parseInt(localStorage.getItem("gv_notification_limit") || "10", 10);
   } catch (err) {
     state.notificationLimit = 10;
+  }
+
+  try {
+    state.activeNotifTab = localStorage.getItem("gv_notif_active_tab") || "radar";
+  } catch (err) {
+    state.activeNotifTab = "radar";
   }
 
   // Load notifications from LocalStorage if they exist
@@ -1249,6 +1255,22 @@ function initNotificationCenter() {
       }
     });
   }
+
+  // Wire tab switching buttons (Price Radar, Actions, All)
+  const notifTabs = document.querySelectorAll(".btn-notif-tab");
+  notifTabs.forEach(tabBtn => {
+    tabBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const tab = tabBtn.getAttribute("data-tab");
+      state.activeNotifTab = tab;
+      try {
+        localStorage.setItem("gv_notif_active_tab", tab);
+      } catch (err) {
+        console.error("Failed to save notif active tab:", err);
+      }
+      renderNotifications();
+    });
+  });
 
   // Bind notification limit bubbles click handler
   const bubbles = document.querySelectorAll(".btn-notif-limit-bubble");
@@ -1296,7 +1318,14 @@ function initNotificationCenter() {
   if (btnClear) {
     btnClear.addEventListener("click", (e) => {
       e.stopPropagation();
-      state.notifications = [];
+      const activeTab = state.activeNotifTab || "radar";
+      if (activeTab === "radar") {
+        state.notifications = (state.notifications || []).filter(n => n.category !== "radar");
+      } else if (activeTab === "actions") {
+        state.notifications = (state.notifications || []).filter(n => n.category === "radar");
+      } else {
+        state.notifications = [];
+      }
       saveNotificationsToStorage();
       renderNotifications();
       clearUnreadBadge();
@@ -1365,13 +1394,80 @@ function renderNotifications() {
   const listContainer = document.getElementById("notification-list");
   if (!listContainer) return;
 
-  if (!state.notifications || state.notifications.length === 0) {
-    listContainer.innerHTML = `<div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 0.8rem;">No actions recorded yet</div>`;
+  const activeTab = state.activeNotifTab || "radar";
+
+  // Update tab counter badges
+  const radarTotal = (state.notifications || []).filter(n => n.category === "radar").length;
+  const actionsTotal = (state.notifications || []).filter(n => n.category !== "radar").length;
+  const radarCountEl = document.getElementById("notif-radar-count");
+  const actionsCountEl = document.getElementById("notif-actions-count");
+  if (radarCountEl) radarCountEl.textContent = radarTotal;
+  if (actionsCountEl) actionsCountEl.textContent = actionsTotal;
+
+  // Update tab buttons active styles
+  const tabBtns = document.querySelectorAll(".btn-notif-tab");
+  tabBtns.forEach(btn => {
+    const tab = btn.getAttribute("data-tab");
+    const isActive = tab === activeTab;
+    btn.classList.toggle("active", isActive);
+    if (tab === "radar") {
+      btn.style.background = isActive ? "var(--accent-emerald, #10b981)" : "transparent";
+      btn.style.color = isActive ? "#fff" : "var(--text-secondary)";
+      btn.style.fontWeight = isActive ? "700" : "600";
+    } else if (tab === "actions") {
+      btn.style.background = isActive ? "var(--accent-cyan, #06b6d4)" : "transparent";
+      btn.style.color = isActive ? "#000" : "var(--text-secondary)";
+      btn.style.fontWeight = isActive ? "700" : "600";
+    } else {
+      btn.style.background = isActive ? "rgba(255, 255, 255, 0.12)" : "transparent";
+      btn.style.color = isActive ? "var(--text-main, #fff)" : "var(--text-secondary)";
+      btn.style.fontWeight = isActive ? "700" : "600";
+    }
+  });
+
+  // Filter notifications according to active tab
+  let filtered = state.notifications || [];
+  if (activeTab === "radar") {
+    filtered = filtered.filter(n => n.category === "radar");
+  } else if (activeTab === "actions") {
+    filtered = filtered.filter(n => n.category !== "radar");
+  }
+
+  if (filtered.length === 0) {
+    if (activeTab === "radar") {
+      listContainer.innerHTML = `
+        <div style="padding: 24px 16px; text-align: center; color: var(--text-muted); font-size: 0.8rem; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-satellite-dish" style="font-size: 1.8rem; color: var(--accent-emerald); opacity: 0.85; margin-bottom: 2px;"></i>
+          <div style="font-weight: 700; color: var(--text-main); font-size: 0.85rem;">No Price Radar Alerts Yet</div>
+          <div style="font-size: 0.74rem; color: var(--text-muted); max-width: 260px; line-height: 1.4;">
+            Price drops & Kinguin arbitrage opportunities will appear here in real-time.
+          </div>
+          <button type="button" class="btn btn-sm" style="margin-top: 6px; font-size: 0.72rem; padding: 5px 12px; background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; font-weight: 600;" onclick="if(typeof window.openSourcingRadarModal === 'function') { window.openSourcingRadarModal(); const dd = document.getElementById('notification-dropdown'); if(dd) dd.style.display='none'; }">
+            <i class="fa-solid fa-crosshairs"></i> Open Sourcing Radar
+          </button>
+        </div>
+      `;
+    } else if (activeTab === "actions") {
+      listContainer.innerHTML = `
+        <div style="padding: 24px 16px; text-align: center; color: var(--text-muted); font-size: 0.8rem; display: flex; flex-direction: column; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-list-check" style="font-size: 1.6rem; color: var(--text-muted); opacity: 0.6; margin-bottom: 4px;"></i>
+          <div style="font-weight: 600; color: var(--text-main); font-size: 0.85rem;">No Actions Recorded</div>
+          <div style="font-size: 0.74rem; color: var(--text-muted);">Recent manual edits and sales will show up here.</div>
+        </div>
+      `;
+    } else {
+      listContainer.innerHTML = `
+        <div style="padding: 24px 16px; text-align: center; color: var(--text-muted); font-size: 0.8rem; display: flex; flex-direction: column; align-items: center; gap: 6px;">
+          <i class="fa-regular fa-bell" style="font-size: 1.6rem; color: var(--text-muted); opacity: 0.6; margin-bottom: 4px;"></i>
+          <div style="font-weight: 600; color: var(--text-main); font-size: 0.85rem;">No Notifications Recorded</div>
+        </div>
+      `;
+    }
     return;
   }
 
   const limit = state.notificationLimit || 10;
-  const visibleNotifications = state.notifications.slice(0, limit);
+  const visibleNotifications = filtered.slice(0, limit);
 
   listContainer.innerHTML = visibleNotifications.map(notif => {
     const isRadar = notif.category === "radar";
@@ -1381,7 +1477,7 @@ function renderNotifications() {
       : (isRadar ? `<span style="color: var(--accent-emerald); font-size: 0.9rem; flex-shrink: 0;"><i class="fa-solid fa-crosshairs"></i></span>` : '');
 
     return `
-      <div class="notification-item ${isRadar ? 'notif-radar' : ''}" style="padding: 10px 16px; border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 4px; background: ${notif.unread ? (isRadar ? 'rgba(16, 185, 129, 0.08)' : 'var(--bg-input)') : 'transparent'}; ${hasAction ? 'cursor: pointer; transition: background 0.15s;' : ''}" ${hasAction ? `onclick="if(typeof window.openSourcingRadarModal === 'function') { window.openSourcingRadarModal(); const dd = document.getElementById('notification-dropdown'); if(dd) dd.style.display='none'; }"` : ''}>
+      <div class="notification-item ${isRadar ? 'notif-radar' : ''}" style="padding: 10px 14px; border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 4px; background: ${notif.unread ? (isRadar ? 'rgba(16, 185, 129, 0.08)' : 'var(--bg-input)') : 'transparent'}; ${hasAction ? 'cursor: pointer; transition: background 0.15s;' : ''}" ${hasAction ? `onclick="if(typeof window.openSourcingRadarModal === 'function') { window.openSourcingRadarModal(); const dd = document.getElementById('notification-dropdown'); if(dd) dd.style.display='none'; }"` : ''}>
         <div style="display: flex; align-items: flex-start; gap: 8px;">
           ${iconHtml}
           <div style="flex: 1; min-width: 0;">

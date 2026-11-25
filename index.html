@@ -189,19 +189,36 @@
               </button>
               
               <!-- Notification Dropdown Panel -->
-              <div id="notification-dropdown" class="glass-panel" style="position: absolute; top: 40px; right: 0; width: 300px; max-height: 400px; overflow-y: auto; z-index: 1000; border: 1px solid var(--border-color); border-radius: 6px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); display: none; background: var(--bg-card); padding: 8px 0;">
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--border-color); margin-bottom: 6px;">
-                  <span style="font-weight: 700; font-size: 0.9rem; color: var(--text-main);">Recent Actions</span>
+              <div id="notification-dropdown" class="glass-panel" style="position: absolute; top: 40px; right: 0; width: 350px; max-height: 480px; overflow-y: auto; z-index: 1000; border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.35); display: none; background: var(--bg-card); padding: 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--border-color); background: var(--bg-card);">
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-bell" style="color: var(--accent-cyan); font-size: 0.85rem;"></i>
+                    <span style="font-weight: 700; font-size: 0.88rem; color: var(--text-main);">Notifications</span>
+                  </div>
                   <div style="display: flex; align-items: center; gap: 8px;">
-                    <div class="notif-limit-bubbles" style="display: flex; align-items: center; gap: 4px; background: var(--bg-input); padding: 2px; border-radius: 20px; border: 1px solid var(--border-color);">
-                      <button type="button" class="btn-notif-limit-bubble active" data-limit="5" style="width: 20px; height: 20px; border-radius: 50%; border: none; background: var(--accent-cyan); color: #000; font-size: 0.7rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: all 0.2s;" title="Show last 5 actions">5</button>
-                      <button type="button" class="btn-notif-limit-bubble" data-limit="10" style="width: 20px; height: 20px; border-radius: 50%; border: none; background: transparent; color: var(--text-secondary); font-size: 0.7rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: all 0.2s;" title="Show last 10 actions">10</button>
+                    <div class="notif-limit-bubbles" style="display: flex; align-items: center; gap: 3px; background: var(--bg-input); padding: 2px; border-radius: 20px; border: 1px solid var(--border-color);">
+                      <button type="button" class="btn-notif-limit-bubble active" data-limit="5" style="width: 18px; height: 18px; border-radius: 50%; border: none; background: var(--accent-cyan); color: #000; font-size: 0.68rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: all 0.2s;" title="Show last 5 items">5</button>
+                      <button type="button" class="btn-notif-limit-bubble" data-limit="10" style="width: 18px; height: 18px; border-radius: 50%; border: none; background: transparent; color: var(--text-secondary); font-size: 0.68rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: all 0.2s;" title="Show last 10 items">10</button>
                     </div>
-                    <button type="button" id="btn-clear-notifications" style="background: none; border: none; color: var(--accent-cyan); font-size: 0.75rem; cursor: pointer;">Clear All</button>
+                    <button type="button" id="btn-clear-notifications" style="background: none; border: none; color: var(--accent-cyan); font-size: 0.72rem; cursor: pointer; font-weight: 600;" title="Clear notifications in current tab">Clear</button>
                   </div>
                 </div>
+
+                <!-- Tabs Bar for Price Radar vs Actions vs All -->
+                <div class="notif-tabs-bar" style="display: flex; gap: 4px; padding: 6px 10px; background: var(--bg-input); border-bottom: 1px solid var(--border-color);">
+                  <button type="button" class="btn-notif-tab active" data-tab="radar" style="flex: 1.2; padding: 5px 8px; font-size: 0.74rem; font-weight: 700; border: none; border-radius: 5px; background: var(--accent-emerald, #10b981); color: #fff; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 5px; transition: all 0.15s;">
+                    <i class="fa-solid fa-crosshairs"></i> Price Radar <span id="notif-radar-count" class="badge" style="background: rgba(0,0,0,0.25); color: #fff; font-size: 0.65rem; padding: 1px 5px; border-radius: 10px;">0</span>
+                  </button>
+                  <button type="button" class="btn-notif-tab" data-tab="actions" style="flex: 1; padding: 5px 8px; font-size: 0.74rem; font-weight: 600; border: none; border-radius: 5px; background: transparent; color: var(--text-secondary); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 5px; transition: all 0.15s;">
+                    <i class="fa-solid fa-list-check"></i> Actions <span id="notif-actions-count" class="badge" style="background: var(--border-color); color: var(--text-muted); font-size: 0.65rem; padding: 1px 5px; border-radius: 10px;">0</span>
+                  </button>
+                  <button type="button" class="btn-notif-tab" data-tab="all" style="padding: 5px 8px; font-size: 0.74rem; font-weight: 600; border: none; border-radius: 5px; background: transparent; color: var(--text-secondary); cursor: pointer; transition: all 0.15s;" title="All notifications">
+                    All
+                  </button>
+                </div>
+
                 <div id="notification-list" style="display: flex; flex-direction: column;">
-                  <div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 0.8rem;">No actions recorded yet</div>
+                  <div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 0.8rem;">No notifications recorded yet</div>
                 </div>
               </div>
             </div>
@@ -4347,13 +4364,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=131"></script>
-  <script src="src/state.js?v=131"></script>
-  <script src="src/api.js?v=131"></script>
-  <script src="src/charts.js?v=131"></script>
-  <script src="src/ui.js?v=131"></script>
-  <script src="src/ai.js?v=131"></script>
-  <script src="src/importer.js?v=131"></script>
-  <script src="app.js?v=131"></script>
+  <script src="config.js?v=132"></script>
+  <script src="src/state.js?v=132"></script>
+  <script src="src/api.js?v=132"></script>
+  <script src="src/charts.js?v=132"></script>
+  <script src="src/ui.js?v=132"></script>
+  <script src="src/ai.js?v=132"></script>
+  <script src="src/importer.js?v=132"></script>
+  <script src="app.js?v=132"></script>
 </body>
 </html>

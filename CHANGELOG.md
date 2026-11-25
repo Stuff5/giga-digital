@@ -33,6 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Upgrades the Kinguin resale benchmark in Sourcing Radar from historical/estimated prices to **Live Kinguin Market Price** with a distinctive crown badge (`Live Kinguin`).
     - Added live Kinguin API indicator badge (`#sourcing-kinguin-api-badge`) in Sourcing Radar toolbar.
   - **Topbar Action Center Alerts & Background Monitoring**:
+    - **Dedicated Notification Center Tabs**: Added segmented tabs inside the Notification dropdown (`#notification-dropdown`): `[⚡ Price Radar]`, `[📋 Actions]`, and `[All]`, separating arbitrage deal alerts from general user ledger actions.
+    - Added real-time badge counters on tab headers (`#notif-radar-count` and `#notif-actions-count`) and contextual notification clearing.
+    - Added customized empty state for Price Radar with quick 1-click `[Open Sourcing Radar]` launcher button.
     - Automatically dispatches rich deal alerts to the Topbar Action Center / Notification Bell (`#notification-bell`) whenever profitable arbitrage opportunities are detected.
     - Includes deal summaries: top game title, supplier store, deal price, estimated Kinguin payout, net profit, and projected ROI %.
     - Unread notification badge count (`#notification-badge`) automatically illuminates on the topbar bell.
