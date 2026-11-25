@@ -25,6 +25,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Calculates estimated net Kinguin payouts using configurable fee percentages (default 11%) and fixed transaction fees (default €0.10).
     - Derives resale benchmark prices automatically from the user's historical Kinguin sales data, fallback catalog cost markup (+35%), or custom 1-click manual price overrides.
     - Computes real-time Net Profit (€) and ROI (%) for every watched title.
+  - **Topbar Action Center Alerts & Background Monitoring**:
+    - Automatically dispatches rich deal alerts to the Topbar Action Center / Notification Bell (`#notification-bell`) whenever profitable arbitrage opportunities are detected.
+    - Includes deal summaries: top game title, supplier store, deal price, estimated Kinguin payout, net profit, and projected ROI %.
+    - Unread notification badge count (`#notification-badge`) automatically illuminates on the topbar bell.
+    - Added 1-click modal navigation (`Open Radar →`) on radar notifications inside the Action Center dropdown to jump straight to the Sourcing Radar.
+    - Added an interactive **Topbar Alerts** toggle checkbox (`#sourcing-toggle-topbar-alerts`) in the Sourcing Radar toolbar.
+    - Added background auto-monitoring on startup (for stale caches) and recurring periodic scans every 60 minutes while the session is active.
   - **1-Click Aggregator & Keyshop Launchers**:
     - Direct `[Buy Deal ↗]` launcher pointing to the best authorized store deal.
     - Instant search shortcuts to `gg.deals`, `Allkeyshop`, and `Kinguin` with zero bot-blocking risk.

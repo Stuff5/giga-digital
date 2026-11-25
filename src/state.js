@@ -1299,13 +1299,24 @@ function initNotificationCenter() {
   }
 }
 
-// Log a notification message
-function logActionNotification(text) {
+// Log a notification message (supports string or object with title, text, icon, category, action)
+function logActionNotification(itemOrText) {
   // If the app is still loading initial state, skip logging to avoid cluttering the recent 10 actions on reload/startup
   if (!window.appInitialized) return;
 
+  let notifObj = {};
+  if (typeof itemOrText === "string") {
+    notifObj = { text: itemOrText };
+  } else if (itemOrText && typeof itemOrText === "object") {
+    notifObj = { ...itemOrText };
+  } else {
+    return;
+  }
+
+  const actionName = notifObj.category === "radar" ? "Radar Alert" : "User Action";
+  const auditText = notifObj.title ? `${notifObj.title}: ${notifObj.text}` : notifObj.text;
   if (typeof window.logAuditAction === "function") {
-    window.logAuditAction("User Action", text);
+    window.logAuditAction(actionName, auditText);
   }
 
   if (!state.notifications) {
@@ -1315,22 +1326,27 @@ function logActionNotification(text) {
   // Add the new notification to the top
   const notification = {
     id: "notif_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9),
-    text: text,
+    text: notifObj.text || "",
+    title: notifObj.title || "",
+    icon: notifObj.icon || "",
+    category: notifObj.category || "action",
+    action: notifObj.action || null,
     time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
     unread: true
   };
 
   state.notifications.unshift(notification);
 
-  // Keep only the last 10 notifications
-  if (state.notifications.length > 10) {
-    state.notifications = state.notifications.slice(0, 10);
+  // Keep up to 25 notifications in history
+  if (state.notifications.length > 25) {
+    state.notifications = state.notifications.slice(0, 25);
   }
 
   saveNotificationsToStorage();
   renderNotifications();
   updateUnreadBadge();
 }
+window.logActionNotification = logActionNotification;
 
 function saveNotificationsToStorage() {
   try {
@@ -1352,12 +1368,29 @@ function renderNotifications() {
   const limit = state.notificationLimit || 10;
   const visibleNotifications = state.notifications.slice(0, limit);
 
-  listContainer.innerHTML = visibleNotifications.map(notif => `
-    <div style="padding: 10px 16px; border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 4px; background: ${notif.unread ? 'var(--bg-input)' : 'transparent'};">
-      <div style="font-size: 0.82rem; color: var(--text-main); line-height: 1.3;">${escapeHTML(notif.text)}</div>
-      <div style="font-size: 0.7rem; color: var(--text-muted); text-align: right;">${notif.time}</div>
-    </div>
-  `).join("");
+  listContainer.innerHTML = visibleNotifications.map(notif => {
+    const isRadar = notif.category === "radar";
+    const hasAction = notif.action === "open_radar";
+    const iconHtml = notif.icon 
+      ? `<span style="font-size: 0.95rem; margin-top: 1px; flex-shrink: 0;">${notif.icon}</span>` 
+      : (isRadar ? `<span style="color: var(--accent-emerald); font-size: 0.9rem; flex-shrink: 0;"><i class="fa-solid fa-crosshairs"></i></span>` : '');
+
+    return `
+      <div class="notification-item ${isRadar ? 'notif-radar' : ''}" style="padding: 10px 16px; border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 4px; background: ${notif.unread ? (isRadar ? 'rgba(16, 185, 129, 0.08)' : 'var(--bg-input)') : 'transparent'}; ${hasAction ? 'cursor: pointer; transition: background 0.15s;' : ''}" ${hasAction ? `onclick="if(typeof window.openSourcingRadarModal === 'function') { window.openSourcingRadarModal(); const dd = document.getElementById('notification-dropdown'); if(dd) dd.style.display='none'; }"` : ''}>
+        <div style="display: flex; align-items: flex-start; gap: 8px;">
+          ${iconHtml}
+          <div style="flex: 1; min-width: 0;">
+            ${notif.title ? `<div style="font-size: 0.82rem; font-weight: 700; color: ${isRadar ? 'var(--accent-emerald)' : 'var(--text-main)'}; margin-bottom: 2px;">${typeof escapeHTML === 'function' ? escapeHTML(notif.title) : notif.title}</div>` : ''}
+            <div style="font-size: 0.8rem; color: var(--text-main); line-height: 1.35; word-break: break-word;">${typeof escapeHTML === 'function' ? escapeHTML(notif.text) : notif.text}</div>
+          </div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-muted); margin-top: 3px;">
+          ${hasAction ? `<span style="color: var(--accent-cyan); font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">Open Radar <i class="fa-solid fa-arrow-right" style="font-size: 0.65rem;"></i></span>` : `<span></span>`}
+          <span>${notif.time}</span>
+        </div>
+      </div>
+    `;
+  }).join("");
 }
 
 function updateUnreadBadge() {

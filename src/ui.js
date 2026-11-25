@@ -1941,6 +1941,21 @@ function initEventHandlers() {
     });
   }
 
+  const sourcingTopbarAlertsToggle = document.getElementById("sourcing-toggle-topbar-alerts");
+  if (sourcingTopbarAlertsToggle) {
+    sourcingTopbarAlertsToggle.addEventListener("change", (e) => {
+      if (!state.sourcingSettings) state.sourcingSettings = {};
+      state.sourcingSettings.topbarAlerts = e.target.checked;
+      if (typeof saveSecondaryTablesToStorage === "function") saveSecondaryTablesToStorage();
+      if (window.supabaseClient && typeof dbSaveSettings === "function") {
+        dbSaveSettings("sourcingSettings", state.sourcingSettings);
+      }
+      if (typeof showToast === "function") {
+        showToast(`Radar Topbar Alerts ${e.target.checked ? 'enabled' : 'disabled'}.`, "info");
+      }
+    });
+  }
+
   // Entries quick-filter stat cards
   const cardInStock = document.getElementById("entries-stat-card-instock");
   if (cardInStock) {
@@ -17910,12 +17925,14 @@ window.openSourcingRadarModal = async function() {
     return;
   }
 
-  // Populate Kinguin fee inputs from state
+  // Populate Kinguin fee inputs and alerts toggle from state
   if (state.sourcingSettings) {
     const feePctEl = document.getElementById("sourcing-kinguin-fee-pct");
     const fixedFeeEl = document.getElementById("sourcing-kinguin-fixed-fee");
+    const alertsToggle = document.getElementById("sourcing-toggle-topbar-alerts");
     if (feePctEl) feePctEl.value = state.sourcingSettings.kinguinFeePct ?? 11;
     if (fixedFeeEl) fixedFeeEl.value = state.sourcingSettings.kinguinFixedFee ?? 0.10;
+    if (alertsToggle) alertsToggle.checked = state.sourcingSettings.topbarAlerts !== false;
   }
 
   openModal("sourcing-radar-modal");
@@ -18351,8 +18368,116 @@ window.refreshSourcingDeals = async function() {
       dbSaveSettings("sourcingSettings", state.sourcingSettings);
     }
 
-    if (typeof showToast === "function") {
-      showToast(`Updated deals for ${updatedCount} favorite game${updatedCount === 1 ? '' : 's'}.`, "success");
+    // Evaluate profitable arbitrage opportunities for Topbar Action Center Alerts
+    const profitableDeals = [];
+    const feePct = Number(state.sourcingSettings?.kinguinFeePct ?? 11);
+    const fixedFee = Number(state.sourcingSettings?.kinguinFixedFee ?? 0.10);
+    const cachedDeals = state.sourcingSettings?.cachedDeals || {};
+
+    const salesByTitle = {};
+    (state.sales || []).forEach(s => {
+      if (!s.title) return;
+      const t = s.title.trim().toLowerCase();
+      if (!salesByTitle[t]) salesByTitle[t] = [];
+      salesByTitle[t].push(s);
+    });
+
+    const invByTitle = {};
+    (state.inventory || []).forEach(item => {
+      if (!item.title) return;
+      const t = item.title.trim().toLowerCase();
+      if (!invByTitle[t]) invByTitle[t] = [];
+      invByTitle[t].push(item);
+    });
+
+    favorites.forEach(title => {
+      const deal = cachedDeals[title];
+      if (!deal || !deal.salePrice || Number(deal.salePrice) <= 0) return;
+
+      const key = title.trim().toLowerCase();
+      let benchmarkPrice = null;
+
+      const manual = state.sourcingSettings?.manualBenchmarks?.[title];
+      if (manual !== undefined && manual !== null && manual !== "" && !isNaN(Number(manual)) && Number(manual) > 0) {
+        benchmarkPrice = Number(manual);
+      } else {
+        const titleSales = salesByTitle[key] || [];
+        const kinguinSales = titleSales.filter(s => s.platform && s.platform.trim().toLowerCase() === "kinguin" && Number(s.price) > 0);
+        if (kinguinSales.length > 0) {
+          benchmarkPrice = Number(kinguinSales[kinguinSales.length - 1].price);
+        } else if (titleSales.length > 0) {
+          benchmarkPrice = Number(titleSales[titleSales.length - 1].price);
+        } else {
+          const invItems = invByTitle[key] || [];
+          const costItems = invItems.filter(i => Number(i.cost) > 0);
+          if (costItems.length > 0) {
+            const avgCost = costItems.reduce((acc, curr) => acc + Number(curr.cost), 0) / costItems.length;
+            benchmarkPrice = Math.round(avgCost * 1.35 * 100) / 100;
+          }
+        }
+      }
+
+      if (benchmarkPrice !== null && benchmarkPrice > 0) {
+        const netPayout = Math.max(0, (benchmarkPrice * (1 - feePct / 100)) - fixedFee);
+        const salePrice = Number(deal.salePrice);
+        const netProfit = netPayout - salePrice;
+        const roiPct = (netProfit / salePrice) * 100;
+
+        if (netProfit > 0) {
+          profitableDeals.push({
+            title: title,
+            storeName: deal.storeName || CHEAPSHARK_STORES[deal.storeID] || "Partner Store",
+            salePrice: salePrice,
+            benchmarkPrice: benchmarkPrice,
+            netPayout: netPayout,
+            netProfit: netProfit,
+            roiPct: roiPct
+          });
+        }
+      }
+    });
+
+    // Check if Topbar alerts are enabled (defaults to true)
+    const topbarAlertsEnabled = state.sourcingSettings?.topbarAlerts !== false;
+    if (topbarAlertsEnabled && typeof logActionNotification === "function") {
+      if (profitableDeals.length > 0) {
+        // Sort opportunities by highest ROI %
+        profitableDeals.sort((a, b) => b.roiPct - a.roiPct);
+        const top = profitableDeals[0];
+        const othersCount = profitableDeals.length - 1;
+        const othersText = othersCount > 0 ? ` (+${othersCount} more)` : "";
+
+        logActionNotification({
+          title: `⚡ Arbitrage Alert (${profitableDeals.length} Profitable)`,
+          text: `Top: "${top.title}" at ${top.storeName} for €${top.salePrice.toFixed(2)} → Kinguin €${top.benchmarkPrice.toFixed(2)} (+${Math.round(top.roiPct)}% ROI, +€${top.netProfit.toFixed(2)} profit)${othersText}`,
+          icon: "⚡",
+          category: "radar",
+          action: "open_radar"
+        });
+
+        if (typeof showToast === "function") {
+          showToast(`⚡ Found ${profitableDeals.length} profitable Kinguin deal${profitableDeals.length === 1 ? '' : 's'}! Alert logged to Notification Bell.`, "success");
+        }
+      } else if (updatedCount > 0) {
+        logActionNotification({
+          title: "Sourcing Radar Check",
+          text: `Scanned ${updatedCount} favorite game${updatedCount === 1 ? '' : 's'}. All current store prices are near or above Kinguin benchmark.`,
+          icon: "🔍",
+          category: "radar",
+          action: "open_radar"
+        });
+        if (typeof showToast === "function") {
+          showToast(`Updated deals for ${updatedCount} favorite game${updatedCount === 1 ? '' : 's'}.`, "info");
+        }
+      } else {
+        if (typeof showToast === "function") {
+          showToast(`No live deals found for your starred games.`, "info");
+        }
+      }
+    } else {
+      if (typeof showToast === "function") {
+        showToast(`Updated deals for ${updatedCount} favorite game${updatedCount === 1 ? '' : 's'}.`, "success");
+      }
     }
   } catch (ex) {
     console.error("[Sourcing Radar] Refresh failed:", ex);

@@ -498,6 +498,26 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.appInitialized = true;
     document.body.classList.remove("no-transition");
 
+    // Background Sourcing Radar Auto-Monitor for Topbar Action Center Alerts
+    setTimeout(() => {
+      if ((state.favoriteGames || []).length > 0 && typeof window.refreshSourcingDeals === "function") {
+        const lastChecked = state.sourcingSettings?.lastChecked;
+        const now = Date.now();
+        const threeHoursMs = 3 * 60 * 60 * 1000;
+        const isStale = !lastChecked || (now - new Date(lastChecked).getTime() > threeHoursMs);
+        if (isStale) {
+          window.refreshSourcingDeals();
+        }
+      }
+    }, 4000);
+
+    // Periodic radar scan check every 60 minutes while session is active
+    setInterval(() => {
+      if ((state.favoriteGames || []).length > 0 && state.sourcingSettings?.topbarAlerts !== false && typeof window.refreshSourcingDeals === "function") {
+        window.refreshSourcingDeals();
+      }
+    }, 60 * 60 * 1000);
+
     // Fade out and remove the premium loader
     const loadingScreen = document.getElementById("app-loading-screen");
     if (loadingScreen) {
