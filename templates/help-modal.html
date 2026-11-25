@@ -36,6 +36,9 @@
             <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-business-math" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
               <i class="fa-solid fa-calculator" style="margin-right: 8px; width: 16px; color: var(--accent-warning);"></i> Formulas & Logic
             </button>
+            <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-sourcing" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
+              <i class="fa-solid fa-satellite-dish" style="margin-right: 8px; width: 16px; color: var(--accent-emerald);"></i> Sourcing & Radar
+            </button>
             <button type="button" class="btn btn-outline btn-sm help-tab-btn" data-help-tab="help-tab-notifications" style="justify-content: flex-start; text-align: left; padding: 10px 12px; font-size: 0.85rem; border: none; background: transparent; color: var(--text-secondary); width: 100%;">
               <i class="fa-solid fa-bell" style="margin-right: 8px; width: 16px; color: var(--accent-pink);"></i> Notification Center
             </button>
@@ -427,27 +430,51 @@
               </table>
             </div>
 
-            <!-- Pane 5: Notifications -->
-            <div id="help-tab-notifications" class="help-tab-pane hidden">
-              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Action Notification Center</h4>
+            <!-- Pane: Sourcing & Kinguin Arbitrage Radar -->
+            <div id="help-tab-sourcing" class="help-tab-pane hidden">
+              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Sourcing & Kinguin Arbitrage Radar</h4>
               <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
-                The Action Notification Center keeps a ledger of recent operations performed inside the application. It acts as an audit log to verify that actions were successfully written or synced.
+                The Sourcing & Arbitrage Radar tracks real-time digital game license prices across authorized retailers and compares them against live Kinguin market prices to uncover high-margin resale opportunities.
               </p>
-              
-              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">Features & Capabilities:</h5>
+
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">Core Capabilities:</h5>
               <ul style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.6; padding-left: 20px; margin-bottom: 16px;">
-                <li><strong>Unread Count Badge:</strong> A red badge appears over the bell icon in the top header when there are new events. Opening the dropdown automatically clears the unread count.</li>
-                <li><strong>Display Limit:</strong> You can choose to show either the last 5 or 10 notifications using the dropdown selection next to "Clear All" in the notification header.</li>
-                <li><strong>Recent 10 Actions:</strong> The underlying history buffer tracks up to the last 10 actions to remain clean, fast, and token-efficient.</li>
-                <li><strong>Timestamps:</strong> Each event displays a localized timestamp indicating precisely when the action occurred.</li>
-                <li><strong>Logged Actions:</strong> Logs are triggered on key creations, sale recordings, catalog edits, item restorations, bulk adjustments, backup actions, database sync connections, and undo/redo operations.</li>
-                <li><strong>Reload Persistence:</strong> Action logs and display preferences are cached in the browser's LocalStorage so they persist if you refresh the page.</li>
+                <li><strong>Starred Favorites as Watchlist:</strong> Reuses your starred Favorite Games (from Entries or Dashboard) as the active sourcing watchlist with zero duplicate list management.</li>
+                <li><strong>Authorized Retailer Scanning:</strong> Scans deals across Steam, Fanatical, Humble Bundle, GreenManGaming, GOG, Epic Games Store, and other major stores via CheapShark's deals REST API.</li>
+                <li><strong>Direct Kinguin Merchant API & Live Benchmarks:</strong> Pulls live lowest competing market prices directly from Kinguin's eCommerce catalog, highlighted with a <strong>👑 Live Kinguin</strong> crown badge.</li>
+                <li><strong>Net Arbitrage Calculator:</strong> Automatically deducts seller fees (configurable percentage, default 11% + €0.10 flat fee) to project realistic Net Profit (€) and ROI (%) for each opportunity.</li>
+                <li><strong>Supplier Sync & <code>[My Suppliers]</code> Filter:</strong> Toggle which recognized digital stores to scan in Manage Suppliers and quickly filter deals inside the radar to your approved vendors.</li>
+                <li><strong>1-Click Action Shortcuts:</strong> Direct <code>[Buy Deal ↗]</code> store links, rapid price checks on <code>gg.deals</code>, <code>Allkeyshop</code>, and <code>Kinguin</code>, plus <code>[+]</code> to prefill the Add Key modal instantly.</li>
               </ul>
-              
-              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">Auditing and Maintenance:</h5>
+
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">Configuring Kinguin API & CORS Relay:</h5>
               <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 0;">
-                Clicking <strong>Clear All</strong> at the top of the notification card wipes all events from storage.
+                In <strong>Settings &rarr; Kinguin Merchant API</strong>, enter your store API Key and Store Name. To bypass browser CORS restrictions when making client-side requests to Kinguin's B2B gateway, set up a lightweight Cloudflare Worker relay proxy and paste its URL into the <strong>CORS Proxy / Relay URL</strong> field.
               </p>
+            </div>
+
+            <!-- Pane: Notifications -->
+            <div id="help-tab-notifications" class="help-tab-pane hidden">
+              <h4 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Action & Notification Center</h4>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px;">
+                The Action Notification Center keeps a real-time ledger of application operations and automated arbitrage alerts, keeping you notified of significant price movements and ledger modifications.
+              </p>
+              
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">Segmented Notification Tabs:</h5>
+              <ul style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.6; padding-left: 20px; margin-bottom: 16px;">
+                <li><strong>⚡ Price Radar:</strong> Displays arbitrage notifications, detected price drops, and live Kinguin scan summaries with 1-click modal navigation (<code>Open Radar →</code>).</li>
+                <li><strong>📋 Actions:</strong> Displays manual user ledger events (key additions, recorded sales, bulk adjustments, restore actions, and undo/redo operations).</li>
+                <li><strong>All:</strong> Unified chronological feed showing all notifications together.</li>
+                <li><strong>Live Counter Badges:</strong> Tab headers display live count pills indicating active alerts in each category.</li>
+                <li><strong>Contextual Clear:</strong> Clicking <strong>Clear</strong> wipes only notifications in the active tab, preserving your other audit history.</li>
+              </ul>
+
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">Notification Controls & Preferences:</h5>
+              <ul style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.6; padding-left: 20px; margin-bottom: 0;">
+                <li><strong>Unread Count Badge:</strong> A cyan/red indicator illuminates over the topbar bell icon when new notifications arrive. Opening the dropdown marks them as viewed.</li>
+                <li><strong>Display Limit:</strong> Toggle between showing the last 5 or 10 items using the quick header bubbles.</li>
+                <li><strong>Background Scans:</strong> When enabled in Sourcing Radar, background scans run automatically every 60 minutes to alert you of new profitable opportunities.</li>
+              </ul>
             </div>
 
             <!-- Pane Changelog / Version Progress -->
@@ -458,6 +485,33 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- v3.1.0 -->
+                <div class="changelog-release-card" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v3.1.0 - Price Radar Notification Tabs & Kinguin Merchant API</strong>
+                    <span style="font-size: 0.75rem; color: var(--accent-emerald); background: rgba(16, 185, 129, 0.12); padding: 2px 8px; border-radius: 4px; font-weight: 700;">Current Version</span>
+                  </div>
+                  <ul style="margin: 0; padding-left: 18px; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+                    <li><strong>Dedicated Price Radar Notification Tabs:</strong> Segmented the topbar notification dropdown into dedicated <code>[⚡ Price Radar]</code>, <code>[📋 Actions]</code>, and <code>[All]</code> tabs with active counter badges and contextual clearing.</li>
+                    <li><strong>Kinguin Merchant API & CORS Proxy:</strong> Direct B2B API gateway connection with store API key verification, live product market queries, and configurable Cloudflare Worker relay proxy.</li>
+                    <li><strong>Live Market Resale Benchmarks:</strong> Kinguin resale benchmarks dynamically upgraded to live competing offer prices featuring the <code>👑 Live Kinguin</code> crown badge.</li>
+                    <li><strong>Documentation & Sourcing Guide:</strong> Integrated comprehensive Sourcing & Radar documentation inside the Help Center and updated README guides.</li>
+                  </ul>
+                </div>
+
+                <!-- v3.0.0 -->
+                <div class="changelog-release-card" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v3.0.0 - Sourcing & Kinguin Arbitrage Radar</strong>
+                    <span style="font-size: 0.75rem; color: var(--accent-cyan); background: rgba(0, 229, 255, 0.08); padding: 2px 8px; border-radius: 4px; font-weight: 600;">2026-11-25</span>
+                  </div>
+                  <ul style="margin: 0; padding-left: 18px; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+                    <li><strong>Sourcing & Kinguin Arbitrage Radar Modal:</strong> Added a dedicated modal accessible from the Dashboard and Entries view to monitor authorized digital retailers and identify high-margin arbitrage opportunities.</li>
+                    <li><strong>Zero-Duplicate Favorites Watchlist:</strong> Reuses starred Favorite Games as the real-time sourcing watchlist.</li>
+                    <li><strong>Net Profit & ROI Projections:</strong> Automated net payout calculations after Kinguin platform fees (11% + €0.10).</li>
+                    <li><strong>Hybrid Suppliers Synchronization:</strong> Direct scan toggles in Manage Suppliers and <code>[My Suppliers]</code> 1-click filter inside the radar.</li>
+                  </ul>
+                </div>
                 <!-- v2.2.52 -->
                 <div class="changelog-release-card" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">

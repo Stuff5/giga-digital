@@ -5,6 +5,24 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v3.1.0] - 2026-11-25
+### Added
+- **Dedicated Price Radar Notification Center Tabs**:
+  - Segmented `#notification-dropdown` into 3 dedicated filter tabs: `[⚡ Price Radar]`, `[📋 Actions]`, and `[All]`.
+  - Added real-time badge counters (`#notif-radar-count` and `#notif-actions-count`) displaying live counts for each stream.
+  - Implemented contextual clearing logic: clearing notifications now only clears alerts belonging to the active tab, preserving other notification histories.
+  - Added dedicated Price Radar empty state with an interactive 1-click `[Open Sourcing Radar]` launcher button.
+- **Kinguin Merchant API Integration & CORS Relay**:
+  - Direct integration with Kinguin eCommerce B2B API gateway using merchant API keys (`X-Api-Key`) and customizable store name (`GameVault`).
+  - Added configurable **CORS Proxy / Relay URL** field in Settings (`#settings-view`), enabling seamless browser execution via personal Cloudflare Worker relays.
+  - Interactive "Test Connection" diagnostic tool (`#btn-test-kinguin-api`) verifying live catalog lookups with automated diagnostic messages.
+  - Upgraded Sourcing Radar resale benchmarks to **Live Kinguin Market Prices** with a distinctive `👑 Live Kinguin` crown badge.
+- **Documentation & Version Synchronization**:
+  - Upgraded application versioning to **v3.1.0** across `config.js`, `app.js`, `index.html` (sidebar link and cache busters `styles.css?v=87`, scripts `?v=133`), `landing.html`, `README.md`, `CHANGELOG.md`, and `templates/help-modal.html`.
+  - Added dedicated **Sourcing & Radar** guide pane to the Help & Documentation Center (`templates/help-modal.html`).
+  - Updated the Notification Center documentation to cover segmented tabs, counters, and contextual clearing.
+  - Overhauled `README.md` with comprehensive documentation for Sourcing Radar, Kinguin API, and Action Center notification tabs.
+
 ## [v3.0.0] - 2026-11-25
 ### Added
 - **GameVault 3.0 Generation — Sourcing & Kinguin Arbitrage Radar**:
