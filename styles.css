@@ -7237,5 +7237,36 @@ textarea.form-control {
   }
 }
 
+.sourcing-stores-menu {
+  animation: fadeInDown 0.15s ease-out;
+}
+
+.sourcing-store-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.12s ease;
+  user-select: none;
+}
+
+.sourcing-store-checkbox-row:hover {
+  background: var(--bg-card-hover);
+}
+
+.sourcing-store-checkbox-row input[type="checkbox"] {
+  cursor: pointer;
+  accent-color: var(--accent-cyan);
+}
+
+.sourcing-store-checkbox-row .store-name {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-main);
+  flex-grow: 1;
+}
+
 
 

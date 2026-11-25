@@ -1430,6 +1430,28 @@
                 <option value="out-of-stock">Depleted Stock (0 keys)</option>
               </select>
             </div>
+            <!-- Sourcing Stores / Retailers Filter -->
+            <div style="position: relative; display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);"><i class="fa-solid fa-store" style="color: var(--accent-cyan); margin-right: 4px;"></i>Stores:</span>
+              <button type="button" class="btn btn-outline btn-sm" id="btn-sourcing-stores-toggle" style="height: 28px; padding: 2px 10px; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+                <span id="sourcing-stores-btn-label">All Stores (12)</span>
+                <i class="fa-solid fa-chevron-down" style="font-size: 0.65rem; opacity: 0.7;"></i>
+              </button>
+
+              <!-- Dropdown / Popover checklist panel -->
+              <div id="sourcing-stores-dropdown" class="sourcing-stores-menu" style="display: none; position: absolute; top: calc(100% + 6px); left: 0; z-index: 1050; min-width: 250px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); padding: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; margin-bottom: 8px;">
+                  <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted);">Scanned Stores</span>
+                  <div style="display: flex; gap: 6px;">
+                    <button type="button" class="btn btn-ghost btn-xs" id="btn-sourcing-stores-all" style="font-size: 0.7rem; padding: 1px 6px;">All</button>
+                    <button type="button" class="btn btn-ghost btn-xs" id="btn-sourcing-stores-none" style="font-size: 0.7rem; padding: 1px 6px;">Clear</button>
+                  </div>
+                </div>
+                <div id="sourcing-stores-checkboxes-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto;">
+                  <!-- Checkboxes dynamically rendered -->
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Refresh Deals & Timestamp -->

@@ -1855,6 +1855,56 @@ function initEventHandlers() {
     });
   }
 
+  // Stores / Retailers filter dropdown controls
+  const btnStoresToggle = document.getElementById("btn-sourcing-stores-toggle");
+  const storesDropdown = document.getElementById("sourcing-stores-dropdown");
+  if (btnStoresToggle && storesDropdown) {
+    btnStoresToggle.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isVisible = storesDropdown.style.display === "flex" || storesDropdown.style.display === "block";
+      storesDropdown.style.display = isVisible ? "none" : "flex";
+      if (!isVisible && typeof window.renderSourcingStoresDropdown === "function") {
+        window.renderSourcingStoresDropdown();
+      }
+    });
+
+    document.addEventListener("click", (e) => {
+      if (storesDropdown && !storesDropdown.contains(e.target) && e.target !== btnStoresToggle && !btnStoresToggle.contains(e.target)) {
+        storesDropdown.style.display = "none";
+      }
+    });
+  }
+
+  const btnStoresAll = document.getElementById("btn-sourcing-stores-all");
+  if (btnStoresAll) {
+    btnStoresAll.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!state.sourcingSettings) state.sourcingSettings = {};
+      state.sourcingSettings.selectedStores = [];
+      if (typeof saveSecondaryTablesToStorage === "function") saveSecondaryTablesToStorage();
+      if (window.supabaseClient && typeof dbSaveSettings === "function") {
+        dbSaveSettings("sourcingSettings", state.sourcingSettings);
+      }
+      if (typeof window.renderSourcingStoresDropdown === "function") window.renderSourcingStoresDropdown();
+      if (typeof window.renderSourcingRadarView === "function") window.renderSourcingRadarView();
+    });
+  }
+
+  const btnStoresNone = document.getElementById("btn-sourcing-stores-none");
+  if (btnStoresNone) {
+    btnStoresNone.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!state.sourcingSettings) state.sourcingSettings = {};
+      state.sourcingSettings.selectedStores = ["none"];
+      if (typeof saveSecondaryTablesToStorage === "function") saveSecondaryTablesToStorage();
+      if (window.supabaseClient && typeof dbSaveSettings === "function") {
+        dbSaveSettings("sourcingSettings", state.sourcingSettings);
+      }
+      if (typeof window.renderSourcingStoresDropdown === "function") window.renderSourcingStoresDropdown();
+      if (typeof window.renderSourcingRadarView === "function") window.renderSourcingRadarView();
+    });
+  }
+
   // Entries quick-filter stat cards
   const cardInStock = document.getElementById("entries-stat-card-instock");
   if (cardInStock) {
@@ -17608,23 +17658,72 @@ const CHEAPSHARK_STORES = {
   "1": "Steam",
   "2": "GamersGate",
   "3": "GreenManGaming",
-  "4": "Amazon",
-  "6": "Direct2Drive",
   "7": "GOG",
-  "8": "Origin",
   "11": "Humble Store",
-  "13": "Ubisoft",
+  "13": "Ubisoft / Uplay",
   "15": "Fanatical",
   "21": "WinGameStore",
-  "23": "GameStop",
-  "25": "Epic Games",
+  "23": "GameBillet",
+  "25": "Epic Games Store",
   "27": "Gamesplanet",
-  "30": "Voidu",
-  "31": "Battle.net",
-  "32": "AllYouPlay",
-  "34": "DreamGame",
-  "35": "GameBillet",
-  "37": "DLGamer"
+  "30": "IndieGala",
+  "35": "DreamGame"
+};
+
+window.renderSourcingStoresDropdown = function() {
+  const container = document.getElementById("sourcing-stores-checkboxes-list");
+  const label = document.getElementById("sourcing-stores-btn-label");
+  if (!container) return;
+
+  const allStoreIds = Object.keys(CHEAPSHARK_STORES);
+  const selected = state.sourcingSettings?.selectedStores || [];
+  const isNone = selected.includes("none");
+  const isAll = !isNone && (selected.length === 0 || selected.length === allStoreIds.length);
+
+  // Update button label
+  if (label) {
+    if (isAll) {
+      label.textContent = `All Stores (${allStoreIds.length})`;
+    } else if (isNone || selected.length === 0) {
+      label.textContent = `None (0)`;
+    } else if (selected.length <= 2) {
+      const names = selected.map(id => CHEAPSHARK_STORES[id] || id);
+      label.textContent = names.join(", ");
+    } else {
+      label.textContent = `${selected.length} Stores`;
+    }
+  }
+
+  container.innerHTML = allStoreIds.map(id => {
+    const name = CHEAPSHARK_STORES[id];
+    const isChecked = isAll || (!isNone && selected.includes(id));
+    return `
+      <label class="sourcing-store-checkbox-row">
+        <input type="checkbox" value="${id}" ${isChecked ? "checked" : ""} class="sourcing-store-checkbox" />
+        <span class="store-name">${name}</span>
+      </label>
+    `;
+  }).join("");
+
+  // Attach change listener to checkboxes
+  container.querySelectorAll(".sourcing-store-checkbox").forEach(cb => {
+    cb.addEventListener("change", () => {
+      const checkedBoxes = Array.from(container.querySelectorAll(".sourcing-store-checkbox:checked")).map(c => c.value);
+      if (checkedBoxes.length === allStoreIds.length) {
+        state.sourcingSettings.selectedStores = [];
+      } else if (checkedBoxes.length === 0) {
+        state.sourcingSettings.selectedStores = ["none"];
+      } else {
+        state.sourcingSettings.selectedStores = checkedBoxes;
+      }
+      if (typeof saveSecondaryTablesToStorage === "function") saveSecondaryTablesToStorage();
+      if (window.supabaseClient && typeof dbSaveSettings === "function") {
+        dbSaveSettings("sourcingSettings", state.sourcingSettings);
+      }
+      window.renderSourcingStoresDropdown();
+      window.renderSourcingRadarView();
+    });
+  });
 };
 
 window.updateSourcingBadge = function() {
@@ -17672,6 +17771,7 @@ window.openSourcingRadarModal = async function() {
   }
 
   openModal("sourcing-radar-modal");
+  window.renderSourcingStoresDropdown();
   window.renderSourcingRadarView();
 
   // If deals have never been cached and user has favorites, auto-fetch
@@ -17686,11 +17786,15 @@ window.renderSourcingRadarView = function() {
   const container = document.getElementById("sourcing-radar-list");
   if (!container) return;
 
+  if (typeof window.renderSourcingStoresDropdown === "function") {
+    window.renderSourcingStoresDropdown();
+  }
+
   const favorites = (state.favoriteGames || []).slice();
   const feePct = Number(state.sourcingSettings?.kinguinFeePct ?? 11);
   const fixedFee = Number(state.sourcingSettings?.kinguinFixedFee ?? 0.10);
   const filterSelect = document.getElementById("sourcing-filter-status");
-  const filterVal = filterSelect ? filterSelect.value : "all";
+  const filterVal = filterSelect ? filterSelect.value : "profitable";
 
   // KPI elements
   const kpiFavs = document.getElementById("sourcing-kpi-total-favs");
@@ -17791,13 +17895,22 @@ window.renderSourcingRadarView = function() {
       }
     }
 
-    // Cached deal data
+    // Cached deal data with store/supplier filtering
+    const allStoreIds = Object.keys(CHEAPSHARK_STORES);
+    const selectedStores = state.sourcingSettings?.selectedStores || [];
+    const isNoneStores = selectedStores.includes("none");
+    const isAllStores = !isNoneStores && (selectedStores.length === 0 || selectedStores.length === allStoreIds.length);
+
     const cachedDeal = state.sourcingSettings?.cachedDeals?.[title];
-    const dealPrice = (cachedDeal && Number(cachedDeal.salePrice) > 0) ? Number(cachedDeal.salePrice) : null;
-    const normalPrice = (cachedDeal && Number(cachedDeal.normalPrice) > 0) ? Number(cachedDeal.normalPrice) : null;
-    const savings = cachedDeal ? Number(cachedDeal.savings || 0) : 0;
-    const storeName = cachedDeal ? (cachedDeal.storeName || CHEAPSHARK_STORES[cachedDeal.storeID] || "Store") : null;
-    const dealId = cachedDeal?.dealID || null;
+    const isStoreEnabled = cachedDeal && !isNoneStores && (
+      isAllStores || selectedStores.includes(String(cachedDeal.storeID))
+    );
+
+    const dealPrice = (isStoreEnabled && Number(cachedDeal.salePrice) > 0) ? Number(cachedDeal.salePrice) : null;
+    const normalPrice = (isStoreEnabled && Number(cachedDeal.normalPrice) > 0) ? Number(cachedDeal.normalPrice) : null;
+    const savings = isStoreEnabled ? Number(cachedDeal.savings || 0) : 0;
+    const storeName = isStoreEnabled ? (cachedDeal.storeName || CHEAPSHARK_STORES[cachedDeal.storeID] || "Store") : null;
+    const dealId = isStoreEnabled ? cachedDeal?.dealID || null : null;
     const thumbUrl = cachedDeal?.thumb || state.catalogArtwork?.[title] || "";
 
     if (dealPrice !== null && dealPrice > 0) {
@@ -18016,6 +18129,20 @@ window.refreshSourcingDeals = async function() {
     return;
   }
 
+  const allStoreIds = Object.keys(CHEAPSHARK_STORES);
+  const selectedStores = state.sourcingSettings?.selectedStores || [];
+  const isNoneStores = selectedStores.includes("none");
+  const isAllStores = !isNoneStores && (selectedStores.length === 0 || selectedStores.length === allStoreIds.length);
+
+  if (isNoneStores) {
+    if (typeof showToast === "function") showToast("No stores selected to scan. Please select at least one store from the Stores dropdown.", "warning");
+    return;
+  }
+
+  const storeParam = (!isAllStores && selectedStores.length > 0)
+    ? `&storeID=${selectedStores.join(',')}`
+    : "";
+
   const refreshIcon = document.getElementById("sourcing-refresh-icon");
   const refreshBtn = document.getElementById("btn-refresh-sourcing-deals");
   if (refreshIcon) refreshIcon.classList.add("fa-spin");
@@ -18033,7 +18160,7 @@ window.refreshSourcingDeals = async function() {
       if (!cleanTitle) continue;
 
       try {
-        const url = `https://www.cheapshark.com/api/1.0/deals?title=${encodeURIComponent(cleanTitle)}&exact=0&pageSize=6`;
+        const url = `https://www.cheapshark.com/api/1.0/deals?title=${encodeURIComponent(cleanTitle)}${storeParam}&exact=0&pageSize=6`;
         const res = await fetch(url);
         if (res.ok) {
           const deals = await res.json();

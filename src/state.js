@@ -951,7 +951,8 @@ let state = {
     minMarginPct: 20,
     cachedDeals: {},
     lastChecked: null,
-    manualBenchmarks: {}
+    manualBenchmarks: {},
+    selectedStores: []
   },
   auditLogs: [],
   entriesFilterFav: false,
@@ -1591,6 +1592,7 @@ function loadStateFromStorage() {
       }
       if (!state.sourcingSettings.manualBenchmarks) state.sourcingSettings.manualBenchmarks = {};
       if (!state.sourcingSettings.cachedDeals) state.sourcingSettings.cachedDeals = {};
+      if (!Array.isArray(state.sourcingSettings.selectedStores)) state.sourcingSettings.selectedStores = [];
     } catch (e) {
       console.error("Error loading sourcing settings:", e);
     }

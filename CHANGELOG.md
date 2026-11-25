@@ -5,12 +5,17 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v2.2.60] - 2026-11-25
+## [v2.3.0] - 2026-11-25
 ### Added
-- **Sourcing & Kinguin Arbitrage Radar**:
+- **Sourcing & Kinguin Arbitrage Radar (Major Milestone)**:
   - Implemented a dedicated Sourcing & Arbitrage Radar modal (`#sourcing-radar-modal`) accessible from both the **Dashboard** and **Entries** header controls.
   - Reuses the existing starred **Favorite Games** (`state.favoriteGames`) as the live sourcing watchlist so merchants can track price drops without duplicate list management.
-  - **Live Store Deal Tracking**: Integrates with CheapShark's deals REST API across major authorized digital retailers (Steam, Fanatical, Humble Store, GreenManGaming, GOG, Epic Games, etc.) with local caching and throttled refreshes.
+  - **Configurable Supplier & Retailer Scanning**:
+    - Added an interactive **Stores** selector dropdown (`#btn-sourcing-stores-toggle`) allowing merchants to choose exactly which digital store suppliers to scan (e.g. Fanatical, Steam, GreenManGaming, Humble Store, GOG, Epic Games Store, GamersGate, Gamesplanet, GameBillet, DreamGame, WinGameStore, IndieGala, Uplay).
+    - Quick actions: `[All]` to select all stores, `[Clear]` to clear selection, or granular individual checkbox selection.
+    - Sends targeted store queries (`&storeID=...`) to CheapShark deals API and filters cached deals dynamically.
+    - Persists enabled store preferences in `state.sourcingSettings.selectedStores`.
+  - **Live Store Deal Tracking**: Integrates with CheapShark's deals REST API across major authorized digital retailers with local caching and throttled refreshes.
   - **Automated Kinguin Arbitrage Calculator**:
     - Calculates estimated net Kinguin payouts using configurable fee percentages (default 11%) and fixed transaction fees (default €0.10).
     - Derives resale benchmark prices automatically from the user's historical Kinguin sales data, fallback catalog cost markup (+35%), or custom 1-click manual price overrides.
