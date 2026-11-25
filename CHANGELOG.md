@@ -5,6 +5,21 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v3.2.0] - 2026-11-25
+### Added
+- **GG.deals API Integration (Multi-Keyshop & Retail Benchmark)**:
+  - Integrated the official GG.deals REST API (`https://api.gg.deals/v1/prices/by-steam-app-id/`) to provide cross-market visibility across both authorized retailers (Steam, Epic, GOG, Humble) and major grey-market keyshops (G2A, Kinguin, Eneba, CDKeys, Gamivo).
+  - Added dedicated **GG.deals API Configuration** card in Settings (`#settings-view`), with personal token input (`#settings-ggdeals-token`), region selector (EUR, USD, GBP, CAD, AUD, BRL, PLN, TRY), and customizable CORS proxy relay.
+  - Implemented 1-click **Test GG.deals Connection** tool (`#btn-test-ggdeals-api`) verifying live credentials against benchmark game (Cyberpunk 2077) with formatted keyshop and retail return data.
+  - Automated CORS fallback: GG.deals requests automatically reuse the merchant's configured Kinguin Cloudflare Worker proxy if no separate proxy URL is supplied.
+- **Sourcing Radar Multi-Keyshop Benchmarking**:
+  - Integrated GG.deals lowest keyshop prices (`€...`) directly into Sourcing Radar deal cards alongside Kinguin Resale benchmarks and CheapShark sourcing deals.
+  - Added historical low badges (`Low: €...`) when current keyshop prices match or approach all-time historical lows.
+  - Upgraded Sourcing Radar 1-click launcher to open verified direct GG.deals game deal URLs (`gg.deals/game/...`) instead of generic title search queries.
+  - Added interactive GG.deals API status pill in Sourcing Radar toolbar (`#sourcing-ggdeals-api-badge`).
+- **Version Bump & Documentation Sync**:
+  - Upgraded project to **v3.2.0** across `config.js`, `app.js`, `index.html` (scripts `?v=135`, `styles.css?v=89`), `landing.html`, `README.md`, `CHANGELOG.md`, and `templates/help-modal.html`.
+
 ## [v3.1.0] - 2026-11-25
 ### Added
 - **Dedicated Price Radar Notification Center Tabs**:

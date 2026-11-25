@@ -448,8 +448,13 @@
               </ul>
 
               <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">Configuring Kinguin API & CORS Relay:</h5>
-              <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 0;">
+              <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 12px;">
                 In <strong>Settings &rarr; Kinguin Merchant API</strong>, enter your store API Key and Store Name. To bypass browser CORS restrictions when making client-side requests to Kinguin's B2B gateway, set up a lightweight Cloudflare Worker relay proxy and paste its URL into the <strong>CORS Proxy / Relay URL</strong> field.
+              </p>
+
+              <h5 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px; font-weight: 600;">Configuring GG.deals API (Multi-Keyshop Benchmark):</h5>
+              <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 0;">
+                In <strong>Settings &rarr; GG.deals API</strong>, paste your personal API token generated at <a href="https://gg.deals/api/" target="_blank" rel="noopener noreferrer" style="color: #beee11; text-decoration: underline;">gg.deals/api/</a>. The radar automatically queries live prices across official stores (Steam, Epic, GOG) and major keyshops (G2A, Kinguin, Eneba, CDKeys), surfacing the lowest keyshop price and all-time historical lows directly in the radar. It automatically reuses your Kinguin CORS relay proxy.
               </p>
             </div>
 
@@ -485,11 +490,25 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- v3.2.0 -->
+                <div class="changelog-release-card" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v3.2.0 - GG.deals API Multi-Keyshop Benchmark & Arbitrage Radar</strong>
+                    <span style="font-size: 0.75rem; color: var(--accent-emerald); background: rgba(16, 185, 129, 0.12); padding: 2px 8px; border-radius: 4px; font-weight: 700;">Current Version</span>
+                  </div>
+                  <ul style="margin: 0; padding-left: 18px; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+                    <li><strong>GG.deals API Integration:</strong> Direct API connectivity to query global pricing across official retailers and unofficial keyshops (G2A, Kinguin, Eneba, CDKeys, Gamivo, etc.) via personal tokens.</li>
+                    <li><strong>Live Multi-Keyshop Benchmark:</strong> Sourcing Radar displays real-time lowest keyshop prices and highlights historical all-time low records (<code>Low: €...</code>).</li>
+                    <li><strong>Direct 1-Click Game Deal Launchers:</strong> Replaced generic store searches with verified direct GG.deals game deal URLs.</li>
+                    <li><strong>Configurable Region & Currency:</strong> Support for EUR, USD, GBP, CAD, AUD, BRL, and PLN regional pricing with seamless CORS proxy fallback.</li>
+                  </ul>
+                </div>
+
                 <!-- v3.1.0 -->
                 <div class="changelog-release-card" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                     <strong style="color: var(--text-main); font-size: 0.95rem;">v3.1.0 - Price Radar Notification Tabs & Kinguin Merchant API</strong>
-                    <span style="font-size: 0.75rem; color: var(--accent-emerald); background: rgba(16, 185, 129, 0.12); padding: 2px 8px; border-radius: 4px; font-weight: 700;">Current Version</span>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); background: rgba(255, 255, 255, 0.06); padding: 2px 8px; border-radius: 4px; font-weight: 600;">Previous Release</span>
                   </div>
                   <ul style="margin: 0; padding-left: 18px; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
                     <li><strong>Dedicated Price Radar Notification Tabs:</strong> Segmented the topbar notification dropdown into dedicated <code>[⚡ Price Radar]</code>, <code>[📋 Actions]</code>, and <code>[All]</code> tabs with active counter badges and contextual clearing.</li>

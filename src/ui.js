@@ -17938,6 +17938,9 @@ window.openSourcingRadarModal = async function() {
   if (typeof window.initKinguinConnection === "function") {
     window.initKinguinConnection();
   }
+  if (typeof window.initGGDealsConnection === "function") {
+    window.initGGDealsConnection();
+  }
 
   openModal("sourcing-radar-modal");
   window.renderSourcingStoresDropdown();
@@ -18108,6 +18111,25 @@ window.renderSourcingRadarView = function() {
       }
     }
 
+    // Live GG.deals Pricing & Multi-keyshop benchmark
+    const steamAppId = cachedDeal?.steamAppID;
+    let ggData = null;
+    if (steamAppId && state.sourcingSettings?.liveGGDealsPrices?.[steamAppId]) {
+      ggData = state.sourcingSettings.liveGGDealsPrices[steamAppId];
+    } else if (state.sourcingSettings?.liveGGDealsPrices) {
+      const cleanLower = key.replace(/\s*[\(\[].*?[\)\]]/g, "").trim();
+      const match = Object.values(state.sourcingSettings.liveGGDealsPrices).find(g => 
+        g.title && g.title.toLowerCase().includes(cleanLower)
+      );
+      if (match) ggData = match;
+    }
+
+    const ggKeyshopPrice = (ggData && ggData.currentKeyshops !== null) ? Number(ggData.currentKeyshops) : null;
+    const ggRetailPrice = (ggData && ggData.currentRetail !== null) ? Number(ggData.currentRetail) : null;
+    const ggHistoricalKeyshop = (ggData && ggData.historicalKeyshops !== null) ? Number(ggData.historicalKeyshops) : null;
+    const ggCurrency = ggData?.currency || (state.sourcingSettings?.ggdealsRegion === "eu" ? "EUR" : "USD");
+    const ggUrl = ggData?.url || null;
+
     return {
       title,
       inStockCount,
@@ -18121,7 +18143,13 @@ window.renderSourcingRadarView = function() {
       dealId,
       thumbUrl,
       netProfit,
-      roiPct
+      roiPct,
+      steamAppId,
+      ggKeyshopPrice,
+      ggRetailPrice,
+      ggHistoricalKeyshop,
+      ggCurrency,
+      ggUrl
     };
   });
 
@@ -18245,6 +18273,28 @@ window.renderSourcingRadarView = function() {
               </span>
             </div>
 
+            <!-- GG.deals Keyshop Benchmark Column -->
+            <div class="sourcing-stat-col">
+              <span class="sourcing-stat-label">
+                <i class="fa-solid fa-tags" style="color: #beee11;"></i> GG.deals Keyshops
+              </span>
+              <div class="sourcing-stat-value">
+                ${item.ggKeyshopPrice !== null ? `
+                  <span style="color: #beee11; font-weight: 700;">
+                    ${item.ggCurrency === 'EUR' ? '€' : (item.ggCurrency === 'GBP' ? '£' : '$')}${item.ggKeyshopPrice.toFixed(2)}
+                  </span>
+                  ${item.ggHistoricalKeyshop && item.ggHistoricalKeyshop <= item.ggKeyshopPrice ? `
+                    <span class="badge" style="background: rgba(190, 238, 17, 0.15); color: #beee11; border: 1px solid rgba(190, 238, 17, 0.35); font-size: 0.65rem; padding: 1px 4px;" title="Historical Keyshop Low: ${item.ggCurrency === 'EUR' ? '€' : '$'}${item.ggHistoricalKeyshop.toFixed(2)}">
+                      Low: ${item.ggHistoricalKeyshop.toFixed(2)}
+                    </span>
+                  ` : ''}
+                ` : `<span style="color: var(--text-muted); font-size: 0.8rem;">${state.sourcingSettings?.ggdealsToken ? 'No keyshop data' : 'Not connected'}</span>`}
+              </div>
+              <span style="font-size: 0.7rem; color: var(--text-muted);">
+                ${item.ggRetailPrice ? `Retail: ${item.ggCurrency === 'EUR' ? '€' : '$'}${item.ggRetailPrice.toFixed(2)}` : 'Multi-keyshop low'}
+              </span>
+            </div>
+
             <!-- Kinguin Arbitrage Profit & ROI Column -->
             <div class="sourcing-stat-col">
               <span class="sourcing-stat-label">
@@ -18272,8 +18322,8 @@ window.renderSourcingRadarView = function() {
               <i class="fa-solid fa-bolt"></i> Buy Deal
             </a>
           ` : ""}
-          <a href="https://gg.deals/games/?title=${encodedTitle}" target="_blank" rel="noopener noreferrer" class="btn-sourcing-launcher" title="Check keyshops and stores on gg.deals">
-            <span>gg.deals</span> <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.65rem;"></i>
+          <a href="${item.ggUrl || `https://gg.deals/games/?title=${encodedTitle}`}" target="_blank" rel="noopener noreferrer" class="btn-sourcing-launcher" title="Check keyshops and stores on gg.deals">
+            <span style="color: #beee11; font-weight: 600;">gg.deals</span> <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.65rem;"></i>
           </a>
           <a href="https://www.allkeyshop.com/blog/?s=${encodedTitle}" target="_blank" rel="noopener noreferrer" class="btn-sourcing-launcher" title="Compare on Allkeyshop">
             <span>Allkeyshop</span> <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.65rem;"></i>
@@ -18356,6 +18406,7 @@ window.refreshSourcingDeals = async function() {
               savings: Math.round(Number(bestDeal.savings || 0)),
               title: bestDeal.title,
               thumb: bestDeal.thumb,
+              steamAppID: bestDeal.steamAppID || null,
               fetchedAt: Date.now()
             };
             updatedCount++;
@@ -18381,6 +18432,25 @@ window.refreshSourcingDeals = async function() {
 
       // Gentle throttle to avoid rate-limiting
       await new Promise(r => setTimeout(r, 120));
+    }
+
+    // If GG.deals token is configured, batch query live GG.deals prices
+    const ggToken = state.sourcingSettings?.ggdealsToken;
+    if (ggToken && typeof window.fetchGGDealsLivePrices === "function") {
+      const steamAppIds = [];
+      favorites.forEach(t => {
+        const cd = state.sourcingSettings.cachedDeals?.[t];
+        if (cd && cd.steamAppID) {
+          steamAppIds.push(cd.steamAppID);
+        }
+      });
+      if (steamAppIds.length > 0) {
+        try {
+          await window.fetchGGDealsLivePrices(steamAppIds);
+        } catch (gErr) {
+          console.warn("[GG.deals API] Batch fetch failed:", gErr);
+        }
+      }
     }
 
     state.sourcingSettings.lastChecked = new Date().toISOString();

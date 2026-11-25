@@ -2495,3 +2495,322 @@ window.bindKinguinSettingsControls = function() {
   }
 };
 
+// ==========================================================================
+// GG.DEALS API INTEGRATION (MULTI-KEYSHOP & STORE BENCHMARK)
+// ==========================================================================
+
+/**
+ * Formats request URL through an optional CORS relay proxy for GG.deals calls.
+ * Falls back to Kinguin proxy if no specific GG.deals proxy is specified.
+ */
+function getGGDealsRequestUrl(targetUrl, customProxyUrl) {
+  const proxy = customProxyUrl !== undefined 
+    ? customProxyUrl.trim() 
+    : (state.sourcingSettings?.ggdealsProxyUrl || state.sourcingSettings?.kinguinProxyUrl || "").trim();
+  if (!proxy) return targetUrl;
+  if (proxy.includes("?url=") || proxy.endsWith("?url=")) {
+    return proxy + encodeURIComponent(targetUrl);
+  }
+  if (proxy.endsWith("/")) {
+    return proxy + targetUrl;
+  }
+  return proxy + "/" + targetUrl;
+}
+
+/**
+ * Fetches live retail and keyshop prices from GG.deals for one or more Steam App IDs.
+ * Supports array of IDs or single ID. Batches in chunks of up to 50 IDs.
+ */
+window.fetchGGDealsLivePrices = async function(steamAppIds, customToken, customRegion, customProxyUrl) {
+  const token = (customToken || state.sourcingSettings?.ggdealsToken || "").trim();
+  if (!token) return {};
+
+  const idList = (Array.isArray(steamAppIds) ? steamAppIds : [steamAppIds])
+    .map(id => String(id).trim())
+    .filter(id => id && /^\d+$/.test(id));
+
+  if (idList.length === 0) return {};
+
+  const region = (customRegion || state.sourcingSettings?.ggdealsRegion || "us").toLowerCase();
+  const proxyUrl = customProxyUrl !== undefined ? customProxyUrl : (state.sourcingSettings?.ggdealsProxyUrl || state.sourcingSettings?.kinguinProxyUrl || "");
+  const results = {};
+
+  // Batch in chunks of 50 IDs
+  const chunkSize = 50;
+  for (let i = 0; i < idList.length; i += chunkSize) {
+    const chunk = idList.slice(i, i + chunkSize);
+    const rawUrl = `https://api.gg.deals/v1/prices/by-steam-app-id/?ids=${chunk.join(",")}&key=${encodeURIComponent(token)}&region=${encodeURIComponent(region)}`;
+    const requestUrl = getGGDealsRequestUrl(rawUrl, proxyUrl);
+
+    try {
+      const res = await fetch(requestUrl);
+      if (!res.ok) {
+        console.warn(`[GG.deals API] HTTP status ${res.status} for chunk:`, chunk);
+        continue;
+      }
+      const json = await res.json();
+      if (json && json.success && json.data) {
+        Object.keys(json.data).forEach(appId => {
+          const item = json.data[appId];
+          if (!item) return;
+          const normalized = {
+            appId: appId,
+            title: item.title || "",
+            url: item.url || "",
+            currentRetail: item.prices?.currentRetail !== null && item.prices?.currentRetail !== undefined && item.prices?.currentRetail !== "" ? Number(item.prices.currentRetail) : null,
+            currentKeyshops: item.prices?.currentKeyshops !== null && item.prices?.currentKeyshops !== undefined && item.prices?.currentKeyshops !== "" ? Number(item.prices.currentKeyshops) : null,
+            historicalRetail: item.prices?.historicalRetail !== null && item.prices?.historicalRetail !== undefined && item.prices?.historicalRetail !== "" ? Number(item.prices.historicalRetail) : null,
+            historicalKeyshops: item.prices?.historicalKeyshops !== null && item.prices?.historicalKeyshops !== undefined && item.prices?.historicalKeyshops !== "" ? Number(item.prices.historicalKeyshops) : null,
+            currency: item.prices?.currency || (region === "eu" ? "EUR" : "USD"),
+            fetchedAt: Date.now()
+          };
+          results[appId] = normalized;
+
+          if (!state.sourcingSettings.liveGGDealsPrices) state.sourcingSettings.liveGGDealsPrices = {};
+          state.sourcingSettings.liveGGDealsPrices[appId] = normalized;
+        });
+      }
+    } catch (err) {
+      console.warn(`[GG.deals API] Fetch error for chunk ${chunk.join(",")}:`, err.message);
+    }
+  }
+
+  return results;
+};
+
+/**
+ * Validates a GG.deals API token by querying a live benchmark game (Cyberpunk 2077).
+ */
+window.testGGDealsConnection = async function(customToken, customRegion, customProxyUrl) {
+  const token = (customToken || state.sourcingSettings?.ggdealsToken || "").trim();
+  if (!token) {
+    return { success: false, message: "Please provide a GG.deals API token." };
+  }
+
+  const region = (customRegion || state.sourcingSettings?.ggdealsRegion || "us").toLowerCase();
+  const proxyUrl = customProxyUrl !== undefined ? customProxyUrl.trim() : (state.sourcingSettings?.ggdealsProxyUrl || state.sourcingSettings?.kinguinProxyUrl || "").trim();
+  const rawUrl = `https://api.gg.deals/v1/prices/by-steam-app-id/?ids=1091500&key=${encodeURIComponent(token)}&region=${encodeURIComponent(region)}`;
+  const requestUrl = getGGDealsRequestUrl(rawUrl, proxyUrl);
+
+  try {
+    const res = await fetch(requestUrl);
+    if (res.ok) {
+      const json = await res.json();
+      if (json && json.success && json.data && json.data["1091500"]) {
+        const item = json.data["1091500"];
+        const curr = item.prices?.currency || (region === "eu" ? "EUR" : "USD");
+        const currSym = curr === "EUR" ? "€" : (curr === "GBP" ? "£" : "$");
+        const keyshopStr = item.prices?.currentKeyshops ? `${currSym}${item.prices.currentKeyshops}` : "N/A";
+        const retailStr = item.prices?.currentRetail ? `${currSym}${item.prices.currentRetail}` : "N/A";
+
+        return {
+          success: true,
+          message: `Connected successfully to GG.deals API! Verified live lookup of "${item.title}": Lowest Keyshops: ${keyshopStr} | Official Retail: ${retailStr} (${curr}).`,
+          data: item
+        };
+      }
+      return { success: false, message: "GG.deals returned a valid response but no sample game data was found." };
+    }
+
+    if (res.status === 400) {
+      return {
+        success: false,
+        message: "Authentication failed (400 Invalid Token). Please ensure your personal token from gg.deals/api/ is copied correctly."
+      };
+    }
+
+    if (res.status === 429) {
+      return {
+        success: false,
+        message: "Rate limit exceeded (429). Standard GG.deals community API limits are 1,000 requests per hour."
+      };
+    }
+
+    return { success: false, message: `GG.deals API returned unexpected HTTP status: ${res.status}.` };
+  } catch (err) {
+    if (!proxyUrl) {
+      return {
+        success: false,
+        isCorsError: true,
+        message: "Browser CORS Restriction: GG.deals direct API gateway blocks browser origins ('Failed to fetch'). A CORS relay is required. You can reuse your Cloudflare Worker relay proxy configured in Kinguin Settings, or enter one above."
+      };
+    }
+    return {
+      success: false,
+      message: `Proxy request failed: ${err.message}. Please verify your CORS Proxy URL.`
+    };
+  }
+};
+
+/**
+ * Initializes GG.deals UI states in Settings and Sourcing Radar.
+ */
+window.initGGDealsConnection = function() {
+  const token = state.sourcingSettings?.ggdealsToken || "";
+  const region = state.sourcingSettings?.ggdealsRegion || "us";
+  const proxyUrl = state.sourcingSettings?.ggdealsProxyUrl || "";
+
+  const tokenInput = document.getElementById("settings-ggdeals-token");
+  const regionSelect = document.getElementById("settings-ggdeals-region");
+  const proxyInput = document.getElementById("settings-ggdeals-proxyurl");
+  const statusBadge = document.getElementById("ggdeals-connection-status");
+  const radarBadge = document.getElementById("sourcing-ggdeals-api-badge");
+  const radarLabel = document.getElementById("sourcing-ggdeals-api-label");
+
+  if (tokenInput && !tokenInput.value) tokenInput.value = token;
+  if (regionSelect) regionSelect.value = region;
+  if (proxyInput && !proxyInput.value) proxyInput.value = proxyUrl;
+
+  if (statusBadge) {
+    if (token) {
+      statusBadge.textContent = "Configured";
+      statusBadge.className = "badge badge-in-stock";
+      statusBadge.style.backgroundColor = "var(--accent-emerald, #10b981)";
+    } else {
+      statusBadge.textContent = "Not Configured";
+      statusBadge.className = "badge badge-sold";
+      statusBadge.style.backgroundColor = "";
+    }
+  }
+
+  if (radarBadge && radarLabel) {
+    if (token) {
+      radarBadge.style.background = "rgba(190, 238, 17, 0.15)";
+      radarBadge.style.color = "#beee11";
+      radarBadge.style.borderColor = "rgba(190, 238, 17, 0.4)";
+      radarBadge.title = `Live GG.deals API Connected (${region.toUpperCase()})`;
+      radarLabel.textContent = `GG.deals Live API Active (${region.toUpperCase()})`;
+    } else {
+      radarBadge.style.background = "rgba(190, 238, 17, 0.08)";
+      radarBadge.style.color = "var(--text-muted)";
+      radarBadge.style.borderColor = "rgba(255, 255, 255, 0.15)";
+      radarBadge.title = "Click to configure GG.deals API in Settings";
+      radarLabel.textContent = "Connect GG.deals API";
+    }
+  }
+};
+
+/**
+ * Binds event listeners for GG.deals Settings controls.
+ */
+window.bindGGDealsSettingsControls = function() {
+  const btnToggleVis = document.getElementById("btn-toggle-ggdeals-key-vis");
+  const tokenInput = document.getElementById("settings-ggdeals-token");
+  const regionSelect = document.getElementById("settings-ggdeals-region");
+  const proxyInput = document.getElementById("settings-ggdeals-proxyurl");
+  const btnSave = document.getElementById("btn-save-ggdeals-api");
+  const btnTest = document.getElementById("btn-test-ggdeals-api");
+  const feedback = document.getElementById("ggdeals-test-feedback");
+  const statusBadge = document.getElementById("ggdeals-connection-status");
+
+  // Toggle token visibility
+  if (btnToggleVis && tokenInput) {
+    btnToggleVis.addEventListener("click", () => {
+      const isPass = tokenInput.type === "password";
+      tokenInput.type = isPass ? "text" : "password";
+      btnToggleVis.innerHTML = isPass ? `<i class="fa-regular fa-eye-slash"></i>` : `<i class="fa-regular fa-eye"></i>`;
+    });
+  }
+
+  // Save GG.deals Settings
+  if (btnSave) {
+    btnSave.addEventListener("click", async () => {
+      const tokenVal = tokenInput ? tokenInput.value.trim() : "";
+      const regionVal = regionSelect ? regionSelect.value : "us";
+      const proxyVal = proxyInput ? proxyInput.value.trim() : "";
+
+      if (!state.sourcingSettings) state.sourcingSettings = {};
+      state.sourcingSettings.ggdealsToken = tokenVal;
+      state.sourcingSettings.ggdealsRegion = regionVal;
+      state.sourcingSettings.ggdealsProxyUrl = proxyVal;
+
+      if (typeof saveSecondaryTablesToStorage === "function") saveSecondaryTablesToStorage();
+      if (window.supabaseClient && typeof dbSaveSettings === "function") {
+        await dbSaveSettings("sourcingSettings", state.sourcingSettings);
+      }
+
+      if (typeof showToast === "function") {
+        showToast("GG.deals API settings saved!", "success");
+      }
+      if (typeof logActionNotification === "function") {
+        logActionNotification(tokenVal ? `Configured GG.deals API token (${regionVal.toUpperCase()})` : "Cleared GG.deals API token");
+      }
+
+      window.initGGDealsConnection();
+    });
+  }
+
+  // Test GG.deals Connection
+  if (btnTest) {
+    btnTest.addEventListener("click", async () => {
+      const tokenVal = tokenInput ? tokenInput.value.trim() : "";
+      const regionVal = regionSelect ? regionSelect.value : "us";
+      const proxyVal = proxyInput ? proxyInput.value.trim() : "";
+
+      if (!tokenVal) {
+        if (typeof showToast === "function") showToast("Please paste your GG.deals API token first.", "warning");
+        if (feedback) {
+          feedback.style.display = "block";
+          feedback.style.background = "rgba(255, 153, 0, 0.1)";
+          feedback.style.border = "1px solid var(--accent-warning)";
+          feedback.style.color = "var(--text-main)";
+          feedback.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-warning); margin-right: 6px;"></i> Please enter an API token to test.`;
+        }
+        return;
+      }
+
+      const originalBtnText = btnTest.innerHTML;
+      btnTest.disabled = true;
+      btnTest.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Testing GG.deals API...`;
+
+      if (feedback) {
+        feedback.style.display = "block";
+        feedback.style.background = "rgba(190, 238, 17, 0.08)";
+        feedback.style.border = "1px solid rgba(190, 238, 17, 0.4)";
+        feedback.style.color = "var(--text-main)";
+        feedback.innerHTML = `<i class="fa-solid fa-arrows-rotate fa-spin" style="color: #beee11; margin-right: 6px;"></i> Querying GG.deals API Gateway...`;
+      }
+
+      try {
+        const result = await window.testGGDealsConnection(tokenVal, regionVal, proxyVal);
+        if (result.success) {
+          if (feedback) {
+            feedback.style.background = "rgba(16, 185, 129, 0.12)";
+            feedback.style.border = "1px solid var(--accent-emerald)";
+            feedback.style.color = "var(--text-main)";
+            feedback.innerHTML = `<i class="fa-solid fa-circle-check" style="color: var(--accent-emerald); margin-right: 6px;"></i> ${result.message}`;
+          }
+          if (statusBadge) {
+            statusBadge.textContent = "Connected";
+            statusBadge.className = "badge badge-in-stock";
+            statusBadge.style.backgroundColor = "var(--accent-emerald, #10b981)";
+          }
+          if (typeof showToast === "function") showToast("GG.deals API Connection Verified!", "success");
+        } else {
+          if (feedback) {
+            feedback.style.background = result.isCorsError ? "rgba(255, 153, 0, 0.12)" : "rgba(244, 67, 54, 0.12)";
+            feedback.style.border = result.isCorsError ? "1px solid var(--accent-warning)" : "1px solid var(--accent-danger)";
+            feedback.style.color = "var(--text-main)";
+            feedback.innerHTML = `<i class="fa-solid ${result.isCorsError ? 'fa-triangle-exclamation text-warning' : 'fa-circle-xmark text-danger'}" style="margin-right: 6px;"></i> ${result.message}`;
+          }
+          if (statusBadge) {
+            statusBadge.textContent = result.isCorsError ? "CORS Required" : "Error";
+            statusBadge.className = "badge badge-sold";
+            statusBadge.style.backgroundColor = result.isCorsError ? "var(--accent-warning, #ff9900)" : "var(--accent-danger, #f44336)";
+          }
+          if (typeof showToast === "function") showToast(result.isCorsError ? "Browser CORS proxy required." : "GG.deals Connection Failed.", result.isCorsError ? "warning" : "error");
+        }
+      } catch (ex) {
+        if (feedback) {
+          feedback.style.background = "rgba(244, 67, 54, 0.12)";
+          feedback.style.border = "1px solid var(--accent-danger)";
+          feedback.innerHTML = `<i class="fa-solid fa-circle-xmark" style="color: var(--accent-danger); margin-right: 6px;"></i> Test error: ${ex.message}`;
+        }
+      } finally {
+        btnTest.disabled = false;
+        btnTest.innerHTML = originalBtnText;
+      }
+    });
+  }
+};
+
