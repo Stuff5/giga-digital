@@ -3449,6 +3449,46 @@
                     </div>
                   </div>
 
+                  <!-- Kinguin Merchant API Panel -->
+                  <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                      <h4 style="margin: 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-crown" style="color: #ff9900;"></i> Kinguin Merchant API
+                      </h4>
+                      <span id="kinguin-connection-status" class="badge badge-sold">Not Configured</span>
+                    </div>
+                    <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 15px;">
+                      Direct eCommerce API integration to query live Kinguin market prices, competitor listings, and real-time arbitrage margins.
+                    </p>
+                    
+                    <div class="form-row-2">
+                      <div class="form-group" style="margin-bottom: 12px;">
+                        <label for="settings-kinguin-apikey">Kinguin Store API Key (X-Api-Key)</label>
+                        <div style="position: relative;">
+                          <input type="password" id="settings-kinguin-apikey" class="form-control" placeholder="Paste your Kinguin API Key" style="padding-right: 36px;">
+                          <button type="button" id="btn-toggle-kinguin-key-vis" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.85rem;" title="Show/Hide Key">
+                            <i class="fa-regular fa-eye"></i>
+                          </button>
+                        </div>
+                      </div>
+                      <div class="form-group" style="margin-bottom: 12px;">
+                        <label for="settings-kinguin-storename">Store Name</label>
+                        <input type="text" id="settings-kinguin-storename" class="form-control" placeholder="GameVault" value="GameVault">
+                      </div>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; margin-top: 15px; flex-wrap: wrap;">
+                      <button type="button" class="btn btn-outline btn-sm" id="btn-test-kinguin-api" style="flex: 1; min-width: 140px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; font-size: 0.85rem;">
+                        <i class="fa-solid fa-plug-circle-check"></i> Test Kinguin Connection
+                      </button>
+                      <button type="button" class="btn btn-primary btn-sm" id="btn-save-kinguin-api" style="flex: 1; min-width: 140px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; font-size: 0.85rem;">
+                        <i class="fa-solid fa-floppy-disk"></i> Save Kinguin Settings
+                      </button>
+                    </div>
+
+                    <div id="kinguin-test-feedback" style="margin-top: 12px; font-size: 0.8rem; padding: 10px 14px; border-radius: 6px; display: none;"></div>
+                  </div>
+
                   <!-- GitHub Panel -->
                   <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -4297,13 +4337,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=129"></script>
-  <script src="src/state.js?v=129"></script>
-  <script src="src/api.js?v=129"></script>
-  <script src="src/charts.js?v=129"></script>
-  <script src="src/ui.js?v=129"></script>
-  <script src="src/ai.js?v=129"></script>
-  <script src="src/importer.js?v=129"></script>
-  <script src="app.js?v=129"></script>
+  <script src="config.js?v=130"></script>
+  <script src="src/state.js?v=130"></script>
+  <script src="src/api.js?v=130"></script>
+  <script src="src/charts.js?v=130"></script>
+  <script src="src/ui.js?v=130"></script>
+  <script src="src/ai.js?v=130"></script>
+  <script src="src/importer.js?v=130"></script>
+  <script src="app.js?v=130"></script>
 </body>
 </html>

@@ -952,7 +952,11 @@ let state = {
     cachedDeals: {},
     lastChecked: null,
     manualBenchmarks: {},
-    selectedStores: []
+    selectedStores: [],
+    kinguinApiKey: "",
+    kinguinStoreName: "GameVault",
+    liveKinguinPrices: {},
+    topbarAlerts: true
   },
   auditLogs: [],
   entriesFilterFav: false,
@@ -1626,6 +1630,9 @@ function loadStateFromStorage() {
       if (!state.sourcingSettings.manualBenchmarks) state.sourcingSettings.manualBenchmarks = {};
       if (!state.sourcingSettings.cachedDeals) state.sourcingSettings.cachedDeals = {};
       if (!Array.isArray(state.sourcingSettings.selectedStores)) state.sourcingSettings.selectedStores = [];
+      if (!state.sourcingSettings.liveKinguinPrices) state.sourcingSettings.liveKinguinPrices = {};
+      if (state.sourcingSettings.kinguinApiKey === undefined) state.sourcingSettings.kinguinApiKey = "";
+      if (!state.sourcingSettings.kinguinStoreName) state.sourcingSettings.kinguinStoreName = "GameVault";
     } catch (e) {
       console.error("Error loading sourcing settings:", e);
     }

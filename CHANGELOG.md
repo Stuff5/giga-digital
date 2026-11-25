@@ -25,6 +25,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Calculates estimated net Kinguin payouts using configurable fee percentages (default 11%) and fixed transaction fees (default €0.10).
     - Derives resale benchmark prices automatically from the user's historical Kinguin sales data, fallback catalog cost markup (+35%), or custom 1-click manual price overrides.
     - Computes real-time Net Profit (€) and ROI (%) for every watched title.
+  - **Direct Kinguin Merchant API Integration**:
+    - Added dedicated **Kinguin Merchant API** configuration panel in **Settings** (`#settings-view`) with store API key (`X-Api-Key`), store name (`GameVault`), and visibility toggle.
+    - Integrated **Test Kinguin Connection** validator (`#btn-test-kinguin-api`) that performs live catalog probe with instant status and diagnostics feedback.
+    - Added real-time Kinguin product search query engine (`fetchKinguinLiveProduct`) with automatic CORS proxy fallback for seamless browser execution.
+    - Dynamically queries Kinguin's live product catalog on each radar scan, pulling the lowest competing market offer price (`price`).
+    - Upgrades the Kinguin resale benchmark in Sourcing Radar from historical/estimated prices to **Live Kinguin Market Price** with a distinctive crown badge (`Live Kinguin`).
+    - Added live Kinguin API indicator badge (`#sourcing-kinguin-api-badge`) in Sourcing Radar toolbar.
   - **Topbar Action Center Alerts & Background Monitoring**:
     - Automatically dispatches rich deal alerts to the Topbar Action Center / Notification Bell (`#notification-bell`) whenever profitable arbitrage opportunities are detected.
     - Includes deal summaries: top game title, supplier store, deal price, estimated Kinguin payout, net profit, and projected ROI %.

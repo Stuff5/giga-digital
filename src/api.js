@@ -2199,3 +2199,302 @@ window.triggerAutoFetchSteamCover = async function(titleInputId, targetInputId, 
   }
 };
 
+// ==========================================================================
+// KINGUIN MERCHANT API INTEGRATION (GAMEVAULT STORE)
+// ==========================================================================
+
+/**
+ * Queries Kinguin eCommerce API for a specific game's lowest market price.
+ * Tries direct fetch first, gracefully falling back to CORS proxy for browser execution.
+ */
+window.fetchKinguinLiveProduct = async function(title, customApiKey) {
+  const key = customApiKey || state.sourcingSettings?.kinguinApiKey;
+  if (!key) return null;
+
+  // Clean title for search: strip brackets, editions, etc.
+  const clean = title.replace(/\s*[\(\[].*?[\)\]]/g, "").trim();
+  if (!clean) return null;
+
+  const targetUrl = `https://gateway.kinguin.net/esa/api/v1/products?name=${encodeURIComponent(clean)}&page=1&limit=5`;
+  const headers = { "X-Api-Key": key.trim() };
+
+  let rawData = null;
+
+  // Attempt 1: Direct fetch
+  try {
+    const res = await fetch(targetUrl, { headers });
+    if (res.ok) {
+      rawData = await res.json();
+    }
+  } catch (err) {
+    // Expected in browsers when gateway lacks CORS headers
+  }
+
+  // Attempt 2: CORS Proxy fallback
+  if (!rawData) {
+    try {
+      const proxyUrl = `https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}`;
+      const res = await fetch(proxyUrl, { headers });
+      if (res.ok) {
+        rawData = await res.json();
+      }
+    } catch (proxyErr) {
+      console.warn(`[Kinguin API] Proxy lookup failed for "${title}":`, proxyErr);
+    }
+  }
+
+  if (!rawData) return null;
+
+  let items = [];
+  if (Array.isArray(rawData)) items = rawData;
+  else if (Array.isArray(rawData.results)) items = rawData.results;
+  else if (Array.isArray(rawData.data)) items = rawData.data;
+  else if (rawData.price !== undefined) items = [rawData];
+
+  if (items.length === 0) return null;
+
+  // Find lowest price item with available stock or valid price
+  let best = null;
+  items.forEach(it => {
+    const p = Number(it.price);
+    if (p > 0) {
+      if (!best || p < Number(best.price)) {
+        best = it;
+      }
+    }
+  });
+
+  if (!best) return null;
+
+  return {
+    kinguinId: best.kinguinId,
+    productId: best.productId,
+    name: best.name,
+    price: Number(best.price),
+    qty: Number(best.qty ?? best.textQty ?? 0),
+    fetchedAt: Date.now()
+  };
+};
+
+/**
+ * Validates a Kinguin API key against the live Kinguin gateway.
+ */
+window.testKinguinConnection = async function(customApiKey) {
+  const key = (customApiKey || state.sourcingSettings?.kinguinApiKey || "").trim();
+  if (!key) {
+    return { success: false, message: "Please provide a Kinguin API key." };
+  }
+
+  const targetUrl = `https://gateway.kinguin.net/esa/api/v1/products?name=Minecraft&page=1&limit=1`;
+  const headers = { "X-Api-Key": key };
+
+  let responseOk = false;
+  let status = 0;
+  let data = null;
+
+  try {
+    const res = await fetch(targetUrl, { headers });
+    status = res.status;
+    if (res.ok) {
+      responseOk = true;
+      data = await res.json();
+    }
+  } catch (err) {
+    // Try via CORS proxy
+    try {
+      const proxyUrl = `https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}`;
+      const res = await fetch(proxyUrl, { headers });
+      status = res.status;
+      if (res.ok) {
+        responseOk = true;
+        data = await res.json();
+      }
+    } catch (proxyErr) {
+      return { success: false, message: `Network request failed: ${proxyErr.message}` };
+    }
+  }
+
+  if (responseOk && data) {
+    let sampleTitle = "catalog product";
+    if (Array.isArray(data.results) && data.results[0]?.name) {
+      sampleTitle = `"${data.results[0].name}" (€${Number(data.results[0].price).toFixed(2)})`;
+    }
+    return {
+      success: true,
+      message: `Connected successfully to Kinguin eCommerce API! Verified access via live lookup of ${sampleTitle}.`
+    };
+  }
+
+  if (status === 401 || status === 403) {
+    return {
+      success: false,
+      message: "Authentication failed (401/403). Please ensure your Kinguin Store API Key is copied correctly from Kinguin Merchant Dashboard > API > STORES."
+    };
+  }
+
+  return { success: false, message: `Kinguin API returned unexpected HTTP status: ${status}.` };
+};
+
+/**
+ * Initializes Kinguin API UI states in Settings and Sourcing Radar.
+ */
+window.initKinguinConnection = function() {
+  const key = state.sourcingSettings?.kinguinApiKey || "";
+  const storeName = state.sourcingSettings?.kinguinStoreName || "GameVault";
+
+  const keyInput = document.getElementById("settings-kinguin-apikey");
+  const storeInput = document.getElementById("settings-kinguin-storename");
+  const statusBadge = document.getElementById("kinguin-connection-status");
+  const radarBadge = document.getElementById("sourcing-kinguin-api-badge");
+  const radarLabel = document.getElementById("sourcing-kinguin-api-label");
+
+  if (keyInput && !keyInput.value) keyInput.value = key;
+  if (storeInput && !storeInput.value) storeInput.value = storeName;
+
+  if (statusBadge) {
+    if (key) {
+      statusBadge.textContent = "Configured";
+      statusBadge.className = "badge badge-in-stock";
+      statusBadge.style.backgroundColor = "var(--accent-emerald, #10b981)";
+    } else {
+      statusBadge.textContent = "Not Configured";
+      statusBadge.className = "badge badge-sold";
+      statusBadge.style.backgroundColor = "";
+    }
+  }
+
+  if (radarBadge && radarLabel) {
+    if (key) {
+      radarBadge.style.background = "rgba(16, 185, 129, 0.15)";
+      radarBadge.style.color = "var(--accent-emerald)";
+      radarBadge.style.borderColor = "rgba(16, 185, 129, 0.35)";
+      radarBadge.title = `Live Kinguin API Connected (${storeName})`;
+      radarLabel.textContent = "Kinguin Live API Active";
+    } else {
+      radarBadge.style.background = "rgba(255, 153, 0, 0.12)";
+      radarBadge.style.color = "#ff9900";
+      radarBadge.style.borderColor = "rgba(255, 153, 0, 0.4)";
+      radarBadge.title = "Click to configure Kinguin Merchant API";
+      radarLabel.textContent = "Connect Kinguin API";
+    }
+  }
+};
+
+/**
+ * Binds event listeners for Kinguin Settings controls.
+ */
+window.bindKinguinSettingsControls = function() {
+  const btnToggleVis = document.getElementById("btn-toggle-kinguin-key-vis");
+  const keyInput = document.getElementById("settings-kinguin-apikey");
+  const storeInput = document.getElementById("settings-kinguin-storename");
+  const btnSave = document.getElementById("btn-save-kinguin-api");
+  const btnTest = document.getElementById("btn-test-kinguin-api");
+  const feedback = document.getElementById("kinguin-test-feedback");
+  const statusBadge = document.getElementById("kinguin-connection-status");
+
+  // Toggle API key visibility
+  if (btnToggleVis && keyInput) {
+    btnToggleVis.addEventListener("click", () => {
+      const isPass = keyInput.type === "password";
+      keyInput.type = isPass ? "text" : "password";
+      btnToggleVis.innerHTML = isPass ? `<i class="fa-regular fa-eye-slash"></i>` : `<i class="fa-regular fa-eye"></i>`;
+    });
+  }
+
+  // Save Kinguin Settings
+  if (btnSave) {
+    btnSave.addEventListener("click", async () => {
+      const keyVal = keyInput ? keyInput.value.trim() : "";
+      const storeVal = storeInput ? storeInput.value.trim() : "GameVault";
+
+      if (!state.sourcingSettings) state.sourcingSettings = {};
+      state.sourcingSettings.kinguinApiKey = keyVal;
+      state.sourcingSettings.kinguinStoreName = storeVal || "GameVault";
+
+      if (typeof saveSecondaryTablesToStorage === "function") saveSecondaryTablesToStorage();
+      if (window.supabaseClient && typeof dbSaveSettings === "function") {
+        await dbSaveSettings("sourcingSettings", state.sourcingSettings);
+      }
+
+      if (typeof showToast === "function") {
+        showToast("Kinguin Merchant API settings saved!", "success");
+      }
+      if (typeof logActionNotification === "function") {
+        logActionNotification(keyVal ? `Configured Kinguin API Key for store "${storeVal}"` : "Cleared Kinguin API Key");
+      }
+
+      window.initKinguinConnection();
+    });
+  }
+
+  // Test Kinguin Connection
+  if (btnTest) {
+    btnTest.addEventListener("click", async () => {
+      const keyVal = keyInput ? keyInput.value.trim() : "";
+      if (!keyVal) {
+        if (typeof showToast === "function") showToast("Please paste your Kinguin API key first.", "warning");
+        if (feedback) {
+          feedback.style.display = "block";
+          feedback.style.background = "rgba(255, 153, 0, 0.1)";
+          feedback.style.border = "1px solid var(--accent-warning)";
+          feedback.style.color = "var(--text-main)";
+          feedback.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-warning); margin-right: 6px;"></i> Please enter an API key to test.`;
+        }
+        return;
+      }
+
+      const originalBtnText = btnTest.innerHTML;
+      btnTest.disabled = true;
+      btnTest.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Testing Kinguin API...`;
+
+      if (feedback) {
+        feedback.style.display = "block";
+        feedback.style.background = "rgba(0, 212, 255, 0.08)";
+        feedback.style.border = "1px solid var(--accent-cyan)";
+        feedback.style.color = "var(--text-main)";
+        feedback.innerHTML = `<i class="fa-solid fa-arrows-rotate fa-spin" style="color: var(--accent-cyan); margin-right: 6px;"></i> Querying Kinguin eCommerce Gateway...`;
+      }
+
+      try {
+        const result = await window.testKinguinConnection(keyVal);
+        if (result.success) {
+          if (feedback) {
+            feedback.style.background = "rgba(16, 185, 129, 0.12)";
+            feedback.style.border = "1px solid var(--accent-emerald)";
+            feedback.style.color = "var(--text-main)";
+            feedback.innerHTML = `<i class="fa-solid fa-circle-check" style="color: var(--accent-emerald); margin-right: 6px;"></i> ${result.message}`;
+          }
+          if (statusBadge) {
+            statusBadge.textContent = "Connected";
+            statusBadge.className = "badge badge-in-stock";
+            statusBadge.style.backgroundColor = "var(--accent-emerald, #10b981)";
+          }
+          if (typeof showToast === "function") showToast("Kinguin API Connection Verified!", "success");
+        } else {
+          if (feedback) {
+            feedback.style.background = "rgba(244, 67, 54, 0.12)";
+            feedback.style.border = "1px solid var(--accent-danger)";
+            feedback.style.color = "var(--text-main)";
+            feedback.innerHTML = `<i class="fa-solid fa-circle-xmark" style="color: var(--accent-danger); margin-right: 6px;"></i> ${result.message}`;
+          }
+          if (statusBadge) {
+            statusBadge.textContent = "Error";
+            statusBadge.className = "badge badge-sold";
+            statusBadge.style.backgroundColor = "var(--accent-danger, #f44336)";
+          }
+          if (typeof showToast === "function") showToast("Kinguin API Connection Failed.", "error");
+        }
+      } catch (ex) {
+        if (feedback) {
+          feedback.style.background = "rgba(244, 67, 54, 0.12)";
+          feedback.style.border = "1px solid var(--accent-danger)";
+          feedback.innerHTML = `<i class="fa-solid fa-circle-xmark" style="color: var(--accent-danger); margin-right: 6px;"></i> Test error: ${ex.message}`;
+        }
+      } finally {
+        btnTest.disabled = false;
+        btnTest.innerHTML = originalBtnText;
+      }
+    });
+  }
+};
+

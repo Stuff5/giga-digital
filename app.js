@@ -247,6 +247,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     bindFirebaseSettingsControls();
     initGitHubConnection();
     bindGitHubSettingsControls();
+    if (typeof window.initKinguinConnection === "function") window.initKinguinConnection();
+    if (typeof window.bindKinguinSettingsControls === "function") window.bindKinguinSettingsControls();
     initAdvancedSettings();
     bindAdvancedSettingsControls();
     initPayouts();

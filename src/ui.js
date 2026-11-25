@@ -17935,6 +17935,10 @@ window.openSourcingRadarModal = async function() {
     if (alertsToggle) alertsToggle.checked = state.sourcingSettings.topbarAlerts !== false;
   }
 
+  if (typeof window.initKinguinConnection === "function") {
+    window.initKinguinConnection();
+  }
+
   openModal("sourcing-radar-modal");
   window.renderSourcingStoresDropdown();
   window.renderSourcingRadarView();
@@ -18035,9 +18039,14 @@ window.renderSourcingRadarView = function() {
     let benchmarkSource = "No Data";
 
     const manual = state.sourcingSettings?.manualBenchmarks?.[title];
+    const liveKinguin = state.sourcingSettings?.liveKinguinPrices?.[title];
+
     if (manual !== undefined && manual !== null && manual !== "" && !isNaN(Number(manual)) && Number(manual) > 0) {
       benchmarkPrice = Number(manual);
       benchmarkSource = "Manual Override";
+    } else if (liveKinguin && Number(liveKinguin.price) > 0) {
+      benchmarkPrice = Number(liveKinguin.price);
+      benchmarkSource = "Live Kinguin API";
     } else {
       const titleSales = salesByTitle[key] || [];
       const kinguinSales = titleSales.filter(s => s.platform && s.platform.trim().toLowerCase() === "kinguin" && Number(s.price) > 0);
@@ -18211,7 +18220,7 @@ window.renderSourcingRadarView = function() {
             <!-- Kinguin Benchmark Column -->
             <div class="sourcing-stat-col">
               <span class="sourcing-stat-label">
-                <i class="fa-solid fa-tag" style="color: #ff5000;"></i> Kinguin Resale
+                ${item.benchmarkSource === "Live Kinguin API" ? `<i class="fa-solid fa-crown" style="color: #ff9900;"></i> Live Kinguin` : `<i class="fa-solid fa-tag" style="color: #ff5000;"></i> Kinguin Resale`}
               </span>
               <div class="sourcing-stat-value" style="cursor: pointer;" title="Click to override Kinguin resale benchmark price" onclick="window.setSourcingManualBenchmark('${item.title.replace(/'/g, "\\'")}')">
                 <span>${item.benchmarkPrice !== null ? `€${item.benchmarkPrice.toFixed(2)}` : `<span style="color: var(--text-muted); font-size: 0.8rem;">Set benchmark</span>`}</span>
@@ -18356,6 +18365,20 @@ window.refreshSourcingDeals = async function() {
         console.warn(`[Sourcing Radar] Deal fetch error for "${title}":`, err);
       }
 
+      // If Kinguin API key is configured, also fetch live Kinguin competitor price
+      const kinguinKey = state.sourcingSettings?.kinguinApiKey;
+      if (kinguinKey && typeof window.fetchKinguinLiveProduct === "function") {
+        try {
+          const liveKinguin = await window.fetchKinguinLiveProduct(cleanTitle, kinguinKey);
+          if (liveKinguin && liveKinguin.price > 0) {
+            if (!state.sourcingSettings.liveKinguinPrices) state.sourcingSettings.liveKinguinPrices = {};
+            state.sourcingSettings.liveKinguinPrices[title] = liveKinguin;
+          }
+        } catch (kErr) {
+          console.warn(`[Kinguin API] Live lookup failed for "${title}":`, kErr);
+        }
+      }
+
       // Gentle throttle to avoid rate-limiting
       await new Promise(r => setTimeout(r, 120));
     }
@@ -18398,8 +18421,12 @@ window.refreshSourcingDeals = async function() {
       let benchmarkPrice = null;
 
       const manual = state.sourcingSettings?.manualBenchmarks?.[title];
+      const liveKinguin = state.sourcingSettings?.liveKinguinPrices?.[title];
+
       if (manual !== undefined && manual !== null && manual !== "" && !isNaN(Number(manual)) && Number(manual) > 0) {
         benchmarkPrice = Number(manual);
+      } else if (liveKinguin && Number(liveKinguin.price) > 0) {
+        benchmarkPrice = Number(liveKinguin.price);
       } else {
         const titleSales = salesByTitle[key] || [];
         const kinguinSales = titleSales.filter(s => s.platform && s.platform.trim().toLowerCase() === "kinguin" && Number(s.price) > 0);
