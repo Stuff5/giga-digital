@@ -5,6 +5,15 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v3.4.1] - 2026-11-27
+### Performance & Storage Optimization
+- **Storage Debouncing & Quota Protection Engine**:
+  - **Asynchronous Storage Debouncing**: Added a 250ms debounce layer to `saveStateToStorage()`, `saveSecondaryTablesToStorage()`, and `saveSettingsToStorage()`, coalescing rapid state writes and eliminating typing and UI micro-stutters.
+  - **Browser Quota Protection**: Heavy payloads (`gv_catalog_artwork` and large backup snapshots) are routed directly to asynchronous IndexedDB, bypassing the 5MB browser `localStorage` ceiling and preventing `QuotaExceededError`.
+  - **Guaranteed Persistence Flush**: Attached `flushStateToStorage()` to browser `beforeunload` and `pagehide` lifecycle events to guarantee immediate serialization before tab close or navigation.
+  - **Immediate Execution for High-Priority Operations**: Form submissions, bulk CSV/Excel imports, and database backup restorations now execute immediate synchronous flushes (`saveStateToStorage(true)`).
+  - **Real-Time Cloud Sync Preserved**: Real-time Supabase and Firebase push updates continue executing with 0ms delay on all mutations.
+
 ## [v3.4.0] - 2026-11-26
 ### Added
 - **Reorganized Settings View (5 Focused Category Tabs)**:

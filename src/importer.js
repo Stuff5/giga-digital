@@ -555,7 +555,7 @@ function initCSVImportWizard() {
 
     // Clean up empty database rows
     cleanupEmptyDatabaseRows();
-    saveStateToStorage();
+    saveStateToStorage(true);
     
     // Sync with Supabase
     if (window.supabaseClient) {
@@ -1141,8 +1141,9 @@ function importStateBackupJSON(file) {
         return;
       }
       
+      const storage = window.safeStorage || localStorage;
       Object.keys(data).forEach(k => {
-        localStorage.setItem(k, data[k]);
+        storage.setItem(k, data[k]);
       });
       
       showToast("Data backup restored successfully! Reloading...", "success");
@@ -1603,7 +1604,7 @@ async function synchronizeCloudDatabase() {
     }
 
     // Save merged lists and settings locally to localStorage/IndexedDB
-    saveStateToStorage();
+    saveStateToStorage(true);
 
     // Re-render UI with merged records
     updateUI();
@@ -1950,7 +1951,7 @@ async function importStateFromSpreadsheet(file) {
             if (typeof window.syncInventoryArtworkWithCatalog === "function") {
               window.syncInventoryArtworkWithCatalog(false);
             }
-            saveStateToStorage();
+            saveStateToStorage(true);
             
             if (window.supabaseClient && state.syncMode !== "manual") {
               if (progressStatus) progressStatus.textContent = "Syncing with cloud database...";

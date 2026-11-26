@@ -207,9 +207,20 @@ const safeStorage = (() => {
       const stringValue = String(value);
       memoryStore[key] = stringValue;
       indexedDBStorage.setItem(key, stringValue);
+      // Large payloads (like artwork or datasets > 500KB) should not choke localStorage's 5MB limit
+      if (key === "gv_catalog_artwork" || stringValue.length > 500000) {
+        try {
+          window.localStorage.removeItem(key);
+        } catch (e) {}
+        return;
+      }
       try {
         window.localStorage.setItem(key, stringValue);
-      } catch (e) {}
+      } catch (e) {
+        if (e && (e.name === "QuotaExceededError" || e.name === "NS_ERROR_DOM_QUOTA_REACHED")) {
+          console.warn(`[GameVault] LocalStorage quota limit reached for '${key}'. Data safely stored in IndexedDB.`);
+        }
+      }
     },
     removeItem(key) {
       delete memoryStore[key];
@@ -2261,7 +2272,11 @@ function saveSalesToStorage() {
   }
 }
 
-function saveSecondaryTablesToStorage() {
+let _saveStateTimer = null;
+let _saveSecondaryTimer = null;
+let _saveSettingsTimer = null;
+
+function _executeSaveSecondaryTablesToStorage() {
   try {
     const userSuffix = (state.currentUser && state.currentUser !== "guest") ? `_${state.currentUser}` : "";
     localStorage.setItem("gv_catalog_artwork", JSON.stringify(state.catalogArtwork || {}));
@@ -2270,12 +2285,18 @@ function saveSecondaryTablesToStorage() {
     localStorage.setItem("gv_sourcing_settings" + userSuffix, JSON.stringify(state.sourcingSettings || {}));
     localStorage.setItem("gv_suppliers" + userSuffix, JSON.stringify(state.suppliers || []));
     localStorage.setItem("gv_supplier_logos" + userSuffix, JSON.stringify(state.supplierLogos || {}));
-    localStorage.setItem("gv_supplier_logos", JSON.stringify(state.supplierLogos || {}));
+    if (userSuffix) {
+      localStorage.setItem("gv_supplier_logos", JSON.stringify(state.supplierLogos || {}));
+    }
     localStorage.setItem("gv_platforms" + userSuffix, JSON.stringify(state.platforms || []));
     localStorage.setItem("gv_platform_logos" + userSuffix, JSON.stringify(state.platformLogos || {}));
-    localStorage.setItem("gv_platform_logos", JSON.stringify(state.platformLogos || {}));
+    if (userSuffix) {
+      localStorage.setItem("gv_platform_logos", JSON.stringify(state.platformLogos || {}));
+    }
     localStorage.setItem("gv_publisher_logos" + userSuffix, JSON.stringify(state.publisherLogos || {}));
-    localStorage.setItem("gv_publisher_logos", JSON.stringify(state.publisherLogos || {}));
+    if (userSuffix) {
+      localStorage.setItem("gv_publisher_logos", JSON.stringify(state.publisherLogos || {}));
+    }
     localStorage.setItem("gv_recycle_bin" + userSuffix, JSON.stringify(state.recycleBin || {}));
     localStorage.setItem("gv_payouts" + userSuffix, JSON.stringify(state.payouts || []));
     localStorage.setItem("gv_expense_categories" + userSuffix, JSON.stringify(state.expenseCategories || []));
@@ -2286,7 +2307,25 @@ function saveSecondaryTablesToStorage() {
   }
 }
 
-function saveSettingsToStorage() {
+function saveSecondaryTablesToStorage(immediate = false) {
+  if (immediate) {
+    if (_saveSecondaryTimer) {
+      clearTimeout(_saveSecondaryTimer);
+      _saveSecondaryTimer = null;
+    }
+    _executeSaveSecondaryTablesToStorage();
+    return;
+  }
+  if (_saveSecondaryTimer) {
+    clearTimeout(_saveSecondaryTimer);
+  }
+  _saveSecondaryTimer = setTimeout(() => {
+    _saveSecondaryTimer = null;
+    _executeSaveSecondaryTablesToStorage();
+  }, 250);
+}
+
+function _executeSaveSettingsToStorage() {
   try {
     if (state.widgetSettings && state.visibleFigures) {
       Object.keys(state.widgetSettings).forEach(key => {
@@ -2353,22 +2392,90 @@ function saveSettingsToStorage() {
   }
 }
 
-// Automatically cleans up empty/invalid items from database state
-function saveStateToStorage() {
+function saveSettingsToStorage(immediate = false) {
+  if (immediate) {
+    if (_saveSettingsTimer) {
+      clearTimeout(_saveSettingsTimer);
+      _saveSettingsTimer = null;
+    }
+    _executeSaveSettingsToStorage();
+    return;
+  }
+  if (_saveSettingsTimer) {
+    clearTimeout(_saveSettingsTimer);
+  }
+  _saveSettingsTimer = setTimeout(() => {
+    _saveSettingsTimer = null;
+    _executeSaveSettingsToStorage();
+  }, 250);
+}
+
+function _executeSaveStateToStorage() {
   saveInventoryToStorage();
   saveSalesToStorage();
-  saveSecondaryTablesToStorage();
-  saveSettingsToStorage();
+  _executeSaveSecondaryTablesToStorage();
+  _executeSaveSettingsToStorage();
 
-  if (state.autoPushGitHub && !state._isImporting && !state._isRestoring) {
+  if (state.autoPushGitHub && !state._isImporting && !state._isRestoring && typeof triggerDebouncedGitHubPush === "function") {
     triggerDebouncedGitHubPush();
   }
 }
 
+// Automatically cleans up empty/invalid items from database state (debounced by default to eliminate typing/UI lag)
+function saveStateToStorage(immediate = false) {
+  if (immediate) {
+    if (_saveStateTimer) {
+      clearTimeout(_saveStateTimer);
+      _saveStateTimer = null;
+    }
+    _executeSaveStateToStorage();
+    return;
+  }
+
+  if (_saveStateTimer) {
+    clearTimeout(_saveStateTimer);
+  }
+  _saveStateTimer = setTimeout(() => {
+    _saveStateTimer = null;
+    _executeSaveStateToStorage();
+  }, 250);
+}
+
+// Flush all pending debounced storage writes immediately
+function flushStateToStorage() {
+  if (_saveStateTimer) {
+    clearTimeout(_saveStateTimer);
+    _saveStateTimer = null;
+    _executeSaveStateToStorage();
+  }
+  if (_saveSecondaryTimer) {
+    clearTimeout(_saveSecondaryTimer);
+    _saveSecondaryTimer = null;
+    _executeSaveSecondaryTablesToStorage();
+  }
+  if (_saveSettingsTimer) {
+    clearTimeout(_saveSettingsTimer);
+    _saveSettingsTimer = null;
+    _executeSaveSettingsToStorage();
+  }
+}
+
+window.flushStateToStorage = flushStateToStorage;
+window.saveStateToStorage = saveStateToStorage;
 window.saveInventoryToStorage = saveInventoryToStorage;
 window.saveSalesToStorage = saveSalesToStorage;
 window.saveSecondaryTablesToStorage = saveSecondaryTablesToStorage;
 window.saveSettingsToStorage = saveSettingsToStorage;
+
+// Guaranteed flush to disk when closing or navigating away
+if (typeof window !== "undefined") {
+  window.addEventListener("beforeunload", () => {
+    flushStateToStorage();
+  });
+  window.addEventListener("pagehide", () => {
+    flushStateToStorage();
+  });
+}
 
 function getUsersFromStorage() {
   let arr = [];
