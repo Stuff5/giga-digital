@@ -18501,15 +18501,15 @@ window.renderSourcingRadarView = function() {
             <!-- GG.deals Keyshop Benchmark Column -->
             <div class="sourcing-stat-col">
               <span class="sourcing-stat-label" ${item.ggTitle ? `title="GG.deals Match: ${item.ggTitle.replace(/"/g, '&quot;')}"` : ''}>
-                <i class="fa-solid fa-tags" style="color: #beee11;"></i> GG.deals Keyshops
+                <i class="fa-solid fa-tags" style="color: #22c55e;"></i> GG.deals Keyshops
               </span>
               <div class="sourcing-stat-value" ${item.ggTitle ? `title="Matched: ${item.ggTitle.replace(/"/g, '&quot;')}"` : ''}>
                 ${item.ggKeyshopPrice !== null ? `
-                  <span style="color: #beee11; font-weight: 700;">
+                  <span style="color: #22c55e; font-weight: 700;">
                     ${item.ggCurrency === 'EUR' ? '€' : (item.ggCurrency === 'GBP' ? '£' : '$')}${item.ggKeyshopPrice.toFixed(2)}
                   </span>
                   ${item.ggHistoricalKeyshop && item.ggHistoricalKeyshop <= item.ggKeyshopPrice ? `
-                    <span class="badge" style="background: rgba(190, 238, 17, 0.15); color: #beee11; border: 1px solid rgba(190, 238, 17, 0.35); font-size: 0.65rem; padding: 1px 4px;" title="Historical Keyshop Low: ${item.ggCurrency === 'EUR' ? '€' : '$'}${item.ggHistoricalKeyshop.toFixed(2)}">
+                    <span class="badge" style="background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.35); font-size: 0.65rem; padding: 1px 4px;" title="Historical Keyshop Low: ${item.ggCurrency === 'EUR' ? '€' : '$'}${item.ggHistoricalKeyshop.toFixed(2)}">
                       Low: ${item.ggHistoricalKeyshop.toFixed(2)}
                     </span>
                   ` : ''}
@@ -18559,7 +18559,7 @@ window.renderSourcingRadarView = function() {
             </a>
           ` : ""}
           <a href="${item.ggUrl || `https://gg.deals/games/?type=1&title=${encodedTitle}`}" target="_blank" rel="noopener noreferrer" class="btn-sourcing-launcher" title="Check keyshops and stores on gg.deals (Base Games Only)">
-            <span style="color: #beee11; font-weight: 600;">gg.deals</span> <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.65rem;"></i>
+            <span style="color: #22c55e; font-weight: 600;">gg.deals</span> <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.65rem;"></i>
           </a>
           <a href="https://www.allkeyshop.com/blog/?s=${encodeURIComponent(item.title + ' CD Key')}" target="_blank" rel="noopener noreferrer" class="btn-sourcing-launcher" title="Compare CD Keys on Allkeyshop">
             <span>Allkeyshop</span> <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.65rem;"></i>

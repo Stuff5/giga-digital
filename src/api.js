@@ -2924,13 +2924,13 @@ window.initGGDealsConnection = function() {
 
   if (radarBadge && radarLabel) {
     if (token) {
-      radarBadge.style.background = "rgba(190, 238, 17, 0.15)";
-      radarBadge.style.color = "#beee11";
-      radarBadge.style.borderColor = "rgba(190, 238, 17, 0.4)";
+      radarBadge.style.background = "rgba(34, 197, 94, 0.15)";
+      radarBadge.style.color = "#22c55e";
+      radarBadge.style.borderColor = "rgba(34, 197, 94, 0.4)";
       radarBadge.title = `Live GG.deals API Connected (${region.toUpperCase()})`;
       radarLabel.textContent = `GG.deals Live API Active (${region.toUpperCase()})`;
     } else {
-      radarBadge.style.background = "rgba(190, 238, 17, 0.08)";
+      radarBadge.style.background = "rgba(34, 197, 94, 0.08)";
       radarBadge.style.color = "var(--text-muted)";
       radarBadge.style.borderColor = "rgba(255, 255, 255, 0.15)";
       radarBadge.title = "Click to configure GG.deals API in Settings";
@@ -3014,10 +3014,10 @@ window.bindGGDealsSettingsControls = function() {
 
       if (feedback) {
         feedback.style.display = "block";
-        feedback.style.background = "rgba(190, 238, 17, 0.08)";
-        feedback.style.border = "1px solid rgba(190, 238, 17, 0.4)";
+        feedback.style.background = "rgba(34, 197, 94, 0.08)";
+        feedback.style.border = "1px solid rgba(34, 197, 94, 0.4)";
         feedback.style.color = "var(--text-main)";
-        feedback.innerHTML = `<i class="fa-solid fa-arrows-rotate fa-spin" style="color: #beee11; margin-right: 6px;"></i> Querying GG.deals API Gateway...`;
+        feedback.innerHTML = `<i class="fa-solid fa-arrows-rotate fa-spin" style="color: #22c55e; margin-right: 6px;"></i> Querying GG.deals API Gateway...`;
       }
 
       try {
