@@ -2087,6 +2087,28 @@ function initEventHandlers() {
       }
       return;
     }
+    // Open CORS Guide Modal button handler
+    const corsBtn = e.target.closest ? e.target.closest(".btn-open-cors-guide") : null;
+    if (corsBtn) {
+      e.preventDefault();
+      openModal("cors-proxy-guide-modal");
+      return;
+    }
+    // Copy CORS Worker Code button handler
+    const copyWorkerBtn = e.target.closest ? e.target.closest("#btn-copy-cors-worker-code") : null;
+    if (copyWorkerBtn) {
+      e.preventDefault();
+      const codeBlock = document.getElementById("cors-worker-code-block");
+      if (codeBlock) {
+        const textToCopy = codeBlock.innerText || codeBlock.textContent;
+        navigator.clipboard.writeText(textToCopy).then(() => {
+          showToast("Cloudflare Worker script copied to clipboard!", "success");
+        }).catch(() => {
+          showToast("Failed to copy script to clipboard.", "error");
+        });
+      }
+      return;
+    }
     if (e.target && e.target.classList && e.target.classList.contains("modal-backdrop") && e.target.classList.contains("active")) {
       closeModal(e.target.id);
     }
@@ -4360,6 +4382,11 @@ function closeModal(id) {
     console.warn(`closeModal: Element with ID "${id}" not found.`);
   }
 }
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.openCorsGuideModal = function() {
+  openModal("cors-proxy-guide-modal");
+};
 
 // Toast Notifications helper
 function showToast(message, type = "success", actionCallback = null) {

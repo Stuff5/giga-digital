@@ -2547,7 +2547,7 @@ window.testKinguinConnection = async function(customApiKey, customProxyUrl) {
       return {
         success: false,
         isCorsError: true,
-        message: "Browser CORS Restriction: Kinguin's B2B API gateway blocks direct calls from web browsers ('Failed to fetch'). A CORS relay is required. See the guide below to connect a free Cloudflare Worker or Supabase Edge function in 60 seconds."
+        message: "Browser CORS Restriction: Kinguin B2B Gateway blocks direct browser calls ('Failed to fetch'). A CORS relay proxy is required. <a href='javascript:void(0)' onclick='window.openCorsGuideModal && window.openCorsGuideModal()' style='color: #ff5000; text-decoration: underline; font-weight: 600; margin-left: 4px;'>Setup Free Cloudflare Proxy (2 mins) &rarr;</a>"
       };
     }
     return {
@@ -2753,7 +2753,7 @@ window.bindKinguinSettingsControls = function() {
  * Falls back to Kinguin proxy if no specific GG.deals proxy is specified.
  */
 function getGGDealsRequestUrl(targetUrl, customProxyUrl) {
-  const proxy = customProxyUrl !== undefined 
+  const proxy = (customProxyUrl && customProxyUrl.trim()) 
     ? customProxyUrl.trim() 
     : (state.sourcingSettings?.ggdealsProxyUrl || state.sourcingSettings?.kinguinProxyUrl || "").trim();
   if (!proxy) return targetUrl;
@@ -2837,7 +2837,7 @@ window.testGGDealsConnection = async function(customToken, customRegion, customP
   }
 
   const region = (customRegion || state.sourcingSettings?.ggdealsRegion || "us").toLowerCase();
-  const proxyUrl = customProxyUrl !== undefined ? customProxyUrl.trim() : (state.sourcingSettings?.ggdealsProxyUrl || state.sourcingSettings?.kinguinProxyUrl || "").trim();
+  const proxyUrl = (customProxyUrl && customProxyUrl.trim()) ? customProxyUrl.trim() : (state.sourcingSettings?.ggdealsProxyUrl || state.sourcingSettings?.kinguinProxyUrl || "").trim();
   const rawUrl = `https://api.gg.deals/v1/prices/by-steam-app-id/?ids=1091500&key=${encodeURIComponent(token)}&region=${encodeURIComponent(region)}`;
   const requestUrl = getGGDealsRequestUrl(rawUrl, proxyUrl);
 
@@ -3072,7 +3072,7 @@ window.bindGGDealsSettingsControls = function() {
  * Falls back to Kinguin/GG.deals proxy if no specific G2A proxy is set.
  */
 function getG2ARequestUrl(targetUrl, customProxyUrl) {
-  const proxy = customProxyUrl !== undefined 
+  const proxy = (customProxyUrl && customProxyUrl.trim()) 
     ? customProxyUrl.trim() 
     : (state.sourcingSettings?.g2aProxyUrl || state.sourcingSettings?.kinguinProxyUrl || "").trim();
   if (!proxy) return targetUrl;
@@ -3148,7 +3148,7 @@ window.testG2AConnection = async function(customClientId, customClientSecret, cu
   const clientId = (customClientId || state.sourcingSettings?.g2aClientId || "").trim();
   const clientSecret = (customClientSecret || state.sourcingSettings?.g2aClientSecret || "").trim();
   const apiUrl = (customApiUrl || state.sourcingSettings?.g2aApiUrl || "https://api.g2a.com").trim().replace(/\/+$/, "");
-  const proxyUrl = customProxyUrl !== undefined ? customProxyUrl.trim() : (state.sourcingSettings?.g2aProxyUrl || state.sourcingSettings?.kinguinProxyUrl || "").trim();
+  const proxyUrl = (customProxyUrl && customProxyUrl.trim()) ? customProxyUrl.trim() : (state.sourcingSettings?.g2aProxyUrl || state.sourcingSettings?.kinguinProxyUrl || "").trim();
 
   if (!clientId || !clientSecret) {
     return { success: false, message: "Please provide both G2A Client ID and Client Secret." };
@@ -3223,7 +3223,7 @@ window.testG2AConnection = async function(customClientId, customClientSecret, cu
       return {
         success: false,
         isCorsError: true,
-        message: "Browser CORS Restriction: G2A API blocks browser direct origins ('Failed to fetch'). A CORS relay is required. You can reuse your Cloudflare Worker relay proxy configured in Kinguin Settings, or enter one above."
+        message: "Browser CORS Restriction: G2A API blocks browser direct origins ('Failed to fetch'). A CORS relay proxy is required. <a href='javascript:void(0)' onclick='window.openCorsGuideModal && window.openCorsGuideModal()' style='color: #0070d2; text-decoration: underline; font-weight: 600; margin-left: 4px;'>Setup Free Cloudflare Proxy (2 mins) &rarr;</a>"
       };
     }
     return {

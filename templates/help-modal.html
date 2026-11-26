@@ -490,11 +490,25 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- v3.3.1 -->
+                <div class="changelog-release-card" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v3.3.1 - Free Cloudflare Worker CORS Relay Guide &amp; Universal Proxy Bridge</strong>
+                    <span style="font-size: 0.75rem; color: var(--accent-emerald); background: rgba(16, 185, 129, 0.12); padding: 2px 8px; border-radius: 4px; font-weight: 700;">Current Version</span>
+                  </div>
+                  <ul style="margin: 0; padding-left: 18px; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+                    <li><strong>Integrated CORS Proxy Setup Modal:</strong> Added a 1-click interactive setup guide with ready-to-deploy Cloudflare Worker script (100,000 free requests/day) accessible from G2A, Kinguin, and GG.deals Settings panels.</li>
+                    <li><strong>Universal Proxy Fallback Engine:</strong> Fixed proxy inheritance in <code>src/api.js</code> so leaving proxy URLs blank automatically falls back to your configured Kinguin/Cloudflare Worker relay.</li>
+                    <li><strong>Standalone Worker Script:</strong> Included <code>cloudflare-cors-worker.js</code> in project root for instant 60-second deployment.</li>
+                    <li><strong>Interactive Error Resolution:</strong> In-app connection test feedback boxes now include direct 1-click links to launch the CORS setup guide whenever a browser cross-origin block occurs.</li>
+                  </ul>
+                </div>
+
                 <!-- v3.3.0 -->
                 <div class="changelog-release-card" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                     <strong style="color: var(--text-main); font-size: 0.95rem;">v3.3.0 - G2A Merchant API &amp; Dual-Marketplace Arbitrage Engine</strong>
-                    <span style="font-size: 0.75rem; color: var(--accent-emerald); background: rgba(16, 185, 129, 0.12); padding: 2px 8px; border-radius: 4px; font-weight: 700;">Current Version</span>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); background: rgba(255, 255, 255, 0.06); padding: 2px 8px; border-radius: 4px; font-weight: 600;">Previous Release</span>
                   </div>
                   <ul style="margin: 0; padding-left: 18px; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
                     <li><strong>Direct G2A Merchant API Integration:</strong> Added OAuth2 Client Credentials integration for G2A (Client ID, Client Secret, Production/Sandbox environments) with connection testing in Settings.</li>

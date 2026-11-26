@@ -171,7 +171,7 @@ game-sales-tracker/
 ### Kinguin, GG.deals & G2A API Setup
 1. **Kinguin API**: Navigate to **Settings &rarr; Kinguin Merchant API**. Enter your store API Key and store name. Configure your Cloudflare Worker relay in **CORS Proxy / Relay URL** to enable browser queries. Benchmark filters (`[x] Exclude Game Accounts` and `[x] Exclude DLCs & Expansions`) ensure live benchmarks only evaluate genuine base game CD Keys. Click **Test Kinguin Connection** to verify live catalog search capability.
 2. **GG.deals API**: Navigate to **Settings &rarr; GG.deals API**. Paste your personal token from [gg.deals/api/](https://gg.deals/api/). Select your preferred currency/region (EUR, USD, GBP, etc.). Click **Test GG.deals Connection** to verify live pricing. (Automatically reuses your Kinguin CORS relay proxy).
-3. **G2A Merchant API**: Navigate to **Settings &rarr; G2A Merchant API**. Enter your G2A Client ID and Client Secret from your G2A API Integration dashboard. Supports both Production (`https://api.g2a.com`) and Sandbox. Powers live dual-marketplace arbitrage (`Target: G2A` vs `Target: Kinguin`).
+3. **G2A Merchant API**: Navigate to **Settings &rarr; G2A Merchant API**. Enter your G2A Client ID and Client Secret from your G2A API Integration dashboard. Configure your CORS Proxy URL (or reuse your Kinguin Cloudflare Worker proxy via `cloudflare-cors-worker.js` in the repo root) to bypass browser origin limits. Supports both Production (`https://api.g2a.com`) and Sandbox. Powers live dual-marketplace arbitrage (`Target: G2A` vs `Target: Kinguin`).
 
 ---
 

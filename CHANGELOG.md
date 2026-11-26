@@ -5,6 +5,18 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v3.3.1] - 2026-11-26
+### Added
+- **Free Cloudflare Worker CORS Relay Guide & Universal Proxy Bridge**:
+  - **Interactive CORS Guide Modal**: Added `cors-proxy-guide-modal` in `templates/modals.html` with full 3-step Cloudflare Worker setup guide and 1-click "Copy Worker Script" button.
+  - **Standalone Worker Script**: Shipped `cloudflare-cors-worker.js` in root repository with zero-dependency CORS handling (100,000 free requests/day) supporting G2A, Kinguin, and GG.deals.
+  - **Settings UI Shortcuts**: Embedded `[Setup Free Proxy (2 mins)]` quick-launch buttons in Kinguin, GG.deals, and G2A Settings panels.
+  - **Clickable Test Error Resolution**: Direct in-app links inside connection failure alerts to immediately open the CORS setup guide when browser cross-origin blocks are detected.
+
+### Fixed
+- **Universal Proxy Fallback in API Engine**:
+  - Fixed proxy parameter evaluation in `src/api.js` (`getG2ARequestUrl`, `getGGDealsRequestUrl`, `testG2AConnection`, `testGGDealsConnection`) so empty strings correctly fall back to the merchant's configured Kinguin/Cloudflare Worker relay.
+
 ## [v3.3.0] - 2026-11-26
 ### Added
 - **G2A Merchant API Integration & Dual-Marketplace Arbitrage Engine**:

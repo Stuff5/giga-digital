@@ -1548,3 +1548,134 @@
     </div>
   </div>
 
+  <!-- Cloudflare Worker CORS Proxy Setup Guide Modal -->
+  <div class="modal-backdrop" id="cors-proxy-guide-modal">
+    <div class="modal-card" style="max-width: 680px; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <h3 style="display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-cloud" style="color: #f6821f;"></i> Free Cloudflare Worker CORS Proxy Guide
+        </h3>
+        <button class="modal-close-btn" data-close-modal="cors-proxy-guide-modal">&times;</button>
+      </div>
+
+      <div class="modal-body" style="overflow-y: auto; padding: 20px; font-size: 0.85rem; line-height: 1.55;">
+        <div style="background: rgba(246, 130, 31, 0.08); border: 1px solid rgba(246, 130, 31, 0.35); border-radius: 8px; padding: 12px 14px; margin-bottom: 16px;">
+          <strong style="color: #f6821f; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+            <i class="fa-solid fa-shield-halved"></i> Why is a CORS Proxy Required?
+          </strong>
+          <span style="color: var(--text-muted); font-size: 0.8rem;">
+            Both <strong>G2A Merchant API</strong> (<code>api.g2a.com</code>) and <strong>Kinguin B2B Gateway</strong> (<code>gateway.kinguin.net</code>) are server-to-server APIs. Web browsers enforce <em>Cross-Origin Resource Sharing (CORS)</em> and block direct browser JavaScript calls. A personal Cloudflare Worker acts as a secure, private bridge with <strong>100,000 free requests per day</strong>.
+          </span>
+        </div>
+
+        <h4 style="margin: 0 0 10px 0; font-size: 0.95rem; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-list-ol text-purple"></i> 3-Step Setup (Takes 2 Minutes)
+        </h4>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px;">
+          <div style="display: flex; gap: 10px; align-items: flex-start;">
+            <span style="background: var(--accent-primary); color: #fff; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0;">1</span>
+            <div>
+              <strong>Create a Worker in Cloudflare:</strong><br>
+              Log into <a href="https://dash.cloudflare.com/" target="_blank" rel="noopener" style="color: var(--accent-cyan); text-decoration: underline;">dash.cloudflare.com</a> (free account). Go to <strong>Workers &amp; Pages</strong> &rarr; <strong>Create application</strong> &rarr; <strong>Create Worker</strong>. Name it <code>gamevault-proxy</code> and click <strong>Deploy</strong>.
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px; align-items: flex-start;">
+            <span style="background: var(--accent-primary); color: #fff; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0;">2</span>
+            <div>
+              <strong>Paste the Worker Code:</strong><br>
+              Click <strong>Edit code</strong>, delete any sample code, and paste the snippet below. Click <strong>Save and deploy</strong>.
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px; align-items: flex-start;">
+            <span style="background: var(--accent-primary); color: #fff; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0;">3</span>
+            <div>
+              <strong>Copy your Worker URL into GameVault:</strong><br>
+              Your worker will have a URL like: <code>https://gamevault-proxy.yourname.workers.dev</code>.<br>
+              Add <code>?url=</code> to the end: <code>https://gamevault-proxy.yourname.workers.dev/?url=</code><br>
+              Paste it into <strong>CORS Proxy / Relay URL</strong> in GameVault Settings and click <strong>Save</strong>!
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <label style="font-weight: 600; font-size: 0.82rem; margin: 0;">
+            <i class="fa-brands fa-cloudflare" style="color: #f6821f;"></i> Cloudflare Worker Code:
+          </label>
+          <button type="button" class="btn btn-outline btn-xs" id="btn-copy-cors-worker-code" style="display: flex; align-items: center; gap: 5px; font-size: 0.75rem; padding: 3px 8px;">
+            <i class="fa-regular fa-copy"></i> Copy Worker Script
+          </button>
+        </div>
+
+        <pre id="cors-worker-code-block" style="background: rgba(0, 0, 0, 0.35); border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; font-size: 0.75rem; max-height: 180px; overflow-y: auto; font-family: monospace; white-space: pre-wrap; margin: 0 0 14px 0; color: #a5b4fc;">export default {
+  async fetch(request) {
+    const corsHeaders = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+      "Access-Control-Allow-Headers": "*",
+      "Access-Control-Max-Age": "86400",
+    };
+
+    if (request.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers: corsHeaders });
+    }
+
+    try {
+      const reqUrl = new URL(request.url);
+      let targetUrl = reqUrl.searchParams.get("url");
+      if (!targetUrl) {
+        const rawPath = reqUrl.pathname.slice(1);
+        if (rawPath.startsWith("http://") || rawPath.startsWith("https://")) {
+          targetUrl = rawPath + reqUrl.search;
+        }
+      }
+      if (!targetUrl) {
+        return new Response(JSON.stringify({ error: "Missing target URL parameter (?url=)" }), { status: 400, headers: corsHeaders });
+      }
+
+      const forwardHeaders = new Headers(request.headers);
+      forwardHeaders.delete("host");
+      forwardHeaders.delete("origin");
+      forwardHeaders.delete("referer");
+
+      const init = {
+        method: request.method,
+        headers: forwardHeaders,
+        redirect: "follow",
+      };
+
+      if (request.method !== "GET" && request.method !== "HEAD") {
+        init.body = await request.arrayBuffer();
+      }
+
+      const response = await fetch(targetUrl, init);
+      const resHeaders = new Headers(response.headers);
+      resHeaders.set("Access-Control-Allow-Origin", "*");
+      resHeaders.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
+      resHeaders.set("Access-Control-Allow-Headers", "*");
+
+      return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: resHeaders,
+      });
+    } catch (err) {
+      return new Response(JSON.stringify({ error: "Proxy Error: " + err.message }), { status: 502, headers: corsHeaders });
+    }
+  },
+};</pre>
+
+        <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 6px; padding: 10px 12px; font-size: 0.78rem;">
+          <strong style="color: var(--accent-emerald);"><i class="fa-solid fa-circle-check"></i> One Proxy Powers Everything:</strong>
+          Once configured, this single Cloudflare Worker seamlessly powers <strong>G2A Merchant API</strong>, <strong>Kinguin B2B Gateway</strong>, and <strong>GG.deals Live Pricing</strong> automatically!
+        </div>
+      </div>
+
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; padding: 12px 20px; border-top: 1px solid var(--border-color); background: var(--bg-modal-footer);">
+        <button type="button" class="btn btn-primary btn-sm" data-close-modal="cors-proxy-guide-modal">Done / Close</button>
+      </div>
+    </div>
+  </div>
+
