@@ -2,7 +2,7 @@
 
 > High-performance digital game license inventory pipeline, sales ledger, and financial analytics platform designed for digital key merchants, distributors, and online publishers.
 
-![Version](https://img.shields.io/badge/version-v3.2.2-cyan.svg)
+![Version](https://img.shields.io/badge/version-v3.2.3-cyan.svg)
 ![Status](https://img.shields.io/badge/status-active-emerald.svg)
 ![Platform](https://img.shields.io/badge/platform-Web%20SPA-purple.svg)
 
@@ -137,7 +137,7 @@ GameVault is engineered as a modular client-side Single Page Application (SPA) d
 game-sales-tracker/
 ├── index.html                 # Core application shell, topbar & dashboard markup
 ├── landing.html               # Public product landing page
-├── config.js                  # Global configuration & environment endpoints (v3.2.2)
+├── config.js                  # Global configuration & environment endpoints (v3.2.3)
 ├── app.js                     # Application entry point & boot sequence
 ├── styles.css                 # Comprehensive design system & animations
 ├── CHANGELOG.md               # Version progress & milestone documentation
@@ -178,4 +178,4 @@ game-sales-tracker/
 
 See [CHANGELOG.md](CHANGELOG.md) for full release notes and development milestones.
 
-Current Release: **v3.2.2** (2026-11-26)
+Current Release: **v3.2.3** (2026-11-26)

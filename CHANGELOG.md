@@ -5,6 +5,16 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v3.2.3] - 2026-11-26
+### Added
+- **Favorite Titles Metric Card in Entries Menu**:
+  - Added a dedicated 5th metric card (`#entries-stat-card-favorites`) alongside the 4 catalog stat cards in the Game Catalog Entries view.
+  - Displays the live count of unique titles starred in your Favorites / Sourcing Radar watchlist (`#entries-stat-favorites-count` and `#entries-stat-favorites-sub`).
+  - Interactive 1-click filter: clicking the card toggles filtering the entries table directly to show your starred favorite games, with distinct golden glow highlight (`.active`).
+  - Responsive grid layout adjustment (`minmax(175px, 1fr)`) ensuring all 5 metric cards fit cleanly across standard desktop views and wrap responsively.
+- **Version Bump & Documentation Sync**:
+  - Upgraded project to **v3.2.3** across `config.js`, `app.js`, `index.html` (scripts `?v=138`, `styles.css?v=90`), `README.md`, `CHANGELOG.md`, and `templates/help-modal.html`.
+
 ## [v3.2.2] - 2026-11-26
 ### Added
 - **Universal Base Game & CD Key Filtering across GG.deals & All Suppliers**:

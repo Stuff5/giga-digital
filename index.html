@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=89">
+  <link rel="stylesheet" href="styles.css?v=90">
   
   <!-- Early theme application to prevent FOUC / light theme flicker -->
   <script>
@@ -139,7 +139,7 @@
         </div>
         <div class="version-info" style="text-align: center; font-size: 0.7rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; overflow: hidden; white-space: nowrap;">
           <span class="version-label">GameVault</span>
-          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v3.2.2</a>
+          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v3.2.3</a>
         </div>
 
       </div>
@@ -2334,7 +2334,7 @@
             </div>
 
             <!-- Entries Catalog & Titles in Stock Summary Grid -->
-            <div class="entries-metrics-bar" id="entries-metrics-summary" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 16px;">
+            <div class="entries-metrics-bar" id="entries-metrics-summary" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 14px; margin-bottom: 16px;">
               <!-- Card 1: Unique Titles in Stock -->
               <div class="detail-card entries-stat-card" id="entries-stat-card-instock" title="Click to filter by In Stock titles">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
@@ -2395,6 +2395,22 @@
                   </div>
                   <div class="metric-icon" style="font-size: 1.3rem; opacity: 0.7; color: var(--accent-emerald);">
                     <i class="fa-solid fa-vault"></i>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card 5: Favorite Titles (Watchlist) -->
+              <div class="detail-card entries-stat-card" id="entries-stat-card-favorites" title="Click to filter by Starred Favorite titles">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                  <div>
+                    <span style="font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #fbbf24;">
+                      <i class="fa-solid fa-star" style="margin-right: 6px; color: #fbbf24;"></i>Favorite Titles
+                    </span>
+                    <h3 id="entries-stat-favorites-count" style="margin: 6px 0 2px 0; font-size: 1.5rem; font-weight: 700; color: #fbbf24;">0</h3>
+                    <span id="entries-stat-favorites-sub" style="font-size: 0.74rem; color: var(--text-muted);">0 in radar watchlist</span>
+                  </div>
+                  <div class="metric-icon" style="font-size: 1.3rem; opacity: 0.7; color: #fbbf24;">
+                    <i class="fa-solid fa-star"></i>
                   </div>
                 </div>
               </div>
@@ -4451,13 +4467,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=137"></script>
-  <script src="src/state.js?v=137"></script>
-  <script src="src/api.js?v=137"></script>
-  <script src="src/charts.js?v=137"></script>
-  <script src="src/ui.js?v=137"></script>
-  <script src="src/ai.js?v=137"></script>
-  <script src="src/importer.js?v=137"></script>
-  <script src="app.js?v=137"></script>
+  <script src="config.js?v=138"></script>
+  <script src="src/state.js?v=138"></script>
+  <script src="src/api.js?v=138"></script>
+  <script src="src/charts.js?v=138"></script>
+  <script src="src/ui.js?v=138"></script>
+  <script src="src/ai.js?v=138"></script>
+  <script src="src/importer.js?v=138"></script>
+  <script src="app.js?v=138"></script>
 </body>
 </html>

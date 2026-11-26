@@ -1990,6 +1990,28 @@ function initEventHandlers() {
     });
   }
 
+  const cardFavorites = document.getElementById("entries-stat-card-favorites");
+  if (cardFavorites) {
+    cardFavorites.addEventListener("click", () => {
+      state.entriesFilterFav = !state.entriesFilterFav;
+      state.entriesCurrentPage = 1;
+      const btnFavFilter = document.getElementById("btn-entries-fav-filter");
+      const favIcon = document.getElementById("entries-fav-filter-icon");
+      if (btnFavFilter) {
+        if (state.entriesFilterFav) {
+          btnFavFilter.classList.add("btn-fav-active");
+          btnFavFilter.classList.remove("btn-outline");
+          if (favIcon) favIcon.className = "fa-solid fa-star";
+        } else {
+          btnFavFilter.classList.add("btn-outline");
+          btnFavFilter.classList.remove("btn-fav-active");
+          if (favIcon) favIcon.className = "fa-regular fa-star";
+        }
+      }
+      renderEntries();
+    });
+  }
+
   // Delegated listeners for titles history modal buttons
   document.addEventListener("click", (e) => {
     if (e.target && (e.target.id === "btn-titles-hist-month" || e.target.closest("#btn-titles-hist-month"))) {
@@ -11980,13 +12002,22 @@ function renderEntries() {
   const statKeysEl = document.getElementById("entries-stat-keys-count");
   if (statKeysEl) statKeysEl.textContent = totalAvailableKeysCount.toLocaleString();
 
+  const favCount = (state.favoriteGames || []).length;
+  const statFavEl = document.getElementById("entries-stat-favorites-count");
+  if (statFavEl) statFavEl.textContent = favCount.toLocaleString();
+
+  const statFavSubEl = document.getElementById("entries-stat-favorites-sub");
+  if (statFavSubEl) statFavSubEl.textContent = `${favCount} in radar watchlist`;
+
   // Highlight active stat card
   const cardInStock = document.getElementById("entries-stat-card-instock");
   const cardOutOfStock = document.getElementById("entries-stat-card-outofstock");
   const cardTotal = document.getElementById("entries-stat-card-total");
+  const cardFavorites = document.getElementById("entries-stat-card-favorites");
   if (cardInStock) cardInStock.classList.toggle("active", state.entriesStockFilter === "in-stock");
   if (cardOutOfStock) cardOutOfStock.classList.toggle("active", state.entriesStockFilter === "out-of-stock");
   if (cardTotal) cardTotal.classList.toggle("active", !state.entriesStockFilter || state.entriesStockFilter === "all");
+  if (cardFavorites) cardFavorites.classList.toggle("active", !!state.entriesFilterFav);
 
   const showingStart = entriesList.length === 0 ? 0 : startIndex + 1;
   const showingEnd = Math.min(endIndex, entriesList.length);

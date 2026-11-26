@@ -1973,6 +1973,14 @@ a {
   background: linear-gradient(135deg, rgba(168, 85, 247, 0.08) 0%, rgba(168, 85, 247, 0.02) 100%);
   box-shadow: 0 0 14px rgba(168, 85, 247, 0.25);
 }
+#entries-stat-card-favorites:hover {
+  border-color: #fbbf24;
+}
+#entries-stat-card-favorites.active {
+  border-color: #fbbf24;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(251, 191, 36, 0.02) 100%);
+  box-shadow: 0 0 14px rgba(251, 191, 36, 0.25);
+}
 
 /* ==========================================================================
    GAME CATALOG ENTRIES FILTER BAR (SINGLE ROW)
