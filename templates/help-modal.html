@@ -490,11 +490,26 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- v3.2.1 -->
+                <div class="changelog-release-card" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v3.2.1 - Kinguin Full Base Game &amp; CD Key Filtering</strong>
+                    <span style="font-size: 0.75rem; color: var(--accent-emerald); background: rgba(16, 185, 129, 0.12); padding: 2px 8px; border-radius: 4px; font-weight: 700;">Current Version</span>
+                  </div>
+                  <ul style="margin: 0; padding-left: 18px; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+                    <li><strong>Strict Game Account Exclusion:</strong> Kinguin API queries now strictly filter out Steam/Xbox/PSN accounts, shared access profiles, and offline accounts to ensure arbitrage benchmarks reflect legitimate redeemable CD Keys.</li>
+                    <li><strong>DLC &amp; Expansion Exclusion:</strong> Add-ons, season passes, soundtracks, and expansions are automatically filtered out, benchmarking full base games against base games.</li>
+                    <li><strong>Configurable Settings Toggles:</strong> Added <code>[Exclude Game Accounts]</code> and <code>[Exclude DLCs &amp; Expansions]</code> toggles in Settings &rarr; Kinguin Merchant API.</li>
+                    <li><strong>Expanded Candidate Pool:</strong> Increased Kinguin API queries to <code>limit=20</code> with intelligent keyword relevance scoring and CD Key prioritization.</li>
+                    <li><strong>Sourcing Radar 1-Click Key Search:</strong> Kinguin web launcher updated to bias search queries toward CD Keys directly on the Kinguin storefront.</li>
+                  </ul>
+                </div>
+
                 <!-- v3.2.0 -->
                 <div class="changelog-release-card" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <strong style="color: var(--text-main); font-size: 0.95rem;">v3.2.0 - GG.deals API Multi-Keyshop Benchmark & Arbitrage Radar</strong>
-                    <span style="font-size: 0.75rem; color: var(--accent-emerald); background: rgba(16, 185, 129, 0.12); padding: 2px 8px; border-radius: 4px; font-weight: 700;">Current Version</span>
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v3.2.0 - GG.deals API Multi-Keyshop Benchmark &amp; Arbitrage Radar</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); background: rgba(255, 255, 255, 0.06); padding: 2px 8px; border-radius: 4px; font-weight: 600;">Previous Release</span>
                   </div>
                   <ul style="margin: 0; padding-left: 18px; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
                     <li><strong>GG.deals API Integration:</strong> Direct API connectivity to query global pricing across official retailers and unofficial keyshops (G2A, Kinguin, Eneba, CDKeys, Gamivo, etc.) via personal tokens.</li>

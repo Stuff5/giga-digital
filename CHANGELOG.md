@@ -5,6 +5,21 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v3.2.1] - 2026-11-26
+### Added
+- **Kinguin Full Base Game & CD Key Filtering**:
+  - Implemented `window.isKinguinAccountListing` to strictly detect and exclude game accounts (Steam Accounts, Offline Accounts, Shared Profiles, Family Sharing, PSN/Xbox Accounts, and Steam/Alter Gifts) so arbitrage benchmarks evaluate genuine redeemable activation keys.
+  - Implemented `window.isKinguinDlcListing` to filter out cheaper add-ons, season passes, battle passes, soundtracks, cosmetics, and virtual currency packs, benchmarking full base games against base games.
+  - Added user-configurable filter toggles in **Settings &rarr; Kinguin Merchant API**:
+    - `[x] Exclude Game Accounts (Only Genuine CD Keys & Serials)` (`#settings-kinguin-exclude-accounts`)
+    - `[x] Exclude DLCs & Expansions (Full Base Games Only)` (`#settings-kinguin-exclude-dlcs`)
+  - Increased Kinguin candidate lookups from `limit=5` to `limit=20` to guarantee a deep pool of legitimate base game keys.
+  - Implemented `window.scoreKinguinProductMatch` with keyword relevance scoring and CD Key prioritization bonuses (`CD Key`, `Steam Key`, `Digital Key`).
+  - Enriched Sourcing Radar resale benchmark tooltips with the exact matched Kinguin listing title (`title="Matched: ..."`).
+  - Upgraded Sourcing Radar 1-click Kinguin web launcher to query `+ " CD Key"`, automatically biasing storefront search results toward genuine keys.
+- **Version Bump & Documentation Sync**:
+  - Upgraded project to **v3.2.1** across `config.js`, `app.js`, `index.html` (scripts `?v=136`), `README.md`, `CHANGELOG.md`, and `templates/help-modal.html`.
+
 ## [v3.2.0] - 2026-11-25
 ### Added
 - **GG.deals API Integration (Multi-Keyshop & Retail Benchmark)**:

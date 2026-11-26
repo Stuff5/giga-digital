@@ -956,6 +956,8 @@ let state = {
     kinguinApiKey: "",
     kinguinStoreName: "GameVault",
     kinguinProxyUrl: "",
+    kinguinExcludeAccounts: true,
+    kinguinExcludeDlcs: true,
     liveKinguinPrices: {},
     topbarAlerts: true,
     ggdealsToken: "fAY0ao1MgmAa8HrfDSEmQH7XhQlAav-y",
@@ -1735,6 +1737,8 @@ function loadStateFromStorage() {
       if (state.sourcingSettings.kinguinApiKey === undefined) state.sourcingSettings.kinguinApiKey = "";
       if (!state.sourcingSettings.kinguinStoreName) state.sourcingSettings.kinguinStoreName = "GameVault";
       if (state.sourcingSettings.kinguinProxyUrl === undefined) state.sourcingSettings.kinguinProxyUrl = "";
+      if (state.sourcingSettings.kinguinExcludeAccounts === undefined) state.sourcingSettings.kinguinExcludeAccounts = true;
+      if (state.sourcingSettings.kinguinExcludeDlcs === undefined) state.sourcingSettings.kinguinExcludeDlcs = true;
       if (state.sourcingSettings.ggdealsToken === undefined || !state.sourcingSettings.ggdealsToken) state.sourcingSettings.ggdealsToken = "fAY0ao1MgmAa8HrfDSEmQH7XhQlAav-y";
       if (!state.sourcingSettings.ggdealsRegion) state.sourcingSettings.ggdealsRegion = "us";
       if (state.sourcingSettings.ggdealsProxyUrl === undefined) state.sourcingSettings.ggdealsProxyUrl = "";

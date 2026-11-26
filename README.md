@@ -2,7 +2,7 @@
 
 > High-performance digital game license inventory pipeline, sales ledger, and financial analytics platform designed for digital key merchants, distributors, and online publishers.
 
-![Version](https://img.shields.io/badge/version-v3.2.0-cyan.svg)
+![Version](https://img.shields.io/badge/version-v3.2.1-cyan.svg)
 ![Status](https://img.shields.io/badge/status-active-emerald.svg)
 ![Platform](https://img.shields.io/badge/platform-Web%20SPA-purple.svg)
 
@@ -137,7 +137,7 @@ GameVault is engineered as a modular client-side Single Page Application (SPA) d
 game-sales-tracker/
 ├── index.html                 # Core application shell, topbar & dashboard markup
 ├── landing.html               # Public product landing page
-├── config.js                  # Global configuration & environment endpoints (v3.2.0)
+├── config.js                  # Global configuration & environment endpoints (v3.2.1)
 ├── app.js                     # Application entry point & boot sequence
 ├── styles.css                 # Comprehensive design system & animations
 ├── CHANGELOG.md               # Version progress & milestone documentation
@@ -169,7 +169,7 @@ game-sales-tracker/
 3. Click **Connect & Sync** to enable bidirectional cloud syncing across all sessions and devices.
 
 ### Kinguin Merchant & GG.deals API Setup
-1. **Kinguin API**: Navigate to **Settings &rarr; Kinguin Merchant API**. Enter your store API Key and store name. Configure your Cloudflare Worker relay in **CORS Proxy / Relay URL** to enable browser queries. Click **Test Kinguin Connection** to verify live catalog search capability.
+1. **Kinguin API**: Navigate to **Settings &rarr; Kinguin Merchant API**. Enter your store API Key and store name. Configure your Cloudflare Worker relay in **CORS Proxy / Relay URL** to enable browser queries. Benchmark filters (`[x] Exclude Game Accounts` and `[x] Exclude DLCs & Expansions`) ensure live benchmarks only evaluate genuine base game CD Keys. Click **Test Kinguin Connection** to verify live catalog search capability.
 2. **GG.deals API**: Navigate to **Settings &rarr; GG.deals API**. Paste your personal token from [gg.deals/api/](https://gg.deals/api/). Select your preferred currency/region (EUR, USD, GBP, etc.). Click **Test GG.deals Connection** to verify live pricing. (Automatically reuses your Kinguin CORS relay proxy).
 
 ---
@@ -178,4 +178,4 @@ game-sales-tracker/
 
 See [CHANGELOG.md](CHANGELOG.md) for full release notes and development milestones.
 
-Current Release: **v3.2.0** (2026-11-25)
+Current Release: **v3.2.1** (2026-11-26)

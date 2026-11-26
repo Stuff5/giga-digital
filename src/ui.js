@@ -18135,6 +18135,7 @@ window.renderSourcingRadarView = function() {
       inStockCount,
       benchmarkPrice,
       benchmarkSource,
+      liveKinguinName: liveKinguin?.name || null,
       netPayout,
       dealPrice,
       normalPrice,
@@ -18247,14 +18248,14 @@ window.renderSourcingRadarView = function() {
           <div class="sourcing-item-grid">
             <!-- Kinguin Benchmark Column -->
             <div class="sourcing-stat-col">
-              <span class="sourcing-stat-label">
+              <span class="sourcing-stat-label" ${item.liveKinguinName ? `title="Matched: ${item.liveKinguinName.replace(/"/g, '&quot;')}"` : ''}>
                 ${item.benchmarkSource === "Live Kinguin API" ? `<i class="fa-solid fa-crown" style="color: #ff9900;"></i> Live Kinguin` : `<i class="fa-solid fa-tag" style="color: #ff5000;"></i> Kinguin Resale`}
               </span>
               <div class="sourcing-stat-value" style="cursor: pointer;" title="Click to override Kinguin resale benchmark price" onclick="window.setSourcingManualBenchmark('${item.title.replace(/'/g, "\\'")}')">
                 <span>${item.benchmarkPrice !== null ? `€${item.benchmarkPrice.toFixed(2)}` : `<span style="color: var(--text-muted); font-size: 0.8rem;">Set benchmark</span>`}</span>
                 <i class="fa-solid fa-pen" style="font-size: 0.68rem; color: var(--text-muted); opacity: 0.7;"></i>
               </div>
-              <span style="font-size: 0.7rem; color: var(--text-muted);">
+              <span style="font-size: 0.7rem; color: var(--text-muted);" ${item.liveKinguinName ? `title="Kinguin item: ${item.liveKinguinName.replace(/"/g, '&quot;')}"` : ''}>
                 Net: ${item.netPayout !== null ? `€${item.netPayout.toFixed(2)}` : "-"} (${item.benchmarkSource})
               </span>
             </div>
@@ -18328,7 +18329,7 @@ window.renderSourcingRadarView = function() {
           <a href="https://www.allkeyshop.com/blog/?s=${encodedTitle}" target="_blank" rel="noopener noreferrer" class="btn-sourcing-launcher" title="Compare on Allkeyshop">
             <span>Allkeyshop</span> <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.65rem;"></i>
           </a>
-          <a href="https://www.kinguin.net/listing?active=1&hide_out_of_stock=1&phrase=${encodedTitle}" target="_blank" rel="noopener noreferrer" class="btn-sourcing-launcher" title="View active listings on Kinguin">
+          <a href="https://www.kinguin.net/listing?active=1&hide_out_of_stock=1&phrase=${encodeURIComponent(item.title + ' CD Key')}" target="_blank" rel="noopener noreferrer" class="btn-sourcing-launcher" title="View active CD Key listings on Kinguin">
             <span style="color: #ff5000; font-weight: 700;">Kinguin</span> <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.65rem;"></i>
           </a>
           <button type="button" class="btn btn-outline btn-xs" style="height: 28px; padding: 0 8px;" onclick="window.openAddGameModalWithTitle('${item.title.replace(/'/g, "\\'")}')" title="Log purchased keys into Inventory">

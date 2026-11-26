@@ -2219,7 +2219,176 @@ function getKinguinRequestUrl(targetUrl, customProxyUrl) {
 }
 
 /**
+ * Checks whether a Kinguin product listing represents a Game Account, shared profile,
+ * or offline account rather than a genuine redeemable CD Key / serial.
+ */
+window.isKinguinAccountListing = function(item) {
+  if (!item) return false;
+
+  // 1. Explicit API fields if provided by Kinguin
+  if (item.isAccount === true || item.is_account === true) return true;
+  if (typeof item.deliveryType === "string" && item.deliveryType.trim().toLowerCase() === "account") return true;
+  if (typeof item.type === "string" && item.type.trim().toLowerCase() === "account") return true;
+
+  const name = (item.name || "").toLowerCase();
+
+  // 2. Specific multi-word account identifiers common on Kinguin
+  const accountPhrases = [
+    "steam account",
+    "offline account",
+    "shared account",
+    "shared profile",
+    "shared access",
+    "family share",
+    "family sharing",
+    "psn account",
+    "playstation account",
+    "ps4 account",
+    "ps5 account",
+    "xbox account",
+    "primary account",
+    "secondary account",
+    "nintendo account",
+    "switch account",
+    "epic games account",
+    "epic account",
+    "uplay account",
+    "ubisoft account",
+    "origin account",
+    "ea app account",
+    "ea account",
+    "battlenet account",
+    "battle.net account",
+    "gog account",
+    "alter gift",
+    "steam gift"
+  ];
+
+  if (accountPhrases.some(phrase => name.includes(phrase))) {
+    return true;
+  }
+
+  // 3. Word-boundary regex check for standalone account words (e.g., "(Account)", "Account EU", "[Account]")
+  if (/\b(accounts?|acc)\b/i.test(name)) {
+    return true;
+  }
+
+  // 4. Tags / categories check
+  if (Array.isArray(item.tags) && item.tags.some(t => typeof t === "string" && /\baccount\b/i.test(t))) {
+    return true;
+  }
+
+  return false;
+};
+
+/**
+ * Checks whether a Kinguin product listing is a DLC, expansion, season pass, or add-on
+ * rather than the full base game.
+ */
+window.isKinguinDlcListing = function(item, queryCleanTitle) {
+  if (!item) return false;
+
+  const name = (item.name || "").toLowerCase();
+  const queryLower = (queryCleanTitle || "").toLowerCase();
+
+  const dlcPatterns = [
+    /\bdlc\b/i,
+    /\bexpansion(\s*pack)?\b/i,
+    /\bseason\s*pass\b/i,
+    /\bexpansion\s*pass\b/i,
+    /\bbattle\s*pass\b/i,
+    /\bsoundtrack\b/i,
+    /\bost\b/i,
+    /\bartbook\b/i,
+    /\bcosmetics?\b/i,
+    /\bskin\s*pack\b/i,
+    /\bupgrade\s*pack\b/i,
+    /\bbonus\s*pack\b/i,
+    /\bcontent\s*pack\b/i,
+    /\bstarter\s*pack\b/i,
+    /\bbooster\s*pack\b/i,
+    /\bcar\s*pass\b/i,
+    /\badd-?on\b/i,
+    /\bin-?game\s*currency\b/i,
+    /\bminecoins\b/i,
+    /\bpoints\b/i,
+    /\bcoins\b/i,
+    /\bcredits\b/i
+  ];
+
+  for (const regex of dlcPatterns) {
+    if (regex.test(name)) {
+      // If the user's queried title didn't contain this DLC keyword, this listing is an add-on
+      if (!regex.test(queryLower)) {
+        return true;
+      }
+    }
+  }
+
+  if (typeof item.type === "string" && item.type.trim().toLowerCase() === "dlc") {
+    if (!/\bdlc\b/i.test(queryLower)) return true;
+  }
+
+  return false;
+};
+
+/**
+ * Evaluates match quality between a clean search title and a Kinguin candidate product.
+ * Returns a score > 0 if valid match, or -1 if irrelevant.
+ */
+window.scoreKinguinProductMatch = function(item, cleanTitle) {
+  if (!item || !item.name) return -1;
+  const itemName = item.name.toLowerCase();
+
+  const stopWords = new Set(["the", "and", "for", "with", "edition", "game", "pc", "steam", "global", "eu", "na", "row", "digital"]);
+  const queryWords = cleanTitle
+    .toLowerCase()
+    .replace(/[^\w\s]/g, " ")
+    .split(/\s+/)
+    .filter(w => w.length > 1 && !stopWords.has(w));
+
+  if (queryWords.length === 0) {
+    return itemName.includes(cleanTitle.toLowerCase()) ? 50 : -1;
+  }
+
+  let matchedCount = 0;
+  for (const w of queryWords) {
+    if (itemName.includes(w)) {
+      matchedCount++;
+    }
+  }
+
+  const matchRatio = matchedCount / queryWords.length;
+  const minRequiredRatio = queryWords.length <= 2 ? 1.0 : 0.60;
+  if (matchRatio < minRequiredRatio) {
+    return -1;
+  }
+
+  let score = Math.round(matchRatio * 50);
+
+  // CD Key bonuses
+  if (/\b(cd\s*key|steam\s*key|key|download\s*code|digital\s*download)\b/i.test(itemName)) {
+    score += 15;
+  }
+
+  // Base game bonus
+  if (!/\b(dlc|pack|pass|bundle)\b/i.test(itemName)) {
+    score += 10;
+  }
+
+  // In-stock bonus
+  const qty = Number(item.qty ?? item.textQty ?? 0);
+  if (qty > 0) {
+    score += 5;
+  }
+
+  return score;
+};
+
+/**
  * Queries Kinguin eCommerce API for a specific game's lowest market price.
+ * Strictly filters out Game Accounts and DLCs/Expansions by default so benchmarks
+ * accurately represent legitimate Full Base Game CD Keys.
  */
 window.fetchKinguinLiveProduct = async function(title, customApiKey) {
   const key = customApiKey || state.sourcingSettings?.kinguinApiKey;
@@ -2229,7 +2398,11 @@ window.fetchKinguinLiveProduct = async function(title, customApiKey) {
   const clean = title.replace(/\s*[\(\[].*?[\)\]]/g, "").trim();
   if (!clean) return null;
 
-  const rawUrl = `https://gateway.kinguin.net/esa/api/v1/products?name=${encodeURIComponent(clean)}&page=1&limit=5`;
+  const excludeAccounts = state.sourcingSettings?.kinguinExcludeAccounts !== false;
+  const excludeDlcs = state.sourcingSettings?.kinguinExcludeDlcs !== false;
+
+  // Query up to 20 products to ensure ample valid base keys remain after filtering accounts & DLCs
+  const rawUrl = `https://gateway.kinguin.net/esa/api/v1/products?name=${encodeURIComponent(clean)}&page=1&limit=20`;
   const requestUrl = getKinguinRequestUrl(rawUrl);
   const headers = { "X-Api-Key": key.trim() };
 
@@ -2246,18 +2419,55 @@ window.fetchKinguinLiveProduct = async function(title, customApiKey) {
 
     if (items.length === 0) return null;
 
-    // Find lowest price item with available stock or valid price
-    let best = null;
-    items.forEach(it => {
+    // Filter out accounts & DLCs, and score candidates
+    const validCandidates = [];
+    for (const it of items) {
       const p = Number(it.price);
-      if (p > 0) {
-        if (!best || p < Number(best.price)) {
-          best = it;
-        }
-      }
-    });
+      if (!(p > 0)) continue;
 
-    if (!best) return null;
+      if (excludeAccounts && window.isKinguinAccountListing(it)) {
+        continue;
+      }
+
+      if (excludeDlcs && window.isKinguinDlcListing(it, clean)) {
+        continue;
+      }
+
+      const matchScore = window.scoreKinguinProductMatch(it, clean);
+      if (matchScore <= 0) {
+        continue;
+      }
+
+      validCandidates.push({
+        item: it,
+        price: p,
+        score: matchScore
+      });
+    }
+
+    if (validCandidates.length === 0) {
+      // Fallback: If strict filtering rejected everything, never return an account if excludeAccounts is active
+      const nonAccounts = items.filter(it => Number(it.price) > 0 && (!excludeAccounts || !window.isKinguinAccountListing(it)));
+      if (nonAccounts.length === 0) return null;
+
+      nonAccounts.sort((a, b) => Number(a.price) - Number(b.price));
+      const fallbackBest = nonAccounts[0];
+      return {
+        kinguinId: fallbackBest.kinguinId,
+        productId: fallbackBest.productId,
+        name: fallbackBest.name,
+        price: Number(fallbackBest.price),
+        qty: Number(fallbackBest.qty ?? fallbackBest.textQty ?? 0),
+        fetchedAt: Date.now()
+      };
+    }
+
+    // Sort valid candidates by price ascending among strong title matches
+    const highConfidence = validCandidates.filter(c => c.score >= 40);
+    const pool = highConfidence.length > 0 ? highConfidence : validCandidates;
+    pool.sort((a, b) => a.price - b.price);
+
+    const best = pool[0].item;
 
     return {
       kinguinId: best.kinguinId,
@@ -2338,10 +2548,18 @@ window.initKinguinConnection = function() {
   const statusBadge = document.getElementById("kinguin-connection-status");
   const radarBadge = document.getElementById("sourcing-kinguin-api-badge");
   const radarLabel = document.getElementById("sourcing-kinguin-api-label");
+  const excludeAccountsCheckbox = document.getElementById("settings-kinguin-exclude-accounts");
+  const excludeDlcsCheckbox = document.getElementById("settings-kinguin-exclude-dlcs");
 
   if (keyInput && !keyInput.value) keyInput.value = key;
   if (storeInput && !storeInput.value) storeInput.value = storeName;
   if (proxyInput && !proxyInput.value) proxyInput.value = proxyUrl;
+  if (excludeAccountsCheckbox) {
+    excludeAccountsCheckbox.checked = state.sourcingSettings?.kinguinExcludeAccounts !== false;
+  }
+  if (excludeDlcsCheckbox) {
+    excludeDlcsCheckbox.checked = state.sourcingSettings?.kinguinExcludeDlcs !== false;
+  }
 
   if (statusBadge) {
     if (key) {
@@ -2380,6 +2598,8 @@ window.bindKinguinSettingsControls = function() {
   const keyInput = document.getElementById("settings-kinguin-apikey");
   const storeInput = document.getElementById("settings-kinguin-storename");
   const proxyInput = document.getElementById("settings-kinguin-proxyurl");
+  const excludeAccountsCheckbox = document.getElementById("settings-kinguin-exclude-accounts");
+  const excludeDlcsCheckbox = document.getElementById("settings-kinguin-exclude-dlcs");
   const btnSave = document.getElementById("btn-save-kinguin-api");
   const btnTest = document.getElementById("btn-test-kinguin-api");
   const feedback = document.getElementById("kinguin-test-feedback");
@@ -2400,11 +2620,15 @@ window.bindKinguinSettingsControls = function() {
       const keyVal = keyInput ? keyInput.value.trim() : "";
       const storeVal = storeInput ? storeInput.value.trim() : "GameVault";
       const proxyVal = proxyInput ? proxyInput.value.trim() : "";
+      const excludeAccounts = excludeAccountsCheckbox ? excludeAccountsCheckbox.checked : true;
+      const excludeDlcs = excludeDlcsCheckbox ? excludeDlcsCheckbox.checked : true;
 
       if (!state.sourcingSettings) state.sourcingSettings = {};
       state.sourcingSettings.kinguinApiKey = keyVal;
       state.sourcingSettings.kinguinStoreName = storeVal || "GameVault";
       state.sourcingSettings.kinguinProxyUrl = proxyVal;
+      state.sourcingSettings.kinguinExcludeAccounts = excludeAccounts;
+      state.sourcingSettings.kinguinExcludeDlcs = excludeDlcs;
 
       if (typeof saveSecondaryTablesToStorage === "function") saveSecondaryTablesToStorage();
       if (window.supabaseClient && typeof dbSaveSettings === "function") {
