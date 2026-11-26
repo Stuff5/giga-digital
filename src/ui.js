@@ -3885,6 +3885,8 @@ function navigateToHash(targetHash) {
     sidebar.classList.remove("active");
   }
 
+  window.location.hash = targetHash;
+
   try {
     if (targetHash === "#inventory") {
       renderInventoryTable(getFilteredInventory());
@@ -3902,11 +3904,39 @@ function navigateToHash(targetHash) {
       renderRecycleBin();
     } else if (targetHash === "#dashboard") {
       updateUI();
+    } else if (targetHash === "#settings") {
+      if (typeof renderSidebarCustomizationSettings === "function") renderSidebarCustomizationSettings();
+      if (typeof window.updateSteamReviewsStats === "function") window.updateSteamReviewsStats();
+      if (typeof window.syncAISettingsUI === "function") window.syncAISettingsUI();
     }
   } catch (err) {
     console.error("Error rendering view on programmatic navigation:", err);
   }
 }
+
+// Global navigation helper to switch views programmatically by view ID ("suppliers-view", "suppliers") or hash ("#suppliers")
+window.navigateTo = function(target) {
+  if (!target) return;
+  const clean = target.replace(/^#/, "").replace(/-view$/, "");
+  const targetHash = `#${clean}`;
+
+  // Close any popover or dropdown menu
+  const storesDropdown = document.getElementById("sourcing-stores-dropdown");
+  if (storesDropdown) storesDropdown.style.display = "none";
+
+  // Simulate clicking the sidebar nav link to trigger all event handlers, URL hash update, and view renders
+  const navLink = document.querySelector(`.nav-link[href="${targetHash}"]`);
+  if (navLink) {
+    navLink.click();
+    return;
+  }
+
+  // Fallback to navigateToHash if navLink was not found
+  if (typeof navigateToHash === "function") {
+    navigateToHash(targetHash);
+  }
+};
+window.navigateToHash = navigateToHash;
 
 
 
@@ -4288,6 +4318,11 @@ function closeModal(id) {
       if (pswInput) pswInput.type = "password";
       const eyeIcon = document.getElementById("toggle-key-eye-icon");
       if (eyeIcon) eyeIcon.className = "fa-solid fa-eye";
+    }
+
+    if (id === "sourcing-radar-modal") {
+      const storesDropdown = document.getElementById("sourcing-stores-dropdown");
+      if (storesDropdown) storesDropdown.style.display = "none";
     }
   } else {
     console.warn(`closeModal: Element with ID "${id}" not found.`);

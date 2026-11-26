@@ -5,6 +5,15 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v3.2.5] - 2026-11-26
+### Fixed
+- **Global Programmatic Navigation (`window.navigateTo`) & Manage Suppliers Link**:
+  - Implemented `window.navigateTo(target)` routing helper supporting both view IDs (`suppliers-view`, `settings-view`, `entries-view`) and URL hashes (`#suppliers`, `#settings`, etc.).
+  - Fixed the "Configure in Manage Suppliers" link inside the Sourcing Radar stores dropdown (`#sourcing-stores-dropdown`), enabling it to close the radar modal and transition smoothly to the Manage Suppliers table.
+  - Activated 1-click navigation from radar status badges (`Connect Kinguin API`, `Connect GG.deals API`, and `Browse Entries & Star Games`) directly to their respective views.
+- **Version Bump & Documentation Sync**:
+  - Upgraded project to **v3.2.5** across `config.js`, `app.js`, `index.html` (scripts `?v=140`), `README.md`, `CHANGELOG.md`, and `templates/help-modal.html`.
+
 ## [v3.2.4] - 2026-11-26
 ### Fixed
 - **Sourcing Radar Stores Filter Dropdown Layout & Item Alignment**:

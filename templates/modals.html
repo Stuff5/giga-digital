@@ -1452,7 +1452,7 @@
                   <!-- Checkboxes dynamically rendered -->
                 </div>
                 <div style="border-top: 1px solid var(--border-color); padding-top: 8px; margin-top: 8px; text-align: center; flex-shrink: 0;">
-                  <a href="#" onclick="closeModal('sourcing-radar-modal'); if(typeof navigateTo === 'function') navigateTo('suppliers-view');" style="font-size: 0.72rem; color: var(--accent-cyan); text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+                  <a href="#suppliers" onclick="event.preventDefault(); closeModal('sourcing-radar-modal'); if(typeof navigateTo === 'function') navigateTo('suppliers-view');" style="font-size: 0.72rem; color: var(--accent-cyan); text-decoration: none; display: inline-flex; align-items: center; gap: 5px; cursor: pointer;">
                     <i class="fa-solid fa-sliders"></i> Configure in Manage Suppliers
                   </a>
                 </div>
