@@ -5,6 +5,18 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v3.4.2] - 2026-11-27
+### Architecture & Refactoring (Phase 2)
+- **UI Architecture Modularization**:
+  - **Modular Subsystems**: Decomposed the monolithic 19,000-line `src/ui.js` file into 4 dedicated, maintainable domain modules:
+    1. **User Authentication & Accounts** (`src/ui/auth.js`): Login, registration, 2FA validation, password recovery, session logout, admin user management table & modals.
+    2. **Settings & Customization** (`src/ui/settings.js`): Theme modes, color palettes, font sizing, menu customization, settings tab switcher (`switchSettingsTab`, `restoreSettingsTab`), and advanced system configuration.
+    3. **Recycle Bin & Data Recovery** (`src/ui/recycle.js`): Recycle bin table renderers, soft-delete staging, undo restoration, permanent deletion, empty bin, and duplicate keys inspector.
+    4. **Sourcing & Arbitrage Radar** (`src/ui/radar.js`): Sourcing Radar modal, CheapShark store filters, Kinguin/G2A arbitrage cards, and manual benchmark overrides.
+  - **Over 3,300 Lines Extracted**: Reduced `src/ui.js` by over 3,300 lines, improving browser script parsing performance and code separation.
+  - **Zero-Build Architecture Preserved**: Retained native vanilla execution with sequential script loading—100% compatible with direct GitHub Pages hosting.
+  - **Global HTML Escaping**: Centrally exposed `window.escapeHTML` across all modular scopes.
+
 ## [v3.4.1] - 2026-11-27
 ### Performance & Storage Optimization
 - **Storage Debouncing & Quota Protection Engine**:
