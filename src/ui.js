@@ -17885,13 +17885,11 @@ window.renderSourcingStoresDropdown = function() {
     const isScanActive = isMySupplier && (matchingSupplier.radarScan !== false);
 
     return `
-      <label class="sourcing-store-checkbox-row" style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <input type="checkbox" value="${id}" ${isChecked ? "checked" : ""} class="sourcing-store-checkbox" />
-          <span class="store-name">${name}</span>
-        </div>
+      <label class="sourcing-store-checkbox-row">
+        <input type="checkbox" value="${id}" ${isChecked ? "checked" : ""} class="sourcing-store-checkbox" />
+        <span class="store-name" title="${name}">${name}</span>
         ${isMySupplier ? `
-          <span class="badge ${isScanActive ? 'badge-available' : 'badge-sold'}" style="font-size: 0.65rem; padding: 1px 5px; flex-shrink: 0;" title="Matched with supplier '${escapeHTML(matchingSupplier.name)}' (${isScanActive ? 'Radar ON' : 'Radar OFF in Suppliers menu'})">
+          <span class="badge ${isScanActive ? 'badge-available' : 'badge-sold'} sourcing-store-supplier-badge" title="Matched with supplier '${escapeHTML(matchingSupplier.name)}' (${isScanActive ? 'Radar ON' : 'Radar OFF in Suppliers menu'})">
             <i class="fa-solid fa-truck-ramp-box" style="margin-right: 3px;"></i>${isScanActive ? 'My Supplier' : 'Suppliers (Off)'}
           </span>
         ` : ''}

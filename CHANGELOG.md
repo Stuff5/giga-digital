@@ -5,6 +5,15 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v3.2.4] - 2026-11-26
+### Fixed
+- **Sourcing Radar Stores Filter Dropdown Layout & Item Alignment**:
+  - Restructured store checklist rows in `renderSourcingStoresDropdown` to use unified flex layout, eliminating nested wrappers and aligning checkboxes, titles, and supplier badges (`My Supplier` / `Suppliers (Off)`) cleanly.
+  - Enforced `flex-direction: column` on `.sourcing-stores-menu` and set comfortable width (300px), eliminating horizontal squashing and header button wrapping.
+  - Added slim scrollbar styling to `#sourcing-stores-checkboxes-list` to prevent content overlap.
+- **Version Bump & Documentation Sync**:
+  - Upgraded project to **v3.2.4** across `config.js`, `app.js`, `index.html` (scripts `?v=139`, `styles.css?v=91`), `README.md`, `CHANGELOG.md`, and `templates/help-modal.html`.
+
 ## [v3.2.3] - 2026-11-26
 ### Added
 - **Favorite Titles Metric Card in Entries Menu**:

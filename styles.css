@@ -7260,34 +7260,82 @@ textarea.form-control {
 }
 
 .sourcing-stores-menu {
+  display: flex;
+  flex-direction: column;
   animation: fadeInDown 0.15s ease-out;
+  min-width: 290px;
+  width: 300px;
+  background: var(--bg-dropdown, var(--bg-card));
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55), 0 0 0 1px var(--border-color);
+  padding: 10px 12px;
+  box-sizing: border-box;
 }
 
 .sourcing-store-checkbox-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 5px 8px;
+  gap: 10px;
+  padding: 6px 8px;
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background 0.12s ease;
   user-select: none;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .sourcing-store-checkbox-row:hover {
-  background: var(--bg-card-hover);
+  background: var(--bg-card-hover, rgba(255, 255, 255, 0.06));
 }
 
 .sourcing-store-checkbox-row input[type="checkbox"] {
   cursor: pointer;
   accent-color: var(--accent-cyan);
+  margin: 0;
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
 }
 
 .sourcing-store-checkbox-row .store-name {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 500;
   color: var(--text-main);
-  flex-grow: 1;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.sourcing-store-checkbox-row .sourcing-store-supplier-badge {
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  flex-shrink: 0;
+  margin-left: auto;
+  border-radius: 4px;
+  line-height: 1.2;
+}
+
+#sourcing-stores-checkboxes-list {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+#sourcing-stores-checkboxes-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+#sourcing-stores-checkboxes-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#sourcing-stores-checkboxes-list::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
 }
 
 /* ==========================================================================
