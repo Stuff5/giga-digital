@@ -4,7 +4,7 @@
  */
 
 document.addEventListener("DOMContentLoaded", async () => {
-  const currentVersion = window.APP_VERSION || "v3.2.5";
+  const currentVersion = window.APP_VERSION || "v3.3.0";
   console.log(`[GameVault] DOMContentLoaded - Booting ${currentVersion}...`);
   console.log("[GameVault] Native gv_active_user:", window.localStorage.getItem("gv_active_user"));
 
@@ -251,6 +251,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (typeof window.bindKinguinSettingsControls === "function") window.bindKinguinSettingsControls();
     if (typeof window.initGGDealsConnection === "function") window.initGGDealsConnection();
     if (typeof window.bindGGDealsSettingsControls === "function") window.bindGGDealsSettingsControls();
+    if (typeof window.initG2AConnection === "function") window.initG2AConnection();
+    if (typeof window.bindG2ASettingsControls === "function") window.bindG2ASettingsControls();
     initAdvancedSettings();
     bindAdvancedSettingsControls();
     initPayouts();

@@ -3063,3 +3063,356 @@ window.bindGGDealsSettingsControls = function() {
   }
 };
 
+// ==========================================================================
+// G2A MERCHANT API INTEGRATION (DIRECT MARKETPLACE & DUAL ARBITRAGE)
+// ==========================================================================
+
+/**
+ * Formats request URL through an optional CORS relay proxy for G2A calls.
+ * Falls back to Kinguin/GG.deals proxy if no specific G2A proxy is set.
+ */
+function getG2ARequestUrl(targetUrl, customProxyUrl) {
+  const proxy = customProxyUrl !== undefined 
+    ? customProxyUrl.trim() 
+    : (state.sourcingSettings?.g2aProxyUrl || state.sourcingSettings?.kinguinProxyUrl || "").trim();
+  if (!proxy) return targetUrl;
+  if (proxy.includes("?url=") || proxy.endsWith("?url=")) {
+    return proxy + encodeURIComponent(targetUrl);
+  }
+  if (proxy.endsWith("/")) {
+    return proxy + targetUrl;
+  }
+  return proxy + "/" + targetUrl;
+}
+
+/**
+ * Retrieves an OAuth2 Bearer token from G2A using client credentials grant.
+ * Caches token in memory until expiration.
+ */
+window.getG2AAccessToken = async function(customClientId, customClientSecret, customApiUrl, customProxyUrl) {
+  const clientId = (customClientId || state.sourcingSettings?.g2aClientId || "").trim();
+  const clientSecret = (customClientSecret || state.sourcingSettings?.g2aClientSecret || "").trim();
+  const apiUrl = (customApiUrl || state.sourcingSettings?.g2aApiUrl || "https://api.g2a.com").trim().replace(/\/+$/, "");
+
+  if (!clientId || !clientSecret) return null;
+
+  // Check cached token
+  const cached = state.sourcingSettings?._g2aTokenCache;
+  if (cached && cached.token && cached.expiresAt && Date.now() < cached.expiresAt) {
+    return cached.token;
+  }
+
+  const rawTokenUrl = `${apiUrl}/oauth/token`;
+  const requestUrl = getG2ARequestUrl(rawTokenUrl, customProxyUrl);
+  const bodyParams = new URLSearchParams();
+  bodyParams.append("grant_type", "client_credentials");
+  bodyParams.append("client_id", clientId);
+  bodyParams.append("client_secret", clientSecret);
+
+  try {
+    const res = await fetch(requestUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: bodyParams.toString()
+    });
+
+    if (!res.ok) {
+      console.warn(`[G2A API] OAuth token request failed with status: ${res.status}`);
+      return null;
+    }
+
+    const data = await res.json();
+    if (data && data.access_token) {
+      const expiresIn = Number(data.expires_in) || 3600;
+      if (!state.sourcingSettings) state.sourcingSettings = {};
+      state.sourcingSettings._g2aTokenCache = {
+        token: data.access_token,
+        expiresAt: Date.now() + (expiresIn - 60) * 1000
+      };
+      return data.access_token;
+    }
+    return null;
+  } catch (err) {
+    console.error("[G2A API] Error requesting OAuth token:", err);
+    throw err;
+  }
+};
+
+/**
+ * Validates G2A Client ID & Client Secret by obtaining an OAuth2 Bearer token
+ * and querying a catalog verification endpoint.
+ */
+window.testG2AConnection = async function(customClientId, customClientSecret, customApiUrl, customProxyUrl) {
+  const clientId = (customClientId || state.sourcingSettings?.g2aClientId || "").trim();
+  const clientSecret = (customClientSecret || state.sourcingSettings?.g2aClientSecret || "").trim();
+  const apiUrl = (customApiUrl || state.sourcingSettings?.g2aApiUrl || "https://api.g2a.com").trim().replace(/\/+$/, "");
+  const proxyUrl = customProxyUrl !== undefined ? customProxyUrl.trim() : (state.sourcingSettings?.g2aProxyUrl || state.sourcingSettings?.kinguinProxyUrl || "").trim();
+
+  if (!clientId || !clientSecret) {
+    return { success: false, message: "Please provide both G2A Client ID and Client Secret." };
+  }
+
+  try {
+    // Step 1: OAuth2 Token Exchange
+    const rawTokenUrl = `${apiUrl}/oauth/token`;
+    const tokenRequestUrl = getG2ARequestUrl(rawTokenUrl, proxyUrl);
+    const bodyParams = new URLSearchParams();
+    bodyParams.append("grant_type", "client_credentials");
+    bodyParams.append("client_id", clientId);
+    bodyParams.append("client_secret", clientSecret);
+
+    const tokenRes = await fetch(tokenRequestUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: bodyParams.toString()
+    });
+
+    if (tokenRes.status === 401 || tokenRes.status === 400) {
+      return {
+        success: false,
+        message: "Authentication failed (400/401 Invalid Client). Please ensure your G2A Client ID and Client Secret are copied correctly from G2A API Integration panel."
+      };
+    }
+
+    if (!tokenRes.ok) {
+      return {
+        success: false,
+        message: `G2A OAuth token endpoint returned HTTP status: ${tokenRes.status}.`
+      };
+    }
+
+    const tokenData = await tokenRes.json();
+    const token = tokenData.access_token;
+    if (!token) {
+      return { success: false, message: "G2A did not return an access_token in the OAuth response." };
+    }
+
+    // Cache valid token
+    if (!state.sourcingSettings) state.sourcingSettings = {};
+    state.sourcingSettings._g2aTokenCache = {
+      token: token,
+      expiresAt: Date.now() + ((Number(tokenData.expires_in) || 3600) - 60) * 1000
+    };
+
+    // Step 2: Test query catalog or products
+    const rawCatalogUrl = `${apiUrl}/export/v1/products?page=1`;
+    const catalogRequestUrl = getG2ARequestUrl(rawCatalogUrl, proxyUrl);
+    const catalogRes = await fetch(catalogRequestUrl, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      }
+    });
+
+    let extraInfo = "";
+    if (catalogRes.ok) {
+      const catalogData = await catalogRes.json();
+      if (catalogData && catalogData.total !== undefined) {
+        extraInfo = ` Access verified across ${Number(catalogData.total).toLocaleString()} products.`;
+      }
+    }
+
+    return {
+      success: true,
+      message: `Connected successfully to G2A API! OAuth2 Client Credentials verified.${extraInfo} Environment: ${apiUrl}.`
+    };
+  } catch (err) {
+    if (!proxyUrl) {
+      return {
+        success: false,
+        isCorsError: true,
+        message: "Browser CORS Restriction: G2A API blocks browser direct origins ('Failed to fetch'). A CORS relay is required. You can reuse your Cloudflare Worker relay proxy configured in Kinguin Settings, or enter one above."
+      };
+    }
+    return {
+      success: false,
+      message: `Proxy request failed: ${err.message}. Please verify your CORS Proxy URL and G2A API URL.`
+    };
+  }
+};
+
+/**
+ * Initializes G2A API UI states in Settings and Sourcing Radar.
+ */
+window.initG2AConnection = function() {
+  const clientId = state.sourcingSettings?.g2aClientId || "";
+  const clientSecret = state.sourcingSettings?.g2aClientSecret || "";
+  const apiUrl = state.sourcingSettings?.g2aApiUrl || "https://api.g2a.com";
+  const proxyUrl = state.sourcingSettings?.g2aProxyUrl || "";
+
+  const idInput = document.getElementById("settings-g2a-clientid");
+  const secretInput = document.getElementById("settings-g2a-clientsecret");
+  const urlSelect = document.getElementById("settings-g2a-apiurl");
+  const proxyInput = document.getElementById("settings-g2a-proxyurl");
+  const statusBadge = document.getElementById("g2a-connection-status");
+  const radarBadge = document.getElementById("sourcing-g2a-api-badge");
+  const radarLabel = document.getElementById("sourcing-g2a-api-label");
+
+  if (idInput && !idInput.value) idInput.value = clientId;
+  if (secretInput && !secretInput.value) secretInput.value = clientSecret;
+  if (urlSelect) urlSelect.value = apiUrl;
+  if (proxyInput && !proxyInput.value) proxyInput.value = proxyUrl;
+
+  const isConfigured = !!(clientId && clientSecret);
+
+  if (statusBadge) {
+    if (isConfigured) {
+      statusBadge.textContent = "Configured";
+      statusBadge.className = "badge badge-in-stock";
+      statusBadge.style.backgroundColor = "var(--accent-emerald, #10b981)";
+    } else {
+      statusBadge.textContent = "Not Configured";
+      statusBadge.className = "badge badge-sold";
+      statusBadge.style.backgroundColor = "";
+    }
+  }
+
+  if (radarBadge && radarLabel) {
+    if (isConfigured) {
+      radarBadge.style.background = "rgba(0, 112, 210, 0.15)";
+      radarBadge.style.color = "#0070d2";
+      radarBadge.style.borderColor = "rgba(0, 112, 210, 0.4)";
+      radarBadge.title = `Live G2A API Connected (${apiUrl.includes('sandbox') ? 'Sandbox' : 'Production'})`;
+      radarLabel.textContent = "G2A Live API Active";
+    } else {
+      radarBadge.style.background = "rgba(0, 112, 210, 0.12)";
+      radarBadge.style.color = "#0070d2";
+      radarBadge.style.borderColor = "rgba(0, 112, 210, 0.35)";
+      radarBadge.title = "Click to configure G2A Merchant API";
+      radarLabel.textContent = "Connect G2A API";
+    }
+  }
+};
+
+/**
+ * Binds event listeners for G2A Settings controls.
+ */
+window.bindG2ASettingsControls = function() {
+  const btnToggleVis = document.getElementById("btn-toggle-g2a-secret-vis");
+  const idInput = document.getElementById("settings-g2a-clientid");
+  const secretInput = document.getElementById("settings-g2a-clientsecret");
+  const urlSelect = document.getElementById("settings-g2a-apiurl");
+  const proxyInput = document.getElementById("settings-g2a-proxyurl");
+  const btnSave = document.getElementById("btn-save-g2a-api");
+  const btnTest = document.getElementById("btn-test-g2a-api");
+  const feedback = document.getElementById("g2a-test-feedback");
+  const statusBadge = document.getElementById("g2a-connection-status");
+
+  // Toggle secret visibility
+  if (btnToggleVis && secretInput) {
+    btnToggleVis.addEventListener("click", () => {
+      const isPass = secretInput.type === "password";
+      secretInput.type = isPass ? "text" : "password";
+      btnToggleVis.innerHTML = isPass ? `<i class="fa-regular fa-eye-slash"></i>` : `<i class="fa-regular fa-eye"></i>`;
+    });
+  }
+
+  // Save G2A Settings
+  if (btnSave) {
+    btnSave.addEventListener("click", async () => {
+      const idVal = idInput ? idInput.value.trim() : "";
+      const secretVal = secretInput ? secretInput.value.trim() : "";
+      const urlVal = urlSelect ? urlSelect.value.trim() : "https://api.g2a.com";
+      const proxyVal = proxyInput ? proxyInput.value.trim() : "";
+
+      if (!state.sourcingSettings) state.sourcingSettings = {};
+      state.sourcingSettings.g2aClientId = idVal;
+      state.sourcingSettings.g2aClientSecret = secretVal;
+      state.sourcingSettings.g2aApiUrl = urlVal;
+      state.sourcingSettings.g2aProxyUrl = proxyVal;
+      // Invalidate cached token when credentials change
+      delete state.sourcingSettings._g2aTokenCache;
+
+      if (typeof saveSecondaryTablesToStorage === "function") saveSecondaryTablesToStorage();
+      if (window.supabaseClient && typeof dbSaveSettings === "function") {
+        await dbSaveSettings("sourcingSettings", state.sourcingSettings);
+      }
+
+      if (typeof showToast === "function") {
+        showToast("G2A Merchant API settings saved!", "success");
+      }
+      if (typeof logActionNotification === "function") {
+        logActionNotification(idVal ? `Configured G2A API Credentials (Client ID: ${idVal})` : "Cleared G2A API Credentials");
+      }
+
+      window.initG2AConnection();
+    });
+  }
+
+  // Test G2A Connection
+  if (btnTest) {
+    btnTest.addEventListener("click", async () => {
+      const idVal = idInput ? idInput.value.trim() : "";
+      const secretVal = secretInput ? secretInput.value.trim() : "";
+      const urlVal = urlSelect ? urlSelect.value.trim() : "https://api.g2a.com";
+      const proxyVal = proxyInput ? proxyInput.value.trim() : "";
+
+      if (!idVal || !secretVal) {
+        if (typeof showToast === "function") showToast("Please enter both Client ID and Client Secret.", "warning");
+        if (feedback) {
+          feedback.style.display = "block";
+          feedback.style.background = "rgba(255, 153, 0, 0.1)";
+          feedback.style.border = "1px solid var(--accent-warning)";
+          feedback.style.color = "var(--text-main)";
+          feedback.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-warning); margin-right: 6px;"></i> Please enter both Client ID and Client Secret to test.`;
+        }
+        return;
+      }
+
+      const originalBtnText = btnTest.innerHTML;
+      btnTest.disabled = true;
+      btnTest.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Testing G2A API...`;
+
+      if (feedback) {
+        feedback.style.display = "block";
+        feedback.style.background = "rgba(0, 112, 210, 0.08)";
+        feedback.style.border = "1px solid rgba(0, 112, 210, 0.4)";
+        feedback.style.color = "var(--text-main)";
+        feedback.innerHTML = `<i class="fa-solid fa-arrows-rotate fa-spin" style="color: #0070d2; margin-right: 6px;"></i> Querying G2A OAuth2 Gateway...`;
+      }
+
+      try {
+        const result = await window.testG2AConnection(idVal, secretVal, urlVal, proxyVal);
+        if (result.success) {
+          if (feedback) {
+            feedback.style.background = "rgba(16, 185, 129, 0.12)";
+            feedback.style.border = "1px solid var(--accent-emerald)";
+            feedback.style.color = "var(--text-main)";
+            feedback.innerHTML = `<i class="fa-solid fa-circle-check" style="color: var(--accent-emerald); margin-right: 6px;"></i> ${result.message}`;
+          }
+          if (statusBadge) {
+            statusBadge.textContent = "Connected";
+            statusBadge.className = "badge badge-in-stock";
+            statusBadge.style.backgroundColor = "var(--accent-emerald, #10b981)";
+          }
+          if (typeof showToast === "function") showToast("G2A API Connection Verified!", "success");
+        } else {
+          if (feedback) {
+            feedback.style.background = result.isCorsError ? "rgba(255, 153, 0, 0.12)" : "rgba(244, 67, 54, 0.12)";
+            feedback.style.border = result.isCorsError ? "1px solid var(--accent-warning)" : "1px solid var(--accent-danger)";
+            feedback.style.color = "var(--text-main)";
+            feedback.innerHTML = `<i class="fa-solid ${result.isCorsError ? 'fa-triangle-exclamation text-warning' : 'fa-circle-xmark text-danger'}" style="margin-right: 6px;"></i> ${result.message}`;
+          }
+          if (statusBadge) {
+            statusBadge.textContent = result.isCorsError ? "CORS Required" : "Error";
+            statusBadge.className = "badge badge-sold";
+            statusBadge.style.backgroundColor = result.isCorsError ? "var(--accent-warning, #ff9900)" : "var(--accent-danger, #f44336)";
+          }
+          if (typeof showToast === "function") showToast(result.isCorsError ? "Browser CORS proxy required." : "G2A Connection Failed.", result.isCorsError ? "warning" : "error");
+        }
+      } catch (ex) {
+        if (feedback) {
+          feedback.style.background = "rgba(244, 67, 54, 0.12)";
+          feedback.style.border = "1px solid var(--accent-danger)";
+          feedback.innerHTML = `<i class="fa-solid fa-circle-xmark" style="color: var(--accent-danger); margin-right: 6px;"></i> Test error: ${ex.message}`;
+        }
+      } finally {
+        btnTest.disabled = false;
+        btnTest.innerHTML = originalBtnText;
+      }
+    });
+  }
+};
+

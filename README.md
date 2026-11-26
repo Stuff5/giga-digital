@@ -2,7 +2,7 @@
 
 > High-performance digital game license inventory pipeline, sales ledger, and financial analytics platform designed for digital key merchants, distributors, and online publishers.
 
-![Version](https://img.shields.io/badge/version-v3.2.5-cyan.svg)
+![Version](https://img.shields.io/badge/version-v3.3.0-cyan.svg)
 ![Status](https://img.shields.io/badge/status-active-emerald.svg)
 ![Platform](https://img.shields.io/badge/platform-Web%20SPA-purple.svg)
 
@@ -168,9 +168,10 @@ game-sales-tracker/
 2. Enter your **Supabase Project URL** and **Anon API Key** (or use the pre-configured deployment defaults in `config.js`).
 3. Click **Connect & Sync** to enable bidirectional cloud syncing across all sessions and devices.
 
-### Kinguin Merchant & GG.deals API Setup
+### Kinguin, GG.deals & G2A API Setup
 1. **Kinguin API**: Navigate to **Settings &rarr; Kinguin Merchant API**. Enter your store API Key and store name. Configure your Cloudflare Worker relay in **CORS Proxy / Relay URL** to enable browser queries. Benchmark filters (`[x] Exclude Game Accounts` and `[x] Exclude DLCs & Expansions`) ensure live benchmarks only evaluate genuine base game CD Keys. Click **Test Kinguin Connection** to verify live catalog search capability.
 2. **GG.deals API**: Navigate to **Settings &rarr; GG.deals API**. Paste your personal token from [gg.deals/api/](https://gg.deals/api/). Select your preferred currency/region (EUR, USD, GBP, etc.). Click **Test GG.deals Connection** to verify live pricing. (Automatically reuses your Kinguin CORS relay proxy).
+3. **G2A Merchant API**: Navigate to **Settings &rarr; G2A Merchant API**. Enter your G2A Client ID and Client Secret from your G2A API Integration dashboard. Supports both Production (`https://api.g2a.com`) and Sandbox. Powers live dual-marketplace arbitrage (`Target: G2A` vs `Target: Kinguin`).
 
 ---
 
@@ -178,4 +179,4 @@ game-sales-tracker/
 
 See [CHANGELOG.md](CHANGELOG.md) for full release notes and development milestones.
 
-Current Release: **v3.2.5** (2026-11-26)
+Current Release: **v3.3.0** (2026-11-26)

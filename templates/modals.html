@@ -1422,6 +1422,16 @@
               <span style="font-size: 0.78rem; color: var(--text-muted);">€</span>
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);"><i class="fa-solid fa-bolt" style="color: #0070d2; margin-right: 4px;"></i>G2A Fee:</span>
+              <input type="number" id="sourcing-g2a-fee-pct" class="form-control form-control-sm" value="10.4" min="0" max="40" step="0.1" style="width: 58px; height: 28px; padding: 2px 6px; text-align: center;" title="G2A standard category commission percentage (e.g. 10.4%)">
+              <span style="font-size: 0.78rem; color: var(--text-muted);">%</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);"><i class="fa-solid fa-receipt" style="color: #0070d2; margin-right: 4px;"></i>G2A Fixed:</span>
+              <input type="number" id="sourcing-g2a-fixed-fee" class="form-control form-control-sm" value="0.35" min="0" max="5" step="0.05" style="width: 58px; height: 28px; padding: 2px 6px; text-align: center;" title="G2A fixed transaction fee in euros">
+              <span style="font-size: 0.78rem; color: var(--text-muted);">€</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
               <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);"><i class="fa-solid fa-filter" style="color: var(--accent-emerald); margin-right: 4px;"></i>View:</span>
               <select id="sourcing-filter-status" class="form-control form-control-sm" style="width: auto; height: 28px; padding: 2px 8px; font-size: 0.78rem;">
                 <option value="all">All Favorites</option>
@@ -1478,6 +1488,13 @@
             <div style="display: flex; align-items: center; gap: 6px;">
               <span id="sourcing-ggdeals-api-badge" class="badge" style="background: rgba(190, 238, 17, 0.12); color: #beee11; border: 1px dashed rgba(190, 238, 17, 0.4); font-size: 0.72rem; padding: 4px 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;" title="Click to configure GG.deals API" onclick="closeModal('sourcing-radar-modal'); if(typeof navigateTo==='function') navigateTo('settings-view');">
                 <i class="fa-solid fa-tags"></i> <span id="sourcing-ggdeals-api-label">Connect GG.deals API</span>
+              </span>
+            </div>
+
+            <!-- G2A API Status Indicator -->
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span id="sourcing-g2a-api-badge" class="badge" style="background: rgba(0, 112, 210, 0.12); color: #0070d2; border: 1px dashed rgba(0, 112, 210, 0.4); font-size: 0.72rem; padding: 4px 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;" title="Click to configure G2A Merchant API" onclick="closeModal('sourcing-radar-modal'); if(typeof navigateTo==='function') navigateTo('settings-view');">
+                <i class="fa-solid fa-bolt"></i> <span id="sourcing-g2a-api-label">Connect G2A API</span>
               </span>
             </div>
 

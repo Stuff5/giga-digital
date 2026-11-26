@@ -1630,6 +1630,9 @@ function bindSidebarEvents() {
           if (typeof window.syncAISettingsUI === "function") {
             window.syncAISettingsUI();
           }
+          if (typeof window.initKinguinConnection === "function") window.initKinguinConnection();
+          if (typeof window.initGGDealsConnection === "function") window.initGGDealsConnection();
+          if (typeof window.initG2AConnection === "function") window.initG2AConnection();
         }
       } catch (err) {
         console.error("Error rendering view on navigation:", err);
@@ -1842,6 +1845,32 @@ function initEventHandlers() {
       if (!isNaN(val) && val >= 0) {
         if (!state.sourcingSettings) state.sourcingSettings = {};
         state.sourcingSettings.kinguinFixedFee = val;
+        if (typeof saveSecondaryTablesToStorage === "function") saveSecondaryTablesToStorage();
+        if (typeof window.renderSourcingRadarView === "function") window.renderSourcingRadarView();
+      }
+    });
+  }
+
+  const sourcingG2AFeePctInput = document.getElementById("sourcing-g2a-fee-pct");
+  if (sourcingG2AFeePctInput) {
+    sourcingG2AFeePctInput.addEventListener("input", (e) => {
+      const val = parseFloat(e.target.value);
+      if (!isNaN(val) && val >= 0) {
+        if (!state.sourcingSettings) state.sourcingSettings = {};
+        state.sourcingSettings.g2aFeePct = val;
+        if (typeof saveSecondaryTablesToStorage === "function") saveSecondaryTablesToStorage();
+        if (typeof window.renderSourcingRadarView === "function") window.renderSourcingRadarView();
+      }
+    });
+  }
+
+  const sourcingG2AFixedFeeInput = document.getElementById("sourcing-g2a-fixed-fee");
+  if (sourcingG2AFixedFeeInput) {
+    sourcingG2AFixedFeeInput.addEventListener("input", (e) => {
+      const val = parseFloat(e.target.value);
+      if (!isNaN(val) && val >= 0) {
+        if (!state.sourcingSettings) state.sourcingSettings = {};
+        state.sourcingSettings.g2aFixedFee = val;
         if (typeof saveSecondaryTablesToStorage === "function") saveSecondaryTablesToStorage();
         if (typeof window.renderSourcingRadarView === "function") window.renderSourcingRadarView();
       }
@@ -3908,6 +3937,9 @@ function navigateToHash(targetHash) {
       if (typeof renderSidebarCustomizationSettings === "function") renderSidebarCustomizationSettings();
       if (typeof window.updateSteamReviewsStats === "function") window.updateSteamReviewsStats();
       if (typeof window.syncAISettingsUI === "function") window.syncAISettingsUI();
+      if (typeof window.initKinguinConnection === "function") window.initKinguinConnection();
+      if (typeof window.initGGDealsConnection === "function") window.initGGDealsConnection();
+      if (typeof window.initG2AConnection === "function") window.initG2AConnection();
     }
   } catch (err) {
     console.error("Error rendering view on programmatic navigation:", err);
@@ -17993,9 +18025,13 @@ window.openSourcingRadarModal = async function() {
   if (state.sourcingSettings) {
     const feePctEl = document.getElementById("sourcing-kinguin-fee-pct");
     const fixedFeeEl = document.getElementById("sourcing-kinguin-fixed-fee");
+    const g2aFeePctEl = document.getElementById("sourcing-g2a-fee-pct");
+    const g2aFixedFeeEl = document.getElementById("sourcing-g2a-fixed-fee");
     const alertsToggle = document.getElementById("sourcing-toggle-topbar-alerts");
     if (feePctEl) feePctEl.value = state.sourcingSettings.kinguinFeePct ?? 11;
     if (fixedFeeEl) fixedFeeEl.value = state.sourcingSettings.kinguinFixedFee ?? 0.10;
+    if (g2aFeePctEl) g2aFeePctEl.value = state.sourcingSettings.g2aFeePct ?? 10.4;
+    if (g2aFixedFeeEl) g2aFixedFeeEl.value = state.sourcingSettings.g2aFixedFee ?? 0.35;
     if (alertsToggle) alertsToggle.checked = state.sourcingSettings.topbarAlerts !== false;
   }
 
@@ -18004,6 +18040,9 @@ window.openSourcingRadarModal = async function() {
   }
   if (typeof window.initGGDealsConnection === "function") {
     window.initGGDealsConnection();
+  }
+  if (typeof window.initG2AConnection === "function") {
+    window.initG2AConnection();
   }
 
   openModal("sourcing-radar-modal");
@@ -18029,6 +18068,8 @@ window.renderSourcingRadarView = function() {
   const favorites = (state.favoriteGames || []).slice();
   const feePct = Number(state.sourcingSettings?.kinguinFeePct ?? 11);
   const fixedFee = Number(state.sourcingSettings?.kinguinFixedFee ?? 0.10);
+  const g2aFeePct = Number(state.sourcingSettings?.g2aFeePct ?? 10.4);
+  const g2aFixedFee = Number(state.sourcingSettings?.g2aFixedFee ?? 0.35);
   const filterSelect = document.getElementById("sourcing-filter-status");
   const filterVal = filterSelect ? filterSelect.value : "profitable";
 
@@ -18168,11 +18209,60 @@ window.renderSourcingRadarView = function() {
       if (dealPrice !== null && dealPrice > 0) {
         netProfit = netPayout - dealPrice;
         roiPct = (netProfit / dealPrice) * 100;
-        if (netProfit > 0) {
-          profitableCount++;
-          if (roiPct > maxRoi) maxRoi = roiPct;
-        }
       }
+    }
+
+    // Resolve G2A Marketplace Benchmark & Arbitrage
+    let g2aPrice = null;
+    let g2aSource = "No Data";
+    const liveG2A = state.sourcingSettings?.liveG2APrices?.[title];
+
+    if (liveG2A && Number(liveG2A.price) > 0) {
+      g2aPrice = Number(liveG2A.price);
+      g2aSource = "Live G2A API";
+    } else {
+      const titleSales = salesByTitle[key] || [];
+      const g2aSales = titleSales.filter(s => s.platform && s.platform.trim().toLowerCase() === "g2a" && Number(s.price) > 0);
+      if (g2aSales.length > 0) {
+        const lastG2A = g2aSales[g2aSales.length - 1];
+        g2aPrice = Number(lastG2A.price);
+        g2aSource = `G2A (${g2aSales.length} sold)`;
+      } else if (benchmarkPrice !== null) {
+        g2aPrice = benchmarkPrice;
+        g2aSource = "Market Est.";
+      }
+    }
+
+    let g2aNetPayout = null;
+    let g2aNetProfit = null;
+    let g2aRoiPct = null;
+
+    if (g2aPrice !== null && g2aPrice > 0) {
+      g2aNetPayout = Math.max(0, (g2aPrice * (1 - g2aFeePct / 100)) - g2aFixedFee);
+      if (dealPrice !== null && dealPrice > 0) {
+        g2aNetProfit = g2aNetPayout - dealPrice;
+        g2aRoiPct = (g2aNetProfit / dealPrice) * 100;
+      }
+    }
+
+    // Evaluate Best Venue Target (Kinguin vs G2A)
+    let bestTarget = "Kinguin";
+    let bestNetProfit = netProfit;
+    let bestRoi = roiPct;
+    let targetDiff = 0;
+
+    if (g2aNetProfit !== null && (netProfit === null || g2aNetProfit > netProfit)) {
+      bestTarget = "G2A";
+      bestNetProfit = g2aNetProfit;
+      bestRoi = g2aRoiPct;
+      if (netProfit !== null) targetDiff = g2aNetProfit - netProfit;
+    } else if (netProfit !== null && g2aNetProfit !== null) {
+      targetDiff = netProfit - g2aNetProfit;
+    }
+
+    if (bestNetProfit !== null && bestNetProfit > 0) {
+      profitableCount++;
+      if (bestRoi !== null && bestRoi > maxRoi) maxRoi = bestRoi;
     }
 
     // Live GG.deals Pricing & Multi-keyshop benchmark
@@ -18214,6 +18304,15 @@ window.renderSourcingRadarView = function() {
       thumbUrl,
       netProfit,
       roiPct,
+      g2aPrice,
+      g2aSource,
+      g2aNetPayout,
+      g2aNetProfit,
+      g2aRoiPct,
+      bestTarget,
+      bestNetProfit,
+      bestRoi,
+      targetDiff,
       steamAppId,
       ggKeyshopPrice,
       ggRetailPrice,
@@ -18232,17 +18331,17 @@ window.renderSourcingRadarView = function() {
   // Apply Filter
   let filtered = computedItems;
   if (filterVal === "profitable") {
-    filtered = computedItems.filter(item => item.netProfit !== null && item.netProfit > 0);
+    filtered = computedItems.filter(item => item.bestNetProfit !== null && item.bestNetProfit > 0);
   } else if (filterVal === "high-margin") {
-    filtered = computedItems.filter(item => item.roiPct !== null && item.roiPct >= 30);
+    filtered = computedItems.filter(item => item.bestRoi !== null && item.bestRoi >= 30);
   } else if (filterVal === "out-of-stock") {
     filtered = computedItems.filter(item => item.inStockCount === 0);
   }
 
   // Sort: highest profit first, then highest ROI, then title
   filtered.sort((a, b) => {
-    const profitA = a.netProfit !== null ? a.netProfit : -9999;
-    const profitB = b.netProfit !== null ? b.netProfit : -9999;
+    const profitA = a.bestNetProfit !== null ? a.bestNetProfit : -9999;
+    const profitB = b.bestNetProfit !== null ? b.bestNetProfit : -9999;
     if (profitB !== profitA) return profitB - profitA;
     return a.title.localeCompare(b.title);
   });
@@ -18271,19 +18370,19 @@ window.renderSourcingRadarView = function() {
   }
 
   const itemsHtml = filtered.map(item => {
-    const isProfitable = item.netProfit !== null && item.netProfit > 0;
-    const isLoss = item.netProfit !== null && item.netProfit <= 0;
+    const isProfitable = item.bestNetProfit !== null && item.bestNetProfit > 0;
+    const isLoss = item.bestNetProfit !== null && item.bestNetProfit <= 0;
     const itemClass = isProfitable ? "sourcing-item is-profitable" : (isLoss ? "sourcing-item is-loss" : "sourcing-item");
 
     const safeTitle = item.title.replace(/"/g, "&quot;");
     const encodedTitle = encodeURIComponent(item.title);
 
     let roiBadge = `<span class="sourcing-roi-badge sourcing-roi-low">-</span>`;
-    if (item.roiPct !== null) {
-      const roundedRoi = Math.round(item.roiPct);
-      if (item.roiPct >= 30) {
+    if (item.bestRoi !== null) {
+      const roundedRoi = Math.round(item.bestRoi);
+      if (item.bestRoi >= 30) {
         roiBadge = `<span class="sourcing-roi-badge sourcing-roi-high"><i class="fa-solid fa-arrow-trend-up"></i> +${roundedRoi}% ROI</span>`;
-      } else if (item.roiPct > 0) {
+      } else if (item.bestRoi > 0) {
         roiBadge = `<span class="sourcing-roi-badge sourcing-roi-med"><i class="fa-solid fa-arrow-trend-up"></i> +${roundedRoi}% ROI</span>`;
       } else {
         roiBadge = `<span class="sourcing-roi-badge sourcing-roi-low">${roundedRoi}% ROI</span>`;
@@ -18330,6 +18429,19 @@ window.renderSourcingRadarView = function() {
               </span>
             </div>
 
+            <!-- G2A Marketplace Column -->
+            <div class="sourcing-stat-col">
+              <span class="sourcing-stat-label">
+                <i class="fa-solid fa-bolt" style="color: #0070d2;"></i> G2A Marketplace
+              </span>
+              <div class="sourcing-stat-value">
+                <span>${item.g2aPrice !== null ? `€${item.g2aPrice.toFixed(2)}` : `<span style="color: var(--text-muted); font-size: 0.8rem;">-</span>`}</span>
+              </div>
+              <span style="font-size: 0.7rem; color: var(--text-muted);">
+                Net: ${item.g2aNetPayout !== null ? `€${item.g2aNetPayout.toFixed(2)}` : "-"} (${item.g2aSource})
+              </span>
+            </div>
+
             <!-- Best Store Deal Column -->
             <div class="sourcing-stat-col">
               <span class="sourcing-stat-label" ${item.dealTitle ? `title="Supplier Match: ${item.dealTitle.replace(/"/g, '&quot;')}"` : ''}>
@@ -18366,21 +18478,32 @@ window.renderSourcingRadarView = function() {
               </span>
             </div>
 
-            <!-- Kinguin Arbitrage Profit & ROI Column -->
+            <!-- Net Profit & Multi-Marketplace Target Column -->
             <div class="sourcing-stat-col">
-              <span class="sourcing-stat-label">
-                <i class="fa-solid fa-calculator" style="color: var(--accent-emerald);"></i> Net Profit &amp; ROI
-              </span>
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+                <span class="sourcing-stat-label">
+                  <i class="fa-solid fa-calculator" style="color: var(--accent-emerald);"></i> Net Profit &amp; ROI
+                </span>
+                ${item.bestTarget === "G2A" ? `
+                  <span class="badge" style="background: rgba(0, 112, 210, 0.15); color: #0070d2; border: 1px solid rgba(0, 112, 210, 0.35); font-size: 0.65rem; padding: 1px 5px;" title="G2A yields higher net payout (+€${item.targetDiff.toFixed(2)} vs Kinguin)">
+                    <i class="fa-solid fa-bolt"></i> Target: G2A
+                  </span>
+                ` : `
+                  <span class="badge" style="background: rgba(255, 80, 0, 0.15); color: #ff5000; border: 1px solid rgba(255, 80, 0, 0.35); font-size: 0.65rem; padding: 1px 5px;" title="Kinguin yields higher net payout (+€${item.targetDiff.toFixed(2)} vs G2A)">
+                    <i class="fa-solid fa-crown"></i> Target: Kinguin
+                  </span>
+                `}
+              </div>
               <div class="sourcing-stat-value">
-                ${item.netProfit !== null ? `
-                  <span style="color: ${item.netProfit > 0 ? 'var(--accent-emerald)' : 'var(--text-muted)'};">
-                    ${item.netProfit > 0 ? "+" : ""}€${item.netProfit.toFixed(2)}
+                ${item.bestNetProfit !== null ? `
+                  <span style="color: ${item.bestNetProfit > 0 ? 'var(--accent-emerald)' : 'var(--text-muted)'};">
+                    ${item.bestNetProfit > 0 ? "+" : ""}€${item.bestNetProfit.toFixed(2)}
                   </span>
                   ${roiBadge}
                 ` : `<span style="color: var(--text-muted); font-size: 0.8rem;">-</span>`}
               </div>
               <span style="font-size: 0.7rem; color: var(--text-muted);">
-                After ${feePct}% + €${fixedFee.toFixed(2)} Kinguin fee
+                ${item.bestTarget === "G2A" ? `After ${g2aFeePct}% + €${g2aFixedFee.toFixed(2)} G2A fee` : `After ${feePct}% + €${fixedFee.toFixed(2)} Kinguin fee`}
               </span>
             </div>
           </div>
@@ -18401,6 +18524,9 @@ window.renderSourcingRadarView = function() {
           </a>
           <a href="https://www.kinguin.net/listing?active=1&hide_out_of_stock=1&phrase=${encodeURIComponent(item.title + ' CD Key')}" target="_blank" rel="noopener noreferrer" class="btn-sourcing-launcher" title="View active CD Key listings on Kinguin">
             <span style="color: #ff5000; font-weight: 700;">Kinguin</span> <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.65rem;"></i>
+          </a>
+          <a href="https://www.g2a.com/search?query=${encodeURIComponent(item.title + ' PC')}" target="_blank" rel="noopener noreferrer" class="btn-sourcing-launcher" title="View active listings on G2A">
+            <span style="color: #0070d2; font-weight: 700;">G2A</span> <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.65rem;"></i>
           </a>
           <button type="button" class="btn btn-outline btn-xs" style="height: 28px; padding: 0 8px;" onclick="window.openAddGameModalWithTitle('${item.title.replace(/'/g, "\\'")}')" title="Log purchased keys into Inventory">
             <i class="fa-solid fa-plus text-emerald"></i>

@@ -5,6 +5,18 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v3.3.0] - 2026-11-26
+### Added
+- **G2A Merchant API Integration & Dual-Marketplace Arbitrage Engine**:
+  - **G2A OAuth2 Integration**: Integrated G2A API client credentials grant (`POST /oauth/token` with `client_id` & `client_secret`) with in-memory token caching and validation via `GET /export/v1/products`.
+  - **Settings Management Panel**: Added dedicated **G2A Merchant API** configuration card in Settings with Client ID input, Client Secret input (with show/hide eye toggle), environment selector (Production vs Sandbox), CORS proxy relay routing, status badges, and 1-click **Test G2A Connection** button.
+  - **Dual-Marketplace Arbitrage in Sourcing Radar**: Sourcing Radar now evaluates live benchmarks and net payouts across both **Kinguin** and **G2A** side-by-side, comparing fees and automatically flagging the best venue with target recommendation badges (`Target: G2A` vs `Target: Kinguin`) and profit differentials.
+  - **Independent G2A Fee Simulation**: Added dedicated toolbar inputs for G2A Fee % (default 10.4%) and Fixed Transaction Fee (default €0.35) with live reactive recalculations.
+  - **1-Click G2A Launcher Hub**: Embedded direct 1-click launcher buttons to open verified product searches directly on G2A alongside CheapShark, Kinguin, GG.deals, and Allkeyshop.
+  - **Radar Status Badge**: Added G2A API connection status badge in the radar modal toolbar with 1-click navigation to Settings.
+- **Version Bump & Documentation Sync**:
+  - Upgraded project to **v3.3.0** across `config.js`, `app.js`, `index.html` (scripts `?v=141`, `styles.css?v=92`), `README.md`, `CHANGELOG.md`, and `templates/help-modal.html`.
+
 ## [v3.2.5] - 2026-11-26
 ### Fixed
 - **Global Programmatic Navigation (`window.navigateTo`) & Manage Suppliers Link**:

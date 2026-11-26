@@ -965,7 +965,14 @@ let state = {
     ggdealsToken: "fAY0ao1MgmAa8HrfDSEmQH7XhQlAav-y",
     ggdealsRegion: "us",
     ggdealsProxyUrl: "",
-    liveGGDealsPrices: {}
+    liveGGDealsPrices: {},
+    g2aClientId: "spVkqzQsSrtMyqXY",
+    g2aClientSecret: "",
+    g2aApiUrl: "https://api.g2a.com",
+    g2aProxyUrl: "",
+    g2aFeePct: 10.4,
+    g2aFixedFee: 0.35,
+    liveG2APrices: {}
   },
   auditLogs: [],
   entriesFilterFav: false,
@@ -1747,6 +1754,13 @@ function loadStateFromStorage() {
       if (!state.sourcingSettings.ggdealsRegion) state.sourcingSettings.ggdealsRegion = "us";
       if (state.sourcingSettings.ggdealsProxyUrl === undefined) state.sourcingSettings.ggdealsProxyUrl = "";
       if (!state.sourcingSettings.liveGGDealsPrices) state.sourcingSettings.liveGGDealsPrices = {};
+      if (state.sourcingSettings.g2aClientId === undefined) state.sourcingSettings.g2aClientId = "spVkqzQsSrtMyqXY";
+      if (state.sourcingSettings.g2aClientSecret === undefined) state.sourcingSettings.g2aClientSecret = "";
+      if (!state.sourcingSettings.g2aApiUrl) state.sourcingSettings.g2aApiUrl = "https://api.g2a.com";
+      if (state.sourcingSettings.g2aProxyUrl === undefined) state.sourcingSettings.g2aProxyUrl = "";
+      if (state.sourcingSettings.g2aFeePct === undefined) state.sourcingSettings.g2aFeePct = 10.4;
+      if (state.sourcingSettings.g2aFixedFee === undefined) state.sourcingSettings.g2aFixedFee = 0.35;
+      if (!state.sourcingSettings.liveG2APrices) state.sourcingSettings.liveG2APrices = {};
     } catch (e) {
       console.error("Error loading sourcing settings:", e);
     }

@@ -490,11 +490,25 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- v3.3.0 -->
+                <div class="changelog-release-card" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v3.3.0 - G2A Merchant API &amp; Dual-Marketplace Arbitrage Engine</strong>
+                    <span style="font-size: 0.75rem; color: var(--accent-emerald); background: rgba(16, 185, 129, 0.12); padding: 2px 8px; border-radius: 4px; font-weight: 700;">Current Version</span>
+                  </div>
+                  <ul style="margin: 0; padding-left: 18px; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+                    <li><strong>Direct G2A Merchant API Integration:</strong> Added OAuth2 Client Credentials integration for G2A (Client ID, Client Secret, Production/Sandbox environments) with connection testing in Settings.</li>
+                    <li><strong>Dual-Marketplace Arbitrage (Kinguin vs G2A):</strong> The Sourcing Radar now computes net payouts and ROIs across both Kinguin and G2A simultaneously, automatically tagging the highest-margin selling venue (<code>Target: G2A</code> vs <code>Target: Kinguin</code>).</li>
+                    <li><strong>Independent Fee Simulation Controls:</strong> Configurable commission (%: default 10.4%) and fixed transaction fees (€: default 0.35€) for G2A in the radar toolbar alongside Kinguin fees.</li>
+                    <li><strong>Direct G2A 1-Click Launcher:</strong> Added instant 1-click launcher buttons to open search listings directly on G2A in the radar action hub.</li>
+                  </ul>
+                </div>
+
                 <!-- v3.2.5 -->
                 <div class="changelog-release-card" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                     <strong style="color: var(--text-main); font-size: 0.95rem;">v3.2.5 - Global Programmatic Navigation &amp; Manage Suppliers Link Fix</strong>
-                    <span style="font-size: 0.75rem; color: var(--accent-emerald); background: rgba(16, 185, 129, 0.12); padding: 2px 8px; border-radius: 4px; font-weight: 700;">Current Version</span>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); background: rgba(255, 255, 255, 0.06); padding: 2px 8px; border-radius: 4px; font-weight: 600;">Previous Release</span>
                   </div>
                   <ul style="margin: 0; padding-left: 18px; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
                     <li><strong>Global window.navigateTo Router:</strong> Implemented a unified view-switching function handling both view IDs (e.g. <code>suppliers-view</code>, <code>settings-view</code>, <code>entries-view</code>) and hash routes (e.g. <code>#suppliers</code>).</li>
