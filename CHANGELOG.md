@@ -5,6 +5,22 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v3.2.2] - 2026-11-26
+### Added
+- **Universal Base Game & CD Key Filtering across GG.deals & All Suppliers**:
+  - **Supplier Deal Filtering (CheapShark)**: Expanded `refreshSourcingDeals` to scan up to 20 candidate deals per favorite game across all 13 recognized stores (Steam, GreenManGaming, Fanatical, GOG, Humble Store, Epic Games, etc.), rigorously filtering out DLCs, expansions, soundtracks, season passes, and accounts before picking the lowest sale price.
+  - **Accurate Steam App ID Resolution**: Eliminated the defect where CheapShark's deal picker matched cheaper DLC deals (e.g. Witcher 3 expansion packs) and propagated DLC Steam App IDs to GG.deals. Now only the genuine full base game Steam App ID is passed to GG.deals, ensuring GG.deals returns authentic base game pricing and keyshop benchmarks.
+  - **Fallback Catalog App ID Harvesting**: If a favorite game has no active discount in CheapShark, GameVault now harvests the Steam App ID directly from the catalog database or cached artwork, ensuring GG.deals queries keyshop benchmarks for all watched games.
+  - **Multi-Source Tooltip Transparency**: Sourcing Radar cards now provide full transparency: hovering over the **Best Deal** column displays `Supplier Match: ...`, hovering over **GG.deals** displays `GG.deals Match: ...`, and hovering over **Live Kinguin** displays `Matched: ...`.
+  - **1-Click Launchers Hardened**:
+    - GG.deals launcher now appends `?type=1` (`https://gg.deals/games/?type=1&title=...`) to force GG.deals search results to only show full games and exclude DLCs and packs.
+    - Allkeyshop launcher now queries with `+ " CD Key"`, biasing search results toward legitimate redeemable keys.
+    - CheapShark "Buy Deal" launcher directly routes to the verified full base game deal.
+  - **Radar Filter Status Pill**: Added a prominent `[Base Games & Keys Only]` shield badge in the Sourcing Radar modal toolbar.
+  - **Unified Sourcing Settings**: Synchronized `excludeAccounts` and `excludeDlcs` across state and settings storage.
+- **Version Bump & Documentation Sync**:
+  - Upgraded project to **v3.2.2** across `config.js`, `app.js`, `index.html` (scripts `?v=137`), `README.md`, `CHANGELOG.md`, and `templates/help-modal.html`.
+
 ## [v3.2.1] - 2026-11-26
 ### Added
 - **Kinguin Full Base Game & CD Key Filtering**:

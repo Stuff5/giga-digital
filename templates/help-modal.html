@@ -490,11 +490,26 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- v3.2.2 -->
+                <div class="changelog-release-card" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v3.2.2 - Universal Base Game &amp; CD Key Filtering across GG.deals &amp; All Suppliers</strong>
+                    <span style="font-size: 0.75rem; color: var(--accent-emerald); background: rgba(16, 185, 129, 0.12); padding: 2px 8px; border-radius: 4px; font-weight: 700;">Current Version</span>
+                  </div>
+                  <ul style="margin: 0; padding-left: 18px; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+                    <li><strong>Universal Supplier Deal Filtering:</strong> Applied strict base game and CD key filters across all 13 official suppliers (Steam, GreenManGaming, Fanatical, GOG, Humble Store, Epic Games, etc.) via CheapShark, completely preventing cheaper DLCs/soundtracks from overriding base game deals.</li>
+                    <li><strong>Accurate Steam App ID Propagation:</strong> By guaranteeing CheapShark picks only base games, the correct base game Steam App ID is delivered to GG.deals, ensuring GG.deals queries legitimate base game keyshop prices.</li>
+                    <li><strong>Enhanced GG.deals Matching &amp; Launchers:</strong> GG.deals title matching strictly verifies non-DLC/non-account products, and fallback web launchers force <code>type=1</code> (base games only).</li>
+                    <li><strong>Multi-Source Tooltip Transparency:</strong> Hovering over Kinguin, GG.deals, or Supplier Best Deal columns displays the exact product title matched by each respective platform.</li>
+                    <li><strong>Radar Status Indicator:</strong> Added a <code>[Base Games &amp; Keys Only]</code> shield badge in the Sourcing Radar toolbar for instant verification.</li>
+                  </ul>
+                </div>
+
                 <!-- v3.2.1 -->
                 <div class="changelog-release-card" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                     <strong style="color: var(--text-main); font-size: 0.95rem;">v3.2.1 - Kinguin Full Base Game &amp; CD Key Filtering</strong>
-                    <span style="font-size: 0.75rem; color: var(--accent-emerald); background: rgba(16, 185, 129, 0.12); padding: 2px 8px; border-radius: 4px; font-weight: 700;">Current Version</span>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); background: rgba(255, 255, 255, 0.06); padding: 2px 8px; border-radius: 4px; font-weight: 600;">Previous Release</span>
                   </div>
                   <ul style="margin: 0; padding-left: 18px; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
                     <li><strong>Strict Game Account Exclusion:</strong> Kinguin API queries now strictly filter out Steam/Xbox/PSN accounts, shared access profiles, and offline accounts to ensure arbitrage benchmarks reflect legitimate redeemable CD Keys.</li>

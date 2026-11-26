@@ -2219,20 +2219,20 @@ function getKinguinRequestUrl(targetUrl, customProxyUrl) {
 }
 
 /**
- * Checks whether a Kinguin product listing represents a Game Account, shared profile,
- * or offline account rather than a genuine redeemable CD Key / serial.
+ * Checks whether a product listing (from Kinguin, CheapShark, GG.deals, or any supplier)
+ * represents a Game Account, shared profile, or offline account rather than a genuine redeemable CD Key / serial.
  */
 window.isKinguinAccountListing = function(item) {
   if (!item) return false;
 
-  // 1. Explicit API fields if provided by Kinguin
+  // 1. Explicit API fields if provided
   if (item.isAccount === true || item.is_account === true) return true;
   if (typeof item.deliveryType === "string" && item.deliveryType.trim().toLowerCase() === "account") return true;
   if (typeof item.type === "string" && item.type.trim().toLowerCase() === "account") return true;
 
-  const name = (item.name || "").toLowerCase();
+  const name = (item.name || item.title || item.external || "").toLowerCase();
 
-  // 2. Specific multi-word account identifiers common on Kinguin
+  // 2. Specific multi-word account identifiers common across keyshops and suppliers
   const accountPhrases = [
     "steam account",
     "offline account",
@@ -2280,15 +2280,16 @@ window.isKinguinAccountListing = function(item) {
 
   return false;
 };
+window.isGameAccountListing = window.isKinguinAccountListing;
 
 /**
- * Checks whether a Kinguin product listing is a DLC, expansion, season pass, or add-on
- * rather than the full base game.
+ * Checks whether a product listing (from Kinguin, CheapShark, GG.deals, or any supplier)
+ * is a DLC, expansion, season pass, or add-on rather than the full base game.
  */
 window.isKinguinDlcListing = function(item, queryCleanTitle) {
   if (!item) return false;
 
-  const name = (item.name || "").toLowerCase();
+  const name = (item.name || item.title || item.external || "").toLowerCase();
   const queryLower = (queryCleanTitle || "").toLowerCase();
 
   const dlcPatterns = [
@@ -2301,10 +2302,13 @@ window.isKinguinDlcListing = function(item, queryCleanTitle) {
     /\bost\b/i,
     /\bartbook\b/i,
     /\bcosmetics?\b/i,
-    /\bskin\s*pack\b/i,
+    /\bskin(\s*pack)?\b/i,
     /\bupgrade\s*pack\b/i,
-    /\bbonus\s*pack\b/i,
+    /\bbonus(\s*pack|\s*content)?\b/i,
     /\bcontent\s*pack\b/i,
+    /\bcharacter\s*pack\b/i,
+    /\bcostume\s*pack\b/i,
+    /\bweapon\s*pack\b/i,
     /\bstarter\s*pack\b/i,
     /\bbooster\s*pack\b/i,
     /\bcar\s*pass\b/i,
@@ -2325,20 +2329,38 @@ window.isKinguinDlcListing = function(item, queryCleanTitle) {
     }
   }
 
+  // Detect un-labeled expansions and add-on subtitles after ':' or '-'
+  // e.g. 'Cyberpunk 2077: Phantom Liberty', 'The Witcher 3: Wild Hunt - Blood and Wine'
+  const cleanQ = queryLower.replace(/[\:\-\_]/g, " ").replace(/\s+/g, " ").trim();
+  const cleanN = name.replace(/[\:\-\_]/g, " ").replace(/\s+/g, " ").trim();
+
+  if (cleanN.startsWith(cleanQ)) {
+    const trailing = cleanN.slice(cleanQ.length).trim();
+    if (trailing.length > 2) {
+      const editionOrKeyRegex = /\b(edition|goty|game of the year|complete|deluxe|gold|ultimate|standard|premium|definitive|special|enhanced|remastered?|directors? cut|collection|trilogy|saga|cd key|steam key|key|code|download|global|eu|na|row|pc|steam|gog|epic|xbox|ps4|ps5)\b/i;
+      if (!editionOrKeyRegex.test(trailing)) {
+        return true; // Unrecognized subtitle -> Expansion / DLC!
+      }
+    }
+  }
+
   if (typeof item.type === "string" && item.type.trim().toLowerCase() === "dlc") {
     if (!/\bdlc\b/i.test(queryLower)) return true;
   }
 
   return false;
 };
+window.isGameDlcListing = window.isKinguinDlcListing;
 
 /**
- * Evaluates match quality between a clean search title and a Kinguin candidate product.
+ * Evaluates match quality between a clean search title and a candidate product
+ * across Kinguin, CheapShark, GG.deals, and supplier catalogs.
  * Returns a score > 0 if valid match, or -1 if irrelevant.
  */
 window.scoreKinguinProductMatch = function(item, cleanTitle) {
-  if (!item || !item.name) return -1;
-  const itemName = item.name.toLowerCase();
+  if (!item) return -1;
+  const itemName = (item.name || item.title || item.external || "").toLowerCase();
+  if (!itemName) return -1;
 
   const stopWords = new Set(["the", "and", "for", "with", "edition", "game", "pc", "steam", "global", "eu", "na", "row", "digital"]);
   const queryWords = cleanTitle
@@ -2384,6 +2406,7 @@ window.scoreKinguinProductMatch = function(item, cleanTitle) {
 
   return score;
 };
+window.scoreGameProductMatch = window.scoreKinguinProductMatch;
 
 /**
  * Queries Kinguin eCommerce API for a specific game's lowest market price.
@@ -2627,6 +2650,8 @@ window.bindKinguinSettingsControls = function() {
       state.sourcingSettings.kinguinApiKey = keyVal;
       state.sourcingSettings.kinguinStoreName = storeVal || "GameVault";
       state.sourcingSettings.kinguinProxyUrl = proxyVal;
+      state.sourcingSettings.excludeAccounts = excludeAccounts;
+      state.sourcingSettings.excludeDlcs = excludeDlcs;
       state.sourcingSettings.kinguinExcludeAccounts = excludeAccounts;
       state.sourcingSettings.kinguinExcludeDlcs = excludeDlcs;
 

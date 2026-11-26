@@ -18117,9 +18117,11 @@ window.renderSourcingRadarView = function() {
     if (steamAppId && state.sourcingSettings?.liveGGDealsPrices?.[steamAppId]) {
       ggData = state.sourcingSettings.liveGGDealsPrices[steamAppId];
     } else if (state.sourcingSettings?.liveGGDealsPrices) {
-      const cleanLower = key.replace(/\s*[\(\[].*?[\)\]]/g, "").trim();
+      const cleanLower = key.replace(/\s*[\(\[].*?[\)\]]/g, "").trim().toLowerCase();
       const match = Object.values(state.sourcingSettings.liveGGDealsPrices).find(g => 
-        g.title && g.title.toLowerCase().includes(cleanLower)
+        g.title && g.title.toLowerCase().includes(cleanLower) &&
+        !window.isGameAccountListing?.(g) &&
+        !window.isGameDlcListing?.(g, cleanLower)
       );
       if (match) ggData = match;
     }
@@ -18129,6 +18131,8 @@ window.renderSourcingRadarView = function() {
     const ggHistoricalKeyshop = (ggData && ggData.historicalKeyshops !== null) ? Number(ggData.historicalKeyshops) : null;
     const ggCurrency = ggData?.currency || (state.sourcingSettings?.ggdealsRegion === "eu" ? "EUR" : "USD");
     const ggUrl = ggData?.url || null;
+    const ggTitle = ggData?.title || null;
+    const dealTitle = isStoreEnabled ? (cachedDeal?.title || null) : null;
 
     return {
       title,
@@ -18142,6 +18146,7 @@ window.renderSourcingRadarView = function() {
       savings,
       storeName,
       dealId,
+      dealTitle,
       thumbUrl,
       netProfit,
       roiPct,
@@ -18150,7 +18155,8 @@ window.renderSourcingRadarView = function() {
       ggRetailPrice,
       ggHistoricalKeyshop,
       ggCurrency,
-      ggUrl
+      ggUrl,
+      ggTitle
     };
   });
 
@@ -18262,24 +18268,24 @@ window.renderSourcingRadarView = function() {
 
             <!-- Best Store Deal Column -->
             <div class="sourcing-stat-col">
-              <span class="sourcing-stat-label">
+              <span class="sourcing-stat-label" ${item.dealTitle ? `title="Supplier Match: ${item.dealTitle.replace(/"/g, '&quot;')}"` : ''}>
                 <i class="fa-solid fa-store" style="color: var(--accent-cyan);"></i> Best Deal (${item.storeName || "Stores"})
               </span>
-              <div class="sourcing-stat-value">
+              <div class="sourcing-stat-value" ${item.dealTitle ? `title="Matched: ${item.dealTitle.replace(/"/g, '&quot;')}"` : ''}>
                 <span>${item.dealPrice !== null ? `€${item.dealPrice.toFixed(2)}` : `<span style="color: var(--text-muted); font-size: 0.8rem;">No deal cached</span>`}</span>
                 ${item.savings > 0 ? `<span class="badge badge-danger" style="font-size: 0.68rem; padding: 1px 5px;">-${item.savings}%</span>` : ""}
               </div>
-              <span style="font-size: 0.7rem; color: var(--text-muted);">
+              <span style="font-size: 0.7rem; color: var(--text-muted);" ${item.dealTitle ? `title="${item.dealTitle.replace(/"/g, '&quot;')}"` : ''}>
                 ${item.normalPrice && item.normalPrice > item.dealPrice ? `Regular: €${item.normalPrice.toFixed(2)}` : "Official retailer deal"}
               </span>
             </div>
 
             <!-- GG.deals Keyshop Benchmark Column -->
             <div class="sourcing-stat-col">
-              <span class="sourcing-stat-label">
+              <span class="sourcing-stat-label" ${item.ggTitle ? `title="GG.deals Match: ${item.ggTitle.replace(/"/g, '&quot;')}"` : ''}>
                 <i class="fa-solid fa-tags" style="color: #beee11;"></i> GG.deals Keyshops
               </span>
-              <div class="sourcing-stat-value">
+              <div class="sourcing-stat-value" ${item.ggTitle ? `title="Matched: ${item.ggTitle.replace(/"/g, '&quot;')}"` : ''}>
                 ${item.ggKeyshopPrice !== null ? `
                   <span style="color: #beee11; font-weight: 700;">
                     ${item.ggCurrency === 'EUR' ? '€' : (item.ggCurrency === 'GBP' ? '£' : '$')}${item.ggKeyshopPrice.toFixed(2)}
@@ -18291,7 +18297,7 @@ window.renderSourcingRadarView = function() {
                   ` : ''}
                 ` : `<span style="color: var(--text-muted); font-size: 0.8rem;">${state.sourcingSettings?.ggdealsToken ? 'No keyshop data' : 'Not connected'}</span>`}
               </div>
-              <span style="font-size: 0.7rem; color: var(--text-muted);">
+              <span style="font-size: 0.7rem; color: var(--text-muted);" ${item.ggTitle ? `title="${item.ggTitle.replace(/"/g, '&quot;')}"` : ''}>
                 ${item.ggRetailPrice ? `Retail: ${item.ggCurrency === 'EUR' ? '€' : '$'}${item.ggRetailPrice.toFixed(2)}` : 'Multi-keyshop low'}
               </span>
             </div>
@@ -18323,10 +18329,10 @@ window.renderSourcingRadarView = function() {
               <i class="fa-solid fa-bolt"></i> Buy Deal
             </a>
           ` : ""}
-          <a href="${item.ggUrl || `https://gg.deals/games/?title=${encodedTitle}`}" target="_blank" rel="noopener noreferrer" class="btn-sourcing-launcher" title="Check keyshops and stores on gg.deals">
+          <a href="${item.ggUrl || `https://gg.deals/games/?type=1&title=${encodedTitle}`}" target="_blank" rel="noopener noreferrer" class="btn-sourcing-launcher" title="Check keyshops and stores on gg.deals (Base Games Only)">
             <span style="color: #beee11; font-weight: 600;">gg.deals</span> <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.65rem;"></i>
           </a>
-          <a href="https://www.allkeyshop.com/blog/?s=${encodedTitle}" target="_blank" rel="noopener noreferrer" class="btn-sourcing-launcher" title="Compare on Allkeyshop">
+          <a href="https://www.allkeyshop.com/blog/?s=${encodeURIComponent(item.title + ' CD Key')}" target="_blank" rel="noopener noreferrer" class="btn-sourcing-launcher" title="Compare CD Keys on Allkeyshop">
             <span>Allkeyshop</span> <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.65rem;"></i>
           </a>
           <a href="https://www.kinguin.net/listing?active=1&hide_out_of_stock=1&phrase=${encodeURIComponent(item.title + ' CD Key')}" target="_blank" rel="noopener noreferrer" class="btn-sourcing-launcher" title="View active CD Key listings on Kinguin">
@@ -18385,32 +18391,72 @@ window.refreshSourcingDeals = async function() {
       if (!cleanTitle) continue;
 
       try {
-        const url = `https://www.cheapshark.com/api/1.0/deals?title=${encodeURIComponent(cleanTitle)}${storeParam}&exact=0&pageSize=6`;
+        // Query up to 20 candidate deals per favorite to ensure ample base game deals remain after filtering DLCs & accounts
+        const url = `https://www.cheapshark.com/api/1.0/deals?title=${encodeURIComponent(cleanTitle)}${storeParam}&exact=0&pageSize=20`;
         const res = await fetch(url);
         if (res.ok) {
           const deals = await res.json();
           if (Array.isArray(deals) && deals.length > 0) {
-            // Find best matching deal with lowest price or highest savings
-            let bestDeal = deals[0];
-            deals.forEach(d => {
-              if (Number(d.salePrice) < Number(bestDeal.salePrice) && Number(d.salePrice) > 0) {
-                bestDeal = d;
-              }
-            });
+            const excludeAccounts = state.sourcingSettings?.excludeAccounts !== false && state.sourcingSettings?.kinguinExcludeAccounts !== false;
+            const excludeDlcs = state.sourcingSettings?.excludeDlcs !== false && state.sourcingSettings?.kinguinExcludeDlcs !== false;
 
-            state.sourcingSettings.cachedDeals[title] = {
-              dealID: bestDeal.dealID,
-              storeID: bestDeal.storeID,
-              storeName: CHEAPSHARK_STORES[bestDeal.storeID] || "Partner Store",
-              salePrice: Number(bestDeal.salePrice),
-              normalPrice: Number(bestDeal.normalPrice),
-              savings: Math.round(Number(bestDeal.savings || 0)),
-              title: bestDeal.title,
-              thumb: bestDeal.thumb,
-              steamAppID: bestDeal.steamAppID || null,
-              fetchedAt: Date.now()
-            };
-            updatedCount++;
+            // Filter out DLCs, expansions, season passes, soundtracks, and game accounts
+            const validDeals = [];
+            for (const d of deals) {
+              const sp = Number(d.salePrice);
+              if (!(sp > 0)) continue;
+
+              if (excludeAccounts && typeof window.isGameAccountListing === "function" && window.isGameAccountListing(d)) {
+                continue;
+              }
+
+              if (excludeDlcs && typeof window.isGameDlcListing === "function" && window.isGameDlcListing(d, cleanTitle)) {
+                continue;
+              }
+
+              const matchScore = typeof window.scoreGameProductMatch === "function"
+                ? window.scoreGameProductMatch(d, cleanTitle)
+                : 50;
+
+              if (matchScore <= 0) continue;
+
+              validDeals.push({
+                deal: d,
+                salePrice: sp,
+                score: matchScore
+              });
+            }
+
+            let bestDeal = null;
+            if (validDeals.length > 0) {
+              const highConf = validDeals.filter(v => v.score >= 40);
+              const pool = highConf.length > 0 ? highConf : validDeals;
+              pool.sort((a, b) => a.salePrice - b.salePrice);
+              bestDeal = pool[0].deal;
+            } else {
+              // Fallback: If strict filtering rejected all candidates, never choose an account listing
+              const fallback = deals.filter(d => Number(d.salePrice) > 0 && (!excludeAccounts || !window.isGameAccountListing?.(d)));
+              if (fallback.length > 0) {
+                fallback.sort((a, b) => Number(a.salePrice) - Number(b.salePrice));
+                bestDeal = fallback[0];
+              }
+            }
+
+            if (bestDeal) {
+              state.sourcingSettings.cachedDeals[title] = {
+                dealID: bestDeal.dealID,
+                storeID: bestDeal.storeID,
+                storeName: CHEAPSHARK_STORES[bestDeal.storeID] || "Partner Store",
+                salePrice: Number(bestDeal.salePrice),
+                normalPrice: Number(bestDeal.normalPrice),
+                savings: Math.round(Number(bestDeal.savings || 0)),
+                title: bestDeal.title,
+                thumb: bestDeal.thumb,
+                steamAppID: bestDeal.steamAppID || null,
+                fetchedAt: Date.now()
+              };
+              updatedCount++;
+            }
           }
         }
       } catch (err) {
@@ -18440,9 +18486,20 @@ window.refreshSourcingDeals = async function() {
     if (ggToken && typeof window.fetchGGDealsLivePrices === "function") {
       const steamAppIds = [];
       favorites.forEach(t => {
-        const cd = state.sourcingSettings.cachedDeals?.[t];
-        if (cd && cd.steamAppID) {
-          steamAppIds.push(cd.steamAppID);
+        let appId = state.sourcingSettings.cachedDeals?.[t]?.steamAppID;
+        if (!appId) {
+          const rev = state.catalogReviews?.[t] || state.catalogReviews?.[t.toLowerCase()];
+          if (rev && rev.steamAppID && rev.steamAppID !== "0") {
+            appId = rev.steamAppID;
+          } else {
+            const art = state.catalogArtwork?.[t] || state.catalogArtwork?.[t.toLowerCase()];
+            if (art && typeof window.extractSteamAppId === "function") {
+              appId = window.extractSteamAppId(art);
+            }
+          }
+        }
+        if (appId && /^\d+$/.test(String(appId).trim())) {
+          steamAppIds.push(String(appId).trim());
         }
       });
       if (steamAppIds.length > 0) {

@@ -958,6 +958,8 @@ let state = {
     kinguinProxyUrl: "",
     kinguinExcludeAccounts: true,
     kinguinExcludeDlcs: true,
+    excludeAccounts: true,
+    excludeDlcs: true,
     liveKinguinPrices: {},
     topbarAlerts: true,
     ggdealsToken: "fAY0ao1MgmAa8HrfDSEmQH7XhQlAav-y",
@@ -1739,6 +1741,8 @@ function loadStateFromStorage() {
       if (state.sourcingSettings.kinguinProxyUrl === undefined) state.sourcingSettings.kinguinProxyUrl = "";
       if (state.sourcingSettings.kinguinExcludeAccounts === undefined) state.sourcingSettings.kinguinExcludeAccounts = true;
       if (state.sourcingSettings.kinguinExcludeDlcs === undefined) state.sourcingSettings.kinguinExcludeDlcs = true;
+      if (state.sourcingSettings.excludeAccounts === undefined) state.sourcingSettings.excludeAccounts = state.sourcingSettings.kinguinExcludeAccounts !== false;
+      if (state.sourcingSettings.excludeDlcs === undefined) state.sourcingSettings.excludeDlcs = state.sourcingSettings.kinguinExcludeDlcs !== false;
       if (state.sourcingSettings.ggdealsToken === undefined || !state.sourcingSettings.ggdealsToken) state.sourcingSettings.ggdealsToken = "fAY0ao1MgmAa8HrfDSEmQH7XhQlAav-y";
       if (!state.sourcingSettings.ggdealsRegion) state.sourcingSettings.ggdealsRegion = "us";
       if (state.sourcingSettings.ggdealsProxyUrl === undefined) state.sourcingSettings.ggdealsProxyUrl = "";

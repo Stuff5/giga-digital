@@ -139,7 +139,7 @@
         </div>
         <div class="version-info" style="text-align: center; font-size: 0.7rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; overflow: hidden; white-space: nowrap;">
           <span class="version-label">GameVault</span>
-          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v3.2.1</a>
+          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v3.2.2</a>
         </div>
 
       </div>
@@ -3504,24 +3504,24 @@
                       </small>
                     </div>
 
-                    <!-- Kinguin Benchmark Listing Filters -->
+                    <!-- Global Benchmark & Supplier Listing Filters -->
                     <div style="margin-top: 14px; margin-bottom: 14px; padding: 12px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 6px;">
                       <div style="font-size: 0.82rem; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-                        <i class="fa-solid fa-filter" style="color: #ff5000;"></i> Benchmark Listing Filters
+                        <i class="fa-solid fa-filter" style="color: #ff5000;"></i> Global Benchmark &amp; Supplier Listing Filters
                       </div>
                       <div style="display: flex; flex-direction: column; gap: 8px;">
                         <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 0.8rem; cursor: pointer; margin-bottom: 0;">
                           <input type="checkbox" id="settings-kinguin-exclude-accounts" style="margin-top: 2px;" checked>
                           <span>
                             <strong>Exclude Game Accounts</strong> (Only Genuine CD Keys &amp; Serials)<br>
-                            <span style="font-size: 0.72rem; color: var(--text-muted);">Strictly filters out Steam/Xbox/PSN accounts, shared access profiles, and offline accounts so benchmarks reflect legitimate redeemable keys.</span>
+                            <span style="font-size: 0.72rem; color: var(--text-muted);">Strictly filters out Steam/Xbox/PSN accounts, shared access profiles, and offline accounts across Kinguin, GG.deals, and official supplier deals (Steam, GOG, Fanatical, Humble, etc.).</span>
                           </span>
                         </label>
                         <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 0.8rem; cursor: pointer; margin-bottom: 0;">
                           <input type="checkbox" id="settings-kinguin-exclude-dlcs" style="margin-top: 2px;" checked>
                           <span>
                             <strong>Exclude DLCs &amp; Expansions</strong> (Full Base Games Only)<br>
-                            <span style="font-size: 0.72rem; color: var(--text-muted);">Filters out cheaper add-ons, season passes, soundtracks, and expansions to ensure arbitrage calculations compare base games against base games.</span>
+                            <span style="font-size: 0.72rem; color: var(--text-muted);">Filters out cheaper add-ons, season passes, soundtracks, and expansions across all official retailers, keyshops, and Kinguin to benchmark full base games.</span>
                           </span>
                         </label>
                       </div>
@@ -3596,6 +3596,11 @@
                     </div>
 
                     <div id="ggdeals-test-feedback" style="margin-top: 12px; font-size: 0.8rem; padding: 10px 14px; border-radius: 6px; display: none;"></div>
+                    
+                    <div style="margin-top: 10px; font-size: 0.74rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                      <i class="fa-solid fa-shield-halved" style="color: var(--accent-purple);"></i>
+                      <span>Global Filters Active: GG.deals keyshop prices and supplier deals automatically exclude game accounts and DLCs.</span>
+                    </div>
                   </div>
 
                   <!-- GitHub Panel -->
@@ -4446,13 +4451,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=136"></script>
-  <script src="src/state.js?v=136"></script>
-  <script src="src/api.js?v=136"></script>
-  <script src="src/charts.js?v=136"></script>
-  <script src="src/ui.js?v=136"></script>
-  <script src="src/ai.js?v=136"></script>
-  <script src="src/importer.js?v=136"></script>
-  <script src="app.js?v=136"></script>
+  <script src="config.js?v=137"></script>
+  <script src="src/state.js?v=137"></script>
+  <script src="src/api.js?v=137"></script>
+  <script src="src/charts.js?v=137"></script>
+  <script src="src/ui.js?v=137"></script>
+  <script src="src/ai.js?v=137"></script>
+  <script src="src/importer.js?v=137"></script>
+  <script src="app.js?v=137"></script>
 </body>
 </html>
