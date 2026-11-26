@@ -5,6 +5,19 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v3.4.0] - 2026-11-26
+### Added
+- **Reorganized Settings View (5 Focused Category Tabs)**:
+  - **Categorized Architecture**: Deconstructed the continuous vertical Settings page into 5 focused tabs:
+    1. **APIs & Marketplaces** (`settings-tab-apis`): G2A Merchant API, Kinguin B2B Gateway, GG.deals API, Steam Ratings Enricher, and AI Merchant Assistant.
+    2. **Appearance & Brand** (`settings-tab-appearance`): Theme mode (Dark/Light), 5 custom accent color palettes, Regional Currency, Date Format, Font Size, and Custom Brand Logo uploader.
+    3. **Inventory & UI** (`settings-tab-inventory`): Low Stock Alerts & Default Markups, Supplier Column Display Mode, Catalog Artwork Utilities, and Sidebar Customization.
+    4. **Data & Cloud Sync** (`settings-tab-data`): Supabase, Firebase, GitHub Sync, Sync Strategy & Auto-Sync, Excel/CSV Bulk Import & Export, Full System JSON Backup & Restore, and Danger Zone.
+    5. **Profile & Users** (`settings-tab-profile`): User Profile & Password, User Management Admin Table & Form, and Security Activity Audit Log.
+  - **Active Tab Persistence**: Tab selection is saved to `localStorage` (`gv_active_settings_tab`) and restored automatically on session restarts and view switches.
+  - **Deep-Linking Support**: `navigateTo('settings-view', 'settings-tab-apis')` deep-links directly to the designated tab, updating radar status badges and shortcut links across the app.
+  - **Fluid Responsive Pill Navigation**: Horizontal-scrolling tab bar with intuitive category icons and subtle entry animations.
+
 ## [v3.3.1] - 2026-11-26
 ### Added
 - **Free Cloudflare Worker CORS Relay Guide & Universal Proxy Bridge**:

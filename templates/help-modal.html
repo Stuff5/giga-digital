@@ -490,11 +490,25 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- v3.4.0 -->
+                <div class="changelog-release-card" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v3.4.0 - Reorganized Settings Hub (5 Distinct Category Tabs)</strong>
+                    <span style="font-size: 0.75rem; color: var(--accent-emerald); background: rgba(16, 185, 129, 0.12); padding: 2px 8px; border-radius: 4px; font-weight: 700;">Current Version</span>
+                  </div>
+                  <ul style="margin: 0; padding-left: 18px; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+                    <li><strong>5 Categorized Tabs:</strong> Transformed the massive continuous Settings scroll into 5 organized views: <em>APIs &amp; Marketplaces</em>, <em>Appearance &amp; Brand</em>, <em>Inventory &amp; UI</em>, <em>Data &amp; Cloud Sync</em>, and <em>Profile &amp; Users</em>.</li>
+                    <li><strong>Stateful Tab Memory:</strong> Remembers your active Settings tab across page refreshes and session restarts via <code>localStorage</code>.</li>
+                    <li><strong>Deep-Linking Navigation:</strong> Sourcing Radar status badges and quick action links now jump straight to the exact Settings tab needed (e.g. <code>navigateTo('settings-view', 'settings-tab-apis')</code>).</li>
+                    <li><strong>Responsive Sticky Tab Bar:</strong> Sleek pill navigation bar with custom category icons, smooth fade transitions, and horizontal scrolling on mobile devices.</li>
+                  </ul>
+                </div>
+
                 <!-- v3.3.1 -->
                 <div class="changelog-release-card" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                     <strong style="color: var(--text-main); font-size: 0.95rem;">v3.3.1 - Free Cloudflare Worker CORS Relay Guide &amp; Universal Proxy Bridge</strong>
-                    <span style="font-size: 0.75rem; color: var(--accent-emerald); background: rgba(16, 185, 129, 0.12); padding: 2px 8px; border-radius: 4px; font-weight: 700;">Current Version</span>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); background: rgba(255, 255, 255, 0.06); padding: 2px 8px; border-radius: 4px; font-weight: 600;">Previous Release</span>
                   </div>
                   <ul style="margin: 0; padding-left: 18px; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
                     <li><strong>Integrated CORS Proxy Setup Modal:</strong> Added a 1-click interactive setup guide with ready-to-deploy Cloudflare Worker script (100,000 free requests/day) accessible from G2A, Kinguin, and GG.deals Settings panels.</li>

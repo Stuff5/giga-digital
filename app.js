@@ -4,7 +4,7 @@
  */
 
 document.addEventListener("DOMContentLoaded", async () => {
-  const currentVersion = window.APP_VERSION || "v3.3.1";
+  const currentVersion = window.APP_VERSION || "v3.4.0";
   console.log(`[GameVault] DOMContentLoaded - Booting ${currentVersion}...`);
   console.log("[GameVault] Native gv_active_user:", window.localStorage.getItem("gv_active_user"));
 
@@ -255,6 +255,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (typeof window.bindG2ASettingsControls === "function") window.bindG2ASettingsControls();
     initAdvancedSettings();
     bindAdvancedSettingsControls();
+    if (typeof window.restoreSettingsTab === "function") window.restoreSettingsTab();
     initPayouts();
 
     // Auto-Pull from GitHub on startup if configured and credentials exist

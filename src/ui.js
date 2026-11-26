@@ -1633,6 +1633,7 @@ function bindSidebarEvents() {
           if (typeof window.initKinguinConnection === "function") window.initKinguinConnection();
           if (typeof window.initGGDealsConnection === "function") window.initGGDealsConnection();
           if (typeof window.initG2AConnection === "function") window.initG2AConnection();
+          if (typeof window.restoreSettingsTab === "function") window.restoreSettingsTab();
         }
       } catch (err) {
         console.error("Error rendering view on navigation:", err);
@@ -3962,6 +3963,7 @@ function navigateToHash(targetHash) {
       if (typeof window.initKinguinConnection === "function") window.initKinguinConnection();
       if (typeof window.initGGDealsConnection === "function") window.initGGDealsConnection();
       if (typeof window.initG2AConnection === "function") window.initG2AConnection();
+      if (typeof window.restoreSettingsTab === "function") window.restoreSettingsTab();
     }
   } catch (err) {
     console.error("Error rendering view on programmatic navigation:", err);
@@ -3969,7 +3971,7 @@ function navigateToHash(targetHash) {
 }
 
 // Global navigation helper to switch views programmatically by view ID ("suppliers-view", "suppliers") or hash ("#suppliers")
-window.navigateTo = function(target) {
+window.navigateTo = function(target, subTab) {
   if (!target) return;
   const clean = target.replace(/^#/, "").replace(/-view$/, "");
   const targetHash = `#${clean}`;
@@ -3982,15 +3984,84 @@ window.navigateTo = function(target) {
   const navLink = document.querySelector(`.nav-link[href="${targetHash}"]`);
   if (navLink) {
     navLink.click();
+    if (clean === "settings" && subTab && typeof window.switchSettingsTab === "function") {
+      window.switchSettingsTab(subTab);
+    }
     return;
   }
 
   // Fallback to navigateToHash if navLink was not found
   if (typeof navigateToHash === "function") {
     navigateToHash(targetHash);
+    if (clean === "settings" && subTab && typeof window.switchSettingsTab === "function") {
+      window.switchSettingsTab(subTab);
+    }
   }
 };
 window.navigateToHash = navigateToHash;
+
+// Settings tab switcher
+window.switchSettingsTab = function(tabId) {
+  if (!tabId) return;
+  const validTabs = [
+    "settings-tab-apis",
+    "settings-tab-appearance",
+    "settings-tab-inventory",
+    "settings-tab-data",
+    "settings-tab-profile"
+  ];
+  if (!validTabs.includes(tabId)) {
+    tabId = "settings-tab-apis";
+  }
+
+  // Update tab buttons
+  const buttons = document.querySelectorAll(".settings-tab-btn");
+  buttons.forEach(btn => {
+    const btnTab = btn.getAttribute("data-settings-tab") || btn.getAttribute("data-tab");
+    if (btnTab === tabId) {
+      btn.classList.add("active");
+    } else {
+      btn.classList.remove("active");
+    }
+  });
+
+  // Update tab panes
+  const panes = document.querySelectorAll(".settings-tab-pane");
+  panes.forEach(pane => {
+    if (pane.id === tabId) {
+      pane.classList.add("active");
+      pane.style.display = "block";
+    } else {
+      pane.classList.remove("active");
+      pane.style.display = "none";
+    }
+  });
+
+  try {
+    localStorage.setItem("gv_active_settings_tab", tabId);
+  } catch (e) {
+    console.warn("Could not save active settings tab to localStorage:", e);
+  }
+};
+
+window.restoreSettingsTab = function() {
+  let savedTab = "settings-tab-apis";
+  try {
+    savedTab = localStorage.getItem("gv_active_settings_tab") || "settings-tab-apis";
+  } catch (e) {}
+  window.switchSettingsTab(savedTab);
+};
+
+// Global settings tab switching handler via delegation
+document.addEventListener("click", (e) => {
+  const tabBtn = e.target.closest(".settings-tab-btn");
+  if (tabBtn) {
+    const tabId = tabBtn.getAttribute("data-settings-tab") || tabBtn.getAttribute("data-tab");
+    if (tabId && typeof window.switchSettingsTab === "function") {
+      window.switchSettingsTab(tabId);
+    }
+  }
+});
 
 
 

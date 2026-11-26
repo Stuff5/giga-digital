@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=92">
+  <link rel="stylesheet" href="styles.css?v=94">
   
   <!-- Early theme application to prevent FOUC / light theme flicker -->
   <script>
@@ -139,7 +139,7 @@
         </div>
         <div class="version-info" style="text-align: center; font-size: 0.7rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; overflow: hidden; white-space: nowrap;">
           <span class="version-label">GameVault</span>
-          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v3.2.3</a>
+          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v3.4.0</a>
         </div>
 
       </div>
@@ -3088,194 +3088,296 @@
             </div>
           </section>
 
-          <!-- SETTINGS VIEW -->
+                    <!-- SETTINGS VIEW -->
           <section id="settings-view" class="content-view">
             <div class="view-header">
               <h2 class="view-title">Settings</h2>
-              <p class="view-subtitle">Customize application theme and brand identity.</p>
+              <p class="view-subtitle">Manage marketplace APIs, appearance, inventory preferences, data backups, and accounts.</p>
             </div>
 
-            <div class="responsive-grid-equal">
-              <!-- Left Column: Theme & Currency -->
+            <!-- Settings Tab Navigation -->
+            <div class="settings-nav-tabs">
+              <button type="button" class="settings-tab-btn active" data-settings-tab="settings-tab-apis">
+                <i class="fa-solid fa-bolt" style="color: #0070d2;"></i> APIs &amp; Marketplaces
+              </button>
+              <button type="button" class="settings-tab-btn" data-settings-tab="settings-tab-appearance">
+                <i class="fa-solid fa-palette" style="color: var(--accent-purple);"></i> Appearance &amp; Brand
+              </button>
+              <button type="button" class="settings-tab-btn" data-settings-tab="settings-tab-inventory">
+                <i class="fa-solid fa-sliders" style="color: var(--accent-cyan);"></i> Inventory &amp; UI
+              </button>
+              <button type="button" class="settings-tab-btn" data-settings-tab="settings-tab-data">
+                <i class="fa-solid fa-database" style="color: var(--accent-emerald);"></i> Data &amp; Cloud Sync
+              </button>
+              <button type="button" class="settings-tab-btn" data-settings-tab="settings-tab-profile">
+                <i class="fa-solid fa-user-shield" style="color: var(--accent-pink);"></i> Profile &amp; Users
+              </button>
+            </div>
+
+            <!-- TAB 1: APIs & Marketplaces -->
+            <div id="settings-tab-apis" class="settings-tab-pane active">
               <div style="display: flex; flex-direction: column; gap: 24px;">
-                <!-- My Profile Card -->
-                <div class="calc-card" style="margin-bottom: 0;">
-                  <h3>My Profile Settings</h3>
-                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
-                    Manage your account security and credentials.
-                  </p>
-                  
-                  <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 15px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
-                    <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan)); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #fff; font-weight: bold;" id="profile-avatar">U</div>
-                    <div>
-                      <h4 style="margin: 0; color: var(--text-main); font-size: 1rem;" id="profile-username-display">Username</h4>
-                      <span class="badge" style="font-size: 0.7rem; background-color: var(--border-color); color: var(--text-secondary); padding: 2px 8px; margin-top: 4px; display: inline-block; text-transform: uppercase;" id="profile-role-display">Role</span>
+                <!-- Dual Marketplace Arbitrage Venues Grid -->
+                <div class="responsive-grid-equal" style="margin-bottom: 0;">
+                  <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                      <h4 style="margin: 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-bolt" style="color: #0070d2;"></i> G2A Merchant API (Direct Marketplace &amp; Dual Arbitrage)
+                      </h4>
+                      <span id="g2a-connection-status" class="badge badge-sold">Not Configured</span>
                     </div>
-                  </div>
-
-                  <form id="profile-update-form" style="display: flex; flex-direction: column; gap: 12px;">
-                    <div class="form-group" style="margin-bottom: 0;">
-                      <label for="profile-email-input" style="font-size: 0.8rem; margin-bottom: 4px;">Email Address</label>
-                      <input type="email" id="profile-email-input" class="form-control" style="height: 36px; padding: 6px 12px; font-size: 0.85rem;" required>
-                    </div>
+                    <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 15px;">
+                      Direct integration with G2A API using OAuth2 Client Credentials. Powers live buybox price comparisons, fee simulations, and dual-marketplace arbitrage (Kinguin vs G2A) in the Sourcing Radar.
+                    </p>
                     
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                      <div class="form-group" style="margin-bottom: 0;">
-                        <label for="profile-password-input" style="font-size: 0.8rem; margin-bottom: 4px;">New Password (Optional)</label>
-                        <input type="password" id="profile-password-input" class="form-control" style="height: 36px; padding: 6px 12px; font-size: 0.85rem;" placeholder="Leave blank to keep same" minlength="6">
+                    <div class="form-row-2">
+                      <div class="form-group" style="margin-bottom: 12px;">
+                        <label for="settings-g2a-clientid">G2A Client ID</label>
+                        <input type="text" id="settings-g2a-clientid" class="form-control" placeholder="spVkqzQsSrtMyqXY" value="spVkqzQsSrtMyqXY" style="font-size: 0.85rem;">
                       </div>
-                      <div class="form-group" style="margin-bottom: 0;">
-                        <label for="profile-confirm-password-input" style="font-size: 0.8rem; margin-bottom: 4px;">Confirm Password</label>
-                        <input type="password" id="profile-confirm-password-input" class="form-control" style="height: 36px; padding: 6px 12px; font-size: 0.85rem;" placeholder="Confirm new password">
+                      <div class="form-group" style="margin-bottom: 12px;">
+                        <label for="settings-g2a-clientsecret">G2A Client Secret</label>
+                        <div style="position: relative;">
+                          <input type="password" id="settings-g2a-clientsecret" class="form-control" placeholder="Paste your G2A Client Secret" style="padding-right: 36px; font-size: 0.85rem;">
+                          <button type="button" id="btn-toggle-g2a-secret-vis" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.85rem;" title="Show/Hide Secret">
+                            <i class="fa-regular fa-eye"></i>
+                          </button>
+                        </div>
                       </div>
                     </div>
 
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px; flex-wrap: wrap; gap: 12px;">
-                      <label class="checkbox-container" style="margin-bottom: 0;">
-                        <input type="checkbox" id="profile-2fa-input">
-                        <span class="checkbox-label" style="font-weight: 500; font-size: 0.85rem;">Enable 2FA Protection</span>
-                      </label>
-                      <button type="submit" class="btn btn-primary" style="height: 36px; padding: 0 16px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; width: auto; margin-top: 0;">
-                        <i class="fa-solid fa-user-gear"></i> Update Profile
+                    <div class="form-row-2">
+                      <div class="form-group" style="margin-bottom: 12px;">
+                        <label for="settings-g2a-apiurl">G2A API Environment</label>
+                        <select id="settings-g2a-apiurl" class="form-control" style="font-size: 0.85rem;">
+                          <option value="https://api.g2a.com" selected>Production (https://api.g2a.com)</option>
+                          <option value="https://sandboxapi.g2a.com">Sandbox / Test (https://sandboxapi.g2a.com)</option>
+                        </select>
+                      </div>
+                      <div class="form-group" style="margin-bottom: 12px;">
+                        <label for="settings-g2a-proxyurl" style="display: flex; justify-content: space-between; align-items: center;">
+                          <span>CORS Proxy / Relay URL <small style="color: var(--text-muted); font-weight: normal;">(Optional &mdash; reuses Kinguin proxy if blank)</small></span>
+                          <button type="button" class="btn btn-outline btn-xs btn-open-cors-guide" style="padding: 2px 7px; font-size: 0.72rem; line-height: 1.2; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-cloud" style="color: #f6821f;"></i> Setup Free Proxy (2 mins)</button>
+                        </label>
+                        <input type="url" id="settings-g2a-proxyurl" class="form-control" placeholder="https://your-worker.your-subdomain.workers.dev/?url=" style="font-size: 0.8rem;">
+                      </div>
+                    </div>
+                    <small class="form-help" style="margin-top: -6px; margin-bottom: 12px; display: block; font-size: 0.73rem; color: var(--text-muted);">
+                      G2A's API gateway blocks browser direct origins. Leave proxy blank to automatically reuse your Kinguin Cloudflare Worker relay proxy.
+                    </small>
+
+                    <div style="display: flex; gap: 12px; margin-top: 15px; flex-wrap: wrap;">
+                      <button type="button" class="btn btn-outline btn-sm" id="btn-test-g2a-api" style="flex: 1; min-width: 140px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; font-size: 0.85rem;">
+                        <i class="fa-solid fa-plug-circle-check"></i> Test G2A Connection
+                      </button>
+                      <button type="button" class="btn btn-primary btn-sm" id="btn-save-g2a-api" style="flex: 1; min-width: 140px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; font-size: 0.85rem;">
+                        <i class="fa-solid fa-floppy-disk"></i> Save G2A Settings
                       </button>
                     </div>
-                  </form>
-                </div>
-                               <div class="calc-card" style="margin-bottom: 0;">
-                  <h3>Application Appearance</h3>
-                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
-                    Customize the interface visual mode and color palette.
-                  </p>
-                  
-                  <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 12px;">Appearance Mode</h4>
-                  <div class="theme-select-group" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; margin-bottom: 20px;">
-                    <div class="theme-option-card" id="mode-opt-dark" style="padding: 10px 14px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
-                      <i class="fa-solid fa-moon" style="font-size: 1.4rem; color: var(--accent-purple); margin-bottom: 6px; display: block;"></i>
-                      <strong style="font-size: 0.85rem;">Dark Mode</strong>
-                    </div>
-                    <div class="theme-option-card" id="mode-opt-light" style="padding: 10px 14px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
-                      <i class="fa-solid fa-sun" style="font-size: 1.4rem; color: var(--accent-warning); margin-bottom: 6px; display: block;"></i>
-                      <strong style="font-size: 0.85rem;">Light Mode</strong>
-                    </div>
-                  </div>
-                  
-                  <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 12px;">Color Palette</h4>
-                  <div class="theme-select-group" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px;">
-                    <div class="theme-option-card" id="color-opt-classic" style="padding: 10px 14px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
-                      <i class="fa-solid fa-palette" style="font-size: 1.4rem; color: var(--accent-purple); margin-bottom: 6px; display: block;"></i>
-                      <strong style="font-size: 0.85rem;">Classic</strong>
-                    </div>
-                    <div class="theme-option-card" id="color-opt-ocean" style="padding: 10px 14px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
-                      <i class="fa-solid fa-water" style="font-size: 1.4rem; color: hsl(195, 95%, 50%); margin-bottom: 6px; display: block;"></i>
-                      <strong style="font-size: 0.85rem;">Ocean</strong>
-                    </div>
-                    <div class="theme-option-card" id="color-opt-cyberpunk" style="padding: 10px 14px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
-                      <i class="fa-solid fa-bolt" style="font-size: 1.4rem; color: hsl(355, 95%, 55%); margin-bottom: 6px; display: block;"></i>
-                      <strong style="font-size: 0.85rem;">Cyberpunk</strong>
-                    </div>
-                    <div class="theme-option-card" id="color-opt-emerald" style="padding: 10px 14px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
-                      <i class="fa-solid fa-tree" style="font-size: 1.4rem; color: hsl(145, 85%, 48%); margin-bottom: 6px; display: block;"></i>
-                      <strong style="font-size: 0.85rem;">Emerald</strong>
-                    </div>
-                    <div class="theme-option-card" id="color-opt-amber" style="padding: 10px 14px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
-                      <i class="fa-solid fa-crown" style="font-size: 1.4rem; color: hsl(45, 95%, 50%); margin-bottom: 6px; display: block;"></i>
-                      <strong style="font-size: 0.85rem;">Amber</strong>
-                    </div>
-                  </div>
-                </div>
- 
-                <!-- Currency Settings Card -->
-                <div class="calc-card" style="margin-bottom: 0;">
-                  <h3>Regional Currency</h3>
-                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
-                    Choose the currency notation for the entire dashboard interface.
-                  </p>
-                  
-                  <div class="theme-select-group" style="display: flex; gap: 12px;">
-                    <div class="theme-option-card" id="curr-opt-eur" style="flex: 1; padding: 12px 18px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
-                      <i class="fa-solid fa-euro-sign" style="font-size: 1.6rem; color: var(--accent-teal); margin-bottom: 8px; display: block;"></i>
-                      <strong style="font-size: 0.9rem;">Euro (€)</strong>
-                    </div>
-                    <div class="theme-option-card" id="curr-opt-usd" style="flex: 1; padding: 12px 18px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
-                      <i class="fa-solid fa-dollar-sign" style="font-size: 1.6rem; color: var(--accent-emerald); margin-bottom: 8px; display: block;"></i>
-                      <strong style="font-size: 0.9rem;">US Dollar ($)</strong>
-                    </div>
-                  </div>
-                </div>
 
-                <!-- Date Format Settings Card -->
-                <div class="calc-card" style="margin-bottom: 0;">
-                  <h3>Date Format</h3>
-                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
-                    Choose how dates are formatted across the application.
-                  </p>
-                  <div class="form-group" style="margin: 0;">
-                    <select id="settings-date-format" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main); font-weight: 500; width: 100%;">
-                      <option value="YYYY-MM-DD">YYYY-MM-DD (e.g. 2026-06-06)</option>
-                      <option value="MM/DD/YYYY">MM/DD/YYYY (e.g. 06/06/2026)</option>
-                      <option value="DD/MM/YYYY">DD/MM/YYYY (e.g. 06/06/2026)</option>
-                      <option value="Month DD, YYYY">Month DD, YYYY (e.g. June 06, 2026)</option>
-                    </select>
+                    <div id="g2a-test-feedback" style="margin-top: 12px; font-size: 0.8rem; padding: 10px 14px; border-radius: 6px; display: none;"></div>
                   </div>
-                </div>
-
-                <!-- Font Size Settings Card -->
-                <div class="calc-card" style="margin-bottom: 0;">
-                  <h3>Interface Font Size</h3>
-                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
-                    Adjust the text size of the interface.
-                  </p>
-                  
-                  <div style="display: flex; flex-direction: column; gap: 12px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                      <span id="font-size-label" style="font-size: 0.95rem; font-weight: 600; color: var(--text-main);">Font Size: 16px</span>
-                      <span style="font-size: 0.75rem; color: var(--text-muted);">12px - 22px</span>
+                  <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                      <h4 style="margin: 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-crown" style="color: #ff9900;"></i> Kinguin Merchant API
+                      </h4>
+                      <span id="kinguin-connection-status" class="badge badge-sold">Not Configured</span>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                      <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">A-</span>
-                      <input type="range" id="settings-font-size" min="12" max="22" value="16" step="1" class="font-size-slider">
-                      <span style="font-size: 1.15rem; color: var(--text-main); font-weight: 600;">A+</span>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Alerts & Presets Settings Card -->
-                <div class="calc-card" style="margin-bottom: 0;">
-                  <h3>Alerts & Presets</h3>
-                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
-                    Configure low stock warnings and target markup defaults.
-                  </p>
-                  
-                  <div class="form-group" style="margin-bottom: 20px;">
-                    <label for="settings-low-stock-threshold" style="display: flex; justify-content: space-between; align-items: center;">
-                      <span>Low Stock Alert Level</span>
-                      <strong id="low-stock-label" style="color: var(--accent-warning);">5 keys</strong>
-                    </label>
-                    <input type="range" id="settings-low-stock-threshold" min="1" max="30" value="5" step="1" class="font-size-slider" style="background: linear-gradient(90deg, var(--accent-warning), var(--accent-pink));">
-                    <small class="form-help" style="margin-top: 6px; display: block;">Get warnings when inventory stock drops below this number.</small>
-                  </div>
-                  
-                  <div class="form-row-2" style="margin-top: 0px;">
-                    <div class="form-group" style="margin-bottom: 0;">
-                      <label for="settings-markup-type">Default Markup Type</label>
-                      <select id="settings-markup-type" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main); font-weight: 500; width: 100%;">
-                        <option value="percent">Percentage (%)</option>
-                        <option value="flat">Flat Surcharge (€/$)</option>
-                      </select>
-                    </div>
-                    <div class="form-group" style="margin-bottom: 0;">
-                      <label for="settings-markup-value">Markup Value</label>
-                      <div class="input-with-icon">
-                        <i class="fa-solid fa-percent" id="markup-value-icon"></i>
-                        <input type="number" id="settings-markup-value" class="form-control" placeholder="20" step="0.5" min="0" value="20" style="background-color: var(--bg-input); padding-left: 30px;">
+                    <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 15px;">
+                      Direct eCommerce API integration to query live Kinguin market prices, competitor listings, and real-time arbitrage margins.
+                    </p>
+                    
+                    <div class="form-row-2">
+                      <div class="form-group" style="margin-bottom: 12px;">
+                        <label for="settings-kinguin-apikey">Kinguin Store API Key (X-Api-Key)</label>
+                        <div style="position: relative;">
+                          <input type="password" id="settings-kinguin-apikey" class="form-control" placeholder="Paste your Kinguin API Key" style="padding-right: 36px;">
+                          <button type="button" id="btn-toggle-kinguin-key-vis" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.85rem;" title="Show/Hide Key">
+                            <i class="fa-regular fa-eye"></i>
+                          </button>
+                        </div>
+                      </div>
+                      <div class="form-group" style="margin-bottom: 12px;">
+                        <label for="settings-kinguin-storename">Store Name</label>
+                        <input type="text" id="settings-kinguin-storename" class="form-control" placeholder="GameVault" value="GameVault">
                       </div>
                     </div>
+
+                    <div class="form-group" style="margin-bottom: 12px;">
+                      <label for="settings-kinguin-proxyurl" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>CORS Proxy / Relay URL <small style="color: var(--text-muted); font-weight: normal;">(Required for browser calls to Kinguin B2B Gateway)</small></span>
+                        <button type="button" class="btn btn-outline btn-xs btn-open-cors-guide" style="padding: 2px 7px; font-size: 0.72rem; line-height: 1.2; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-cloud" style="color: #f6821f;"></i> Setup Free Proxy (2 mins)</button>
+                      </label>
+                      <input type="url" id="settings-kinguin-proxyurl" class="form-control" placeholder="https://your-worker.your-subdomain.workers.dev/?url=" style="font-size: 0.8rem;">
+                      <small class="form-help" style="margin-top: 4px; display: block; font-size: 0.73rem; color: var(--text-muted);">
+                        Kinguin's B2B API gateway blocks direct browser calls due to CORS. Use your free Cloudflare Worker, Supabase Edge function, or private CORS relay.
+                      </small>
+                    </div>
+
+                    <!-- Global Benchmark & Supplier Listing Filters -->
+                    <div style="margin-top: 14px; margin-bottom: 14px; padding: 12px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 6px;">
+                      <div style="font-size: 0.82rem; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-filter" style="color: #ff5000;"></i> Global Benchmark &amp; Supplier Listing Filters
+                      </div>
+                      <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 0.8rem; cursor: pointer; margin-bottom: 0;">
+                          <input type="checkbox" id="settings-kinguin-exclude-accounts" style="margin-top: 2px;" checked>
+                          <span>
+                            <strong>Exclude Game Accounts</strong> (Only Genuine CD Keys &amp; Serials)<br>
+                            <span style="font-size: 0.72rem; color: var(--text-muted);">Strictly filters out Steam/Xbox/PSN accounts, shared access profiles, and offline accounts across Kinguin, GG.deals, and official supplier deals (Steam, GOG, Fanatical, Humble, etc.).</span>
+                          </span>
+                        </label>
+                        <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 0.8rem; cursor: pointer; margin-bottom: 0;">
+                          <input type="checkbox" id="settings-kinguin-exclude-dlcs" style="margin-top: 2px;" checked>
+                          <span>
+                            <strong>Exclude DLCs &amp; Expansions</strong> (Full Base Games Only)<br>
+                            <span style="font-size: 0.72rem; color: var(--text-muted);">Filters out cheaper add-ons, season passes, soundtracks, and expansions across all official retailers, keyshops, and Kinguin to benchmark full base games.</span>
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; margin-top: 15px; flex-wrap: wrap;">
+                      <button type="button" class="btn btn-outline btn-sm" id="btn-test-kinguin-api" style="flex: 1; min-width: 140px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; font-size: 0.85rem;">
+                        <i class="fa-solid fa-plug-circle-check"></i> Test Kinguin Connection
+                      </button>
+                      <button type="button" class="btn btn-primary btn-sm" id="btn-save-kinguin-api" style="flex: 1; min-width: 140px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; font-size: 0.85rem;">
+                        <i class="fa-solid fa-floppy-disk"></i> Save Kinguin Settings
+                      </button>
+                    </div>
+
+                    <div id="kinguin-test-feedback" style="margin-top: 12px; font-size: 0.8rem; padding: 10px 14px; border-radius: 6px; display: none;"></div>
                   </div>
                 </div>
 
+                <!-- Price Benchmarks & Rating Enrichers Grid -->
+                <div class="responsive-grid-equal" style="margin-bottom: 0;">
+                  <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                      <h4 style="margin: 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-tags" style="color: #22c55e;"></i> GG.deals API (Multi-Keyshop Benchmark)
+                      </h4>
+                      <span id="ggdeals-connection-status" class="badge badge-sold">Not Configured</span>
+                    </div>
+                    <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 15px;">
+                      Direct price comparison across official retailers (Steam, Epic, GOG) and major keyshops (G2A, Kinguin, Eneba, CDKeys, Gamivo) to find the absolute lowest global market prices and historical lows.
+                    </p>
+                    
+                    <div class="form-row-2">
+                      <div class="form-group" style="margin-bottom: 12px;">
+                        <label for="settings-ggdeals-token">GG.deals API Key / Token</label>
+                        <div style="position: relative;">
+                          <input type="password" id="settings-ggdeals-token" class="form-control" placeholder="Paste your GG.deals token" style="padding-right: 36px;">
+                          <button type="button" id="btn-toggle-ggdeals-key-vis" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.85rem;" title="Show/Hide Token">
+                            <i class="fa-regular fa-eye"></i>
+                          </button>
+                        </div>
+                      </div>
+                      <div class="form-group" style="margin-bottom: 12px;">
+                        <label for="settings-ggdeals-region">Price Region / Currency</label>
+                        <select id="settings-ggdeals-region" class="form-control" style="font-size: 0.85rem;">
+                          <option value="eu">Europe (EUR €)</option>
+                          <option value="us" selected>United States (USD $)</option>
+                          <option value="gb">United Kingdom (GBP £)</option>
+                          <option value="ca">Canada (CAD $)</option>
+                          <option value="au">Australia (AUD $)</option>
+                          <option value="br">Brazil (BRL R$)</option>
+                          <option value="pl">Poland (PLN zł)</option>
+                          <option value="tr">Turkey (TRY ₺)</option>
+                        </select>
+                      </div>
+                    </div>
 
+                    <div class="form-group" style="margin-bottom: 12px;">
+                      <label for="settings-ggdeals-proxyurl" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>CORS Proxy / Relay URL <small style="color: var(--text-muted); font-weight: normal;">(Optional &mdash; reuses Kinguin proxy if blank)</small></span>
+                        <button type="button" class="btn btn-outline btn-xs btn-open-cors-guide" style="padding: 2px 7px; font-size: 0.72rem; line-height: 1.2; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-cloud" style="color: #f6821f;"></i> Setup Free Proxy (2 mins)</button>
+                      </label>
+                      <input type="url" id="settings-ggdeals-proxyurl" class="form-control" placeholder="https://your-worker.your-subdomain.workers.dev/?url=" style="font-size: 0.8rem;">
+                      <small class="form-help" style="margin-top: 4px; display: block; font-size: 0.73rem; color: var(--text-muted);">
+                        Leave blank to automatically use your configured Kinguin Cloudflare Worker relay proxy, or provide a dedicated CORS proxy.
+                      </small>
+                    </div>
 
-                <!-- AI Assistant Configuration Card -->
+                    <div style="display: flex; gap: 12px; margin-top: 15px; flex-wrap: wrap;">
+                      <button type="button" class="btn btn-outline btn-sm" id="btn-test-ggdeals-api" style="flex: 1; min-width: 140px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; font-size: 0.85rem;">
+                        <i class="fa-solid fa-plug-circle-check"></i> Test GG.deals Connection
+                      </button>
+                      <button type="button" class="btn btn-primary btn-sm" id="btn-save-ggdeals-api" style="flex: 1; min-width: 140px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; font-size: 0.85rem;">
+                        <i class="fa-solid fa-floppy-disk"></i> Save GG.deals Settings
+                      </button>
+                    </div>
+
+                    <div id="ggdeals-test-feedback" style="margin-top: 12px; font-size: 0.8rem; padding: 10px 14px; border-radius: 6px; display: none;"></div>
+                    
+                    <div style="margin-top: 10px; font-size: 0.74rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                      <i class="fa-solid fa-shield-halved" style="color: var(--accent-purple);"></i>
+                      <span>Global Filters Active: GG.deals keyshop prices and supplier deals automatically exclude game accounts and DLCs.</span>
+                    </div>
+                  </div>
+                  <div style="background: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px; display: flex; flex-direction: column; justify-content: space-between; gap: 16px;">
+                        <div>
+                          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; flex-wrap: wrap; gap: 4px;">
+                            <h4 style="margin: 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                              <i class="fa-brands fa-steam" style="color: #66c0f4;"></i> Steam Ratings Enricher
+                            </h4>
+                          </div>
+                          <p style="color: var(--text-secondary); font-size: 0.8rem; margin: 0 0 10px 0; line-height: 1.4;">
+                            Batch retrieve official Steam review percentages and total review counts for all catalog games (A&ndash;Z) to power entry rating pills.
+                          </p>
+
+                          <div style="background: var(--bg-input); padding: 8px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); margin-bottom: 12px; font-size: 0.72rem; color: var(--text-secondary);">
+                            <span id="steam-review-stats-badge">Loading ratings statistics...</span>
+                          </div>
+
+                          <div style="display: flex; align-items: flex-start; gap: 8px; background: var(--bg-input); padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 10px;">
+                            <input type="checkbox" id="settings-review-only-unrated" checked style="width: 14px; height: 14px; margin-top: 2px; cursor: pointer;">
+                            <div style="flex: 1;">
+                              <label for="settings-review-only-unrated" style="font-size: 0.78rem; font-weight: 600; color: var(--text-main); cursor: pointer; display: block;">Fetch only unrated games</label>
+                              <span style="color: var(--text-muted); font-size: 0.68rem; line-height: 1.2; display: block; margin-top: 1px;">
+                                Fast mode (recommended): Skips games that already have Steam rating pills.
+                              </span>
+                            </div>
+                          </div>
+
+                          <div style="display: flex; align-items: flex-start; gap: 8px; background: var(--bg-input); padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 12px;">
+                            <input type="checkbox" id="settings-review-overwrite" style="width: 14px; height: 14px; margin-top: 2px; cursor: pointer;">
+                            <div style="flex: 1;">
+                              <label for="settings-review-overwrite" style="font-size: 0.78rem; font-weight: 600; color: var(--text-main); cursor: pointer; display: block;">Force refresh all ratings</label>
+                              <span style="color: var(--text-muted); font-size: 0.68rem; line-height: 1.2; display: block; margin-top: 1px;">
+                                Overwrites previously saved ratings with latest Steam statistics.
+                              </span>
+                            </div>
+                          </div>
+
+                          <div id="review-fetch-progress-container" class="hidden" style="display: flex; flex-direction: column; gap: 6px; background: var(--bg-input); padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; font-weight: 500;">
+                              <span id="review-fetch-progress-status" style="color: var(--text-secondary); max-width: 65%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Initializing...</span>
+                              <div style="display: flex; align-items: center; gap: 6px;">
+                                <span id="review-fetch-progress-percent" style="color: #66c0f4; font-weight: 700;">0%</span>
+                                <button type="button" id="btn-cancel-review-fetch" style="background: var(--accent-danger); border: none; border-radius: 4px; color: #fff; font-size: 0.6rem; padding: 1px 6px; cursor: pointer; font-weight: 700;">Stop</button>
+                              </div>
+                            </div>
+                            <div style="width: 100%; height: 4px; background: var(--border-color); border-radius: 2px; overflow: hidden;">
+                              <div id="review-fetch-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #66c0f4, #1b2838); transition: width 0.15s ease;"></div>
+                            </div>
+                            <span id="review-fetch-detail-status" style="font-size: 0.65rem; color: var(--text-muted);">0 of 0 processed</span>
+                          </div>
+                        </div>
+
+                        <div style="display: flex; gap: 8px;">
+                          <button type="button" class="btn btn-primary btn-sm" id="btn-fetch-all-reviews" style="flex: 2; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px; font-size: 0.8rem;">
+                            <i class="fa-brands fa-steam"></i> Fetch Steam Ratings
+                          </button>
+                          <button type="button" class="btn btn-outline btn-sm" id="btn-clean-unrated-cache" title="Clear unrated/failed lookups so they can be re-queried" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 8px; font-size: 0.75rem;">
+                            <i class="fa-solid fa-broom"></i> Clean Cache
+                          </button>
+                        </div>
+                      </div>
+                </div>
+
+                <!-- AI Merchant Assistant Configuration -->
                 <div class="calc-card" id="card-ai-settings" style="margin-bottom: 0; padding: 24px; border: 2px solid var(--accent-cyan); background: hsla(180, 85%, 50%, 0.02); display: flex; flex-direction: column; gap: 20px;">
                   <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color); padding-bottom: 12px;">
                     <h3 style="margin: 0; font-size: 1.2rem; color: var(--text-main); font-weight: 700; display: flex; align-items: center; gap: 10px;">
@@ -3356,18 +3458,281 @@
                     <div id="ai-test-error-details" style="margin-top: 8px; font-size: 0.8rem; padding: 12px; border-radius: 6px; background: rgba(255, 77, 77, 0.1); border: 1px solid var(--accent-danger); color: var(--text-main); line-height: 1.5; display: none;"></div>
                   </div>
                 </div>
+              </div>
+            </div>
 
-                <!-- Database Configuration Card -->
+            <!-- TAB 2: Appearance & Brand -->
+            <div id="settings-tab-appearance" class="settings-tab-pane">
+              <div class="responsive-grid-equal">
+                <div style="display: flex; flex-direction: column; gap: 24px;">
+                  <div class="calc-card" style="margin-bottom: 0;">
+                  <h3>Application Appearance</h3>
+                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+                    Customize the interface visual mode and color palette.
+                  </p>
+                  
+                  <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 12px;">Appearance Mode</h4>
+                  <div class="theme-select-group" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; margin-bottom: 20px;">
+                    <div class="theme-option-card" id="mode-opt-dark" style="padding: 10px 14px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-moon" style="font-size: 1.4rem; color: var(--accent-purple); margin-bottom: 6px; display: block;"></i>
+                      <strong style="font-size: 0.85rem;">Dark Mode</strong>
+                    </div>
+                    <div class="theme-option-card" id="mode-opt-light" style="padding: 10px 14px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-sun" style="font-size: 1.4rem; color: var(--accent-warning); margin-bottom: 6px; display: block;"></i>
+                      <strong style="font-size: 0.85rem;">Light Mode</strong>
+                    </div>
+                  </div>
+                  
+                  <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 12px;">Color Palette</h4>
+                  <div class="theme-select-group" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px;">
+                    <div class="theme-option-card" id="color-opt-classic" style="padding: 10px 14px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-palette" style="font-size: 1.4rem; color: var(--accent-purple); margin-bottom: 6px; display: block;"></i>
+                      <strong style="font-size: 0.85rem;">Classic</strong>
+                    </div>
+                    <div class="theme-option-card" id="color-opt-ocean" style="padding: 10px 14px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-water" style="font-size: 1.4rem; color: hsl(195, 95%, 50%); margin-bottom: 6px; display: block;"></i>
+                      <strong style="font-size: 0.85rem;">Ocean</strong>
+                    </div>
+                    <div class="theme-option-card" id="color-opt-cyberpunk" style="padding: 10px 14px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-bolt" style="font-size: 1.4rem; color: hsl(355, 95%, 55%); margin-bottom: 6px; display: block;"></i>
+                      <strong style="font-size: 0.85rem;">Cyberpunk</strong>
+                    </div>
+                    <div class="theme-option-card" id="color-opt-emerald" style="padding: 10px 14px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-tree" style="font-size: 1.4rem; color: hsl(145, 85%, 48%); margin-bottom: 6px; display: block;"></i>
+                      <strong style="font-size: 0.85rem;">Emerald</strong>
+                    </div>
+                    <div class="theme-option-card" id="color-opt-amber" style="padding: 10px 14px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-crown" style="font-size: 1.4rem; color: hsl(45, 95%, 50%); margin-bottom: 6px; display: block;"></i>
+                      <strong style="font-size: 0.85rem;">Amber</strong>
+                    </div>
+                  </div>
+                </div>
+                  <div class="calc-card" style="margin-bottom: 0;">
+                  <h3>Regional Currency</h3>
+                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+                    Choose the currency notation for the entire dashboard interface.
+                  </p>
+                  
+                  <div class="theme-select-group" style="display: flex; gap: 12px;">
+                    <div class="theme-option-card" id="curr-opt-eur" style="flex: 1; padding: 12px 18px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-euro-sign" style="font-size: 1.6rem; color: var(--accent-teal); margin-bottom: 8px; display: block;"></i>
+                      <strong style="font-size: 0.9rem;">Euro (€)</strong>
+                    </div>
+                    <div class="theme-option-card" id="curr-opt-usd" style="flex: 1; padding: 12px 18px; border-radius: var(--radius-md); border: 2px solid var(--border-color); background-color: var(--bg-input); cursor: pointer; text-align: center; transition: var(--transition-smooth);">
+                      <i class="fa-solid fa-dollar-sign" style="font-size: 1.6rem; color: var(--accent-emerald); margin-bottom: 8px; display: block;"></i>
+                      <strong style="font-size: 0.9rem;">US Dollar ($)</strong>
+                    </div>
+                  </div>
+                </div>
+                  <div class="calc-card" style="margin-bottom: 0;">
+                  <h3>Date Format</h3>
+                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+                    Choose how dates are formatted across the application.
+                  </p>
+                  <div class="form-group" style="margin: 0;">
+                    <select id="settings-date-format" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main); font-weight: 500; width: 100%;">
+                      <option value="YYYY-MM-DD">YYYY-MM-DD (e.g. 2026-06-06)</option>
+                      <option value="MM/DD/YYYY">MM/DD/YYYY (e.g. 06/06/2026)</option>
+                      <option value="DD/MM/YYYY">DD/MM/YYYY (e.g. 06/06/2026)</option>
+                      <option value="Month DD, YYYY">Month DD, YYYY (e.g. June 06, 2026)</option>
+                    </select>
+                  </div>
+                </div>
+                  <div class="calc-card" style="margin-bottom: 0;">
+                  <h3>Interface Font Size</h3>
+                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+                    Adjust the text size of the interface.
+                  </p>
+                  
+                  <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <span id="font-size-label" style="font-size: 0.95rem; font-weight: 600; color: var(--text-main);">Font Size: 16px</span>
+                      <span style="font-size: 0.75rem; color: var(--text-muted);">12px - 22px</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">A-</span>
+                      <input type="range" id="settings-font-size" min="12" max="22" value="16" step="1" class="font-size-slider">
+                      <span style="font-size: 1.15rem; color: var(--text-main); font-weight: 600;">A+</span>
+                    </div>
+                  </div>
+                </div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 24px;">
+                  <div class="calc-card">
+                  <h3>Brand Customization</h3>
+                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+                    Upload a custom logo to display in the sidebar.
+                  </p>
+
+                  <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
+                    <div class="logo-preview-box" id="logo-preview">
+                      <i class="fa-solid fa-gamepad" id="preview-logo-default"></i>
+                      <img src="" id="preview-logo-custom" class="hidden" alt="Logo Preview">
+                    </div>
+                    <div>
+                      <button type="button" class="btn btn-outline btn-sm" id="btn-reset-logo">
+                        <i class="fa-solid fa-trash-can"></i> Reset to Default
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="settings-logo-url">Logo Image URL</label>
+                    <input type="url" id="settings-logo-url" class="form-control" placeholder="https://example.com/logo.png">
+                  </div>
+
+                  <div class="form-group" style="margin-top: 15px;">
+                    <label>Or Upload Logo File</label>
+                    <label class="btn btn-outline btn-block" style="cursor: pointer; padding: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                      <i class="fa-solid fa-upload"></i> Upload Image File
+                      <input type="file" id="settings-logo-file" accept="image/*" style="display: none;">
+                    </label>
+                  </div>
+                  
+                  <button type="button" class="btn btn-primary btn-block" id="btn-save-brand" style="margin-top: 20px;">
+                    <i class="fa-solid fa-floppy-disk"></i> Save Brand Logo
+                  </button>
+                </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 3: Inventory & UI -->
+            <div id="settings-tab-inventory" class="settings-tab-pane">
+              <div class="responsive-grid-equal">
+                <div style="display: flex; flex-direction: column; gap: 24px;">
+                  <div class="calc-card" style="margin-bottom: 0;">
+                  <h3>Alerts & Presets</h3>
+                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+                    Configure low stock warnings and target markup defaults.
+                  </p>
+                  
+                  <div class="form-group" style="margin-bottom: 20px;">
+                    <label for="settings-low-stock-threshold" style="display: flex; justify-content: space-between; align-items: center;">
+                      <span>Low Stock Alert Level</span>
+                      <strong id="low-stock-label" style="color: var(--accent-warning);">5 keys</strong>
+                    </label>
+                    <input type="range" id="settings-low-stock-threshold" min="1" max="30" value="5" step="1" class="font-size-slider" style="background: linear-gradient(90deg, var(--accent-warning), var(--accent-pink));">
+                    <small class="form-help" style="margin-top: 6px; display: block;">Get warnings when inventory stock drops below this number.</small>
+                  </div>
+                  
+                  <div class="form-row-2" style="margin-top: 0px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <label for="settings-markup-type">Default Markup Type</label>
+                      <select id="settings-markup-type" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main); font-weight: 500; width: 100%;">
+                        <option value="percent">Percentage (%)</option>
+                        <option value="flat">Flat Surcharge (€/$)</option>
+                      </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <label for="settings-markup-value">Markup Value</label>
+                      <div class="input-with-icon">
+                        <i class="fa-solid fa-percent" id="markup-value-icon"></i>
+                        <input type="number" id="settings-markup-value" class="form-control" placeholder="20" step="0.5" min="0" value="20" style="background-color: var(--bg-input); padding-left: 30px;">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                  <div class="calc-card">
+                  <h3>Inventory Display Preferences</h3>
+                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+                    Choose whether to display logo thumbnails or plain text tags in the main inventory table's Supplier column.
+                  </p>
+                  
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label for="settings-supplier-display">Supplier Column</label>
+                    <select id="settings-supplier-display" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main); font-weight: 500; width: 100%;">
+                      <option value="name" selected>Show Name</option>
+                      <option value="logo">Show Logo</option>
+                    </select>
+                  </div>
+                </div>
+                  <div class="calc-card">
+                  <h3>Sidebar Customization</h3>
+                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+                    Customize sidebar icons and navigation labels for each menu.
+                  </p>
+                  <div class="menu-icons-list" id="settings-menu-icons-list">
+                    <!-- Rendered dynamically via JavaScript -->
+                  </div>
+                </div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 24px;">
+                  <div class="calc-card" style="margin-bottom: 0;">
+                    <h3>Catalog Artwork Utilities</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+                      Batch query Steam &amp; CheapShark APIs in alphabetical order (A&ndash;Z) to fetch HD cover artworks and match Steam App IDs.
+                    </p>
+                    <div style="background: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px; display: flex; flex-direction: column; justify-content: space-between; gap: 16px;">
+                        <div>
+                          <h4 style="margin: 0 0 6px 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent-cyan);"></i> Catalog Artwork Utilities
+                          </h4>
+                          <p style="color: var(--text-secondary); font-size: 0.8rem; margin: 0 0 12px 0; line-height: 1.4;">
+                            Query Steam & CheapShark APIs in alphabetical order (A&ndash;Z) to fetch HD cover artworks and match Steam App IDs.
+                          </p>
+
+                          <div style="display: flex; align-items: flex-start; gap: 8px; background: var(--bg-input); padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 12px;">
+                            <input type="checkbox" id="settings-artwork-overwrite" style="width: 14px; height: 14px; margin-top: 2px; cursor: pointer;">
+                            <div style="flex: 1;">
+                              <label for="settings-artwork-overwrite" style="font-size: 0.78rem; font-weight: 600; color: var(--text-main); cursor: pointer; display: block;">Overwrite existing covers</label>
+                              <span style="color: var(--text-muted); font-size: 0.68rem; line-height: 1.2; display: block; margin-top: 1px;">
+                                Replaces set covers. If unchecked, only updates games without an image.
+                              </span>
+                            </div>
+                          </div>
+
+                          <div style="display: flex; align-items: flex-start; gap: 8px; background: var(--bg-input); padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 12px;">
+                            <input type="checkbox" id="settings-artwork-skip-failed" checked style="width: 14px; height: 14px; margin-top: 2px; cursor: pointer;">
+                            <div style="flex: 1;">
+                              <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <label for="settings-artwork-skip-failed" style="font-size: 0.78rem; font-weight: 600; color: var(--text-main); cursor: pointer; display: block;">Skip unmatchable games</label>
+                                <button type="button" id="btn-clear-artwork-skipped" style="background: transparent; border: none; color: var(--accent-cyan); font-size: 0.68rem; cursor: pointer; text-decoration: underline; padding: 0;">Reset (<span id="artwork-skipped-count">0</span>)</button>
+                              </div>
+                              <span style="color: var(--text-muted); font-size: 0.68rem; line-height: 1.2; display: block; margin-top: 1px;">
+                                Skips titles previously checked that had no matches on Steam/CheapShark to save time.
+                              </span>
+                            </div>
+                          </div>
+
+                          <div id="artwork-fetch-progress-container" class="hidden" style="display: flex; flex-direction: column; gap: 6px; background: var(--bg-input); padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; font-weight: 500;">
+                              <span id="artwork-fetch-progress-status" style="color: var(--text-secondary); max-width: 65%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Initializing...</span>
+                              <div style="display: flex; align-items: center; gap: 6px;">
+                                <span id="artwork-fetch-progress-percent" style="color: var(--accent-cyan);">0%</span>
+                                <button type="button" id="btn-cancel-artwork-fetch" style="background: var(--accent-danger); border: none; border-radius: 4px; color: #fff; font-size: 0.6rem; padding: 1px 4px; cursor: pointer; font-weight: 700;">Stop</button>
+                              </div>
+                            </div>
+                            <div style="width: 100%; height: 4px; background: var(--border-color); border-radius: 2px; overflow: hidden;">
+                              <div id="artwork-fetch-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent-cyan), var(--accent-teal)); transition: width 0.15s ease;"></div>
+                            </div>
+                            <span id="artwork-fetch-detail-status" style="font-size: 0.65rem; color: var(--text-muted);">0 of 0 processed</span>
+                          </div>
+                        </div>
+
+                        <button type="button" class="btn btn-primary btn-block btn-sm" id="btn-fetch-all-artworks" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px;">
+                          <i class="fa-solid fa-wand-magic-sparkles"></i> Fetch Catalog Images
+                        </button>
+                      </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 4: Data & Cloud Sync -->
+            <div id="settings-tab-data" class="settings-tab-pane">
+              <div style="display: flex; flex-direction: column; gap: 24px;">
+                <!-- Cloud Database Integrations Card -->
                 <div class="calc-card" style="margin-bottom: 0; padding: 24px; border: 2px solid var(--accent-purple-glow); background: hsla(270, 85%, 60%, 0.01); display: flex; flex-direction: column; gap: 24px;">
                   <h3 style="margin-bottom: 0; padding-bottom: 12px; border-bottom: 2px solid var(--border-color); font-size: 1.2rem; color: var(--text-main); font-weight: 700; display: flex; align-items: center; gap: 10px; border-top: none;">
-                    <i class="fa-solid fa-server text-purple" style="color: var(--accent-purple);"></i> Cloud Integrations & Sync
+                    <i class="fa-solid fa-server text-purple" style="color: var(--accent-purple);"></i> Cloud Integrations &amp; Sync
                   </h3>
                   <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: -12px; margin-bottom: 0;">
                     Configure external database services to securely store, back up, and synchronize your data in the cloud.
                   </p>
 
-                  <!-- Supabase Panel -->
-                  <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
+                  <div class="responsive-grid-equal" style="margin-bottom: 0;">
+                    <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                       <h4 style="margin: 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
                         <i class="fa-solid fa-cloud" style="color: var(--accent-teal);"></i> Supabase Database
@@ -3417,9 +3782,7 @@
                       <div id="supabase-diag-output" class="hidden" style="background-color: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 10px; font-family: monospace; font-size: 0.72rem; max-height: 150px; overflow-y: auto; line-height: 1.5; color: var(--text-main);"></div>
                     </div>
                   </div>
-
-                  <!-- Firebase Panel -->
-                  <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
+                    <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                       <h4 style="margin: 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
                         <i class="fa-solid fa-fire" style="color: var(--accent-warning);"></i> Firebase Platform
@@ -3481,208 +3844,10 @@
                       <div id="firebase-diag-output" class="hidden" style="background-color: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 10px; font-family: monospace; font-size: 0.72rem; max-height: 150px; overflow-y: auto; line-height: 1.5; color: var(--text-main);"></div>
                     </div>
                   </div>
-
-                  <!-- Kinguin Merchant API Panel -->
-                  <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                      <h4 style="margin: 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
-                        <i class="fa-solid fa-crown" style="color: #ff9900;"></i> Kinguin Merchant API
-                      </h4>
-                      <span id="kinguin-connection-status" class="badge badge-sold">Not Configured</span>
-                    </div>
-                    <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 15px;">
-                      Direct eCommerce API integration to query live Kinguin market prices, competitor listings, and real-time arbitrage margins.
-                    </p>
-                    
-                    <div class="form-row-2">
-                      <div class="form-group" style="margin-bottom: 12px;">
-                        <label for="settings-kinguin-apikey">Kinguin Store API Key (X-Api-Key)</label>
-                        <div style="position: relative;">
-                          <input type="password" id="settings-kinguin-apikey" class="form-control" placeholder="Paste your Kinguin API Key" style="padding-right: 36px;">
-                          <button type="button" id="btn-toggle-kinguin-key-vis" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.85rem;" title="Show/Hide Key">
-                            <i class="fa-regular fa-eye"></i>
-                          </button>
-                        </div>
-                      </div>
-                      <div class="form-group" style="margin-bottom: 12px;">
-                        <label for="settings-kinguin-storename">Store Name</label>
-                        <input type="text" id="settings-kinguin-storename" class="form-control" placeholder="GameVault" value="GameVault">
-                      </div>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 12px;">
-                      <label for="settings-kinguin-proxyurl" style="display: flex; justify-content: space-between; align-items: center;">
-                        <span>CORS Proxy / Relay URL <small style="color: var(--text-muted); font-weight: normal;">(Required for browser calls to Kinguin B2B Gateway)</small></span>
-                        <button type="button" class="btn btn-outline btn-xs btn-open-cors-guide" style="padding: 2px 7px; font-size: 0.72rem; line-height: 1.2; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-cloud" style="color: #f6821f;"></i> Setup Free Proxy (2 mins)</button>
-                      </label>
-                      <input type="url" id="settings-kinguin-proxyurl" class="form-control" placeholder="https://your-worker.your-subdomain.workers.dev/?url=" style="font-size: 0.8rem;">
-                      <small class="form-help" style="margin-top: 4px; display: block; font-size: 0.73rem; color: var(--text-muted);">
-                        Kinguin's B2B API gateway blocks direct browser calls due to CORS. Use your free Cloudflare Worker, Supabase Edge function, or private CORS relay.
-                      </small>
-                    </div>
-
-                    <!-- Global Benchmark & Supplier Listing Filters -->
-                    <div style="margin-top: 14px; margin-bottom: 14px; padding: 12px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 6px;">
-                      <div style="font-size: 0.82rem; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-                        <i class="fa-solid fa-filter" style="color: #ff5000;"></i> Global Benchmark &amp; Supplier Listing Filters
-                      </div>
-                      <div style="display: flex; flex-direction: column; gap: 8px;">
-                        <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 0.8rem; cursor: pointer; margin-bottom: 0;">
-                          <input type="checkbox" id="settings-kinguin-exclude-accounts" style="margin-top: 2px;" checked>
-                          <span>
-                            <strong>Exclude Game Accounts</strong> (Only Genuine CD Keys &amp; Serials)<br>
-                            <span style="font-size: 0.72rem; color: var(--text-muted);">Strictly filters out Steam/Xbox/PSN accounts, shared access profiles, and offline accounts across Kinguin, GG.deals, and official supplier deals (Steam, GOG, Fanatical, Humble, etc.).</span>
-                          </span>
-                        </label>
-                        <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 0.8rem; cursor: pointer; margin-bottom: 0;">
-                          <input type="checkbox" id="settings-kinguin-exclude-dlcs" style="margin-top: 2px;" checked>
-                          <span>
-                            <strong>Exclude DLCs &amp; Expansions</strong> (Full Base Games Only)<br>
-                            <span style="font-size: 0.72rem; color: var(--text-muted);">Filters out cheaper add-ons, season passes, soundtracks, and expansions across all official retailers, keyshops, and Kinguin to benchmark full base games.</span>
-                          </span>
-                        </label>
-                      </div>
-                    </div>
-
-                    <div style="display: flex; gap: 12px; margin-top: 15px; flex-wrap: wrap;">
-                      <button type="button" class="btn btn-outline btn-sm" id="btn-test-kinguin-api" style="flex: 1; min-width: 140px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; font-size: 0.85rem;">
-                        <i class="fa-solid fa-plug-circle-check"></i> Test Kinguin Connection
-                      </button>
-                      <button type="button" class="btn btn-primary btn-sm" id="btn-save-kinguin-api" style="flex: 1; min-width: 140px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; font-size: 0.85rem;">
-                        <i class="fa-solid fa-floppy-disk"></i> Save Kinguin Settings
-                      </button>
-                    </div>
-
-                    <div id="kinguin-test-feedback" style="margin-top: 12px; font-size: 0.8rem; padding: 10px 14px; border-radius: 6px; display: none;"></div>
                   </div>
 
-                  <!-- GG.deals API Panel -->
-                  <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                      <h4 style="margin: 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
-                        <i class="fa-solid fa-tags" style="color: #22c55e;"></i> GG.deals API (Multi-Keyshop Benchmark)
-                      </h4>
-                      <span id="ggdeals-connection-status" class="badge badge-sold">Not Configured</span>
-                    </div>
-                    <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 15px;">
-                      Direct price comparison across official retailers (Steam, Epic, GOG) and major keyshops (G2A, Kinguin, Eneba, CDKeys, Gamivo) to find the absolute lowest global market prices and historical lows.
-                    </p>
-                    
-                    <div class="form-row-2">
-                      <div class="form-group" style="margin-bottom: 12px;">
-                        <label for="settings-ggdeals-token">GG.deals API Key / Token</label>
-                        <div style="position: relative;">
-                          <input type="password" id="settings-ggdeals-token" class="form-control" placeholder="Paste your GG.deals token" style="padding-right: 36px;">
-                          <button type="button" id="btn-toggle-ggdeals-key-vis" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.85rem;" title="Show/Hide Token">
-                            <i class="fa-regular fa-eye"></i>
-                          </button>
-                        </div>
-                      </div>
-                      <div class="form-group" style="margin-bottom: 12px;">
-                        <label for="settings-ggdeals-region">Price Region / Currency</label>
-                        <select id="settings-ggdeals-region" class="form-control" style="font-size: 0.85rem;">
-                          <option value="eu">Europe (EUR €)</option>
-                          <option value="us" selected>United States (USD $)</option>
-                          <option value="gb">United Kingdom (GBP £)</option>
-                          <option value="ca">Canada (CAD $)</option>
-                          <option value="au">Australia (AUD $)</option>
-                          <option value="br">Brazil (BRL R$)</option>
-                          <option value="pl">Poland (PLN zł)</option>
-                          <option value="tr">Turkey (TRY ₺)</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 12px;">
-                      <label for="settings-ggdeals-proxyurl" style="display: flex; justify-content: space-between; align-items: center;">
-                        <span>CORS Proxy / Relay URL <small style="color: var(--text-muted); font-weight: normal;">(Optional &mdash; reuses Kinguin proxy if blank)</small></span>
-                        <button type="button" class="btn btn-outline btn-xs btn-open-cors-guide" style="padding: 2px 7px; font-size: 0.72rem; line-height: 1.2; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-cloud" style="color: #f6821f;"></i> Setup Free Proxy (2 mins)</button>
-                      </label>
-                      <input type="url" id="settings-ggdeals-proxyurl" class="form-control" placeholder="https://your-worker.your-subdomain.workers.dev/?url=" style="font-size: 0.8rem;">
-                      <small class="form-help" style="margin-top: 4px; display: block; font-size: 0.73rem; color: var(--text-muted);">
-                        Leave blank to automatically use your configured Kinguin Cloudflare Worker relay proxy, or provide a dedicated CORS proxy.
-                      </small>
-                    </div>
-
-                    <div style="display: flex; gap: 12px; margin-top: 15px; flex-wrap: wrap;">
-                      <button type="button" class="btn btn-outline btn-sm" id="btn-test-ggdeals-api" style="flex: 1; min-width: 140px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; font-size: 0.85rem;">
-                        <i class="fa-solid fa-plug-circle-check"></i> Test GG.deals Connection
-                      </button>
-                      <button type="button" class="btn btn-primary btn-sm" id="btn-save-ggdeals-api" style="flex: 1; min-width: 140px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; font-size: 0.85rem;">
-                        <i class="fa-solid fa-floppy-disk"></i> Save GG.deals Settings
-                      </button>
-                    </div>
-
-                    <div id="ggdeals-test-feedback" style="margin-top: 12px; font-size: 0.8rem; padding: 10px 14px; border-radius: 6px; display: none;"></div>
-                    
-                    <div style="margin-top: 10px; font-size: 0.74rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
-                      <i class="fa-solid fa-shield-halved" style="color: var(--accent-purple);"></i>
-                      <span>Global Filters Active: GG.deals keyshop prices and supplier deals automatically exclude game accounts and DLCs.</span>
-                    </div>
-                  </div>
-
-                  <!-- G2A Merchant API Panel -->
-                  <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                      <h4 style="margin: 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
-                        <i class="fa-solid fa-bolt" style="color: #0070d2;"></i> G2A Merchant API (Direct Marketplace &amp; Dual Arbitrage)
-                      </h4>
-                      <span id="g2a-connection-status" class="badge badge-sold">Not Configured</span>
-                    </div>
-                    <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 15px;">
-                      Direct integration with G2A API using OAuth2 Client Credentials. Powers live buybox price comparisons, fee simulations, and dual-marketplace arbitrage (Kinguin vs G2A) in the Sourcing Radar.
-                    </p>
-                    
-                    <div class="form-row-2">
-                      <div class="form-group" style="margin-bottom: 12px;">
-                        <label for="settings-g2a-clientid">G2A Client ID</label>
-                        <input type="text" id="settings-g2a-clientid" class="form-control" placeholder="spVkqzQsSrtMyqXY" value="spVkqzQsSrtMyqXY" style="font-size: 0.85rem;">
-                      </div>
-                      <div class="form-group" style="margin-bottom: 12px;">
-                        <label for="settings-g2a-clientsecret">G2A Client Secret</label>
-                        <div style="position: relative;">
-                          <input type="password" id="settings-g2a-clientsecret" class="form-control" placeholder="Paste your G2A Client Secret" style="padding-right: 36px; font-size: 0.85rem;">
-                          <button type="button" id="btn-toggle-g2a-secret-vis" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.85rem;" title="Show/Hide Secret">
-                            <i class="fa-regular fa-eye"></i>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="form-row-2">
-                      <div class="form-group" style="margin-bottom: 12px;">
-                        <label for="settings-g2a-apiurl">G2A API Environment</label>
-                        <select id="settings-g2a-apiurl" class="form-control" style="font-size: 0.85rem;">
-                          <option value="https://api.g2a.com" selected>Production (https://api.g2a.com)</option>
-                          <option value="https://sandboxapi.g2a.com">Sandbox / Test (https://sandboxapi.g2a.com)</option>
-                        </select>
-                      </div>
-                      <div class="form-group" style="margin-bottom: 12px;">
-                        <label for="settings-g2a-proxyurl" style="display: flex; justify-content: space-between; align-items: center;">
-                          <span>CORS Proxy / Relay URL <small style="color: var(--text-muted); font-weight: normal;">(Optional &mdash; reuses Kinguin proxy if blank)</small></span>
-                          <button type="button" class="btn btn-outline btn-xs btn-open-cors-guide" style="padding: 2px 7px; font-size: 0.72rem; line-height: 1.2; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-cloud" style="color: #f6821f;"></i> Setup Free Proxy (2 mins)</button>
-                        </label>
-                        <input type="url" id="settings-g2a-proxyurl" class="form-control" placeholder="https://your-worker.your-subdomain.workers.dev/?url=" style="font-size: 0.8rem;">
-                      </div>
-                    </div>
-                    <small class="form-help" style="margin-top: -6px; margin-bottom: 12px; display: block; font-size: 0.73rem; color: var(--text-muted);">
-                      G2A's API gateway blocks browser direct origins. Leave proxy blank to automatically reuse your Kinguin Cloudflare Worker relay proxy.
-                    </small>
-
-                    <div style="display: flex; gap: 12px; margin-top: 15px; flex-wrap: wrap;">
-                      <button type="button" class="btn btn-outline btn-sm" id="btn-test-g2a-api" style="flex: 1; min-width: 140px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; font-size: 0.85rem;">
-                        <i class="fa-solid fa-plug-circle-check"></i> Test G2A Connection
-                      </button>
-                      <button type="button" class="btn btn-primary btn-sm" id="btn-save-g2a-api" style="flex: 1; min-width: 140px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; font-size: 0.85rem;">
-                        <i class="fa-solid fa-floppy-disk"></i> Save G2A Settings
-                      </button>
-                    </div>
-
-                    <div id="g2a-test-feedback" style="margin-top: 12px; font-size: 0.8rem; padding: 10px 14px; border-radius: 6px; display: none;"></div>
-                  </div>
-
-                  <!-- GitHub Panel -->
-                  <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
+                  <div class="responsive-grid-equal" style="margin-bottom: 0;">
+                    <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                       <h4 style="margin: 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
                         <i class="fa-brands fa-github" style="color: var(--text-main);"></i> GitHub Sync
@@ -3731,9 +3896,8 @@
                       </button>
                     </div>
                   </div>
-
-                  <!-- Sync Strategy Panel -->
-                  <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
+                    <div style="display: flex; flex-direction: column; gap: 20px;">
+                      <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                       <h4 style="margin: 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
                         <i class="fa-solid fa-arrows-rotate" style="color: var(--accent-cyan);"></i> Cloud Sync Preferences
@@ -3756,9 +3920,7 @@
                       <i class="fa-solid fa-sync"></i> Synchronize Now
                     </button>
                   </div>
-
-                  <!-- Automated Sync Schedules Card -->
-                  <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
+                      <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                       <h4 style="margin: 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
                         <i class="fa-solid fa-clock-rotate-left" style="color: var(--accent-purple);"></i> Auto-Sync Schedule
@@ -3803,87 +3965,19 @@
                       Next sync in: <span id="auto-sync-timer-countdown" style="font-weight: 600; color: var(--accent-cyan);">--:--</span>
                     </div>
                   </div>
-                </div>
-              </div>
-
-              <!-- Right Column: Brand, Menu Visibility, Sidebar Customization -->
-              <div style="display: flex; flex-direction: column; gap: 24px;">
-                <!-- Brand Settings Card -->
-                <div class="calc-card">
-                  <h3>Brand Customization</h3>
-                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
-                    Upload a custom logo to display in the sidebar.
-                  </p>
-
-                  <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
-                    <div class="logo-preview-box" id="logo-preview">
-                      <i class="fa-solid fa-gamepad" id="preview-logo-default"></i>
-                      <img src="" id="preview-logo-custom" class="hidden" alt="Logo Preview">
-                    </div>
-                    <div>
-                      <button type="button" class="btn btn-outline btn-sm" id="btn-reset-logo">
-                        <i class="fa-solid fa-trash-can"></i> Reset to Default
-                      </button>
                     </div>
                   </div>
-
-                  <div class="form-group">
-                    <label for="settings-logo-url">Logo Image URL</label>
-                    <input type="url" id="settings-logo-url" class="form-control" placeholder="https://example.com/logo.png">
-                  </div>
-
-                  <div class="form-group" style="margin-top: 15px;">
-                    <label>Or Upload Logo File</label>
-                    <label class="btn btn-outline btn-block" style="cursor: pointer; padding: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                      <i class="fa-solid fa-upload"></i> Upload Image File
-                      <input type="file" id="settings-logo-file" accept="image/*" style="display: none;">
-                    </label>
-                  </div>
-                  
-                  <button type="button" class="btn btn-primary btn-block" id="btn-save-brand" style="margin-top: 20px;">
-                    <i class="fa-solid fa-floppy-disk"></i> Save Brand Logo
-                  </button>
                 </div>
 
-
-                <!-- Inventory Display Preferences Card -->
+                <!-- Data Tools & Spreadsheet Exports Card -->
                 <div class="calc-card">
-                  <h3>Inventory Display Preferences</h3>
+                  <h3>Data Tools &amp; Utilities</h3>
                   <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
-                    Choose whether to display logo thumbnails or plain text tags in the main inventory table's Supplier column.
-                  </p>
-                  
-                  <div class="form-group" style="margin-bottom: 0;">
-                    <label for="settings-supplier-display">Supplier Column</label>
-                    <select id="settings-supplier-display" class="form-control" style="background-color: var(--bg-input); border-color: var(--border-color); color: var(--text-main); font-weight: 500; width: 100%;">
-                      <option value="name" selected>Show Name</option>
-                      <option value="logo">Show Logo</option>
-                    </select>
-                  </div>
-                </div>
-
-                <!-- Sidebar Menu Customization Card -->
-                <div class="calc-card">
-                  <h3>Sidebar Customization</h3>
-                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
-                    Customize sidebar icons and navigation labels for each menu.
-                  </p>
-                  <div class="menu-icons-list" id="settings-menu-icons-list">
-                    <!-- Rendered dynamically via JavaScript -->
-                  </div>
-                </div>
-
-                <!-- Data Tools & Utilities Card -->
-                <div class="calc-card">
-                  <h3>Data Tools & Utilities</h3>
-                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
-                    Import & export inventory sheets, batch fetch covers, and manage local database backups.
+                    Import &amp; export inventory sheets, download backups, and manage database maintenance.
                   </p>
 
                   <div style="display: flex; flex-direction: column; gap: 24px;">
-                    <!-- Section A: Imports & Covers -->
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
-                      <!-- Column 1: Excel/CSV Bulk Import -->
+                    <div class="responsive-grid-equal">
                       <div style="background: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px; display: flex; flex-direction: column; justify-content: space-between; gap: 16px;">
                         <div>
                           <h4 style="margin: 0 0 6px 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
@@ -3915,8 +4009,6 @@
                           <i class="fa-solid fa-file-import"></i> Start Import
                         </button>
                       </div>
-
-                      <!-- Column 2: Excel/CSV Raw Inventory Export -->
                       <div style="background: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px; display: flex; flex-direction: column; justify-content: space-between; gap: 16px;">
                         <div>
                           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; flex-wrap: wrap; gap: 4px;">
@@ -3954,123 +4046,8 @@
                           </button>
                         </div>
                       </div>
-
-                      <!-- Column 2: Catalog Artwork Utilities -->
-                      <div style="background: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px; display: flex; flex-direction: column; justify-content: space-between; gap: 16px;">
-                        <div>
-                          <h4 style="margin: 0 0 6px 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
-                            <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent-cyan);"></i> Catalog Artwork Utilities
-                          </h4>
-                          <p style="color: var(--text-secondary); font-size: 0.8rem; margin: 0 0 12px 0; line-height: 1.4;">
-                            Query Steam & CheapShark APIs in alphabetical order (A&ndash;Z) to fetch HD cover artworks and match Steam App IDs.
-                          </p>
-
-                          <div style="display: flex; align-items: flex-start; gap: 8px; background: var(--bg-input); padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 12px;">
-                            <input type="checkbox" id="settings-artwork-overwrite" style="width: 14px; height: 14px; margin-top: 2px; cursor: pointer;">
-                            <div style="flex: 1;">
-                              <label for="settings-artwork-overwrite" style="font-size: 0.78rem; font-weight: 600; color: var(--text-main); cursor: pointer; display: block;">Overwrite existing covers</label>
-                              <span style="color: var(--text-muted); font-size: 0.68rem; line-height: 1.2; display: block; margin-top: 1px;">
-                                Replaces set covers. If unchecked, only updates games without an image.
-                              </span>
-                            </div>
-                          </div>
-
-                          <div style="display: flex; align-items: flex-start; gap: 8px; background: var(--bg-input); padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 12px;">
-                            <input type="checkbox" id="settings-artwork-skip-failed" checked style="width: 14px; height: 14px; margin-top: 2px; cursor: pointer;">
-                            <div style="flex: 1;">
-                              <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <label for="settings-artwork-skip-failed" style="font-size: 0.78rem; font-weight: 600; color: var(--text-main); cursor: pointer; display: block;">Skip unmatchable games</label>
-                                <button type="button" id="btn-clear-artwork-skipped" style="background: transparent; border: none; color: var(--accent-cyan); font-size: 0.68rem; cursor: pointer; text-decoration: underline; padding: 0;">Reset (<span id="artwork-skipped-count">0</span>)</button>
-                              </div>
-                              <span style="color: var(--text-muted); font-size: 0.68rem; line-height: 1.2; display: block; margin-top: 1px;">
-                                Skips titles previously checked that had no matches on Steam/CheapShark to save time.
-                              </span>
-                            </div>
-                          </div>
-
-                          <div id="artwork-fetch-progress-container" class="hidden" style="display: flex; flex-direction: column; gap: 6px; background: var(--bg-input); padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); margin-bottom: 12px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; font-weight: 500;">
-                              <span id="artwork-fetch-progress-status" style="color: var(--text-secondary); max-width: 65%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Initializing...</span>
-                              <div style="display: flex; align-items: center; gap: 6px;">
-                                <span id="artwork-fetch-progress-percent" style="color: var(--accent-cyan);">0%</span>
-                                <button type="button" id="btn-cancel-artwork-fetch" style="background: var(--accent-danger); border: none; border-radius: 4px; color: #fff; font-size: 0.6rem; padding: 1px 4px; cursor: pointer; font-weight: 700;">Stop</button>
-                              </div>
-                            </div>
-                            <div style="width: 100%; height: 4px; background: var(--border-color); border-radius: 2px; overflow: hidden;">
-                              <div id="artwork-fetch-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent-cyan), var(--accent-teal)); transition: width 0.15s ease;"></div>
-                            </div>
-                            <span id="artwork-fetch-detail-status" style="font-size: 0.65rem; color: var(--text-muted);">0 of 0 processed</span>
-                          </div>
-                        </div>
-
-                        <button type="button" class="btn btn-primary btn-block btn-sm" id="btn-fetch-all-artworks" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px;">
-                          <i class="fa-solid fa-wand-magic-sparkles"></i> Fetch Catalog Images
-                        </button>
-                      </div>
-
-                      <!-- Column 3: Steam Ratings & Reviews Enricher -->
-                      <div style="background: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px; display: flex; flex-direction: column; justify-content: space-between; gap: 16px;">
-                        <div>
-                          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; flex-wrap: wrap; gap: 4px;">
-                            <h4 style="margin: 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
-                              <i class="fa-brands fa-steam" style="color: #66c0f4;"></i> Steam Ratings Enricher
-                            </h4>
-                          </div>
-                          <p style="color: var(--text-secondary); font-size: 0.8rem; margin: 0 0 10px 0; line-height: 1.4;">
-                            Batch retrieve official Steam review percentages and total review counts for all catalog games (A&ndash;Z) to power entry rating pills.
-                          </p>
-
-                          <div style="background: var(--bg-input); padding: 8px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); margin-bottom: 12px; font-size: 0.72rem; color: var(--text-secondary);">
-                            <span id="steam-review-stats-badge">Loading ratings statistics...</span>
-                          </div>
-
-                          <div style="display: flex; align-items: flex-start; gap: 8px; background: var(--bg-input); padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 10px;">
-                            <input type="checkbox" id="settings-review-only-unrated" checked style="width: 14px; height: 14px; margin-top: 2px; cursor: pointer;">
-                            <div style="flex: 1;">
-                              <label for="settings-review-only-unrated" style="font-size: 0.78rem; font-weight: 600; color: var(--text-main); cursor: pointer; display: block;">Fetch only unrated games</label>
-                              <span style="color: var(--text-muted); font-size: 0.68rem; line-height: 1.2; display: block; margin-top: 1px;">
-                                Fast mode (recommended): Skips games that already have Steam rating pills.
-                              </span>
-                            </div>
-                          </div>
-
-                          <div style="display: flex; align-items: flex-start; gap: 8px; background: var(--bg-input); padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 12px;">
-                            <input type="checkbox" id="settings-review-overwrite" style="width: 14px; height: 14px; margin-top: 2px; cursor: pointer;">
-                            <div style="flex: 1;">
-                              <label for="settings-review-overwrite" style="font-size: 0.78rem; font-weight: 600; color: var(--text-main); cursor: pointer; display: block;">Force refresh all ratings</label>
-                              <span style="color: var(--text-muted); font-size: 0.68rem; line-height: 1.2; display: block; margin-top: 1px;">
-                                Overwrites previously saved ratings with latest Steam statistics.
-                              </span>
-                            </div>
-                          </div>
-
-                          <div id="review-fetch-progress-container" class="hidden" style="display: flex; flex-direction: column; gap: 6px; background: var(--bg-input); padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); margin-bottom: 12px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; font-weight: 500;">
-                              <span id="review-fetch-progress-status" style="color: var(--text-secondary); max-width: 65%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Initializing...</span>
-                              <div style="display: flex; align-items: center; gap: 6px;">
-                                <span id="review-fetch-progress-percent" style="color: #66c0f4; font-weight: 700;">0%</span>
-                                <button type="button" id="btn-cancel-review-fetch" style="background: var(--accent-danger); border: none; border-radius: 4px; color: #fff; font-size: 0.6rem; padding: 1px 6px; cursor: pointer; font-weight: 700;">Stop</button>
-                              </div>
-                            </div>
-                            <div style="width: 100%; height: 4px; background: var(--border-color); border-radius: 2px; overflow: hidden;">
-                              <div id="review-fetch-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #66c0f4, #1b2838); transition: width 0.15s ease;"></div>
-                            </div>
-                            <span id="review-fetch-detail-status" style="font-size: 0.65rem; color: var(--text-muted);">0 of 0 processed</span>
-                          </div>
-                        </div>
-
-                        <div style="display: flex; gap: 8px;">
-                          <button type="button" class="btn btn-primary btn-sm" id="btn-fetch-all-reviews" style="flex: 2; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px; font-size: 0.8rem;">
-                            <i class="fa-brands fa-steam"></i> Fetch Steam Ratings
-                          </button>
-                          <button type="button" class="btn btn-outline btn-sm" id="btn-clean-unrated-cache" title="Clear unrated/failed lookups so they can be re-queried" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 8px; font-size: 0.75rem;">
-                            <i class="fa-solid fa-broom"></i> Clean Cache
-                          </button>
-                        </div>
-                      </div>
                     </div>
 
-                    <!-- Section B: Backup & Maintenance -->
                     <div style="border-top: 1px solid var(--border-color); padding-top: 20px;">
                       <h4 style="margin: 0 0 12px 0; color: var(--text-main); font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Database Maintenance & Data Exports</h4>
                       
@@ -4128,9 +4105,58 @@
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
 
-                <!-- User Management Settings Card (Admin only) -->
-                <div class="calc-card" id="settings-user-mgmt-card">
+            <!-- TAB 5: Profile & Users -->
+            <div id="settings-tab-profile" class="settings-tab-pane">
+              <div class="responsive-grid-equal">
+                <div style="display: flex; flex-direction: column; gap: 24px;">
+                  <div class="calc-card" style="margin-bottom: 0;">
+                  <h3>My Profile Settings</h3>
+                  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+                    Manage your account security and credentials.
+                  </p>
+                  
+                  <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 15px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan)); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #fff; font-weight: bold;" id="profile-avatar">U</div>
+                    <div>
+                      <h4 style="margin: 0; color: var(--text-main); font-size: 1rem;" id="profile-username-display">Username</h4>
+                      <span class="badge" style="font-size: 0.7rem; background-color: var(--border-color); color: var(--text-secondary); padding: 2px 8px; margin-top: 4px; display: inline-block; text-transform: uppercase;" id="profile-role-display">Role</span>
+                    </div>
+                  </div>
+
+                  <form id="profile-update-form" style="display: flex; flex-direction: column; gap: 12px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <label for="profile-email-input" style="font-size: 0.8rem; margin-bottom: 4px;">Email Address</label>
+                      <input type="email" id="profile-email-input" class="form-control" style="height: 36px; padding: 6px 12px; font-size: 0.85rem;" required>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="profile-password-input" style="font-size: 0.8rem; margin-bottom: 4px;">New Password (Optional)</label>
+                        <input type="password" id="profile-password-input" class="form-control" style="height: 36px; padding: 6px 12px; font-size: 0.85rem;" placeholder="Leave blank to keep same" minlength="6">
+                      </div>
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="profile-confirm-password-input" style="font-size: 0.8rem; margin-bottom: 4px;">Confirm Password</label>
+                        <input type="password" id="profile-confirm-password-input" class="form-control" style="height: 36px; padding: 6px 12px; font-size: 0.85rem;" placeholder="Confirm new password">
+                      </div>
+                    </div>
+
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px; flex-wrap: wrap; gap: 12px;">
+                      <label class="checkbox-container" style="margin-bottom: 0;">
+                        <input type="checkbox" id="profile-2fa-input">
+                        <span class="checkbox-label" style="font-weight: 500; font-size: 0.85rem;">Enable 2FA Protection</span>
+                      </label>
+                      <button type="submit" class="btn btn-primary" style="height: 36px; padding: 0 16px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; width: auto; margin-top: 0;">
+                        <i class="fa-solid fa-user-gear"></i> Update Profile
+                      </button>
+                    </div>
+                  </form>
+                </div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 24px;">
+                  <div class="calc-card" id="settings-user-mgmt-card">
                   <h3>User Management</h3>
                   <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
                     Manually create additional user accounts and view existing registered users.
@@ -4226,6 +4252,7 @@
                       </table>
                     </div>
                   </div>
+                </div>
                 </div>
               </div>
             </div>
@@ -4529,13 +4556,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=144"></script>
-  <script src="src/state.js?v=144"></script>
-  <script src="src/api.js?v=144"></script>
-  <script src="src/charts.js?v=144"></script>
-  <script src="src/ui.js?v=144"></script>
-  <script src="src/ai.js?v=144"></script>
-  <script src="src/importer.js?v=144"></script>
-  <script src="app.js?v=144"></script>
+  <script src="config.js?v=145"></script>
+  <script src="src/state.js?v=145"></script>
+  <script src="src/api.js?v=145"></script>
+  <script src="src/charts.js?v=145"></script>
+  <script src="src/ui.js?v=145"></script>
+  <script src="src/ai.js?v=145"></script>
+  <script src="src/importer.js?v=145"></script>
+  <script src="app.js?v=145"></script>
 </body>
 </html>
