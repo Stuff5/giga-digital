@@ -7198,11 +7198,26 @@ function renderSuppliers() {
           </button>
         `;
       } else {
-        radarScanBtn = `
-          <span class="badge" style="background: var(--bg-input); color: var(--text-muted); border: 1px solid var(--border-color); font-size: 0.7rem; padding: 2px 7px;" title="Manual / Keyshop purchase source (No open deal API)">
-            Manual
-          </span>
-        `;
+        const cleanName = (supplierName || "").trim().toLowerCase();
+        if (cleanName === "g2a" || cleanName === "g2a.com") {
+          radarScanBtn = `
+            <span class="badge" style="background: rgba(0, 112, 210, 0.12); color: #0070d2; border: 1px solid rgba(0, 112, 210, 0.35); font-size: 0.72rem; padding: 2px 8px; font-weight: 600;" title="G2A is integrated as a Resale &amp; Arbitrage Marketplace in Sourcing Radar">
+              <i class="fa-solid fa-bolt" style="margin-right: 4px;"></i>Resale Market
+            </span>
+          `;
+        } else if (cleanName === "kinguin" || cleanName === "kinguin.net") {
+          radarScanBtn = `
+            <span class="badge" style="background: rgba(255, 80, 0, 0.12); color: #ff5000; border: 1px solid rgba(255, 80, 0, 0.35); font-size: 0.72rem; padding: 2px 8px; font-weight: 600;" title="Kinguin is integrated as a Resale &amp; Arbitrage Marketplace in Sourcing Radar">
+              <i class="fa-solid fa-crown" style="margin-right: 4px;"></i>Resale Market
+            </span>
+          `;
+        } else {
+          radarScanBtn = `
+            <span class="badge" style="background: var(--bg-input); color: var(--text-muted); border: 1px solid var(--border-color); font-size: 0.7rem; padding: 2px 7px;" title="Manual purchase source (No open deal API)">
+              Manual
+            </span>
+          `;
+        }
       }
 
       const tr = document.createElement("tr");
