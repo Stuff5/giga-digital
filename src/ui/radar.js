@@ -1,6 +1,6 @@
 /**
  * GameVault - Sourcing & Multi-Marketplace Arbitrage Radar (src/ui/radar.js)
- * Manages CheapShark multi-retailer scanning, Kinguin and G2A fee simulation, and manual benchmark overrides.
+ * Manages CheapShark multi-retailer scanning, Kinguin fee simulation, and manual benchmark overrides.
  */
 
 // ==========================================================================
@@ -131,13 +131,9 @@ window.openSourcingRadarModal = async function() {
   if (state.sourcingSettings) {
     const feePctEl = document.getElementById("sourcing-kinguin-fee-pct");
     const fixedFeeEl = document.getElementById("sourcing-kinguin-fixed-fee");
-    const g2aFeePctEl = document.getElementById("sourcing-g2a-fee-pct");
-    const g2aFixedFeeEl = document.getElementById("sourcing-g2a-fixed-fee");
     const alertsToggle = document.getElementById("sourcing-toggle-topbar-alerts");
     if (feePctEl) feePctEl.value = state.sourcingSettings.kinguinFeePct ?? 11;
     if (fixedFeeEl) fixedFeeEl.value = state.sourcingSettings.kinguinFixedFee ?? 0.10;
-    if (g2aFeePctEl) g2aFeePctEl.value = state.sourcingSettings.g2aFeePct ?? 10.4;
-    if (g2aFixedFeeEl) g2aFixedFeeEl.value = state.sourcingSettings.g2aFixedFee ?? 0.35;
     if (alertsToggle) alertsToggle.checked = state.sourcingSettings.topbarAlerts !== false;
   }
 
@@ -146,9 +142,6 @@ window.openSourcingRadarModal = async function() {
   }
   if (typeof window.initGGDealsConnection === "function") {
     window.initGGDealsConnection();
-  }
-  if (typeof window.initG2AConnection === "function") {
-    window.initG2AConnection();
   }
 
   openModal("sourcing-radar-modal");
@@ -174,8 +167,6 @@ window.renderSourcingRadarView = function() {
   const favorites = (state.favoriteGames || []).slice();
   const feePct = Number(state.sourcingSettings?.kinguinFeePct ?? 11);
   const fixedFee = Number(state.sourcingSettings?.kinguinFixedFee ?? 0.10);
-  const g2aFeePct = Number(state.sourcingSettings?.g2aFeePct ?? 10.4);
-  const g2aFixedFee = Number(state.sourcingSettings?.g2aFixedFee ?? 0.35);
   const filterSelect = document.getElementById("sourcing-filter-status");
   const filterVal = filterSelect ? filterSelect.value : "profitable";
 
@@ -578,9 +569,6 @@ window.renderSourcingRadarView = function() {
           </a>
           <a href="https://www.kinguin.net/listing?active=1&hide_out_of_stock=1&phrase=${encodeURIComponent(item.title + ' CD Key')}" target="_blank" rel="noopener noreferrer" class="btn-sourcing-launcher" title="View active CD Key listings on Kinguin">
             <span style="color: #ff5000; font-weight: 700;">Kinguin</span> <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.65rem;"></i>
-          </a>
-          <a href="https://www.g2a.com/search?query=${encodeURIComponent(item.title + ' PC')}" target="_blank" rel="noopener noreferrer" class="btn-sourcing-launcher" title="View active listings on G2A">
-            <span style="color: #0070d2; font-weight: 700;">G2A</span> <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.65rem;"></i>
           </a>
           <button type="button" class="btn btn-outline btn-xs" style="height: 28px; padding: 0 8px;" onclick="window.openAddGameModalWithTitle('${item.title.replace(/'/g, "\\'")}')" title="Log purchased keys into Inventory">
             <i class="fa-solid fa-plus text-emerald"></i>

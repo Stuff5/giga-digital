@@ -5,6 +5,20 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v3.4.6] - 2026-11-27
+### Complete G2A Decommissioning & Balanced Settings Layout
+- **G2A Merchant Integration Decommissioned**:
+  - **Removed Settings Configuration Card**: Completely removed the G2A Merchant API card (OAuth credentials, sandbox selector, proxy inputs, connection test button) from Settings &rarr; APIs & Marketplaces.
+  - **Balanced 2-Column Marketplace Grid**: Rebalanced the APIs tab so **Kinguin Merchant API** and **GG.deals API** sit side-by-side in equal columns (`responsive-grid-equal`), giving premier focus to the two active benchmark engines.
+  - **Full-Width Steam Ratings Enricher**: Streamlined the Steam Ratings Enricher card with a responsive 2-column options row directly beneath the benchmark grid.
+- **Sourcing Radar Cleanup**:
+  - **Purged Dead G2A Controls & Variables**: Stripped obsolete G2A fee variables (`g2aFeePct`, `g2aFixedFee`), fee DOM element lookups, and dead event listeners.
+  - **Launcher Hub Refinement**: Removed the external G2A search button from radar card action hubs (`sourcing-actions-hub`), focusing 1-click launchers on Kinguin, GG.deals, and Allkeyshop.
+  - **Suppliers Table Accuracy**: Updated supplier badge logic in `src/ui.js` so G2A is categorized as a standard supplier rather than an integrated resale arbitrage venue.
+- **Documentation & CORS Guide Updates**:
+  - Updated CORS proxy setup guide in `templates/modals.html` to highlight Kinguin B2B Gateway and GG.deals integrations.
+- **Cache-Busting Update**: Incremented all application script references to `?v=157`.
+
 ## [v3.4.5] - 2026-11-27
 ### GG.deals Keyshop & Market Benchmark Filters
 - **Configurable GG.deals Filters on Settings Page**:

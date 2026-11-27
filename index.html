@@ -139,7 +139,7 @@
         </div>
         <div class="version-info" style="text-align: center; font-size: 0.7rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; overflow: hidden; white-space: nowrap;">
           <span class="version-label">GameVault</span>
-          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v3.4.5</a>
+          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v3.4.6</a>
         </div>
 
       </div>
@@ -3117,66 +3117,8 @@
             <!-- TAB 1: APIs & Marketplaces -->
             <div id="settings-tab-apis" class="settings-tab-pane active">
               <div style="display: flex; flex-direction: column; gap: 24px;">
-                <!-- Dual Marketplace Arbitrage Venues Grid -->
+                <!-- Live Marketplace & Keyshop Benchmark Integrations -->
                 <div class="responsive-grid-equal" style="margin-bottom: 0;">
-                  <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                      <h4 style="margin: 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
-                        <i class="fa-solid fa-bolt" style="color: #0070d2;"></i> G2A Merchant API (Direct Marketplace &amp; Dual Arbitrage)
-                      </h4>
-                      <span id="g2a-connection-status" class="badge badge-sold">Not Configured</span>
-                    </div>
-                    <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 15px;">
-                      Direct integration with G2A API using OAuth2 Client Credentials. Powers live buybox price comparisons, fee simulations, and dual-marketplace arbitrage (Kinguin vs G2A) in the Sourcing Radar.
-                    </p>
-                    
-                    <div class="form-row-2">
-                      <div class="form-group" style="margin-bottom: 12px;">
-                        <label for="settings-g2a-clientid">G2A Client ID</label>
-                        <input type="text" id="settings-g2a-clientid" class="form-control" placeholder="spVkqzQsSrtMyqXY" value="spVkqzQsSrtMyqXY" style="font-size: 0.85rem;">
-                      </div>
-                      <div class="form-group" style="margin-bottom: 12px;">
-                        <label for="settings-g2a-clientsecret">G2A Client Secret</label>
-                        <div style="position: relative;">
-                          <input type="password" id="settings-g2a-clientsecret" class="form-control" placeholder="Paste your G2A Client Secret" style="padding-right: 36px; font-size: 0.85rem;">
-                          <button type="button" id="btn-toggle-g2a-secret-vis" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.85rem;" title="Show/Hide Secret">
-                            <i class="fa-regular fa-eye"></i>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="form-row-2">
-                      <div class="form-group" style="margin-bottom: 12px;">
-                        <label for="settings-g2a-apiurl">G2A API Environment</label>
-                        <select id="settings-g2a-apiurl" class="form-control" style="font-size: 0.85rem;">
-                          <option value="https://api.g2a.com" selected>Production (https://api.g2a.com)</option>
-                          <option value="https://sandboxapi.g2a.com">Sandbox / Test (https://sandboxapi.g2a.com)</option>
-                        </select>
-                      </div>
-                      <div class="form-group" style="margin-bottom: 12px;">
-                        <label for="settings-g2a-proxyurl" style="display: flex; justify-content: space-between; align-items: center;">
-                          <span>CORS Proxy / Relay URL <small style="color: var(--text-muted); font-weight: normal;">(Optional &mdash; reuses Kinguin proxy if blank)</small></span>
-                          <button type="button" class="btn btn-outline btn-xs btn-open-cors-guide" style="padding: 2px 7px; font-size: 0.72rem; line-height: 1.2; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-cloud" style="color: #f6821f;"></i> Setup Free Proxy (2 mins)</button>
-                        </label>
-                        <input type="url" id="settings-g2a-proxyurl" class="form-control" placeholder="https://your-worker.your-subdomain.workers.dev/?url=" style="font-size: 0.8rem;">
-                      </div>
-                    </div>
-                    <small class="form-help" style="margin-top: -6px; margin-bottom: 12px; display: block; font-size: 0.73rem; color: var(--text-muted);">
-                      G2A's API gateway blocks browser direct origins. Leave proxy blank to automatically reuse your Kinguin Cloudflare Worker relay proxy.
-                    </small>
-
-                    <div style="display: flex; gap: 12px; margin-top: 15px; flex-wrap: wrap;">
-                      <button type="button" class="btn btn-outline btn-sm" id="btn-test-g2a-api" style="flex: 1; min-width: 140px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; font-size: 0.85rem;">
-                        <i class="fa-solid fa-plug-circle-check"></i> Test G2A Connection
-                      </button>
-                      <button type="button" class="btn btn-primary btn-sm" id="btn-save-g2a-api" style="flex: 1; min-width: 140px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; font-size: 0.85rem;">
-                        <i class="fa-solid fa-floppy-disk"></i> Save G2A Settings
-                      </button>
-                    </div>
-
-                    <div id="g2a-test-feedback" style="margin-top: 12px; font-size: 0.8rem; padding: 10px 14px; border-radius: 6px; display: none;"></div>
-                  </div>
                   <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                       <h4 style="margin: 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
@@ -3298,11 +3240,6 @@
                     </div>
 
                     <div id="kinguin-test-feedback" style="margin-top: 12px; font-size: 0.8rem; padding: 10px 14px; border-radius: 6px; display: none;"></div>
-                  </div>
-                </div>
-
-                <!-- Price Benchmarks & Rating Enrichers Grid -->
-                <div class="responsive-grid-equal" style="margin-bottom: 0;">
                   <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                       <h4 style="margin: 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
@@ -3434,65 +3371,69 @@
                       </div>
                     </div>
                   </div>
-                  <div style="background: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px; display: flex; flex-direction: column; justify-content: space-between; gap: 16px;">
-                        <div>
-                          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; flex-wrap: wrap; gap: 4px;">
-                            <h4 style="margin: 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
-                              <i class="fa-brands fa-steam" style="color: #66c0f4;"></i> Steam Ratings Enricher
-                            </h4>
-                          </div>
-                          <p style="color: var(--text-secondary); font-size: 0.8rem; margin: 0 0 10px 0; line-height: 1.4;">
-                            Batch retrieve official Steam review percentages and total review counts for all catalog games (A&ndash;Z) to power entry rating pills.
-                          </p>
+                </div>
 
-                          <div style="background: var(--bg-input); padding: 8px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); margin-bottom: 12px; font-size: 0.72rem; color: var(--text-secondary);">
-                            <span id="steam-review-stats-badge">Loading ratings statistics...</span>
-                          </div>
+                <!-- Steam Ratings Enricher Card -->
+                <div style="background: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+                  <div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; flex-wrap: wrap; gap: 4px;">
+                      <h4 style="margin: 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-brands fa-steam" style="color: #66c0f4;"></i> Steam Ratings Enricher
+                      </h4>
+                    </div>
+                    <p style="color: var(--text-secondary); font-size: 0.8rem; margin: 0 0 10px 0; line-height: 1.4;">
+                      Batch retrieve official Steam review percentages and total review counts for all catalog games (A&ndash;Z) to power entry rating pills.
+                    </p>
 
-                          <div style="display: flex; align-items: flex-start; gap: 8px; background: var(--bg-input); padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 10px;">
-                            <input type="checkbox" id="settings-review-only-unrated" checked style="width: 14px; height: 14px; margin-top: 2px; cursor: pointer;">
-                            <div style="flex: 1;">
-                              <label for="settings-review-only-unrated" style="font-size: 0.78rem; font-weight: 600; color: var(--text-main); cursor: pointer; display: block;">Fetch only unrated games</label>
-                              <span style="color: var(--text-muted); font-size: 0.68rem; line-height: 1.2; display: block; margin-top: 1px;">
-                                Fast mode (recommended): Skips games that already have Steam rating pills.
-                              </span>
-                            </div>
-                          </div>
+                    <div style="background: var(--bg-input); padding: 8px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); margin-bottom: 12px; font-size: 0.72rem; color: var(--text-secondary);">
+                      <span id="steam-review-stats-badge">Loading ratings statistics...</span>
+                    </div>
 
-                          <div style="display: flex; align-items: flex-start; gap: 8px; background: var(--bg-input); padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 12px;">
-                            <input type="checkbox" id="settings-review-overwrite" style="width: 14px; height: 14px; margin-top: 2px; cursor: pointer;">
-                            <div style="flex: 1;">
-                              <label for="settings-review-overwrite" style="font-size: 0.78rem; font-weight: 600; color: var(--text-main); cursor: pointer; display: block;">Force refresh all ratings</label>
-                              <span style="color: var(--text-muted); font-size: 0.68rem; line-height: 1.2; display: block; margin-top: 1px;">
-                                Overwrites previously saved ratings with latest Steam statistics.
-                              </span>
-                            </div>
-                          </div>
-
-                          <div id="review-fetch-progress-container" class="hidden" style="display: flex; flex-direction: column; gap: 6px; background: var(--bg-input); padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); margin-bottom: 12px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; font-weight: 500;">
-                              <span id="review-fetch-progress-status" style="color: var(--text-secondary); max-width: 65%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Initializing...</span>
-                              <div style="display: flex; align-items: center; gap: 6px;">
-                                <span id="review-fetch-progress-percent" style="color: #66c0f4; font-weight: 700;">0%</span>
-                                <button type="button" id="btn-cancel-review-fetch" style="background: var(--accent-danger); border: none; border-radius: 4px; color: #fff; font-size: 0.6rem; padding: 1px 6px; cursor: pointer; font-weight: 700;">Stop</button>
-                              </div>
-                            </div>
-                            <div style="width: 100%; height: 4px; background: var(--border-color); border-radius: 2px; overflow: hidden;">
-                              <div id="review-fetch-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #66c0f4, #1b2838); transition: width 0.15s ease;"></div>
-                            </div>
-                            <span id="review-fetch-detail-status" style="font-size: 0.65rem; color: var(--text-muted);">0 of 0 processed</span>
-                          </div>
-                        </div>
-
-                        <div style="display: flex; gap: 8px;">
-                          <button type="button" class="btn btn-primary btn-sm" id="btn-fetch-all-reviews" style="flex: 2; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px; font-size: 0.8rem;">
-                            <i class="fa-brands fa-steam"></i> Fetch Steam Ratings
-                          </button>
-                          <button type="button" class="btn btn-outline btn-sm" id="btn-clean-unrated-cache" title="Clear unrated/failed lookups so they can be re-queried" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 8px; font-size: 0.75rem;">
-                            <i class="fa-solid fa-broom"></i> Clean Cache
-                          </button>
+                    <div class="form-row-2" style="margin-bottom: 12px;">
+                      <div style="display: flex; align-items: flex-start; gap: 8px; background: var(--bg-input); padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 0;">
+                        <input type="checkbox" id="settings-review-only-unrated" checked style="width: 14px; height: 14px; margin-top: 2px; cursor: pointer;">
+                        <div style="flex: 1;">
+                          <label for="settings-review-only-unrated" style="font-size: 0.78rem; font-weight: 600; color: var(--text-main); cursor: pointer; display: block;">Fetch only unrated games</label>
+                          <span style="color: var(--text-muted); font-size: 0.68rem; line-height: 1.2; display: block; margin-top: 1px;">
+                            Fast mode (recommended): Skips games that already have Steam rating pills.
+                          </span>
                         </div>
                       </div>
+
+                      <div style="display: flex; align-items: flex-start; gap: 8px; background: var(--bg-input); padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 0;">
+                        <input type="checkbox" id="settings-review-overwrite" style="width: 14px; height: 14px; margin-top: 2px; cursor: pointer;">
+                        <div style="flex: 1;">
+                          <label for="settings-review-overwrite" style="font-size: 0.78rem; font-weight: 600; color: var(--text-main); cursor: pointer; display: block;">Force refresh all ratings</label>
+                          <span style="color: var(--text-muted); font-size: 0.68rem; line-height: 1.2; display: block; margin-top: 1px;">
+                            Overwrites previously saved ratings with latest Steam statistics.
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div id="review-fetch-progress-container" class="hidden" style="display: flex; flex-direction: column; gap: 6px; background: var(--bg-input); padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); margin-bottom: 12px;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; font-weight: 500;">
+                        <span id="review-fetch-progress-status" style="color: var(--text-secondary); max-width: 65%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Initializing...</span>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                          <span id="review-fetch-progress-percent" style="color: #66c0f4; font-weight: 700;">0%</span>
+                          <button type="button" id="btn-cancel-review-fetch" style="background: var(--accent-danger); border: none; border-radius: 4px; color: #fff; font-size: 0.6rem; padding: 1px 6px; cursor: pointer; font-weight: 700;">Stop</button>
+                        </div>
+                      </div>
+                      <div style="width: 100%; height: 4px; background: var(--border-color); border-radius: 2px; overflow: hidden;">
+                        <div id="review-fetch-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #66c0f4, #1b2838); transition: width 0.15s ease;"></div>
+                      </div>
+                      <span id="review-fetch-detail-status" style="font-size: 0.65rem; color: var(--text-muted);">0 of 0 processed</span>
+                    </div>
+                  </div>
+
+                  <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn btn-primary btn-sm" id="btn-fetch-all-reviews" style="flex: 2; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px; font-size: 0.8rem;">
+                      <i class="fa-brands fa-steam"></i> Fetch Steam Ratings
+                    </button>
+                    <button type="button" class="btn btn-outline btn-sm" id="btn-clean-unrated-cache" title="Clear unrated/failed lookups so they can be re-queried" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 8px; font-size: 0.75rem;">
+                      <i class="fa-solid fa-broom"></i> Clean Cache
+                    </button>
+                  </div>
                 </div>
 
                 <!-- AI Merchant Assistant Configuration -->
@@ -4674,17 +4615,17 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=156"></script>
-  <script src="src/state.js?v=156"></script>
-  <script src="src/api.js?v=156"></script>
-  <script src="src/charts.js?v=156"></script>
-  <script src="src/ui.js?v=156"></script>
-  <script src="src/ui/auth.js?v=156"></script>
-  <script src="src/ui/settings.js?v=156"></script>
-  <script src="src/ui/recycle.js?v=156"></script>
-  <script src="src/ui/radar.js?v=156"></script>
-  <script src="src/ai.js?v=156"></script>
-  <script src="src/importer.js?v=156"></script>
-  <script src="app.js?v=156"></script>
+  <script src="config.js?v=157"></script>
+  <script src="src/state.js?v=157"></script>
+  <script src="src/api.js?v=157"></script>
+  <script src="src/charts.js?v=157"></script>
+  <script src="src/ui.js?v=157"></script>
+  <script src="src/ui/auth.js?v=157"></script>
+  <script src="src/ui/settings.js?v=157"></script>
+  <script src="src/ui/recycle.js?v=157"></script>
+  <script src="src/ui/radar.js?v=157"></script>
+  <script src="src/ai.js?v=157"></script>
+  <script src="src/importer.js?v=157"></script>
+  <script src="app.js?v=157"></script>
 </body>
 </html>

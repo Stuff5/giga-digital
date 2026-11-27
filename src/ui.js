@@ -404,7 +404,6 @@ function bindSidebarEvents() {
           }
           if (typeof window.initKinguinConnection === "function") window.initKinguinConnection();
           if (typeof window.initGGDealsConnection === "function") window.initGGDealsConnection();
-          if (typeof window.initG2AConnection === "function") window.initG2AConnection();
           if (typeof window.restoreSettingsTab === "function") window.restoreSettingsTab();
         }
       } catch (err) {
@@ -618,32 +617,6 @@ function initEventHandlers() {
       if (!isNaN(val) && val >= 0) {
         if (!state.sourcingSettings) state.sourcingSettings = {};
         state.sourcingSettings.kinguinFixedFee = val;
-        if (typeof saveSecondaryTablesToStorage === "function") saveSecondaryTablesToStorage();
-        if (typeof window.renderSourcingRadarView === "function") window.renderSourcingRadarView();
-      }
-    });
-  }
-
-  const sourcingG2AFeePctInput = document.getElementById("sourcing-g2a-fee-pct");
-  if (sourcingG2AFeePctInput) {
-    sourcingG2AFeePctInput.addEventListener("input", (e) => {
-      const val = parseFloat(e.target.value);
-      if (!isNaN(val) && val >= 0) {
-        if (!state.sourcingSettings) state.sourcingSettings = {};
-        state.sourcingSettings.g2aFeePct = val;
-        if (typeof saveSecondaryTablesToStorage === "function") saveSecondaryTablesToStorage();
-        if (typeof window.renderSourcingRadarView === "function") window.renderSourcingRadarView();
-      }
-    });
-  }
-
-  const sourcingG2AFixedFeeInput = document.getElementById("sourcing-g2a-fixed-fee");
-  if (sourcingG2AFixedFeeInput) {
-    sourcingG2AFixedFeeInput.addEventListener("input", (e) => {
-      const val = parseFloat(e.target.value);
-      if (!isNaN(val) && val >= 0) {
-        if (!state.sourcingSettings) state.sourcingSettings = {};
-        state.sourcingSettings.g2aFixedFee = val;
         if (typeof saveSecondaryTablesToStorage === "function") saveSecondaryTablesToStorage();
         if (typeof window.renderSourcingRadarView === "function") window.renderSourcingRadarView();
       }
@@ -2734,7 +2707,6 @@ function navigateToHash(targetHash) {
       if (typeof window.syncAISettingsUI === "function") window.syncAISettingsUI();
       if (typeof window.initKinguinConnection === "function") window.initKinguinConnection();
       if (typeof window.initGGDealsConnection === "function") window.initGGDealsConnection();
-      if (typeof window.initG2AConnection === "function") window.initG2AConnection();
       if (typeof window.restoreSettingsTab === "function") window.restoreSettingsTab();
     }
   } catch (err) {
@@ -5985,13 +5957,7 @@ function renderSuppliers() {
         `;
       } else {
         const cleanName = (supplierName || "").trim().toLowerCase();
-        if (cleanName === "g2a" || cleanName === "g2a.com") {
-          radarScanBtn = `
-            <span class="badge" style="background: rgba(0, 112, 210, 0.12); color: #0070d2; border: 1px solid rgba(0, 112, 210, 0.35); font-size: 0.72rem; padding: 2px 8px; font-weight: 600;" title="G2A is integrated as a Resale &amp; Arbitrage Marketplace in Sourcing Radar">
-              <i class="fa-solid fa-bolt" style="margin-right: 4px;"></i>Resale Market
-            </span>
-          `;
-        } else if (cleanName === "kinguin" || cleanName === "kinguin.net") {
+        if (cleanName === "kinguin" || cleanName === "kinguin.net") {
           radarScanBtn = `
             <span class="badge" style="background: rgba(255, 80, 0, 0.12); color: #ff5000; border: 1px solid rgba(255, 80, 0, 0.35); font-size: 0.72rem; padding: 2px 8px; font-weight: 600;" title="Kinguin is integrated as a Resale &amp; Arbitrage Marketplace in Sourcing Radar">
               <i class="fa-solid fa-crown" style="margin-right: 4px;"></i>Resale Market

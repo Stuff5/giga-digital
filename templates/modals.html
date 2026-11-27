@@ -1547,7 +1547,7 @@
             <i class="fa-solid fa-shield-halved"></i> Why is a CORS Proxy Required?
           </strong>
           <span style="color: var(--text-muted); font-size: 0.8rem;">
-            Both <strong>G2A Merchant API</strong> (<code>api.g2a.com</code>) and <strong>Kinguin B2B Gateway</strong> (<code>gateway.kinguin.net</code>) are server-to-server APIs. Web browsers enforce <em>Cross-Origin Resource Sharing (CORS)</em> and block direct browser JavaScript calls. A personal Cloudflare Worker acts as a secure, private bridge with <strong>100,000 free requests per day</strong>.
+            The <strong>Kinguin B2B Gateway</strong> (<code>gateway.kinguin.net</code>) and <strong>GG.deals API</strong> are external APIs that require a CORS relay for browser requests. Web browsers enforce <em>Cross-Origin Resource Sharing (CORS)</em> and block direct browser JavaScript calls. A personal Cloudflare Worker acts as a secure, private bridge with <strong>100,000 free requests per day</strong>.
           </span>
         </div>
 
@@ -1652,7 +1652,7 @@
 
         <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 6px; padding: 10px 12px; font-size: 0.78rem;">
           <strong style="color: var(--accent-emerald);"><i class="fa-solid fa-circle-check"></i> One Proxy Powers Everything:</strong>
-          Once configured, this single Cloudflare Worker seamlessly powers <strong>G2A Merchant API</strong>, <strong>Kinguin B2B Gateway</strong>, and <strong>GG.deals Live Pricing</strong> automatically!
+          Once configured, this single Cloudflare Worker seamlessly powers the <strong>Kinguin B2B Gateway</strong> and <strong>GG.deals Live Pricing</strong> automatically!
         </div>
       </div>
 
