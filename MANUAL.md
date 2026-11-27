@@ -1,5 +1,7 @@
 # GameVault (Key Merchant Pro) — Complete Operational & Technical Manual
 
+![GameVault Banner](assets/game_dashboard_banner.png)
+
 > **Version**: 3.5.0  
 > **Target Audience**: Digital Game Key Merchants, Resellers, Arbitrage Traders, Store Administrators, and Developers.  
 > **Platform**: Client-Side Single Page Application (Zero-Build Modular Architecture)
@@ -95,6 +97,10 @@ flowchart TD
 ### 2.1 First-Time Launch
 1. Open `index.html` in your web browser (or navigate to your hosted GitHub Pages URL).
 2. Set up your master merchant profile or initial credentials when prompted.
+
+![Merchant Authentication & Cloud Security](assets/screenshots/login_auth.png)
+*Figure 2.1: Master Merchant Profile Setup & Authenticated Access Gate.*
+
 3. Access the primary navigation bar on the left sidebar:
    - **Dashboard**: Financial analytics, charts, and key performance indicators.
    - **Inventory**: Digital activation key database.
@@ -116,6 +122,12 @@ flowchart TD
 ## 3. Dashboard & Financial Analytics
 
 The **Dashboard** (`#dashboard-view`) serves as the command center for your business, summarizing financial health and sales performance.
+
+![Live Financial Operations Dashboard](assets/screenshots/dashboard_live.png)
+*Figure 3.1: Live GameVault Financial Command Center showing Performance Summary, Monthly Daily Profit Chart, Inventory Aging Distribution, and Restock Radar.*
+
+![GameVault Full Analytics Suite](assets/dashboard_showcase.png)
+*Figure 3.2: Comprehensive Financial Analytics Suite displaying Revenue Trends, Platform Breakdown, and Supplier Share Distribution.*
 
 ### 3.1 Primary Financial KPIs
 - **Net Revenue**: Total gross customer receipts minus marketplace sales fees.
