@@ -597,32 +597,6 @@ function initEventHandlers() {
     });
   }
 
-  const sourcingFeePctInput = document.getElementById("sourcing-kinguin-fee-pct");
-  if (sourcingFeePctInput) {
-    sourcingFeePctInput.addEventListener("input", (e) => {
-      const val = parseFloat(e.target.value);
-      if (!isNaN(val) && val >= 0) {
-        if (!state.sourcingSettings) state.sourcingSettings = {};
-        state.sourcingSettings.kinguinFeePct = val;
-        if (typeof saveSecondaryTablesToStorage === "function") saveSecondaryTablesToStorage();
-        if (typeof window.renderSourcingRadarView === "function") window.renderSourcingRadarView();
-      }
-    });
-  }
-
-  const sourcingFixedFeeInput = document.getElementById("sourcing-kinguin-fixed-fee");
-  if (sourcingFixedFeeInput) {
-    sourcingFixedFeeInput.addEventListener("input", (e) => {
-      const val = parseFloat(e.target.value);
-      if (!isNaN(val) && val >= 0) {
-        if (!state.sourcingSettings) state.sourcingSettings = {};
-        state.sourcingSettings.kinguinFixedFee = val;
-        if (typeof saveSecondaryTablesToStorage === "function") saveSecondaryTablesToStorage();
-        if (typeof window.renderSourcingRadarView === "function") window.renderSourcingRadarView();
-      }
-    });
-  }
-
   const sourcingFilterStatus = document.getElementById("sourcing-filter-status");
   if (sourcingFilterStatus) {
     sourcingFilterStatus.addEventListener("change", () => {

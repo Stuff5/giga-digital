@@ -127,13 +127,9 @@ window.openSourcingRadarModal = async function() {
     return;
   }
 
-  // Populate Kinguin fee inputs and alerts toggle from state
+  // Populate alerts toggle from state
   if (state.sourcingSettings) {
-    const feePctEl = document.getElementById("sourcing-kinguin-fee-pct");
-    const fixedFeeEl = document.getElementById("sourcing-kinguin-fixed-fee");
     const alertsToggle = document.getElementById("sourcing-toggle-topbar-alerts");
-    if (feePctEl) feePctEl.value = state.sourcingSettings.kinguinFeePct ?? 11;
-    if (fixedFeeEl) fixedFeeEl.value = state.sourcingSettings.kinguinFixedFee ?? 0.10;
     if (alertsToggle) alertsToggle.checked = state.sourcingSettings.topbarAlerts !== false;
   }
 

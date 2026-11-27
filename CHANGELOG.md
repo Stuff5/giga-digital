@@ -5,6 +5,18 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v3.4.8] - 2026-11-27
+### Sourcing Radar Streamlining & Settings Fee Relocation
+- **Removed Fee Input Boxes from Sourcing Radar**:
+  - Cleaned up the Sourcing Radar modal top toolbar by removing the `Kinguin Fee (%)` and `Fixed Fee (€)` input boxes.
+  - The toolbar is now streamlined and focused exclusively on deal evaluation, store filters, topbar alert toggles, and live connection status indicators.
+- **Relocated Kinguin Fee Controls to Settings**:
+  - Embedded dedicated **Kinguin Sales Commission (%)** and **Fixed Transaction Fee (€)** input fields directly under **Settings &rarr; APIs & Marketplaces &rarr; Kinguin Merchant API**.
+  - Added live reactive listeners: changes to commission fees auto-persist and immediately recalculate Sourcing Radar profit and ROI projections.
+- **Cleaned Up Event Listeners**:
+  - Removed obsolete DOM lookups and input listeners for `sourcing-kinguin-fee-pct` and `sourcing-kinguin-fixed-fee` from `src/ui/radar.js` and `src/ui.js`.
+- **Cache-Busting Update**: Incremented all application script references to `?v=159`.
+
 ## [v3.4.7] - 2026-11-27
 ### Dedicated Settings Container for GG.deals API
 - **Container Separation in Settings**:

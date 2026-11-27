@@ -2706,6 +2706,8 @@ window.initKinguinConnection = function() {
   const keyInput = document.getElementById("settings-kinguin-apikey");
   const storeInput = document.getElementById("settings-kinguin-storename");
   const proxyInput = document.getElementById("settings-kinguin-proxyurl");
+  const feePctInput = document.getElementById("settings-kinguin-fee-pct");
+  const fixedFeeInput = document.getElementById("settings-kinguin-fixed-fee");
   const statusBadge = document.getElementById("kinguin-connection-status");
   const radarBadge = document.getElementById("sourcing-kinguin-api-badge");
   const radarLabel = document.getElementById("sourcing-kinguin-api-label");
@@ -2717,6 +2719,8 @@ window.initKinguinConnection = function() {
   if (keyInput && !keyInput.value) keyInput.value = key;
   if (storeInput && !storeInput.value) storeInput.value = storeName;
   if (proxyInput && !proxyInput.value) proxyInput.value = proxyUrl;
+  if (feePctInput) feePctInput.value = state.sourcingSettings?.kinguinFeePct ?? 11;
+  if (fixedFeeInput) fixedFeeInput.value = state.sourcingSettings?.kinguinFixedFee ?? 0.10;
   if (excludeAccountsCheckbox) {
     excludeAccountsCheckbox.checked = state.sourcingSettings?.kinguinExcludeAccounts !== false;
   }
@@ -2845,6 +2849,32 @@ window.bindKinguinSettingsControls = function() {
     excludeDlcsCheckbox.onchange = (e) => updateFilterToggle("kinguinExcludeDlcs", e.target.checked, "Exclude DLCs & Expansions");
   }
 
+  // Kinguin fee inputs auto-persist on change
+  const feePctInput = document.getElementById("settings-kinguin-fee-pct");
+  const fixedFeeInput = document.getElementById("settings-kinguin-fixed-fee");
+  if (feePctInput) {
+    feePctInput.addEventListener("input", (e) => {
+      const val = parseFloat(e.target.value);
+      if (!isNaN(val) && val >= 0) {
+        if (!state.sourcingSettings) state.sourcingSettings = {};
+        state.sourcingSettings.kinguinFeePct = val;
+        if (typeof saveSecondaryTablesToStorage === "function") saveSecondaryTablesToStorage();
+        if (typeof window.renderSourcingRadarView === "function") window.renderSourcingRadarView();
+      }
+    });
+  }
+  if (fixedFeeInput) {
+    fixedFeeInput.addEventListener("input", (e) => {
+      const val = parseFloat(e.target.value);
+      if (!isNaN(val) && val >= 0) {
+        if (!state.sourcingSettings) state.sourcingSettings = {};
+        state.sourcingSettings.kinguinFixedFee = val;
+        if (typeof saveSecondaryTablesToStorage === "function") saveSecondaryTablesToStorage();
+        if (typeof window.renderSourcingRadarView === "function") window.renderSourcingRadarView();
+      }
+    });
+  }
+
   // Toggle API key visibility
   if (btnToggleVis && keyInput) {
     btnToggleVis.addEventListener("click", () => {
@@ -2860,6 +2890,10 @@ window.bindKinguinSettingsControls = function() {
       const keyVal = keyInput ? keyInput.value.trim() : "";
       const storeVal = storeInput ? storeInput.value.trim() : "GameVault";
       const proxyVal = proxyInput ? proxyInput.value.trim() : "";
+      const feePctInput = document.getElementById("settings-kinguin-fee-pct");
+      const fixedFeeInput = document.getElementById("settings-kinguin-fixed-fee");
+      const feePctVal = feePctInput ? parseFloat(feePctInput.value) : 11;
+      const fixedFeeVal = fixedFeeInput ? parseFloat(fixedFeeInput.value) : 0.10;
       const excludeAccounts = excludeAccountsCheckbox ? excludeAccountsCheckbox.checked : true;
       const excludeDlcs = excludeDlcsCheckbox ? excludeDlcsCheckbox.checked : true;
       const excludeAltergifts = excludeAltergiftsCheckbox ? excludeAltergiftsCheckbox.checked : true;
