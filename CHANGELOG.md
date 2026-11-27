@@ -5,6 +5,25 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v3.4.4] - 2026-11-27
+### Sourcing Radar Refinement & Live Kinguin PC Filtering
+- **Live Kinguin PC Digital Key Enforcement**:
+  - **Altergift & Steam Gift Exclusion (`window.isKinguinAltergiftListing`)**: Strictly filters out altergifts, Steam gift links, trade offers, and inventory gifts so live benchmark quotes represent legitimate digital CD keys.
+  - **PC Platforms Only (`window.isKinguinPcPlatform`)**: Restricts Kinguin product candidate matches to genuine PC platforms (Steam, Epic, GOG, EA App/Origin, Ubisoft Connect/Uplay, Battle.net, Rockstar) and excludes console editions (Xbox, PlayStation, Nintendo Switch) and mobile apps.
+  - **Candidate Scoring & Fallback Protection**: Integrated into `scoreKinguinProductMatch` and fallback pool selection (`score = -1` for altergift, console, or account listings).
+  - **Stale Quote Invalidation**: Automatically discards any previously cached altergift or console quotes upon application boot.
+- **Sourcing Radar Streamlining**:
+  - **Kinguin Resale Specialization**: Streamlined Sourcing Radar cards to 4 focused columns: `Kinguin Benchmark`, `Best Deal`, `GG.deals Keyshops`, and `Net Profit & ROI`.
+  - **Decoupled G2A Fallbacks**: Eliminated unintentional Kinguin price mirroring in G2A columns and stripped redundant G2A fee controls from the radar toolbar.
+- **Interactive Settings Page Controls**:
+  - **Dedicated Sourcing Filters Section**: Added modern, interactive filter controls under **Settings -> APIs & Marketplaces -> Kinguin Merchant API**.
+  - **Live Auto-Save on Toggle**: Toggling any switch immediately persists changes to `state.sourcingSettings`, local storage, and database with instant visual badge feedback (`Altergifts Blocked`, `PC Platforms Only`, `Accounts Blocked`, `Full Games Only`).
+  - **Radar Modal Deep-Link**: Linked Sourcing Radar's filter status badge directly to the Settings page section.
+- **Bug Fixes & System Stability**:
+  - **Global Scope Collision Fix**: Resolved `Uncaught SyntaxError: Identifier 'escapeHTML' has already been declared` in `src/ui/recycle.js`.
+  - **Infinite Recursion Fix**: Resolved `RangeError: Maximum call stack size exceeded` in `src/ui/auth.js` by removing the recursive shadowing of `getUsersFromStorage`.
+- **Cache-Busting Update**: Incremented all application script references to `?v=155`.
+
 ## [v3.4.3] - 2026-11-27
 ### Asset Minification & CSS Refactoring (Phase 3)
 - **Stylesheet Optimization & Dead Code Removal**:
