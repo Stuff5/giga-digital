@@ -2469,6 +2469,76 @@ window.isGameDlcListing = window.isKinguinDlcListing;
  * across Kinguin, CheapShark, GG.deals, and supplier catalogs.
  * Returns a score > 0 if valid match, or -1 if irrelevant.
  */
+/**
+ * Checks whether a product listing (from Kinguin, CheapShark, GG.deals, or suppliers)
+ * represents a region-locked edition (e.g., RU/CIS, China/CN, LATAM, Turkey, Argentina, Brazil, Asia)
+ * rather than a genuine Global / Region-Free / Worldwide key.
+ */
+window.isKinguinRegionLockedListing = function(item, queryCleanTitle) {
+  if (!item) return false;
+
+  // 1. Explicit API fields if provided
+  if (item.regionalLimitations) {
+    const reg = String(item.regionalLimitations).trim().toUpperCase();
+    if (reg && reg !== "REGION_FREE" && reg !== "GLOBAL" && reg !== "WORLDWIDE" && reg !== "ROW") {
+      if (/^(RU|CIS|CN|LATAM|TR|AR|BR|ASIA|EU|NA|US|IN|BY|KZ|UA)/i.test(reg) || reg.includes(",")) {
+        return true;
+      }
+    }
+  }
+
+  const name = (item.name || item.title || item.external || "").toLowerCase();
+  const queryLower = (queryCleanTitle || "").toLowerCase();
+
+  // If compound region identifiers (RU/CIS, RU-CIS, etc.)
+  if (/\b(ru[\/\-_]cis|cis[\/\-_]ru)\b/i.test(name)) {
+    if (!/\b(ru[\/\-_]cis|cis[\/\-_]ru)\b/i.test(queryLower)) return true;
+  }
+
+  // Bracketed, parenthesized or delimiter-bounded regional tags
+  const boundedRegions = [
+    { pattern: /[\(\[\{/\s](ru|cis|russia|russian|россия|рф|belarus|kazakhstan|ukraine)[\)\]\}/\s]/i, key: "russia" },
+    { pattern: /[\(\[\{/\s](cn|china|chinese|prc)[\)\]\}/\s]/i, key: "china" },
+    { pattern: /[\(\[\{/\s](latam|latin\s*america|south\s*america)[\)\]\}/\s]/i, key: "latam" },
+    { pattern: /[\(\[\{/\s](turkey|turkish|tr)[\)\]\}/\s]/i, key: "turkey" },
+    { pattern: /[\(\[\{/\s](argentina|argentine|ars)[\)\]\}/\s]/i, key: "argentina" },
+    { pattern: /[\(\[\{/\s](brazil|brazilian)[\)\]\}/\s]/i, key: "brazil" },
+    { pattern: /[\(\[\{/\s](asia|sea|taiwan|hong\s*kong)[\)\]\}/\s]/i, key: "asia" },
+    { pattern: /[\(\[\{/\s](india|indian)[\)\]\}/\s]/i, key: "india" },
+    { pattern: /[\(\[\{/\s](eu|europe|european)[\)\]\}/\s]/i, key: "europe" },
+    { pattern: /[\(\[\{/\s](na|us|usa|north\s*america|ca|canada)[\)\]\}/\s]/i, key: "north america" }
+  ];
+
+  // Also check at end of title: e.g. "Steam CD Key RU", "Steam CD Key CN"
+  const endOfTitleRegions = /\b(ru|cis|cn|china|latam|turkey|tr|argentina|brazil|asia|sea|eu|na|us|usa)$/i;
+
+  for (const r of boundedRegions) {
+    if (r.pattern.test(name)) {
+      const match = name.match(r.pattern);
+      const rawMatch = match && match[1] ? match[1].toLowerCase() : "";
+      if (rawMatch && !queryLower.includes(rawMatch)) {
+        return true;
+      }
+    }
+  }
+
+  if (endOfTitleRegions.test(name.trim())) {
+    const match = name.trim().match(endOfTitleRegions);
+    const rawMatch = match && match[1] ? match[1].toLowerCase() : "";
+    if (rawMatch && !queryLower.includes(rawMatch)) {
+      return true;
+    }
+  }
+
+  // Tags check
+  if (Array.isArray(item.tags) && item.tags.some(t => typeof t === "string" && /\b(ru|cis|cn|china|latam|turkey|asia)\b/i.test(t))) {
+    return true;
+  }
+
+  return false;
+};
+window.isGameRegionLockedListing = window.isKinguinRegionLockedListing;
+
 window.scoreKinguinProductMatch = function(item, cleanTitle) {
   if (!item) return -1;
   const itemName = (item.name || item.title || item.external || "").toLowerCase();

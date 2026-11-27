@@ -1,6 +1,6 @@
 # GameVault (Key Merchant Pro) — Complete Operational & Technical Manual
 
-> **Version**: 3.4.8  
+> **Version**: 3.4.9  
 > **Target Audience**: Digital Game Key Merchants, Resellers, Arbitrage Traders, Store Administrators, and Developers.  
 > **Platform**: Client-Side Single Page Application (Zero-Build Modular Architecture)
 
@@ -425,4 +425,4 @@ flowchart LR
 
 ---
 
-*GameVault Documentation — Maintained for Key Merchant Pro v3.4.8*
+*GameVault Documentation — Maintained for Key Merchant Pro v3.4.9*

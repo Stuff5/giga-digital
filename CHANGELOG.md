@@ -5,6 +5,19 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v3.4.9] - 2026-11-27
+### Kinguin Global Region Enforcement & Regional Lock Exclusion
+- **Global Region Only Filtering (`kinguinOnlyGlobal`)**:
+  - **Exclusion of Regional Locked Listings**: Added `window.isKinguinRegionLockedListing` to strictly detect and filter out region-restricted Kinguin products (RU/CIS, Russia, China/CN, LATAM, Turkey/TR, Argentina/AR, Brazil/BR, Asia/SEA, India, and country-restricted regionalLimitations).
+  - **Protection Against Regional Price Distortions**: Guarantees that Kinguin benchmark quotes reflect genuine Global, Region-Free, Worldwide, or ROW digital keys, preventing cheap regional keys from artificially deflating arbitrage margins.
+  - **Zero False-Positive Protection**: Compares candidate titles against the queried game title to prevent false-positive flagging on games with regional words in their official titles (e.g., *Assassin's Creed Chronicles: China*, *Rust*, *Ruiner*).
+- **Interactive Settings Toggle & Status Badge**:
+  - Added modern interactive toggle switch **Global Region Only (Exclude RU, CN, etc.)** under **Settings &rarr; APIs & Marketplaces &rarr; Kinguin Merchant API**.
+  - Features instant auto-save and visual badge status (`Global Only` vs `All Regions Allowed`).
+- **Sourcing Radar Stale Quote Invalidation**:
+  - Automatically detects and purges previously cached Kinguin quotes that were matched to region-locked products upon radar open.
+- **Cache-Busting Update**: Incremented all application script references to `?v=160`.
+
 ## [v3.4.8] - 2026-11-27
 ### Sourcing Radar Streamlining & Settings Fee Relocation
 - **Removed Fee Input Boxes from Sourcing Radar**:

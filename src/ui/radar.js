@@ -250,8 +250,11 @@ window.renderSourcingRadarView = function() {
       const isAltergift = window.isKinguinAltergiftListing && window.isKinguinAltergiftListing(liveKinguin, title);
       const isConsole = window.isKinguinPcPlatform && !window.isKinguinPcPlatform(liveKinguin, title);
       const isAccount = window.isKinguinAccountListing && window.isKinguinAccountListing(liveKinguin);
+      const isRegionLocked = (state.sourcingSettings?.kinguinOnlyGlobal !== false) &&
+        window.isKinguinRegionLockedListing &&
+        window.isKinguinRegionLockedListing(liveKinguin, title);
 
-      if (isAltergift || isConsole || isAccount) {
+      if (isAltergift || isConsole || isAccount || isRegionLocked) {
         if (state.sourcingSettings?.liveKinguinPrices) {
           delete state.sourcingSettings.liveKinguinPrices[title];
         }

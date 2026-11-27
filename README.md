@@ -2,10 +2,10 @@
 
 > High-performance digital game license inventory pipeline, sales ledger, and financial analytics platform designed for digital key merchants, distributors, and online publishers.
 
-![Version](https://img.shields.io/badge/version-v3.4.8-cyan.svg)
+![Version](https://img.shields.io/badge/version-v3.4.9-cyan.svg)
 ![Status](https://img.shields.io/badge/status-active-emerald.svg)
 ![Platform](https://img.shields.io/badge/platform-Web%20SPA-purple.svg)
-![Documentation](https://img.shields.io/badge/docs-manual%20v3.4.8-blue.svg)
+![Documentation](https://img.shields.io/badge/docs-manual%20v3.4.9-blue.svg)
 
 > 📖 **Official Documentation**: For the complete user and technical operations guide, see the [GameVault Operational Manual](MANUAL.md).
 
