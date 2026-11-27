@@ -3274,8 +3274,8 @@ window.initG2AConnection = function() {
       radarBadge.style.background = "rgba(0, 112, 210, 0.15)";
       radarBadge.style.color = "#0070d2";
       radarBadge.style.borderColor = "rgba(0, 112, 210, 0.4)";
-      radarBadge.title = `Live G2A API Connected (${apiUrl.includes('sandbox') ? 'Sandbox' : 'Production'})`;
-      radarLabel.textContent = "G2A Live API Active";
+      radarBadge.title = `G2A Merchant API Connected (${apiUrl.includes('sandbox') ? 'Sandbox' : 'Production'}). Use 1-click [Check G2A ↗] links in radar cards to inspect live listings.`;
+      radarLabel.textContent = "G2A Merchant API";
     } else {
       radarBadge.style.background = "rgba(0, 112, 210, 0.12)";
       radarBadge.style.color = "#0070d2";

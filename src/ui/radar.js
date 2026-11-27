@@ -333,10 +333,9 @@ window.renderSourcingRadarView = function() {
         const lastG2A = g2aSales[g2aSales.length - 1];
         g2aPrice = Number(lastG2A.price);
         g2aSource = `G2A (${g2aSales.length} sold)`;
-      } else if (benchmarkPrice !== null) {
-        g2aPrice = benchmarkPrice;
-        g2aSource = "Market Est.";
       }
+      // Note: We deliberately do NOT fall back to benchmarkPrice (Kinguin's live price) here.
+      // Copying Kinguin's live price into G2A causes false identical price comparisons.
     }
 
     let g2aNetPayout = null;
@@ -541,10 +540,10 @@ window.renderSourcingRadarView = function() {
                 <i class="fa-solid fa-bolt" style="color: #0070d2;"></i> G2A Marketplace
               </span>
               <div class="sourcing-stat-value">
-                <span>${item.g2aPrice !== null ? `€${item.g2aPrice.toFixed(2)}` : `<span style="color: var(--text-muted); font-size: 0.8rem;">-</span>`}</span>
+                <span>${item.g2aPrice !== null ? `€${item.g2aPrice.toFixed(2)}` : `<span style="color: var(--text-muted); font-size: 0.8rem;" title="No direct G2A quote. Click 'Check G2A' to view active marketplace listings.">—</span>`}</span>
               </div>
               <span style="font-size: 0.7rem; color: var(--text-muted);">
-                Net: ${item.g2aNetPayout !== null ? `€${item.g2aNetPayout.toFixed(2)}` : "-"} (${item.g2aSource})
+                ${item.g2aPrice !== null ? `Net: ${item.g2aNetPayout !== null ? `€${item.g2aNetPayout.toFixed(2)}` : "-"} (${item.g2aSource})` : `<a href="https://www.g2a.com/search?query=${encodeURIComponent(item.title + ' PC')}" target="_blank" rel="noopener noreferrer" style="color: #0070d2; text-decoration: none; font-size: 0.68rem; font-weight: 600;" title="Search live offers on G2A">Check G2A <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.6rem;"></i></a>`}
               </span>
             </div>
 
