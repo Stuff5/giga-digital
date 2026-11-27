@@ -337,16 +337,30 @@ window.renderSourcingRadarView = function() {
     // Live GG.deals Pricing & Multi-keyshop benchmark
     const steamAppId = cachedDeal?.steamAppID;
     let ggData = null;
+    const ggExcludeAltergifts = state.sourcingSettings?.ggdealsExcludeAltergifts !== false;
+    const ggOnlyPc = state.sourcingSettings?.ggdealsOnlyPc !== false;
+    const ggExcludeAccounts = state.sourcingSettings?.ggdealsExcludeAccounts !== false;
+    const ggExcludeDlcs = state.sourcingSettings?.ggdealsExcludeDlcs !== false;
+
+    const isGgCandidateValid = (item, cleanQuery) => {
+      if (!item) return false;
+      if (ggExcludeAltergifts && window.isGameAltergiftListing && window.isGameAltergiftListing(item, cleanQuery)) return false;
+      if (ggOnlyPc && window.isGamePcPlatform && !window.isGamePcPlatform(item, cleanQuery)) return false;
+      if (ggExcludeAccounts && window.isGameAccountListing && window.isGameAccountListing(item)) return false;
+      if (ggExcludeDlcs && window.isGameDlcListing && window.isGameDlcListing(item, cleanQuery)) return false;
+      return true;
+    };
+
     if (steamAppId && state.sourcingSettings?.liveGGDealsPrices?.[steamAppId]) {
-      ggData = state.sourcingSettings.liveGGDealsPrices[steamAppId];
+      const candidate = state.sourcingSettings.liveGGDealsPrices[steamAppId];
+      if (isGgCandidateValid(candidate, title)) {
+        ggData = candidate;
+      }
     } else if (state.sourcingSettings?.liveGGDealsPrices) {
       const cleanLower = key.replace(/\s*[\(\[].*?[\)\]]/g, "").trim().toLowerCase();
       const match = Object.values(state.sourcingSettings.liveGGDealsPrices).find(g => 
         g.title && g.title.toLowerCase().includes(cleanLower) &&
-        !window.isGameAccountListing?.(g) &&
-        !window.isGameAltergiftListing?.(g, cleanLower) &&
-        (window.isGamePcPlatform ? window.isGamePcPlatform(g, cleanLower) : true) &&
-        !window.isGameDlcListing?.(g, cleanLower)
+        isGgCandidateValid(g, cleanLower)
       );
       if (match) ggData = match;
     }

@@ -3133,6 +3133,58 @@ window.initGGDealsConnection = function() {
   if (regionSelect) regionSelect.value = region;
   if (proxyInput && !proxyInput.value) proxyInput.value = proxyUrl;
 
+  const excludeAccountsCheckbox = document.getElementById("settings-ggdeals-exclude-accounts");
+  const excludeAltergiftsCheckbox = document.getElementById("settings-ggdeals-exclude-altergifts");
+  const onlyPcCheckbox = document.getElementById("settings-ggdeals-only-pc");
+  const excludeDlcsCheckbox = document.getElementById("settings-ggdeals-exclude-dlcs");
+
+  if (excludeAccountsCheckbox) {
+    excludeAccountsCheckbox.checked = state.sourcingSettings?.ggdealsExcludeAccounts !== false;
+  }
+  if (excludeAltergiftsCheckbox) {
+    excludeAltergiftsCheckbox.checked = state.sourcingSettings?.ggdealsExcludeAltergifts !== false;
+  }
+  if (onlyPcCheckbox) {
+    onlyPcCheckbox.checked = state.sourcingSettings?.ggdealsOnlyPc !== false;
+  }
+  if (excludeDlcsCheckbox) {
+    excludeDlcsCheckbox.checked = state.sourcingSettings?.ggdealsExcludeDlcs !== false;
+  }
+
+  const badgeAltergifts = document.getElementById("badge-gg-status-altergifts");
+  const badgeOnlyPc = document.getElementById("badge-gg-status-only-pc");
+  const badgeAccounts = document.getElementById("badge-gg-status-accounts");
+  const badgeDlcs = document.getElementById("badge-gg-status-dlcs");
+
+  if (badgeAltergifts) {
+    const isEx = state.sourcingSettings?.ggdealsExcludeAltergifts !== false;
+    badgeAltergifts.textContent = isEx ? "Altergifts Blocked" : "Altergifts Allowed";
+    badgeAltergifts.style.background = isEx ? "rgba(239, 68, 68, 0.15)" : "rgba(100, 116, 139, 0.15)";
+    badgeAltergifts.style.color = isEx ? "#ef4444" : "var(--text-muted)";
+    badgeAltergifts.style.borderColor = isEx ? "rgba(239, 68, 68, 0.3)" : "var(--border-color)";
+  }
+  if (badgeOnlyPc) {
+    const isPc = state.sourcingSettings?.ggdealsOnlyPc !== false;
+    badgeOnlyPc.textContent = isPc ? "PC Platforms Only" : "All Platforms Allowed";
+    badgeOnlyPc.style.background = isPc ? "rgba(59, 130, 246, 0.15)" : "rgba(100, 116, 139, 0.15)";
+    badgeOnlyPc.style.color = isPc ? "#3b82f6" : "var(--text-muted)";
+    badgeOnlyPc.style.borderColor = isPc ? "rgba(59, 130, 246, 0.3)" : "var(--border-color)";
+  }
+  if (badgeAccounts) {
+    const isEx = state.sourcingSettings?.ggdealsExcludeAccounts !== false;
+    badgeAccounts.textContent = isEx ? "Accounts Blocked" : "Accounts Allowed";
+    badgeAccounts.style.background = isEx ? "rgba(239, 68, 68, 0.15)" : "rgba(100, 116, 139, 0.15)";
+    badgeAccounts.style.color = isEx ? "#ef4444" : "var(--text-muted)";
+    badgeAccounts.style.borderColor = isEx ? "rgba(239, 68, 68, 0.3)" : "var(--border-color)";
+  }
+  if (badgeDlcs) {
+    const isEx = state.sourcingSettings?.ggdealsExcludeDlcs !== false;
+    badgeDlcs.textContent = isEx ? "Full Games Only" : "DLCs Allowed";
+    badgeDlcs.style.background = isEx ? "rgba(168, 85, 247, 0.15)" : "rgba(100, 116, 139, 0.15)";
+    badgeDlcs.style.color = isEx ? "#a855f7" : "var(--text-muted)";
+    badgeDlcs.style.borderColor = isEx ? "rgba(168, 85, 247, 0.3)" : "var(--border-color)";
+  }
+
   if (statusBadge) {
     if (token) {
       statusBadge.textContent = "Configured";
@@ -3175,6 +3227,42 @@ window.bindGGDealsSettingsControls = function() {
   const feedback = document.getElementById("ggdeals-test-feedback");
   const statusBadge = document.getElementById("ggdeals-connection-status");
 
+  const excludeAccountsCheckbox = document.getElementById("settings-ggdeals-exclude-accounts");
+  const excludeAltergiftsCheckbox = document.getElementById("settings-ggdeals-exclude-altergifts");
+  const onlyPcCheckbox = document.getElementById("settings-ggdeals-only-pc");
+  const excludeDlcsCheckbox = document.getElementById("settings-ggdeals-exclude-dlcs");
+
+  // Live Auto-Save Toggle Listeners for GG.deals Listing Filters
+  const updateGgFilterToggle = async (key, val, label) => {
+    if (!state.sourcingSettings) state.sourcingSettings = {};
+    state.sourcingSettings[key] = val;
+
+    if (typeof saveSecondaryTablesToStorage === "function") saveSecondaryTablesToStorage();
+    if (window.supabaseClient && typeof dbSaveSettings === "function") {
+      await dbSaveSettings("sourcingSettings", state.sourcingSettings);
+    }
+    window.initGGDealsConnection();
+    if (typeof showToast === "function") {
+      showToast(`${label}: ${val ? "Enabled" : "Disabled"}`, "info");
+    }
+    if (typeof window.renderSourcingRadarView === "function") {
+      window.renderSourcingRadarView();
+    }
+  };
+
+  if (excludeAccountsCheckbox) {
+    excludeAccountsCheckbox.onchange = (e) => updateGgFilterToggle("ggdealsExcludeAccounts", e.target.checked, "GG.deals Exclude Accounts");
+  }
+  if (excludeAltergiftsCheckbox) {
+    excludeAltergiftsCheckbox.onchange = (e) => updateGgFilterToggle("ggdealsExcludeAltergifts", e.target.checked, "GG.deals Exclude Altergifts & Steam Gifts");
+  }
+  if (onlyPcCheckbox) {
+    onlyPcCheckbox.onchange = (e) => updateGgFilterToggle("ggdealsOnlyPc", e.target.checked, "GG.deals PC Games Only");
+  }
+  if (excludeDlcsCheckbox) {
+    excludeDlcsCheckbox.onchange = (e) => updateGgFilterToggle("ggdealsExcludeDlcs", e.target.checked, "GG.deals Exclude DLCs & Expansions");
+  }
+
   // Toggle token visibility
   if (btnToggleVis && tokenInput) {
     btnToggleVis.addEventListener("click", () => {
@@ -3195,6 +3283,15 @@ window.bindGGDealsSettingsControls = function() {
       state.sourcingSettings.ggdealsToken = tokenVal;
       state.sourcingSettings.ggdealsRegion = regionVal;
       state.sourcingSettings.ggdealsProxyUrl = proxyVal;
+      const excludeAccounts = excludeAccountsCheckbox ? excludeAccountsCheckbox.checked : true;
+      const excludeAltergifts = excludeAltergiftsCheckbox ? excludeAltergiftsCheckbox.checked : true;
+      const onlyPc = onlyPcCheckbox ? onlyPcCheckbox.checked : true;
+      const excludeDlcs = excludeDlcsCheckbox ? excludeDlcsCheckbox.checked : true;
+
+      state.sourcingSettings.ggdealsExcludeAccounts = excludeAccounts;
+      state.sourcingSettings.ggdealsExcludeAltergifts = excludeAltergifts;
+      state.sourcingSettings.ggdealsOnlyPc = onlyPc;
+      state.sourcingSettings.ggdealsExcludeDlcs = excludeDlcs;
 
       if (typeof saveSecondaryTablesToStorage === "function") saveSecondaryTablesToStorage();
       if (window.supabaseClient && typeof dbSaveSettings === "function") {

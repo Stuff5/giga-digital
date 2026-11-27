@@ -5617,6 +5617,9 @@ function updateUI() {
     if (typeof window.initKinguinConnection === "function") {
       window.initKinguinConnection();
     }
+    if (typeof window.initGGDealsConnection === "function") {
+      window.initGGDealsConnection();
+    }
     
     // Bind profile values
     const users = getUsersFromStorage();

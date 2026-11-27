@@ -139,7 +139,7 @@
         </div>
         <div class="version-info" style="text-align: center; font-size: 0.7rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; overflow: hidden; white-space: nowrap;">
           <span class="version-label">GameVault</span>
-          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v3.4.4</a>
+          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v3.4.5</a>
         </div>
 
       </div>
@@ -3360,10 +3360,78 @@
                     </div>
 
                     <div id="ggdeals-test-feedback" style="margin-top: 12px; font-size: 0.8rem; padding: 10px 14px; border-radius: 6px; display: none;"></div>
-                    
-                    <div style="margin-top: 10px; font-size: 0.74rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
-                      <i class="fa-solid fa-shield-halved" style="color: var(--accent-purple);"></i>
-                      <span>Global Filters Active: GG.deals keyshop prices and supplier deals automatically exclude game accounts and DLCs.</span>
+
+                    <!-- Sourcing Radar & GG.deals Listing Filters -->
+                    <div style="margin-top: 18px; margin-bottom: 6px; padding: 14px 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
+                        <div style="font-size: 0.88rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 7px;">
+                          <i class="fa-solid fa-filter" style="color: #22c55e;"></i> GG.deals Keyshop &amp; Market Benchmark Filters
+                        </div>
+                        <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald); border: 1px solid rgba(16, 185, 129, 0.3); font-size: 0.68rem; padding: 2px 7px;">
+                          <i class="fa-solid fa-bolt" style="font-size: 0.65rem; margin-right: 3px;"></i>Auto-Saves on Toggle
+                        </span>
+                      </div>
+                      <p style="font-size: 0.76rem; color: var(--text-secondary); margin: 0 0 12px 0; line-height: 1.4;">
+                        Enable or disable listing filters to customize how live GG.deals keyshop prices, retail benchmarks, and historical lows are matched in Sourcing Radar.
+                      </p>
+
+                      <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Filter 1: Altergifts -->
+                        <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 0.82rem; cursor: pointer; margin-bottom: 0; padding: 10px 12px; background: var(--bg-input); border-radius: var(--radius-sm); border: 1px solid var(--border-color); transition: border-color 0.2s ease;">
+                          <input type="checkbox" id="settings-ggdeals-exclude-altergifts" style="margin-top: 2px; width: 16px; height: 16px; accent-color: #22c55e; cursor: pointer;" checked>
+                          <div style="flex: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;">
+                              <strong style="color: var(--text-main);"><i class="fa-solid fa-gift" style="color: #22c55e; margin-right: 5px;"></i>Exclude Altergifts &amp; Steam Gifts</strong>
+                              <span id="badge-gg-status-altergifts" class="badge" style="font-size: 0.65rem; padding: 1px 6px; background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);">Altergifts Blocked</span>
+                            </div>
+                            <span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 3px; line-height: 1.35;">
+                              Strictly filters out altergifts, Steam gift links, and trade offers from keyshop comparisons so quotes reflect digital keys. Disable to include Steam gift links.
+                            </span>
+                          </div>
+                        </label>
+
+                        <!-- Filter 2: PC Games Only -->
+                        <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 0.82rem; cursor: pointer; margin-bottom: 0; padding: 10px 12px; background: var(--bg-input); border-radius: var(--radius-sm); border: 1px solid var(--border-color); transition: border-color 0.2s ease;">
+                          <input type="checkbox" id="settings-ggdeals-only-pc" style="margin-top: 2px; width: 16px; height: 16px; accent-color: #0070d2; cursor: pointer;" checked>
+                          <div style="flex: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;">
+                              <strong style="color: var(--text-main);"><i class="fa-solid fa-desktop" style="color: #0070d2; margin-right: 5px;"></i>PC Games Only (Exclude Consoles)</strong>
+                              <span id="badge-gg-status-only-pc" class="badge" style="font-size: 0.65rem; padding: 1px 6px; background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3);">PC Platforms Only</span>
+                            </div>
+                            <span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 3px; line-height: 1.35;">
+                              Restricts quotes to PC digital keys (Steam, Epic, GOG, EA, Ubisoft, Battle.net) and excludes console editions (Xbox, PlayStation, Switch). Disable to allow all platforms.
+                            </span>
+                          </div>
+                        </label>
+
+                        <!-- Filter 3: Accounts -->
+                        <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 0.82rem; cursor: pointer; margin-bottom: 0; padding: 10px 12px; background: var(--bg-input); border-radius: var(--radius-sm); border: 1px solid var(--border-color); transition: border-color 0.2s ease;">
+                          <input type="checkbox" id="settings-ggdeals-exclude-accounts" style="margin-top: 2px; width: 16px; height: 16px; accent-color: var(--accent-purple); cursor: pointer;" checked>
+                          <div style="flex: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;">
+                              <strong style="color: var(--text-main);"><i class="fa-solid fa-user-slash" style="color: var(--accent-purple); margin-right: 5px;"></i>Exclude Game Accounts</strong>
+                              <span id="badge-gg-status-accounts" class="badge" style="font-size: 0.65rem; padding: 1px 6px; background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);">Accounts Blocked</span>
+                            </div>
+                            <span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 3px; line-height: 1.35;">
+                              Filters out Steam/Xbox/PSN accounts, shared access profiles, and offline accounts across GG.deals keyshop listings. Disable to allow account listings.
+                            </span>
+                          </div>
+                        </label>
+
+                        <!-- Filter 4: DLCs -->
+                        <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 0.82rem; cursor: pointer; margin-bottom: 0; padding: 10px 12px; background: var(--bg-input); border-radius: var(--radius-sm); border: 1px solid var(--border-color); transition: border-color 0.2s ease;">
+                          <input type="checkbox" id="settings-ggdeals-exclude-dlcs" style="margin-top: 2px; width: 16px; height: 16px; accent-color: #22c55e; cursor: pointer;" checked>
+                          <div style="flex: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;">
+                              <strong style="color: var(--text-main);"><i class="fa-solid fa-puzzle-piece" style="color: var(--accent-emerald); margin-right: 5px;"></i>Exclude DLCs &amp; Expansions</strong>
+                              <span id="badge-gg-status-dlcs" class="badge" style="font-size: 0.65rem; padding: 1px 6px; background: rgba(168, 85, 247, 0.15); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3);">Full Games Only</span>
+                            </div>
+                            <span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 3px; line-height: 1.35;">
+                              Filters out add-ons, season passes, soundtracks, and expansions across keyshops to benchmark full base games. Disable to include DLCs.
+                            </span>
+                          </div>
+                        </label>
+                      </div>
                     </div>
                   </div>
                   <div style="background: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px; display: flex; flex-direction: column; justify-content: space-between; gap: 16px;">
@@ -4606,17 +4674,17 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=155"></script>
-  <script src="src/state.js?v=155"></script>
-  <script src="src/api.js?v=155"></script>
-  <script src="src/charts.js?v=155"></script>
-  <script src="src/ui.js?v=155"></script>
-  <script src="src/ui/auth.js?v=155"></script>
-  <script src="src/ui/settings.js?v=155"></script>
-  <script src="src/ui/recycle.js?v=155"></script>
-  <script src="src/ui/radar.js?v=155"></script>
-  <script src="src/ai.js?v=155"></script>
-  <script src="src/importer.js?v=155"></script>
-  <script src="app.js?v=155"></script>
+  <script src="config.js?v=156"></script>
+  <script src="src/state.js?v=156"></script>
+  <script src="src/api.js?v=156"></script>
+  <script src="src/charts.js?v=156"></script>
+  <script src="src/ui.js?v=156"></script>
+  <script src="src/ui/auth.js?v=156"></script>
+  <script src="src/ui/settings.js?v=156"></script>
+  <script src="src/ui/recycle.js?v=156"></script>
+  <script src="src/ui/radar.js?v=156"></script>
+  <script src="src/ai.js?v=156"></script>
+  <script src="src/importer.js?v=156"></script>
+  <script src="app.js?v=156"></script>
 </body>
 </html>

@@ -5,6 +5,20 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v3.4.5] - 2026-11-27
+### GG.deals Keyshop & Market Benchmark Filters
+- **Configurable GG.deals Filters on Settings Page**:
+  - **Exclude Altergifts & Steam Gifts (`ggdealsExcludeAltergifts`)**: Added a dedicated switch to strictly filter out altergifts, Steam gift links, trade offers, and inventory gifts from GG.deals keyshop matches.
+  - **PC Games Only (`ggdealsOnlyPc`)**: Restricts GG.deals candidate matches to PC digital ecosystems (Steam, Epic, GOG, EA, Ubisoft, Battle.net) and excludes console editions.
+  - **Exclude Game Accounts (`ggdealsExcludeAccounts`)**: Filters out Steam, PSN, and Xbox account listings from keyshop comparison quotes.
+  - **Exclude DLCs & Expansions (`ggdealsExcludeDlcs`)**: Filters out add-ons, soundtracks, and season passes to ensure quotes benchmark full base games.
+- **Instant Auto-Save & Visual Badges**:
+  - Toggling any GG.deals filter auto-saves immediately to settings, local storage, and cloud databases.
+  - Interactive status badges (`Altergifts Blocked`, `PC Platforms Only`, `Accounts Blocked`, `Full Games Only`) provide instant visual state feedback.
+- **Sourcing Radar Evaluation**:
+  - Updated both Steam App ID lookups and title fallback matches in `src/ui/radar.js` to respect the active user-configured GG.deals filter preferences.
+- **Cache-Busting Update**: Incremented all application script references to `?v=156`.
+
 ## [v3.4.4] - 2026-11-27
 ### Sourcing Radar Refinement & Live Kinguin PC Filtering
 - **Live Kinguin PC Digital Key Enforcement**:

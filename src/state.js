@@ -980,6 +980,10 @@ let state = {
     ggdealsToken: "fAY0ao1MgmAa8HrfDSEmQH7XhQlAav-y",
     ggdealsRegion: "us",
     ggdealsProxyUrl: "",
+    ggdealsExcludeAccounts: true,
+    ggdealsExcludeAltergifts: true,
+    ggdealsOnlyPc: true,
+    ggdealsExcludeDlcs: true,
     liveGGDealsPrices: {},
     g2aClientId: "spVkqzQsSrtMyqXY",
     g2aClientSecret: "",
@@ -1772,6 +1776,10 @@ function loadStateFromStorage() {
       if (state.sourcingSettings.ggdealsToken === undefined || !state.sourcingSettings.ggdealsToken) state.sourcingSettings.ggdealsToken = "fAY0ao1MgmAa8HrfDSEmQH7XhQlAav-y";
       if (!state.sourcingSettings.ggdealsRegion) state.sourcingSettings.ggdealsRegion = "us";
       if (state.sourcingSettings.ggdealsProxyUrl === undefined) state.sourcingSettings.ggdealsProxyUrl = "";
+      if (state.sourcingSettings.ggdealsExcludeAccounts === undefined) state.sourcingSettings.ggdealsExcludeAccounts = true;
+      if (state.sourcingSettings.ggdealsExcludeAltergifts === undefined) state.sourcingSettings.ggdealsExcludeAltergifts = true;
+      if (state.sourcingSettings.ggdealsOnlyPc === undefined) state.sourcingSettings.ggdealsOnlyPc = true;
+      if (state.sourcingSettings.ggdealsExcludeDlcs === undefined) state.sourcingSettings.ggdealsExcludeDlcs = true;
       if (!state.sourcingSettings.liveGGDealsPrices) state.sourcingSettings.liveGGDealsPrices = {};
       if (state.sourcingSettings.g2aClientId === undefined) state.sourcingSettings.g2aClientId = "spVkqzQsSrtMyqXY";
       if (state.sourcingSettings.g2aClientSecret === undefined) state.sourcingSettings.g2aClientSecret = "";
