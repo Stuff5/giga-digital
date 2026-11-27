@@ -259,8 +259,19 @@ window.renderSourcingRadarView = function() {
       benchmarkPrice = Number(manual);
       benchmarkSource = "Manual Override";
     } else if (liveKinguin && Number(liveKinguin.price) > 0) {
-      benchmarkPrice = Number(liveKinguin.price);
-      benchmarkSource = "Live Kinguin API";
+      // Discard stale or non-compliant cached quotes (altergift, console platform, or account)
+      const isAltergift = window.isKinguinAltergiftListing && window.isKinguinAltergiftListing(liveKinguin, title);
+      const isConsole = window.isKinguinPcPlatform && !window.isKinguinPcPlatform(liveKinguin, title);
+      const isAccount = window.isKinguinAccountListing && window.isKinguinAccountListing(liveKinguin);
+
+      if (isAltergift || isConsole || isAccount) {
+        if (state.sourcingSettings?.liveKinguinPrices) {
+          delete state.sourcingSettings.liveKinguinPrices[title];
+        }
+      } else {
+        benchmarkPrice = Number(liveKinguin.price);
+        benchmarkSource = "Live Kinguin API";
+      }
     } else {
       const titleSales = salesByTitle[key] || [];
       const kinguinSales = titleSales.filter(s => s.platform && s.platform.trim().toLowerCase() === "kinguin" && Number(s.price) > 0);
@@ -333,6 +344,8 @@ window.renderSourcingRadarView = function() {
       const match = Object.values(state.sourcingSettings.liveGGDealsPrices).find(g => 
         g.title && g.title.toLowerCase().includes(cleanLower) &&
         !window.isGameAccountListing?.(g) &&
+        !window.isGameAltergiftListing?.(g, cleanLower) &&
+        (window.isGamePcPlatform ? window.isGamePcPlatform(g, cleanLower) : true) &&
         !window.isGameDlcListing?.(g, cleanLower)
       );
       if (match) ggData = match;

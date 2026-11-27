@@ -2260,7 +2260,10 @@ window.isKinguinAccountListing = function(item) {
     "battlenet account",
     "battle.net account",
     "gog account",
+    "altergift",
     "alter gift",
+    "alter-gift",
+    "steam altergift",
     "steam gift"
   ];
 
@@ -2281,6 +2284,115 @@ window.isKinguinAccountListing = function(item) {
   return false;
 };
 window.isGameAccountListing = window.isKinguinAccountListing;
+
+/**
+ * Checks whether a product listing (from Kinguin, CheapShark, GG.deals, or any supplier)
+ * represents an Altergift, Steam Gift, gift link, or inventory gift rather than a standard CD Key.
+ */
+window.isKinguinAltergiftListing = function(item, queryCleanTitle) {
+  if (!item) return false;
+
+  // 1. Explicit API fields if provided
+  if (item.isGift === true || item.is_gift === true) return true;
+  if (typeof item.deliveryType === "string" && (item.deliveryType.trim().toLowerCase() === "gift" || item.deliveryType.trim().toLowerCase() === "altergift")) return true;
+  if (typeof item.type === "string" && (item.type.trim().toLowerCase() === "gift" || item.type.trim().toLowerCase() === "altergift")) return true;
+
+  const name = (item.name || item.title || item.external || "").toLowerCase();
+  const queryLower = (queryCleanTitle || "").toLowerCase();
+
+  // 2. Specific altergift / steam gift phrases common in keyshop listings
+  const giftPhrases = [
+    "altergift",
+    "alter gift",
+    "alter-gift",
+    "steam gift",
+    "steam altergift",
+    "steam alter gift",
+    "gift link",
+    "gift key",
+    "gift url",
+    "gift service",
+    "steam trade",
+    "steam inventory gift",
+    "inventory gift",
+    "steam inventory",
+    "gift card",
+    "wallet card"
+  ];
+
+  if (giftPhrases.some(phrase => name.includes(phrase))) {
+    return true;
+  }
+
+  // 3. Regex boundary check for standalone "gift" (e.g. "[Gift]", "(Gift)", "Gift Global", "Gift EU")
+  // Only flags if the queried game title itself doesn't contain "gift"
+  if (/\b(gifts?)\b/i.test(name)) {
+    if (!/\bgifts?\b/i.test(queryLower)) {
+      return true;
+    }
+  }
+
+  // 4. Tags / categories check
+  if (Array.isArray(item.tags) && item.tags.some(t => typeof t === "string" && /\b(altergift|gift)\b/i.test(t))) {
+    if (!/\bgifts?\b/i.test(queryLower)) {
+      return true;
+    }
+  }
+
+  return false;
+};
+window.isGameAltergiftListing = window.isKinguinAltergiftListing;
+
+/**
+ * Checks whether a product listing (from Kinguin, CheapShark, GG.deals, or any supplier)
+ * is for a PC platform (Steam, GOG, Epic, EA/Origin, Ubisoft/Uplay, Battle.net, Rockstar, Windows PC CD Key)
+ * and strictly rejects Console (Xbox, PlayStation, PS4, PS5, Nintendo Switch) and Mobile platforms.
+ */
+window.isKinguinPcPlatform = function(item, queryCleanTitle) {
+  if (!item) return false;
+
+  const name = (item.name || item.title || item.external || "").toLowerCase();
+  const platform = (item.platform || item.platformName || item.system || "").toLowerCase();
+  const queryLower = (queryCleanTitle || "").toLowerCase();
+
+  // 1. Explicit console / mobile platform in API metadata
+  const consolePlatformRegex = /\b(xbox|playstation|ps\s*[345]|nintendo|switch|wii|ios|android)\b/i;
+  if (platform && consolePlatformRegex.test(platform)) {
+    return false;
+  }
+
+  // 2. Console keywords in title (e.g. "Xbox Series X|S", "PS5", "PlayStation 4", "Nintendo Switch")
+  // Exclude only if the queried game title itself doesn't contain that word
+  const consoleTitlePatterns = [
+    /\bxbox(\s*(one|series(\s*[xs])?|360|live))?\b/i,
+    /\bplaystation(\s*[345])?\b/i,
+    /\bps[345]\b/i,
+    /\bpsn\b/i,
+    /\bnintendo(\s*switch)?\b/i,
+    /\bswitch\b/i,
+    /\bios\b/i,
+    /\bandroid\b/i
+  ];
+
+  for (const regex of consoleTitlePatterns) {
+    if (regex.test(name)) {
+      if (!regex.test(queryLower)) {
+        return false;
+      }
+    }
+  }
+
+  // 3. PC Platform metadata check (Steam, Epic, GOG, Origin, EA App, Ubisoft Connect, Battle.net, Rockstar, Windows, PC)
+  if (platform) {
+    const pcPlatforms = /\b(pc|steam|epic(\s*games)?|gog(\.com)?|origin|ea(\s*app)?|ubisoft(\s*connect)?|uplay|battle\.?net|rockstar|windows|microsoft\s*store)\b/i;
+    if (pcPlatforms.test(platform)) {
+      return true;
+    }
+  }
+
+  return true;
+};
+window.isGamePcPlatform = window.isKinguinPcPlatform;
 
 /**
  * Checks whether a product listing (from Kinguin, CheapShark, GG.deals, or any supplier)
@@ -2362,6 +2474,17 @@ window.scoreKinguinProductMatch = function(item, cleanTitle) {
   const itemName = (item.name || item.title || item.external || "").toLowerCase();
   if (!itemName) return -1;
 
+  // Strictly reject Altergifts, Non-PC platforms, and Game Accounts
+  if (window.isKinguinAltergiftListing && window.isKinguinAltergiftListing(item, cleanTitle)) {
+    return -1;
+  }
+  if (window.isKinguinPcPlatform && !window.isKinguinPcPlatform(item, cleanTitle)) {
+    return -1;
+  }
+  if (window.isKinguinAccountListing && window.isKinguinAccountListing(item)) {
+    return -1;
+  }
+
   const stopWords = new Set(["the", "and", "for", "with", "edition", "game", "pc", "steam", "global", "eu", "na", "row", "digital"]);
   const queryWords = cleanTitle
     .toLowerCase()
@@ -2423,6 +2546,8 @@ window.fetchKinguinLiveProduct = async function(title, customApiKey) {
 
   const excludeAccounts = state.sourcingSettings?.kinguinExcludeAccounts !== false;
   const excludeDlcs = state.sourcingSettings?.kinguinExcludeDlcs !== false;
+  const excludeAltergifts = state.sourcingSettings?.kinguinExcludeAltergifts !== false;
+  const onlyPc = state.sourcingSettings?.kinguinOnlyPc !== false;
 
   // Query up to 20 products to ensure ample valid base keys remain after filtering accounts & DLCs
   const rawUrl = `https://gateway.kinguin.net/esa/api/v1/products?name=${encodeURIComponent(clean)}&page=1&limit=20`;
@@ -2442,11 +2567,19 @@ window.fetchKinguinLiveProduct = async function(title, customApiKey) {
 
     if (items.length === 0) return null;
 
-    // Filter out accounts & DLCs, and score candidates
+    // Filter out accounts, altergifts, non-PC games, DLCs, and score candidates
     const validCandidates = [];
     for (const it of items) {
       const p = Number(it.price);
       if (!(p > 0)) continue;
+
+      if (onlyPc && window.isKinguinPcPlatform && !window.isKinguinPcPlatform(it, clean)) {
+        continue;
+      }
+
+      if (excludeAltergifts && window.isKinguinAltergiftListing && window.isKinguinAltergiftListing(it, clean)) {
+        continue;
+      }
 
       if (excludeAccounts && window.isKinguinAccountListing(it)) {
         continue;
@@ -2469,8 +2602,13 @@ window.fetchKinguinLiveProduct = async function(title, customApiKey) {
     }
 
     if (validCandidates.length === 0) {
-      // Fallback: If strict filtering rejected everything, never return an account if excludeAccounts is active
-      const nonAccounts = items.filter(it => Number(it.price) > 0 && (!excludeAccounts || !window.isKinguinAccountListing(it)));
+      // Fallback: If strict filtering rejected everything, never return an account, altergift, or console game
+      const nonAccounts = items.filter(it => 
+        Number(it.price) > 0 &&
+        (!onlyPc || !window.isKinguinPcPlatform || window.isKinguinPcPlatform(it, clean)) &&
+        (!excludeAltergifts || !window.isKinguinAltergiftListing || !window.isKinguinAltergiftListing(it, clean)) &&
+        (!excludeAccounts || !window.isKinguinAccountListing(it))
+      );
       if (nonAccounts.length === 0) return null;
 
       nonAccounts.sort((a, b) => Number(a.price) - Number(b.price));
@@ -2573,6 +2711,8 @@ window.initKinguinConnection = function() {
   const radarLabel = document.getElementById("sourcing-kinguin-api-label");
   const excludeAccountsCheckbox = document.getElementById("settings-kinguin-exclude-accounts");
   const excludeDlcsCheckbox = document.getElementById("settings-kinguin-exclude-dlcs");
+  const excludeAltergiftsCheckbox = document.getElementById("settings-kinguin-exclude-altergifts");
+  const onlyPcCheckbox = document.getElementById("settings-kinguin-only-pc");
 
   if (keyInput && !keyInput.value) keyInput.value = key;
   if (storeInput && !storeInput.value) storeInput.value = storeName;
@@ -2582,6 +2722,12 @@ window.initKinguinConnection = function() {
   }
   if (excludeDlcsCheckbox) {
     excludeDlcsCheckbox.checked = state.sourcingSettings?.kinguinExcludeDlcs !== false;
+  }
+  if (excludeAltergiftsCheckbox) {
+    excludeAltergiftsCheckbox.checked = state.sourcingSettings?.kinguinExcludeAltergifts !== false;
+  }
+  if (onlyPcCheckbox) {
+    onlyPcCheckbox.checked = state.sourcingSettings?.kinguinOnlyPc !== false;
   }
 
   if (statusBadge) {
@@ -2623,6 +2769,8 @@ window.bindKinguinSettingsControls = function() {
   const proxyInput = document.getElementById("settings-kinguin-proxyurl");
   const excludeAccountsCheckbox = document.getElementById("settings-kinguin-exclude-accounts");
   const excludeDlcsCheckbox = document.getElementById("settings-kinguin-exclude-dlcs");
+  const excludeAltergiftsCheckbox = document.getElementById("settings-kinguin-exclude-altergifts");
+  const onlyPcCheckbox = document.getElementById("settings-kinguin-only-pc");
   const btnSave = document.getElementById("btn-save-kinguin-api");
   const btnTest = document.getElementById("btn-test-kinguin-api");
   const feedback = document.getElementById("kinguin-test-feedback");
@@ -2645,6 +2793,8 @@ window.bindKinguinSettingsControls = function() {
       const proxyVal = proxyInput ? proxyInput.value.trim() : "";
       const excludeAccounts = excludeAccountsCheckbox ? excludeAccountsCheckbox.checked : true;
       const excludeDlcs = excludeDlcsCheckbox ? excludeDlcsCheckbox.checked : true;
+      const excludeAltergifts = excludeAltergiftsCheckbox ? excludeAltergiftsCheckbox.checked : true;
+      const onlyPc = onlyPcCheckbox ? onlyPcCheckbox.checked : true;
 
       if (!state.sourcingSettings) state.sourcingSettings = {};
       state.sourcingSettings.kinguinApiKey = keyVal;
@@ -2654,6 +2804,10 @@ window.bindKinguinSettingsControls = function() {
       state.sourcingSettings.excludeDlcs = excludeDlcs;
       state.sourcingSettings.kinguinExcludeAccounts = excludeAccounts;
       state.sourcingSettings.kinguinExcludeDlcs = excludeDlcs;
+      state.sourcingSettings.excludeAltergifts = excludeAltergifts;
+      state.sourcingSettings.kinguinExcludeAltergifts = excludeAltergifts;
+      state.sourcingSettings.onlyPc = onlyPc;
+      state.sourcingSettings.kinguinOnlyPc = onlyPc;
 
       if (typeof saveSecondaryTablesToStorage === "function") saveSecondaryTablesToStorage();
       if (window.supabaseClient && typeof dbSaveSettings === "function") {
