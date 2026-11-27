@@ -152,13 +152,8 @@ window.handleRecoverySubmit = function(e) {
   }
 };
 
-// Helper to get registered user list
-function getUsersFromStorage() {
-  if (typeof window !== "undefined" && typeof window.getUsersFromStorage === "function") {
-    return window.getUsersFromStorage();
-  }
-  return [];
-}
+// Note: getUsersFromStorage is authoritatively defined and exported in src/state.js
+// so we do not re-declare it here to avoid overwriting window.getUsersFromStorage and causing infinite recursion.
 
 function getUserEmail(username) {
   if (username.includes("@")) {
