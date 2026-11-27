@@ -5,6 +5,9 @@
 ![Version](https://img.shields.io/badge/version-v3.4.7-cyan.svg)
 ![Status](https://img.shields.io/badge/status-active-emerald.svg)
 ![Platform](https://img.shields.io/badge/platform-Web%20SPA-purple.svg)
+![Documentation](https://img.shields.io/badge/docs-manual%20v3.4.7-blue.svg)
+
+> 📖 **Official Documentation**: For the complete user and technical operations guide, see the [GameVault Operational Manual](MANUAL.md).
 
 ---
 
