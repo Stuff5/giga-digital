@@ -154,32 +154,10 @@ window.handleRecoverySubmit = function(e) {
 
 // Helper to get registered user list
 function getUsersFromStorage() {
-  if (typeof window !== "undefined" && typeof window.getUsersFromStorage === "function" && window.getUsersFromStorage !== getUsersFromStorage) {
+  if (typeof window !== "undefined" && typeof window.getUsersFromStorage === "function") {
     return window.getUsersFromStorage();
   }
-  let arr = [];
-  try {
-    const users = localStorage.getItem("gv_users");
-    if (users) {
-      const parsed = JSON.parse(users);
-      if (Array.isArray(parsed)) {
-        arr = parsed;
-      }
-    }
-  } catch (err) {
-    console.error("Error reading users from storage:", err);
-  }
-  const hasAdmin = arr.some(u => u && u.username && u.username.toLowerCase() === "admin");
-  if (!hasAdmin) {
-    arr.push({
-      username: "admin",
-      email: "admin@gamevault.local",
-      password: "password",
-      role: "admin",
-      twoFactorEnabled: false
-    });
-  }
-  return arr;
+  return [];
 }
 
 function getUserEmail(username) {

@@ -5,6 +5,17 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v3.4.3] - 2026-11-27
+### Asset Minification & CSS Refactoring (Phase 3)
+- **Stylesheet Optimization & Dead Code Removal**:
+  - **Eliminated 176-Line CSS Duplication**: Removed a verbatim 3.4 KB duplicate block (`.sales-feed-item:hover` through `.benchmark-row:last-child`) in `styles.css`.
+  - **CSS Cascade Specificity Cleanup**: Stripped dozens of redundant `!important` flags from `.layout-toggle-buttons` and mobile chart card `@media (max-width: 768px)` breakpoints.
+  - **Rule Consolidation**: Merged duplicate `.chart-card-header` drag handle cursor declarations into the primary selector definition.
+- **JavaScript Utility Deduplication**:
+  - **Authoritative Storage Resolution**: Cleanly routed `getUsersFromStorage()` in `src/ui/auth.js` through `window.getUsersFromStorage` defined in `src/state.js`, removing redundant fallback logic.
+  - **Centralized HTML Escaping**: Updated `src/ui/recycle.js` to defer to `window.escapeHTML` defined in `src/ui.js`.
+- **Cache-Busting Update**: Incremented all application script references to `?v=148` and stylesheet to `?v=95`.
+
 ## [v3.4.2] - 2026-11-27
 ### Architecture & Refactoring (Phase 2)
 - **UI Architecture Modularization**:

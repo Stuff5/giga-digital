@@ -490,11 +490,25 @@
               </p>
               
               <div style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- v3.4.3 -->
+                <div class="changelog-release-card" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <strong style="color: var(--text-main); font-size: 0.95rem;">v3.4.3 - Asset Minification &amp; CSS Refactoring (Phase 3)</strong>
+                    <span style="font-size: 0.75rem; color: var(--accent-emerald); background: rgba(16, 185, 129, 0.12); padding: 2px 8px; border-radius: 4px; font-weight: 700;">Current Version</span>
+                  </div>
+                  <ul style="margin: 0; padding-left: 18px; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+                    <li><strong>CSS Duplicate Elimination:</strong> Removed the 176-line verbatim duplicate block from <code>styles.css</code>, reducing stylesheet transfer size and accelerating browser parsing.</li>
+                    <li><strong>Cascade Cleanup:</strong> Stripped redundant <code>!important</code> declarations across layout toggles and mobile card breakpoints, restoring natural cascade inheritance.</li>
+                    <li><strong>Selector Consolidation:</strong> Merged duplicate <code>.chart-card-header</code> rules into a unified block.</li>
+                    <li><strong>Utility Deduplication:</strong> Exported single authoritative user storage and HTML escaping helpers, removing redundant duplicate functions from UI modules.</li>
+                  </ul>
+                </div>
+
                 <!-- v3.4.2 -->
                 <div class="changelog-release-card" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                     <strong style="color: var(--text-main); font-size: 0.95rem;">v3.4.2 - UI Architecture Modularization (Phase 2)</strong>
-                    <span style="font-size: 0.75rem; color: var(--accent-emerald); background: rgba(16, 185, 129, 0.12); padding: 2px 8px; border-radius: 4px; font-weight: 700;">Current Version</span>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); background: rgba(255, 255, 255, 0.06); padding: 2px 8px; border-radius: 4px; font-weight: 600;">Previous Release</span>
                   </div>
                   <ul style="margin: 0; padding-left: 18px; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
                     <li><strong>Modular Subsystems:</strong> Decomposed the monolithic 19,000-line UI layer into clean, maintainable modules under <code>src/ui/</code>: <code>auth.js</code>, <code>settings.js</code>, <code>recycle.js</code>, and <code>radar.js</code>.</li>
