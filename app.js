@@ -4,7 +4,7 @@
  */
 
 document.addEventListener("DOMContentLoaded", async () => {
-  const currentVersion = window.APP_VERSION || "v3.4.9";
+  const currentVersion = window.APP_VERSION || "v3.5.0";
   console.log(`[GameVault] DOMContentLoaded - Booting ${currentVersion}...`);
   console.log("[GameVault] Native gv_active_user:", window.localStorage.getItem("gv_active_user"));
 
@@ -518,10 +518,24 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Periodic radar scan check every 60 minutes while session is active
     setInterval(() => {
+      if (document.hidden) return;
       if ((state.favoriteGames || []).length > 0 && state.sourcingSettings?.topbarAlerts !== false && typeof window.refreshSourcingDeals === "function") {
         window.refreshSourcingDeals();
       }
     }, 60 * 60 * 1000);
+
+    // Resume and sync timers immediately when tab returns to foreground
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) {
+        const clockElement = document.getElementById("current-time");
+        if (clockElement) {
+          clockElement.textContent = new Date().toTimeString().split(" ")[0];
+        }
+        if (typeof window.updateAutoSyncCountdown === "function") {
+          window.updateAutoSyncCountdown();
+        }
+      }
+    });
 
     // Fade out and remove the premium loader
     const loadingScreen = document.getElementById("app-loading-screen");

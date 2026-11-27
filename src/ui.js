@@ -505,7 +505,9 @@ function initNavigation() {
 
 function startClock() {
   const clockElement = document.getElementById("current-time");
+  if (!clockElement) return;
   setInterval(() => {
+    if (document.hidden) return; // Do not wake CPU when tab is in background
     const now = new Date();
     clockElement.textContent = now.toTimeString().split(" ")[0];
   }, 1000);
@@ -14286,8 +14288,10 @@ function triggerScheduledSync() {
 }
 
 function updateAutoSyncCountdown() {
+  if (document.hidden) return;
   const countdownEl = document.getElementById("auto-sync-timer-countdown");
   if (!countdownEl || !autoSyncNextRunTime) return;
+  if (countdownEl.offsetParent === null) return;
 
   const diff = autoSyncNextRunTime - Date.now();
   if (diff <= 0) {
@@ -14304,6 +14308,8 @@ function updateAutoSyncCountdown() {
 
   countdownEl.textContent = `${displayMins}:${displaySecs}`;
 }
+
+window.updateAutoSyncCountdown = updateAutoSyncCountdown;
 
 function updateAutoSyncUI() {
   const statusBadge = document.getElementById("auto-sync-status-badge");
