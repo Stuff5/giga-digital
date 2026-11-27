@@ -139,7 +139,7 @@
         </div>
         <div class="version-info" style="text-align: center; font-size: 0.7rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; overflow: hidden; white-space: nowrap;">
           <span class="version-label">GameVault</span>
-          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v3.4.6</a>
+          <a href="#" id="link-show-changelog" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;" title="View Version Progress / Changelog">v3.4.7</a>
         </div>
 
       </div>
@@ -3117,9 +3117,8 @@
             <!-- TAB 1: APIs & Marketplaces -->
             <div id="settings-tab-apis" class="settings-tab-pane active">
               <div style="display: flex; flex-direction: column; gap: 24px;">
-                <!-- Live Marketplace & Keyshop Benchmark Integrations -->
-                <div class="responsive-grid-equal" style="margin-bottom: 0;">
-                  <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
+                <!-- Kinguin Merchant API (Dedicated Container) -->
+                <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                       <h4 style="margin: 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
                         <i class="fa-solid fa-crown" style="color: #ff9900;"></i> Kinguin Merchant API
@@ -3171,7 +3170,7 @@
                         Enable or disable listing filters to customize how live competitor prices, benchmarks, and resale margins are matched in Sourcing Radar.
                       </p>
 
-                      <div style="display: flex; flex-direction: column; gap: 10px;">
+                      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 10px;">
                         <!-- Filter 1: Altergifts -->
                         <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 0.82rem; cursor: pointer; margin-bottom: 0; padding: 10px 12px; background: var(--bg-input); border-radius: var(--radius-sm); border: 1px solid var(--border-color); transition: border-color 0.2s ease;">
                           <input type="checkbox" id="settings-kinguin-exclude-altergifts" style="margin-top: 2px; width: 16px; height: 16px; accent-color: #ff5000; cursor: pointer;" checked>
@@ -3240,7 +3239,10 @@
                     </div>
 
                     <div id="kinguin-test-feedback" style="margin-top: 12px; font-size: 0.8rem; padding: 10px 14px; border-radius: 6px; display: none;"></div>
-                  <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
+                </div>
+
+                <!-- GG.deals API (Dedicated Container) -->
+                <div style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                       <h4 style="margin: 0; color: var(--text-main); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
                         <i class="fa-solid fa-tags" style="color: #22c55e;"></i> GG.deals API (Multi-Keyshop Benchmark)
@@ -3312,7 +3314,7 @@
                         Enable or disable listing filters to customize how live GG.deals keyshop prices, retail benchmarks, and historical lows are matched in Sourcing Radar.
                       </p>
 
-                      <div style="display: flex; flex-direction: column; gap: 10px;">
+                      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 10px;">
                         <!-- Filter 1: Altergifts -->
                         <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 0.82rem; cursor: pointer; margin-bottom: 0; padding: 10px 12px; background: var(--bg-input); border-radius: var(--radius-sm); border: 1px solid var(--border-color); transition: border-color 0.2s ease;">
                           <input type="checkbox" id="settings-ggdeals-exclude-altergifts" style="margin-top: 2px; width: 16px; height: 16px; accent-color: #22c55e; cursor: pointer;" checked>
@@ -3371,7 +3373,6 @@
                       </div>
                     </div>
                   </div>
-                </div>
 
                 <!-- Steam Ratings Enricher Card -->
                 <div style="background: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px; display: flex; flex-direction: column; gap: 16px;">
@@ -4615,17 +4616,17 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=157"></script>
-  <script src="src/state.js?v=157"></script>
-  <script src="src/api.js?v=157"></script>
-  <script src="src/charts.js?v=157"></script>
-  <script src="src/ui.js?v=157"></script>
-  <script src="src/ui/auth.js?v=157"></script>
-  <script src="src/ui/settings.js?v=157"></script>
-  <script src="src/ui/recycle.js?v=157"></script>
-  <script src="src/ui/radar.js?v=157"></script>
-  <script src="src/ai.js?v=157"></script>
-  <script src="src/importer.js?v=157"></script>
-  <script src="app.js?v=157"></script>
+  <script src="config.js?v=158"></script>
+  <script src="src/state.js?v=158"></script>
+  <script src="src/api.js?v=158"></script>
+  <script src="src/charts.js?v=158"></script>
+  <script src="src/ui.js?v=158"></script>
+  <script src="src/ui/auth.js?v=158"></script>
+  <script src="src/ui/settings.js?v=158"></script>
+  <script src="src/ui/recycle.js?v=158"></script>
+  <script src="src/ui/radar.js?v=158"></script>
+  <script src="src/ai.js?v=158"></script>
+  <script src="src/importer.js?v=158"></script>
+  <script src="app.js?v=158"></script>
 </body>
 </html>

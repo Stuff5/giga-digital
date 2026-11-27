@@ -5,6 +5,15 @@ All notable changes to GameVault (Key Merchant Pro) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v3.4.7] - 2026-11-27
+### Dedicated Settings Container for GG.deals API
+- **Container Separation in Settings**:
+  - **Isolated Container for GG.deals API**: Resolved DOM nesting anomaly where GG.deals API card was enclosed inside Kinguin's card. GG.deals API now resides in its own completely separate, dedicated container card with standalone styling and borders.
+  - **Independent Container for Kinguin Merchant API**: Kinguin card container now properly closes after its test feedback element.
+  - **Responsive 2-Column Listing Filter Grids**: Upgraded listing filter controls in both Kinguin and GG.deals cards to a modern auto-fitting 2-column grid (`repeat(auto-fit, minmax(320px, 1fr))`), giving ample horizontal space for filter descriptions and status badges on desktop screens.
+  - **HTML Hierarchy Validation**: Verified 100% net-zero div balance across the entire DOM tree in `index.html`.
+- **Cache-Busting Update**: Incremented all application script references to `?v=158`.
+
 ## [v3.4.6] - 2026-11-27
 ### Complete G2A Decommissioning & Balanced Settings Layout
 - **G2A Merchant Integration Decommissioned**:
