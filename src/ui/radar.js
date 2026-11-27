@@ -318,56 +318,9 @@ window.renderSourcingRadarView = function() {
       }
     }
 
-    // Resolve G2A Marketplace Benchmark & Arbitrage
-    let g2aPrice = null;
-    let g2aSource = "No Data";
-    const liveG2A = state.sourcingSettings?.liveG2APrices?.[title];
-
-    if (liveG2A && Number(liveG2A.price) > 0) {
-      g2aPrice = Number(liveG2A.price);
-      g2aSource = "Live G2A API";
-    } else {
-      const titleSales = salesByTitle[key] || [];
-      const g2aSales = titleSales.filter(s => s.platform && s.platform.trim().toLowerCase() === "g2a" && Number(s.price) > 0);
-      if (g2aSales.length > 0) {
-        const lastG2A = g2aSales[g2aSales.length - 1];
-        g2aPrice = Number(lastG2A.price);
-        g2aSource = `G2A (${g2aSales.length} sold)`;
-      }
-      // Note: We deliberately do NOT fall back to benchmarkPrice (Kinguin's live price) here.
-      // Copying Kinguin's live price into G2A causes false identical price comparisons.
-    }
-
-    let g2aNetPayout = null;
-    let g2aNetProfit = null;
-    let g2aRoiPct = null;
-
-    if (g2aPrice !== null && g2aPrice > 0) {
-      g2aNetPayout = Math.max(0, (g2aPrice * (1 - g2aFeePct / 100)) - g2aFixedFee);
-      if (dealPrice !== null && dealPrice > 0) {
-        g2aNetProfit = g2aNetPayout - dealPrice;
-        g2aRoiPct = (g2aNetProfit / dealPrice) * 100;
-      }
-    }
-
-    // Evaluate Best Venue Target (Kinguin vs G2A)
-    let bestTarget = "Kinguin";
-    let bestNetProfit = netProfit;
-    let bestRoi = roiPct;
-    let targetDiff = 0;
-
-    if (g2aNetProfit !== null && (netProfit === null || g2aNetProfit > netProfit)) {
-      bestTarget = "G2A";
-      bestNetProfit = g2aNetProfit;
-      bestRoi = g2aRoiPct;
-      if (netProfit !== null) targetDiff = g2aNetProfit - netProfit;
-    } else if (netProfit !== null && g2aNetProfit !== null) {
-      targetDiff = netProfit - g2aNetProfit;
-    }
-
-    if (bestNetProfit !== null && bestNetProfit > 0) {
+    if (netProfit !== null && netProfit > 0) {
       profitableCount++;
-      if (bestRoi !== null && bestRoi > maxRoi) maxRoi = bestRoi;
+      if (roiPct !== null && roiPct > maxRoi) maxRoi = roiPct;
     }
 
     // Live GG.deals Pricing & Multi-keyshop benchmark
@@ -409,15 +362,6 @@ window.renderSourcingRadarView = function() {
       thumbUrl,
       netProfit,
       roiPct,
-      g2aPrice,
-      g2aSource,
-      g2aNetPayout,
-      g2aNetProfit,
-      g2aRoiPct,
-      bestTarget,
-      bestNetProfit,
-      bestRoi,
-      targetDiff,
       steamAppId,
       ggKeyshopPrice,
       ggRetailPrice,
@@ -534,18 +478,7 @@ window.renderSourcingRadarView = function() {
               </span>
             </div>
 
-            <!-- G2A Marketplace Column -->
-            <div class="sourcing-stat-col">
-              <span class="sourcing-stat-label">
-                <i class="fa-solid fa-bolt" style="color: #0070d2;"></i> G2A Marketplace
-              </span>
-              <div class="sourcing-stat-value">
-                <span>${item.g2aPrice !== null ? `€${item.g2aPrice.toFixed(2)}` : `<span style="color: var(--text-muted); font-size: 0.8rem;" title="No direct G2A quote. Click 'Check G2A' to view active marketplace listings.">—</span>`}</span>
-              </div>
-              <span style="font-size: 0.7rem; color: var(--text-muted);">
-                ${item.g2aPrice !== null ? `Net: ${item.g2aNetPayout !== null ? `€${item.g2aNetPayout.toFixed(2)}` : "-"} (${item.g2aSource})` : `<a href="https://www.g2a.com/search?query=${encodeURIComponent(item.title + ' PC')}" target="_blank" rel="noopener noreferrer" style="color: #0070d2; text-decoration: none; font-size: 0.68rem; font-weight: 600;" title="Search live offers on G2A">Check G2A <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.6rem;"></i></a>`}
-              </span>
-            </div>
+
 
             <!-- Best Store Deal Column -->
             <div class="sourcing-stat-col">
@@ -583,32 +516,21 @@ window.renderSourcingRadarView = function() {
               </span>
             </div>
 
-            <!-- Net Profit & Multi-Marketplace Target Column -->
+            <!-- Net Profit & ROI Column -->
             <div class="sourcing-stat-col">
-              <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px;">
-                <span class="sourcing-stat-label">
-                  <i class="fa-solid fa-calculator" style="color: var(--accent-emerald);"></i> Net Profit &amp; ROI
-                </span>
-                ${item.bestTarget === "G2A" ? `
-                  <span class="badge" style="background: rgba(0, 112, 210, 0.15); color: #0070d2; border: 1px solid rgba(0, 112, 210, 0.35); font-size: 0.65rem; padding: 1px 5px;" title="G2A yields higher net payout (+€${item.targetDiff.toFixed(2)} vs Kinguin)">
-                    <i class="fa-solid fa-bolt"></i> Target: G2A
-                  </span>
-                ` : `
-                  <span class="badge" style="background: rgba(255, 80, 0, 0.15); color: #ff5000; border: 1px solid rgba(255, 80, 0, 0.35); font-size: 0.65rem; padding: 1px 5px;" title="Kinguin yields higher net payout (+€${item.targetDiff.toFixed(2)} vs G2A)">
-                    <i class="fa-solid fa-crown"></i> Target: Kinguin
-                  </span>
-                `}
-              </div>
+              <span class="sourcing-stat-label">
+                <i class="fa-solid fa-calculator" style="color: var(--accent-emerald);"></i> Net Profit &amp; ROI
+              </span>
               <div class="sourcing-stat-value">
-                ${item.bestNetProfit !== null ? `
-                  <span style="color: ${item.bestNetProfit > 0 ? 'var(--accent-emerald)' : 'var(--text-muted)'};">
-                    ${item.bestNetProfit > 0 ? "+" : ""}€${item.bestNetProfit.toFixed(2)}
+                ${item.netProfit !== null ? `
+                  <span style="color: ${item.netProfit > 0 ? 'var(--accent-emerald)' : 'var(--text-muted)'}; font-weight: 700;">
+                    ${item.netProfit > 0 ? "+" : ""}€${item.netProfit.toFixed(2)}
                   </span>
                   ${roiBadge}
                 ` : `<span style="color: var(--text-muted); font-size: 0.8rem;">-</span>`}
               </div>
               <span style="font-size: 0.7rem; color: var(--text-muted);">
-                ${item.bestTarget === "G2A" ? `After ${g2aFeePct}% + €${g2aFixedFee.toFixed(2)} G2A fee` : `After ${feePct}% + €${fixedFee.toFixed(2)} Kinguin fee`}
+                After ${feePct}% + €${fixedFee.toFixed(2)} Kinguin fee
               </span>
             </div>
           </div>
