@@ -6,15 +6,6 @@
 // ==========================================================================
 // RECYCLE BIN VIEW RENDERERS & MUTATORS
 // ==========================================================================
-const escapeHTML = (typeof window !== "undefined" && window.escapeHTML) ? window.escapeHTML : function(str) {
-  if (!str) return "";
-  return str.toString()
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-};
 
 function renderRecycleBin() {
   const tbody = DOM["recycle-table-body"] || document.getElementById("recycle-table-body");
