@@ -5614,6 +5614,9 @@ function updateUI() {
     syncDashboardOverviewSettingsCheckboxes();
     renderAdminUsers();
     renderAuditLogs();
+    if (typeof window.initKinguinConnection === "function") {
+      window.initKinguinConnection();
+    }
     
     // Bind profile values
     const users = getUsersFromStorage();

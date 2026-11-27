@@ -2730,6 +2730,40 @@ window.initKinguinConnection = function() {
     onlyPcCheckbox.checked = state.sourcingSettings?.kinguinOnlyPc !== false;
   }
 
+  const badgeAltergifts = document.getElementById("badge-status-altergifts");
+  const badgeOnlyPc = document.getElementById("badge-status-only-pc");
+  const badgeAccounts = document.getElementById("badge-status-accounts");
+  const badgeDlcs = document.getElementById("badge-status-dlcs");
+
+  if (badgeAltergifts) {
+    const isEx = state.sourcingSettings?.kinguinExcludeAltergifts !== false;
+    badgeAltergifts.textContent = isEx ? "Altergifts Blocked" : "Altergifts Allowed";
+    badgeAltergifts.style.background = isEx ? "rgba(239, 68, 68, 0.15)" : "rgba(100, 116, 139, 0.15)";
+    badgeAltergifts.style.color = isEx ? "#ef4444" : "var(--text-muted)";
+    badgeAltergifts.style.borderColor = isEx ? "rgba(239, 68, 68, 0.3)" : "var(--border-color)";
+  }
+  if (badgeOnlyPc) {
+    const isPc = state.sourcingSettings?.kinguinOnlyPc !== false;
+    badgeOnlyPc.textContent = isPc ? "PC Platforms Only" : "All Platforms Allowed";
+    badgeOnlyPc.style.background = isPc ? "rgba(59, 130, 246, 0.15)" : "rgba(100, 116, 139, 0.15)";
+    badgeOnlyPc.style.color = isPc ? "#3b82f6" : "var(--text-muted)";
+    badgeOnlyPc.style.borderColor = isPc ? "rgba(59, 130, 246, 0.3)" : "var(--border-color)";
+  }
+  if (badgeAccounts) {
+    const isEx = state.sourcingSettings?.kinguinExcludeAccounts !== false;
+    badgeAccounts.textContent = isEx ? "Accounts Blocked" : "Accounts Allowed";
+    badgeAccounts.style.background = isEx ? "rgba(239, 68, 68, 0.15)" : "rgba(100, 116, 139, 0.15)";
+    badgeAccounts.style.color = isEx ? "#ef4444" : "var(--text-muted)";
+    badgeAccounts.style.borderColor = isEx ? "rgba(239, 68, 68, 0.3)" : "var(--border-color)";
+  }
+  if (badgeDlcs) {
+    const isEx = state.sourcingSettings?.kinguinExcludeDlcs !== false;
+    badgeDlcs.textContent = isEx ? "Full Games Only" : "DLCs Allowed";
+    badgeDlcs.style.background = isEx ? "rgba(168, 85, 247, 0.15)" : "rgba(100, 116, 139, 0.15)";
+    badgeDlcs.style.color = isEx ? "#a855f7" : "var(--text-muted)";
+    badgeDlcs.style.borderColor = isEx ? "rgba(168, 85, 247, 0.3)" : "var(--border-color)";
+  }
+
   if (statusBadge) {
     if (key) {
       statusBadge.textContent = "Configured";
@@ -2775,6 +2809,41 @@ window.bindKinguinSettingsControls = function() {
   const btnTest = document.getElementById("btn-test-kinguin-api");
   const feedback = document.getElementById("kinguin-test-feedback");
   const statusBadge = document.getElementById("kinguin-connection-status");
+
+  // Live Auto-Save Toggle Listeners for Sourcing Benchmark Filters
+  const updateFilterToggle = async (key, val, label) => {
+    if (!state.sourcingSettings) state.sourcingSettings = {};
+    state.sourcingSettings[key] = val;
+    if (key === "kinguinExcludeAccounts") state.sourcingSettings.excludeAccounts = val;
+    if (key === "kinguinExcludeDlcs") state.sourcingSettings.excludeDlcs = val;
+    if (key === "kinguinExcludeAltergifts") state.sourcingSettings.excludeAltergifts = val;
+    if (key === "kinguinOnlyPc") state.sourcingSettings.onlyPc = val;
+
+    if (typeof saveSecondaryTablesToStorage === "function") saveSecondaryTablesToStorage();
+    if (window.supabaseClient && typeof dbSaveSettings === "function") {
+      await dbSaveSettings("sourcingSettings", state.sourcingSettings);
+    }
+    window.initKinguinConnection();
+    if (typeof showToast === "function") {
+      showToast(`${label}: ${val ? "Enabled" : "Disabled"}`, "info");
+    }
+    if (typeof window.renderSourcingRadarView === "function") {
+      window.renderSourcingRadarView();
+    }
+  };
+
+  if (excludeAccountsCheckbox) {
+    excludeAccountsCheckbox.onchange = (e) => updateFilterToggle("kinguinExcludeAccounts", e.target.checked, "Exclude Game Accounts");
+  }
+  if (excludeAltergiftsCheckbox) {
+    excludeAltergiftsCheckbox.onchange = (e) => updateFilterToggle("kinguinExcludeAltergifts", e.target.checked, "Exclude Altergifts & Steam Gifts");
+  }
+  if (onlyPcCheckbox) {
+    onlyPcCheckbox.onchange = (e) => updateFilterToggle("kinguinOnlyPc", e.target.checked, "PC Games Only");
+  }
+  if (excludeDlcsCheckbox) {
+    excludeDlcsCheckbox.onchange = (e) => updateFilterToggle("kinguinExcludeDlcs", e.target.checked, "Exclude DLCs & Expansions");
+  }
 
   // Toggle API key visibility
   if (btnToggleVis && keyInput) {

@@ -3215,39 +3215,75 @@
                       </small>
                     </div>
 
-                    <!-- Global Benchmark & Supplier Listing Filters -->
-                    <div style="margin-top: 14px; margin-bottom: 14px; padding: 12px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 6px;">
-                      <div style="font-size: 0.82rem; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-                        <i class="fa-solid fa-filter" style="color: #ff5000;"></i> Global Benchmark &amp; Supplier Listing Filters
+                    <!-- Sourcing Radar & Live Kinguin Listing Filters -->
+                    <div style="margin-top: 18px; margin-bottom: 16px; padding: 14px 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
+                        <div style="font-size: 0.88rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 7px;">
+                          <i class="fa-solid fa-filter" style="color: #ff5000;"></i> Sourcing Radar &amp; Kinguin Benchmark Filters
+                        </div>
+                        <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald); border: 1px solid rgba(16, 185, 129, 0.3); font-size: 0.68rem; padding: 2px 7px;">
+                          <i class="fa-solid fa-bolt" style="font-size: 0.65rem; margin-right: 3px;"></i>Auto-Saves on Toggle
+                        </span>
                       </div>
-                      <div style="display: flex; flex-direction: column; gap: 8px;">
-                        <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 0.8rem; cursor: pointer; margin-bottom: 0;">
-                          <input type="checkbox" id="settings-kinguin-exclude-accounts" style="margin-top: 2px;" checked>
-                          <span>
-                            <strong>Exclude Game Accounts</strong> (Only Genuine CD Keys &amp; Serials)<br>
-                            <span style="font-size: 0.72rem; color: var(--text-muted);">Strictly filters out Steam/Xbox/PSN accounts, shared access profiles, and offline accounts across Kinguin, GG.deals, and official supplier deals (Steam, GOG, Fanatical, Humble, etc.).</span>
-                          </span>
+                      <p style="font-size: 0.76rem; color: var(--text-secondary); margin: 0 0 12px 0; line-height: 1.4;">
+                        Enable or disable listing filters to customize how live competitor prices, benchmarks, and resale margins are matched in Sourcing Radar.
+                      </p>
+
+                      <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Filter 1: Altergifts -->
+                        <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 0.82rem; cursor: pointer; margin-bottom: 0; padding: 10px 12px; background: var(--bg-input); border-radius: var(--radius-sm); border: 1px solid var(--border-color); transition: border-color 0.2s ease;">
+                          <input type="checkbox" id="settings-kinguin-exclude-altergifts" style="margin-top: 2px; width: 16px; height: 16px; accent-color: #ff5000; cursor: pointer;" checked>
+                          <div style="flex: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;">
+                              <strong style="color: var(--text-main);"><i class="fa-solid fa-gift" style="color: #ff5000; margin-right: 5px;"></i>Exclude Altergifts &amp; Steam Gifts</strong>
+                              <span id="badge-status-altergifts" class="badge" style="font-size: 0.65rem; padding: 1px 6px; background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);">Altergifts Blocked</span>
+                            </div>
+                            <span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 3px; line-height: 1.35;">
+                              Strictly filters out altergifts, Steam gift links, trade offers, and inventory gifts so benchmarks reflect genuine digital keys. Disable to include Steam gift links.
+                            </span>
+                          </div>
                         </label>
-                        <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 0.8rem; cursor: pointer; margin-bottom: 0;">
-                          <input type="checkbox" id="settings-kinguin-exclude-altergifts" style="margin-top: 2px;" checked>
-                          <span>
-                            <strong>Exclude Altergifts &amp; Steam Gifts</strong> (Genuine Digital Keys Only)<br>
-                            <span style="font-size: 0.72rem; color: var(--text-muted);">Strictly filters out altergifts, Steam gift links, trade offers, and gift inventory listings so benchmarks reflect digital keys.</span>
-                          </span>
+
+                        <!-- Filter 2: PC Games Only -->
+                        <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 0.82rem; cursor: pointer; margin-bottom: 0; padding: 10px 12px; background: var(--bg-input); border-radius: var(--radius-sm); border: 1px solid var(--border-color); transition: border-color 0.2s ease;">
+                          <input type="checkbox" id="settings-kinguin-only-pc" style="margin-top: 2px; width: 16px; height: 16px; accent-color: #0070d2; cursor: pointer;" checked>
+                          <div style="flex: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;">
+                              <strong style="color: var(--text-main);"><i class="fa-solid fa-desktop" style="color: #0070d2; margin-right: 5px;"></i>PC Games Only (Exclude Consoles)</strong>
+                              <span id="badge-status-only-pc" class="badge" style="font-size: 0.65rem; padding: 1px 6px; background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3);">PC Platforms Only</span>
+                            </div>
+                            <span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 3px; line-height: 1.35;">
+                              Restricts quotes to PC digital keys (Steam, Epic, GOG, EA, Ubisoft, Battle.net) and excludes console editions (Xbox, PlayStation, Switch). Disable to allow all platforms.
+                            </span>
+                          </div>
                         </label>
-                        <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 0.8rem; cursor: pointer; margin-bottom: 0;">
-                          <input type="checkbox" id="settings-kinguin-only-pc" style="margin-top: 2px;" checked>
-                          <span>
-                            <strong>PC Games Only</strong> (Exclude Console &amp; Mobile Editions)<br>
-                            <span style="font-size: 0.72rem; color: var(--text-muted);">Restricts quotes to PC digital keys (Steam, Epic, GOG, EA, Ubisoft, Battle.net) and excludes Xbox, PlayStation, and Switch.</span>
-                          </span>
+
+                        <!-- Filter 3: Accounts -->
+                        <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 0.82rem; cursor: pointer; margin-bottom: 0; padding: 10px 12px; background: var(--bg-input); border-radius: var(--radius-sm); border: 1px solid var(--border-color); transition: border-color 0.2s ease;">
+                          <input type="checkbox" id="settings-kinguin-exclude-accounts" style="margin-top: 2px; width: 16px; height: 16px; accent-color: var(--accent-purple); cursor: pointer;" checked>
+                          <div style="flex: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;">
+                              <strong style="color: var(--text-main);"><i class="fa-solid fa-user-slash" style="color: var(--accent-purple); margin-right: 5px;"></i>Exclude Game Accounts</strong>
+                              <span id="badge-status-accounts" class="badge" style="font-size: 0.65rem; padding: 1px 6px; background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);">Accounts Blocked</span>
+                            </div>
+                            <span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 3px; line-height: 1.35;">
+                              Filters out Steam/Xbox/PSN accounts, shared access profiles, and offline accounts across Kinguin and suppliers. Disable to allow account listings.
+                            </span>
+                          </div>
                         </label>
-                        <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 0.8rem; cursor: pointer; margin-bottom: 0;">
-                          <input type="checkbox" id="settings-kinguin-exclude-dlcs" style="margin-top: 2px;" checked>
-                          <span>
-                            <strong>Exclude DLCs &amp; Expansions</strong> (Full Base Games Only)<br>
-                            <span style="font-size: 0.72rem; color: var(--text-muted);">Filters out cheaper add-ons, season passes, soundtracks, and expansions across all official retailers, keyshops, and Kinguin to benchmark full base games.</span>
-                          </span>
+
+                        <!-- Filter 4: DLCs -->
+                        <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 0.82rem; cursor: pointer; margin-bottom: 0; padding: 10px 12px; background: var(--bg-input); border-radius: var(--radius-sm); border: 1px solid var(--border-color); transition: border-color 0.2s ease;">
+                          <input type="checkbox" id="settings-kinguin-exclude-dlcs" style="margin-top: 2px; width: 16px; height: 16px; accent-color: var(--accent-emerald); cursor: pointer;" checked>
+                          <div style="flex: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;">
+                              <strong style="color: var(--text-main);"><i class="fa-solid fa-puzzle-piece" style="color: var(--accent-emerald); margin-right: 5px;"></i>Exclude DLCs &amp; Expansions</strong>
+                              <span id="badge-status-dlcs" class="badge" style="font-size: 0.65rem; padding: 1px 6px; background: rgba(168, 85, 247, 0.15); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3);">Full Games Only</span>
+                            </div>
+                            <span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 3px; line-height: 1.35;">
+                              Filters out cheaper add-ons, season passes, soundtracks, and expansions across all retailers and Kinguin to benchmark full base games. Disable to include DLCs.
+                            </span>
+                          </div>
                         </label>
                       </div>
                     </div>
@@ -4570,17 +4606,17 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
   <!-- Modular Application Scripts loaded sequentially to share the global scope -->
-  <script src="config.js?v=153"></script>
-  <script src="src/state.js?v=153"></script>
-  <script src="src/api.js?v=153"></script>
-  <script src="src/charts.js?v=153"></script>
-  <script src="src/ui.js?v=153"></script>
-  <script src="src/ui/auth.js?v=153"></script>
-  <script src="src/ui/settings.js?v=153"></script>
-  <script src="src/ui/recycle.js?v=153"></script>
-  <script src="src/ui/radar.js?v=153"></script>
-  <script src="src/ai.js?v=153"></script>
-  <script src="src/importer.js?v=153"></script>
-  <script src="app.js?v=153"></script>
+  <script src="config.js?v=154"></script>
+  <script src="src/state.js?v=154"></script>
+  <script src="src/api.js?v=154"></script>
+  <script src="src/charts.js?v=154"></script>
+  <script src="src/ui.js?v=154"></script>
+  <script src="src/ui/auth.js?v=154"></script>
+  <script src="src/ui/settings.js?v=154"></script>
+  <script src="src/ui/recycle.js?v=154"></script>
+  <script src="src/ui/radar.js?v=154"></script>
+  <script src="src/ai.js?v=154"></script>
+  <script src="src/importer.js?v=154"></script>
+  <script src="app.js?v=154"></script>
 </body>
 </html>
